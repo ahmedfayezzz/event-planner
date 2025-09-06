@@ -367,7 +367,7 @@ def admin_checkin(session_id):
 
 @app.route('/admin/checkin/<int:session_id>/<int:user_id>', methods=['POST'])
 @login_required
-def mark_attendance(session_id, user_id):
+def mark_attendance_qr(session_id, user_id):
     # Check if attendance record exists
     attendance = Attendance.query.filter_by(
         session_id=session_id,
