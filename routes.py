@@ -338,6 +338,149 @@ def api_countdown(session_id):
     else:
         return jsonify({'expired': True})
 
+# Analytics API Routes
+@app.route('/api/analytics/demographics')
+@login_required
+def api_analytics_demographics():
+    try:
+        result = analyze_participant_data('demographics')
+        if result:
+            return jsonify(result)
+        else:
+            return jsonify({'error': 'فشل في تحليل البيانات الديموغرافية'})
+    except Exception as e:
+        app.logger.error(f"Demographics API error: {e}")
+        return jsonify({'error': 'خطأ في الخادم'}), 500
+
+@app.route('/api/analytics/trends')
+@login_required
+def api_analytics_trends():
+    try:
+        result = analyze_participant_data('trends')
+        if result:
+            return jsonify(result)
+        else:
+            return jsonify({'error': 'فشل في تحليل الاتجاهات'})
+    except Exception as e:
+        app.logger.error(f"Trends API error: {e}")
+        return jsonify({'error': 'خطأ في الخادم'}), 500
+
+@app.route('/api/analytics/participant-insights')
+@login_required
+def api_analytics_insights():
+    try:
+        result = analyze_participant_data('insights')
+        if result:
+            return jsonify(result)
+        else:
+            return jsonify({'error': 'فشل في تحليل رؤى المشاركين'})
+    except Exception as e:
+        app.logger.error(f"Insights API error: {e}")
+        return jsonify({'error': 'خطأ في الخادم'}), 500
+
+@app.route('/api/analytics/session-performance')
+@login_required
+def api_session_performance():
+    try:
+        # Get session performance metrics
+        sessions = Session.query.all()
+        performance_data = []
+        
+        for session in sessions:
+            registrations = session.get_registration_count()
+            attendances = len([a for a in session.attendances if a.attended])
+            attendance_rate = (attendances / registrations * 100) if registrations > 0 else 0
+            
+            performance_data.append({
+                'session_id': session.id,
+                'title': session.title,
+                'session_number': session.session_number,
+                'registrations': registrations,
+                'attendances': attendances,
+                'attendance_rate': attendance_rate,
+                'date': session.date.strftime('%Y-%m-%d')
+            })
+        
+        # Sort by attendance rate
+        performance_data.sort(key=lambda x: x['attendance_rate'], reverse=True)
+        
+        return jsonify({
+            'sessions': performance_data,
+            'average_attendance_rate': sum([s['attendance_rate'] for s in performance_data]) / len(performance_data) if performance_data else 0,
+            'total_sessions': len(sessions),
+            'best_performing_session': performance_data[0] if performance_data else None
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Session performance API error: {e}")
+        return jsonify({'error': 'خطأ في الخادم'}), 500
+
+@app.route('/api/analytics/recommendations')
+@login_required
+def api_recommendations():
+    try:
+        # Generate AI-powered recommendations
+        users_count = User.query.count()
+        sessions_count = Session.query.count()
+        avg_attendance = 0
+        
+        if sessions_count > 0:
+            total_attendances = db.session.query(func.count(Attendance.id)).filter(Attendance.attended == True).scalar() or 0
+            avg_attendance = total_attendances / sessions_count
+        
+        recommendations = []
+        
+        # Content-based recommendations
+        if users_count < 50:
+            recommendations.append({
+                'type': 'growth',
+                'title': 'زيادة المشاركين',
+                'description': f'لديك حالياً {users_count} مشارك. يمكن زيادة الترويج لجذب المزيد من المؤثرين.',
+                'priority': 'high'
+            })
+        
+        if avg_attendance < 10:
+            recommendations.append({
+                'type': 'engagement',
+                'title': 'تحسين معدل الحضور',
+                'description': f'متوسط الحضور {avg_attendance:.1f}. اعتبر إضافة محتوى أكثر تفاعلاً.',
+                'priority': 'medium'
+            })
+        
+        if sessions_count < 5:
+            recommendations.append({
+                'type': 'content',
+                'title': 'إضافة المزيد من الجلسات',
+                'description': 'قم بجدولة المزيد من الجلسات لزيادة المشاركة والتفاعل.',
+                'priority': 'high'
+            })
+        
+        # AI-generated recommendations based on participant goals
+        users_with_goals = User.query.filter(User.goal.isnot(None)).all()
+        if users_with_goals:
+            common_goals = []
+            for user in users_with_goals[:10]:  # Analyze top 10 for performance
+                if user.goal and len(user.goal.split()) > 2:
+                    common_goals.append(user.goal)
+            
+            if common_goals:
+                recommendations.append({
+                    'type': 'ai_insight',
+                    'title': 'توجيه المحتوى حسب اهتمامات المشاركين',
+                    'description': 'يمكن تطوير جلسات متخصصة بناءً على أهداف المشاركين الشائعة.',
+                    'priority': 'medium'
+                })
+        
+        return jsonify({
+            'recommendations': recommendations,
+            'summary': f'تم إنشاء {len(recommendations)} توصية بناءً على تحليل البيانات',
+            'generated_at': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Recommendations API error: {e}")
+        return jsonify({'error': 'خطأ في الخادم'}), 500
+
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):
