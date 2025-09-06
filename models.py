@@ -47,6 +47,15 @@ class Session(db.Model):
     location = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Advanced Settings
+    registration_deadline = db.Column(db.DateTime)  # Close registration before this time
+    show_countdown = db.Column(db.Boolean, default=True)  # Show countdown timer
+    show_guest_profile = db.Column(db.Boolean, default=True)  # Show guest info
+    enable_mini_view = db.Column(db.Boolean, default=False)  # Enable embed mini view
+    custom_confirmation_message = db.Column(db.Text)  # Custom confirmation message
+    embed_enabled = db.Column(db.Boolean, default=True)  # Allow embedding
+    slug = db.Column(db.String(100))  # URL slug for pretty URLs
+    
     # Relationships
     registrations = db.relationship('Registration', backref='session', lazy=True)
     attendances = db.relationship('Attendance', backref='session', lazy=True)
@@ -58,7 +67,37 @@ class Session(db.Model):
         return self.get_registration_count() >= self.max_participants
     
     def can_register(self):
-        return self.status == 'open' and not self.is_full()
+        # Check if registration is open and not full
+        if self.status != 'open' or self.is_full():
+            return False
+        
+        # Check registration deadline
+        if self.registration_deadline and datetime.utcnow() > self.registration_deadline:
+            return False
+            
+        return True
+    
+    def get_embed_url(self):
+        """Get the embed URL for this session"""
+        if self.slug:
+            return f"/event/{self.slug}/embed"
+        return f"/event/{self.id}/embed"
+    
+    def get_public_url(self):
+        """Get the public URL for this session"""
+        if self.slug:
+            return f"/event/{self.slug}"
+        return f"/session/{self.id}/register"
+    
+    def generate_slug(self):
+        """Generate URL slug from title"""
+        import re
+        if not self.slug and self.title:
+            # Simple slug generation
+            slug = re.sub(r'[^\w\s-]', '', self.title).strip()
+            slug = re.sub(r'[\s_-]+', '-', slug)[:50]
+            self.slug = f"{slug}-{self.session_number}"
+        return self.slug
 
 class Registration(db.Model):
     id = db.Column(db.Integer, primary_key=True)

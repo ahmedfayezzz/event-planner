@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة جلسة جديدة - لوحة الإدارة{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold">إضافة جلسة جديدة</h2>
+                <a href="{{ url_for('admin_sessions') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة للقائمة
+                </a>
+            </div>
+
+            <!-- Session Form -->
+            <div class="card shadow">
+                <div class="card-body p-4">
+                    <form method="POST">
+                        <!-- Basic Information -->
+                        <div class="section-header mb-4">
+                            <h4 class="text-primary">
+                                <i class="fas fa-info-circle me-2"></i>
+                                المعلومات الأساسية
+                            </h4>
+                            <hr>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="title" class="form-label required">عنوان الجلسة</label>
+                                <input type="text" class="form-control" id="title" name="title" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="description" class="form-label">وصف الجلسة</label>
+                                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="date" class="form-label required">التاريخ والوقت</label>
+                                <input type="datetime-local" class="form-control" id="date" name="date" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="location" class="form-label">مكان الانعقاد</label>
+                                <input type="text" class="form-control" id="location" name="location">
+                            </div>
+                        </div>
+
+                        <!-- Guest Information -->
+                        <div class="section-header mb-4 mt-5">
+                            <h4 class="text-primary">
+                                <i class="fas fa-user-tie me-2"></i>
+                                معلومات الضيف
+                            </h4>
+                            <hr>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="guest_name" class="form-label">اسم الضيف</label>
+                                <input type="text" class="form-control" id="guest_name" name="guest_name">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="guest_profile" class="form-label">ملف الضيف التعريفي</label>
+                                <input type="text" class="form-control" id="guest_profile" name="guest_profile" 
+                                       placeholder="وصف مختصر أو رابط">
+                            </div>
+                        </div>
+
+                        <!-- Session Settings -->
+                        <div class="section-header mb-4 mt-5">
+                            <h4 class="text-primary">
+                                <i class="fas fa-cogs me-2"></i>
+                                إعدادات الجلسة
+                            </h4>
+                            <hr>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="max_participants" class="form-label">الحد الأقصى للمقاعد</label>
+                                <input type="number" class="form-control" id="max_participants" name="max_participants" 
+                                       value="50" min="1" max="500">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="status" class="form-label">حالة الجلسة</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="open">مفتوحة للتسجيل</option>
+                                    <option value="closed">مغلقة</option>
+                                    <option value="completed">مكتملة</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Settings -->
+                        <div class="section-header mb-4 mt-5">
+                            <h4 class="text-primary">
+                                <i class="fas fa-sliders-h me-2"></i>
+                                الإعدادات المتقدمة
+                            </h4>
+                            <hr>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="requires_approval" 
+                                           name="requires_approval">
+                                    <label class="form-check-label" for="requires_approval">
+                                        يتطلب موافقة المشرف
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="show_participant_count" 
+                                           name="show_participant_count" checked>
+                                    <label class="form-check-label" for="show_participant_count">
+                                        إظهار عدد المشاركين
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="show_countdown" 
+                                           name="show_countdown" checked>
+                                    <label class="form-check-label" for="show_countdown">
+                                        إظهار العد التنازلي
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="show_guest_profile" 
+                                           name="show_guest_profile" checked>
+                                    <label class="form-check-label" for="show_guest_profile">
+                                        إظهار ملف الضيف التعريفي
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="enable_mini_view" 
+                                           name="enable_mini_view">
+                                    <label class="form-check-label" for="enable_mini_view">
+                                        تفعيل الوضع المصغر للتضمين
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="embed_enabled" 
+                                           name="embed_enabled" checked>
+                                    <label class="form-check-label" for="embed_enabled">
+                                        السماح بالتضمين (Embed)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Message -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <label for="custom_confirmation_message" class="form-label">رسالة التأكيد المخصصة</label>
+                                <textarea class="form-control" id="custom_confirmation_message" 
+                                          name="custom_confirmation_message" rows="3" 
+                                          placeholder="رسالة مخصصة ترسل للمشارك بعد التسجيل (اختياري)"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-save me-2"></i>
+                                إنشاء الجلسة
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set minimum date to now
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('date');
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    dateInput.min = now.toISOString().slice(0, 16);
+});
+</script>
+
+<style>
+.section-header h4 {
+    margin-bottom: 0.5rem;
+}
+
+.form-check-label {
+    font-weight: 500;
+}
+
+.required::after {
+    content: " *";
+    color: red;
+}
+</style>
+{% endblock %}

@@ -264,6 +264,111 @@ def admin_dashboard():
                          recent_registrations=recent_registrations,
                          upcoming_sessions=upcoming_sessions)
 
+@app.route('/admin/sessions')
+@login_required
+def admin_sessions():
+    sessions = Session.query.order_by(Session.date.desc()).all()
+    return render_template('admin/sessions.html', sessions=sessions)
+
+@app.route('/admin/sessions/new', methods=['GET', 'POST'])
+@login_required
+def admin_new_session():
+    if request.method == 'POST':
+        # Get the highest session number
+        last_session = Session.query.order_by(Session.session_number.desc()).first()
+        session_number = (last_session.session_number + 1) if last_session else 1
+        
+        session = Session(
+            session_number=session_number,
+            title=request.form.get('title'),
+            description=request.form.get('description'),
+            date=datetime.strptime(request.form.get('date'), '%Y-%m-%dT%H:%M'),
+            guest_name=request.form.get('guest_name'),
+            guest_profile=request.form.get('guest_profile'),
+            location=request.form.get('location'),
+            max_participants=int(request.form.get('max_participants', 50)),
+            requires_approval=bool(request.form.get('requires_approval')),
+            show_participant_count=bool(request.form.get('show_participant_count'))
+        )
+        
+        db.session.add(session)
+        db.session.commit()
+        
+        flash('تم إنشاء الجلسة بنجاح!', 'success')
+        return redirect(url_for('admin_sessions'))
+    
+    return render_template('admin/new_session.html')
+
+@app.route('/admin/sessions/<int:session_id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_edit_session(session_id):
+    session_obj = Session.query.get_or_404(session_id)
+    
+    if request.method == 'POST':
+        session_obj.title = request.form.get('title')
+        session_obj.description = request.form.get('description')
+        session_obj.date = datetime.strptime(request.form.get('date'), '%Y-%m-%dT%H:%M')
+        session_obj.guest_name = request.form.get('guest_name')
+        session_obj.guest_profile = request.form.get('guest_profile')
+        session_obj.location = request.form.get('location')
+        session_obj.max_participants = int(request.form.get('max_participants', 50))
+        session_obj.requires_approval = bool(request.form.get('requires_approval'))
+        session_obj.show_participant_count = bool(request.form.get('show_participant_count'))
+        session_obj.status = request.form.get('status')
+        
+        db.session.commit()
+        flash('تم تحديث الجلسة بنجاح!', 'success')
+        return redirect(url_for('admin_sessions'))
+    
+    return render_template('admin/edit_session.html', session=session_obj)
+
+@app.route('/event/<path:identifier>')
+def event_page(identifier):
+    # Try to find session by slug first, then by ID
+    session_obj = Session.query.filter_by(slug=identifier).first()
+    if not session_obj and identifier.isdigit():
+        session_obj = Session.query.get(int(identifier))
+    
+    if not session_obj:
+        flash('الجلسة غير موجودة', 'error')
+        return redirect(url_for('sessions'))
+    
+    return redirect(url_for('register', session_id=session_obj.id))
+
+@app.route('/event/<path:identifier>/embed')
+def event_embed(identifier):
+    # Try to find session by slug first, then by ID
+    session_obj = Session.query.filter_by(slug=identifier).first()
+    if not session_obj and identifier.isdigit():
+        session_obj = Session.query.get(int(identifier))
+    
+    if not session_obj or not session_obj.embed_enabled:
+        return "هذه الجلسة غير متاحة للتضمين", 404
+    
+    # Check if mini view is enabled
+    template = 'embed_mini.html' if session_obj.enable_mini_view else 'embed_full.html'
+    
+    return render_template(template, session=session_obj)
+
+@app.route('/admin/sessions/<int:session_id>/embed-code')
+@login_required
+def get_embed_code(session_id):
+    session_obj = Session.query.get_or_404(session_id)
+    
+    # Generate slug if not exists
+    if not session_obj.slug:
+        session_obj.generate_slug()
+        db.session.commit()
+    
+    embed_url = request.url_root.rstrip('/') + session_obj.get_embed_url()
+    iframe_code = f'<iframe src="{embed_url}" width="100%" height="400" frameborder="0"></iframe>'
+    
+    return jsonify({
+        'iframe_code': iframe_code,
+        'embed_url': embed_url,
+        'public_url': request.url_root.rstrip('/') + session_obj.get_public_url()
+    })
+
 @app.route('/admin/analytics')
 @login_required
 def admin_analytics():
