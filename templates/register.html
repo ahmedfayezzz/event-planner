@@ -9,10 +9,10 @@
             <!-- Header -->
             <div class="text-center mb-5">
                 <h1 class="fw-bold mb-3">انضم إلى ثلوثية الأعمال</h1>
-                {% if session %}
+                {% if selected_session %}
                 <div class="alert alert-info">
-                    <h5 class="mb-2">التسجيل في: {{ session.title }}</h5>
-                    <p class="mb-0">التجمع رقم {{ session.session_number }} - {{ session.date.strftime('%Y-%m-%d %H:%M') }}</p>
+                    <h5 class="mb-2">التسجيل في: {{ selected_session.title }}</h5>
+                    <p class="mb-0">التجمع رقم {{ selected_session.session_number }} - {{ selected_session.date.strftime('%Y-%m-%d %H:%M') }}</p>
                 </div>
                 {% else %}
                 <p class="text-muted">املأ النموذج أدناه للانضمام إلى مجتمع المؤثرين وأصحاب الأعمال</p>
@@ -23,8 +23,8 @@
             <div class="card shadow-lg border-0">
                 <div class="card-body p-5">
                     <form method="POST" id="registrationForm">
-                        {% if session %}
-                        <input type="hidden" name="session_id" value="{{ session.id }}">
+                        {% if selected_session %}
+                        <input type="hidden" name="session_id" value="{{ selected_session.id }}">
                         {% endif %}
                         
                         <!-- Personal Information -->

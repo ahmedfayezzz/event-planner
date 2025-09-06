@@ -126,7 +126,7 @@ def register():
     if session_id:
         session_obj = Session.query.get(session_id)
     
-    return render_template('register.html', session=session_obj)
+    return render_template('register.html', selected_session=session_obj)
 
 @app.route('/u/<username>')
 def profile(username):
