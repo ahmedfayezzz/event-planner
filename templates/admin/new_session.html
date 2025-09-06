@@ -170,6 +170,27 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="invite_only" 
+                                           name="invite_only" onchange="toggleInviteSettings()">
+                                    <label class="form-check-label" for="invite_only">
+                                        <strong>🟩 تفعيل التسجيل بالدعوة فقط</strong>
+                                    </label>
+                                    <small class="form-text text-muted">فقط من وصلهم رابط خاص عبر الإيميل يمكنهم التسجيل</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Invite Settings (Hidden by default) -->
+                        <div id="inviteSettings" class="d-none">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle me-2"></i>إعدادات الدعوات</h6>
+                                <p class="mb-0">يمكنك إضافة قائمة الإيميلات وإرسال الدعوات بعد حفظ الجلسة من صفحة التعديل.</p>
+                            </div>
+                        </div>
 
                         <!-- Custom Message -->
                         <div class="row mb-4">
@@ -203,6 +224,17 @@ document.addEventListener('DOMContentLoaded', function() {
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     dateInput.min = now.toISOString().slice(0, 16);
 });
+
+function toggleInviteSettings() {
+    const inviteOnly = document.getElementById('invite_only');
+    const inviteSettings = document.getElementById('inviteSettings');
+    
+    if (inviteOnly.checked) {
+        inviteSettings.classList.remove('d-none');
+    } else {
+        inviteSettings.classList.add('d-none');
+    }
+}
 </script>
 
 <style>

@@ -288,7 +288,12 @@ def admin_new_session():
             location=request.form.get('location'),
             max_participants=int(request.form.get('max_participants', 50)),
             requires_approval=bool(request.form.get('requires_approval')),
-            show_participant_count=bool(request.form.get('show_participant_count'))
+            show_participant_count=bool(request.form.get('show_participant_count')),
+            show_countdown=bool(request.form.get('show_countdown')),
+            show_guest_profile=bool(request.form.get('show_guest_profile')),
+            enable_mini_view=bool(request.form.get('enable_mini_view')),
+            embed_enabled=bool(request.form.get('embed_enabled')),
+            invite_only=bool(request.form.get('invite_only'))
         )
         
         db.session.add(session)
@@ -314,6 +319,11 @@ def admin_edit_session(session_id):
         session_obj.max_participants = int(request.form.get('max_participants', 50))
         session_obj.requires_approval = bool(request.form.get('requires_approval'))
         session_obj.show_participant_count = bool(request.form.get('show_participant_count'))
+        session_obj.show_countdown = bool(request.form.get('show_countdown'))
+        session_obj.show_guest_profile = bool(request.form.get('show_guest_profile'))
+        session_obj.enable_mini_view = bool(request.form.get('enable_mini_view'))
+        session_obj.embed_enabled = bool(request.form.get('embed_enabled'))
+        session_obj.invite_only = bool(request.form.get('invite_only'))
         session_obj.status = request.form.get('status')
         
         db.session.commit()
