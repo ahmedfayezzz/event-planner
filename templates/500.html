@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}خطأ في الخادم - ثلوثية الأعمال{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 text-center">
+            <!-- Error Illustration -->
+            <div class="error-illustration mb-4">
+                <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="80" fill="#ffe6e6" stroke="#dc3545" stroke-width="2"/>
+                    <text x="100" y="120" text-anchor="middle" font-size="48" font-weight="bold" fill="#dc3545">500</text>
+                    <path d="M70 70 L130 130 M130 70 L70 130" stroke="#dc3545" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+            </div>
+            
+            <!-- Error Message -->
+            <h1 class="display-4 fw-bold text-danger mb-3">خطأ في الخادم</h1>
+            <p class="lead text-muted mb-4">
+                عذراً، حدث خطأ غير متوقع في الخادم. فريقنا يعمل على حل المشكلة.
+            </p>
+            
+            <!-- Error Details (Development Mode) -->
+            {% if config.DEBUG %}
+            <div class="alert alert-warning text-start mb-4">
+                <h6 class="alert-heading">تفاصيل الخطأ (وضع التطوير):</h6>
+                <p class="mb-0 font-monospace small">{{ error_message if error_message else 'Internal Server Error' }}</p>
+            </div>
+            {% endif %}
+            
+            <!-- Action Buttons -->
+            <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                <button onclick="window.location.reload()" class="btn btn-primary btn-lg">
+                    <i class="fas fa-redo me-2"></i>
+                    إعادة المحاولة
+                </button>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-home me-2"></i>
+                    العودة للرئيسية
+                </a>
+            </div>
+            
+            <!-- Support Information -->
+            <div class="mt-5">
+                <div class="card border-info">
+                    <div class="card-body">
+                        <h5 class="card-title text-info">
+                            <i class="fas fa-headset me-2"></i>
+                            تحتاج مساعدة؟
+                        </h5>
+                        <p class="card-text">
+                            إذا استمرت المشكلة، يرجى التواصل مع فريق الدعم التقني.
+                        </p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="mailto:support@businesstuesdays.com" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-envelope me-1"></i>
+                                البريد الإلكتروني
+                            </a>
+                            <a href="https://wa.me/966xxxxxxxxx" class="btn btn-sm btn-outline-success" target="_blank">
+                                <i class="fab fa-whatsapp me-1"></i>
+                                واتساب
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Error Report Form -->
+            <div class="mt-4">
+                <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#errorReport">
+                    <i class="fas fa-bug me-1"></i>
+                    إبلاغ عن المشكلة
+                </button>
+                
+                <div class="collapse mt-3" id="errorReport">
+                    <div class="card">
+                        <div class="card-body">
+                            <form id="errorReportForm">
+                                <div class="mb-3">
+                                    <label for="errorDescription" class="form-label">وصف المشكلة</label>
+                                    <textarea class="form-control" id="errorDescription" rows="3" 
+                                              placeholder="صف ما كنت تحاول فعله عند حدوث الخطأ..."></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="userEmail" class="form-label">بريدك الإلكتروني (اختياري)</label>
+                                    <input type="email" class="form-control" id="userEmail" 
+                                           placeholder="للتواصل معك حول المشكلة">
+                                </div>
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane me-2"></i>
+                                        إرسال التقرير
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Track 500 errors for analytics
+if (typeof gtag !== 'undefined') {
+    gtag('event', 'exception', {
+        description: '500 - Internal Server Error',
+        fatal: true
+    });
+}
+
+// Error report form submission
+document.getElementById('errorReportForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const description = document.getElementById('errorDescription').value;
+    const email = document.getElementById('userEmail').value;
+    
+    if (!description.trim()) {
+        alert('يرجى وصف المشكلة');
+        return;
+    }
+    
+    // Send error report (replace with actual endpoint)
+    fetch('/api/error-report', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            description: description,
+            email: email,
+            url: window.location.href,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent
+        })
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('تم إرسال التقرير بنجاح. شكراً لك!');
+            document.getElementById('errorReportForm').reset();
+            bootstrap.Collapse.getInstance(document.getElementById('errorReport')).hide();
+        } else {
+            throw new Error('Failed to send report');
+        }
+    })
+    .catch(error => {
+        console.error('Error sending report:', error);
+        alert('فشل في إرسال التقرير. يرجى المحاولة لاحقاً.');
+    });
+});
+
+// Auto-reload after 30 seconds (optional)
+let autoReloadCounter = 30;
+const reloadButton = document.querySelector('button[onclick="window.location.reload()"]');
+const originalText = reloadButton.innerHTML;
+
+const countdown = setInterval(function() {
+    autoReloadCounter--;
+    reloadButton.innerHTML = `<i class="fas fa-redo me-2"></i>إعادة المحاولة (${autoReloadCounter})`;
+    
+    if (autoReloadCounter <= 0) {
+        clearInterval(countdown);
+        window.location.reload();
+    }
+}, 1000);
+
+// Stop countdown if user interacts with the page
+document.addEventListener('click', function() {
+    clearInterval(countdown);
+    reloadButton.innerHTML = originalText;
+});
+</script>
+{% endblock %}

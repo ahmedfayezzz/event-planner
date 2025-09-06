@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة التحكم - ثلوثية الأعمال{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Dashboard Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="fw-bold mb-2">لوحة التحكم</h1>
+                    <p class="text-muted mb-0">مرحباً {{ current_user.username }}، إليك نظرة عامة على المنصة</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin_analytics') }}" class="btn btn-primary me-2">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        التحليلات المتقدمة
+                    </a>
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-download me-2"></i>
+                        تصدير البيانات
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('admin_export', export_type='users') }}">
+                            <i class="fas fa-users me-2"></i>المشاركين
+                        </a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin_export', export_type='sessions') }}">
+                            <i class="fas fa-calendar me-2"></i>الجلسات
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card bg-primary text-white p-4 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="fw-bold mb-1">{{ total_users }}</h3>
+                        <p class="mb-0">إجمالي المشاركين</p>
+                    </div>
+                    <i class="fas fa-users fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card bg-success text-white p-4 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="fw-bold mb-1">{{ total_sessions }}</h3>
+                        <p class="mb-0">إجمالي الجلسات</p>
+                    </div>
+                    <i class="fas fa-calendar fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card bg-warning text-white p-4 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="fw-bold mb-1">{{ pending_approvals }}</h3>
+                        <p class="mb-0">في انتظار الموافقة</p>
+                    </div>
+                    <i class="fas fa-clock fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card bg-info text-white p-4 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="fw-bold mb-1">{{ upcoming_sessions|length }}</h3>
+                        <p class="mb-0">جلسات قادمة</p>
+                    </div>
+                    <i class="fas fa-arrow-up fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Registrations -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-plus me-2"></i>
+                        التسجيلات الأخيرة
+                    </h5>
+                    <small class="text-muted">آخر 10 تسجيلات</small>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_registrations %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>المشارك</th>
+                                    <th>الجلسة</th>
+                                    <th>تاريخ التسجيل</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for registration in recent_registrations %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                {{ registration.user.name[0] }}
+                                            </div>
+                                            <div>
+                                                <strong>{{ registration.user.name }}</strong>
+                                                <br><small class="text-muted">{{ registration.user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ registration.session.title }}</strong>
+                                            <br><small class="text-muted">التجمع رقم {{ registration.session.session_number }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span>{{ registration.registered_at.strftime('%Y-%m-%d') }}</span>
+                                        <br><small class="text-muted">{{ registration.registered_at.strftime('%H:%M') }}</small>
+                                    </td>
+                                    <td>
+                                        {% if registration.is_approved %}
+                                        <span class="badge bg-success">مؤكد</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">في الانتظار</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ registration.user.get_profile_url() }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if not registration.is_approved %}
+                                            <button class="btn btn-sm btn-outline-success" onclick="approveRegistration({{ registration.id }})">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox text-muted fa-3x mb-3"></i>
+                        <h6 class="text-muted">لا توجد تسجيلات حديثة</h6>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Sessions -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-week me-2"></i>
+                        الجلسات القادمة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_sessions %}
+                    {% for session in upcoming_sessions %}
+                    <div class="session-item border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ session.title }}</h6>
+                                <small class="text-muted">التجمع رقم {{ session.session_number }}</small>
+                                <div class="mt-1">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ session.date.strftime('%Y-%m-%d %H:%M') }}
+                                    </small>
+                                </div>
+                                <div class="mt-1">
+                                    <small class="text-muted">
+                                        <i class="fas fa-users me-1"></i>
+                                        {{ session.get_registration_count() }} مشارك
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('admin_checkin', session_id=session.id) }}">
+                                        <i class="fas fa-qrcode me-2"></i>تسجيل الحضور
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="generateQR({{ session.id }})">
+                                        <i class="fas fa-qr-code me-2"></i>إنشاء QR Code
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times text-muted fa-3x mb-3"></i>
+                        <h6 class="text-muted">لا توجد جلسات قادمة</h6>
+                        <button class="btn btn-sm btn-primary mt-2">
+                            <i class="fas fa-plus me-2"></i>
+                            إضافة جلسة
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>
+                        إجراءات سريعة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-primary w-100 mb-2" onclick="openAddSessionModal()">
+                                <i class="fas fa-plus me-2"></i>
+                                إضافة جلسة جديدة
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-success w-100 mb-2" onclick="sendNotifications()">
+                                <i class="fas fa-bell me-2"></i>
+                                إرسال تذكيرات
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-info w-100 mb-2" onclick="openBulkActions()">
+                                <i class="fas fa-tasks me-2"></i>
+                                إجراءات جماعية
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QR Code Modal -->
+<div class="modal fade" id="qrModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">QR Code للجلسة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="qrCodeContainer">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                </div>
+                <p class="mt-3 text-muted">امسح هذا الرمز لتسجيل الحضور</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function approveRegistration(registrationId) {
+    if (confirm('هل تريد الموافقة على هذا التسجيل؟')) {
+        // Add AJAX call to approve registration
+        fetch(`/admin/approve-registration/${registrationId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('حدث خطأ في الموافقة');
+            }
+        });
+    }
+}
+
+function generateQR(sessionId) {
+    const modal = new bootstrap.Modal(document.getElementById('qrModal'));
+    const container = document.getElementById('qrCodeContainer');
+    
+    container.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">جاري التحميل...</span></div>';
+    modal.show();
+    
+    fetch(`/admin/session/${sessionId}/qr`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.qr_code) {
+                container.innerHTML = `<img src="${data.qr_code}" class="img-fluid" alt="QR Code">`;
+            } else {
+                container.innerHTML = '<p class="text-danger">فشل في إنشاء QR Code</p>';
+            }
+        })
+        .catch(error => {
+            container.innerHTML = '<p class="text-danger">حدث خطأ في التحميل</p>';
+        });
+}
+
+function openAddSessionModal() {
+    // Implement session creation modal
+    alert('ميزة إضافة الجلسات قيد التطوير');
+}
+
+function sendNotifications() {
+    if (confirm('هل تريد إرسال تذكيرات للمشاركين؟')) {
+        // Implement notification sending
+        alert('تم إرسال التذكيرات بنجاح');
+    }
+}
+
+function openBulkActions() {
+    // Implement bulk actions modal
+    alert('ميزة الإجراءات الجماعية قيد التطوير');
+}
+</script>
+{% endblock %}

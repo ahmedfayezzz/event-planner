@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block title %}التحليلات المتقدمة - ثلوثية الأعمال{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Analytics Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="fw-bold mb-2">التحليلات المتقدمة</h1>
+                    <p class="text-muted mb-0">رؤى ذكية مدعومة بالذكاء الاصطناعي حول المشاركين والجلسات</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary me-2" onclick="refreshAnalytics()">
+                        <i class="fas fa-sync-alt me-2"></i>
+                        تحديث التحليلات
+                    </button>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-right me-2"></i>
+                        العودة للوحة التحكم
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Search -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-search me-2"></i>
+                        البحث الذكي في بيانات المشاركين
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="aiSearchForm">
+                        <div class="row">
+                            <div class="col-md-10">
+                                <input type="text" class="form-control" id="searchQuery" 
+                                       placeholder="اسأل أي سؤال عن المشاركين... مثال: من هم المؤثرون الذين حضروا أكثر من 3 جلسات؟">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-magic me-2"></i>
+                                    بحث ذكي
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <div id="searchResults" class="mt-4" style="display: none;">
+                        <div class="alert alert-info">
+                            <h6 class="mb-2">نتائج البحث:</h6>
+                            <div id="searchResultsContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Dashboard -->
+    <div class="row mb-4">
+        <!-- Demographics Analysis -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        التحليل الديموغرافي
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="demographicsChart" style="height: 300px;">
+                        <div class="d-flex justify-content-center align-items-center h-100">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">جاري التحميل...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="demographicsInsights" class="mt-3">
+                        <!-- AI insights will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Trends -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        اتجاهات الحضور
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="trendsChart" style="height: 300px;">
+                        <div class="d-flex justify-content-center align-items-center h-100">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">جاري التحميل...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="trendsInsights" class="mt-3">
+                        <!-- AI insights will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Analytics -->
+    <div class="row">
+        <!-- Participant Insights -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        رؤى المشاركين
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="participantInsights">
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">جاري التحليل...</span>
+                            </div>
+                            <p class="mt-2 text-muted">الذكاء الاصطناعي يحلل البيانات...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Session Performance -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-check me-2"></i>
+                        أداء الجلسات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="sessionPerformance">
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-success" role="status">
+                                <span class="visually-hidden">جاري التحليل...</span>
+                            </div>
+                            <p class="mt-2 text-muted">تحليل أداء الجلسات...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star me-2"></i>
+                        التوصيات الذكية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="aiRecommendations">
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-warning" role="status">
+                                <span class="visually-hidden">جاري التحليل...</span>
+                            </div>
+                            <p class="mt-2 text-muted">إنشاء التوصيات...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Export Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-download me-2"></i>
+                        تصدير التحليلات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-primary w-100" onclick="exportAnalytics('pdf')">
+                                <i class="fas fa-file-pdf me-2"></i>
+                                تقرير PDF
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-success w-100" onclick="exportAnalytics('excel')">
+                                <i class="fas fa-file-excel me-2"></i>
+                                ملف Excel
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-info w-100" onclick="exportAnalytics('json')">
+                                <i class="fas fa-code me-2"></i>
+                                بيانات JSON
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-warning w-100" onclick="shareAnalytics()">
+                                <i class="fas fa-share me-2"></i>
+                                مشاركة التحليلات
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize analytics
+    initializeAnalytics();
+    
+    // Setup AI search
+    document.getElementById('aiSearchForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        performAISearch();
+    });
+});
+
+function initializeAnalytics() {
+    // Load demographics data
+    loadDemographics();
+    
+    // Load trends data
+    loadTrends();
+    
+    // Load AI insights
+    loadAIInsights();
+}
+
+function loadDemographics() {
+    fetch('/api/analytics/demographics')
+        .then(response => response.json())
+        .then(data => {
+            renderDemographicsChart(data);
+            renderDemographicsInsights(data);
+        })
+        .catch(error => {
+            console.error('Error loading demographics:', error);
+            document.getElementById('demographicsChart').innerHTML = '<p class="text-danger text-center">فشل في تحميل البيانات</p>';
+        });
+}
+
+function loadTrends() {
+    fetch('/api/analytics/trends')
+        .then(response => response.json())
+        .then(data => {
+            renderTrendsChart(data);
+            renderTrendsInsights(data);
+        })
+        .catch(error => {
+            console.error('Error loading trends:', error);
+            document.getElementById('trendsChart').innerHTML = '<p class="text-danger text-center">فشل في تحميل البيانات</p>';
+        });
+}
+
+function loadAIInsights() {
+    // Load participant insights
+    fetch('/api/analytics/participant-insights')
+        .then(response => response.json())
+        .then(data => {
+            renderParticipantInsights(data);
+        })
+        .catch(error => {
+            console.error('Error loading participant insights:', error);
+        });
+    
+    // Load session performance
+    fetch('/api/analytics/session-performance')
+        .then(response => response.json())
+        .then(data => {
+            renderSessionPerformance(data);
+        })
+        .catch(error => {
+            console.error('Error loading session performance:', error);
+        });
+    
+    // Load recommendations
+    fetch('/api/analytics/recommendations')
+        .then(response => response.json())
+        .then(data => {
+            renderRecommendations(data);
+        })
+        .catch(error => {
+            console.error('Error loading recommendations:', error);
+        });
+}
+
+function performAISearch() {
+    const query = document.getElementById('searchQuery').value.trim();
+    if (!query) return;
+    
+    const resultsDiv = document.getElementById('searchResults');
+    const contentDiv = document.getElementById('searchResultsContent');
+    
+    resultsDiv.style.display = 'block';
+    contentDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>جاري البحث...';
+    
+    fetch('/admin/search', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'query=' + encodeURIComponent(query)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.results) {
+            renderSearchResults(data.results);
+        } else {
+            contentDiv.innerHTML = '<p class="text-danger">فشل في البحث: ' + (data.error || 'خطأ غير معروف') + '</p>';
+        }
+    })
+    .catch(error => {
+        contentDiv.innerHTML = '<p class="text-danger">حدث خطأ في البحث</p>';
+    });
+}
+
+function renderSearchResults(results) {
+    const contentDiv = document.getElementById('searchResultsContent');
+    
+    if (!results.matches || results.matches.length === 0) {
+        contentDiv.innerHTML = '<p>لم يتم العثور على نتائج مطابقة</p>';
+        return;
+    }
+    
+    let html = '<p><strong>' + results.search_summary + '</strong></p>';
+    html += '<div class="row mt-3">';
+    
+    results.matches.forEach(match => {
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card border-primary">
+                    <div class="card-body p-3">
+                        <h6 class="card-title">${match.name}</h6>
+                        <p class="text-muted small mb-2">${match.reason}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-primary">مطابقة ${Math.round(match.relevance * 100)}%</span>
+                            <a href="/u/${match.id}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                عرض الملف الشخصي
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    contentDiv.innerHTML = html;
+}
+
+function refreshAnalytics() {
+    // Show loading state
+    const loadingElements = document.querySelectorAll('.spinner-border');
+    loadingElements.forEach(el => {
+        el.style.display = 'inline-block';
+    });
+    
+    // Reload all analytics
+    initializeAnalytics();
+}
+
+function exportAnalytics(format) {
+    window.open(`/admin/export/analytics?format=${format}`, '_blank');
+}
+
+function shareAnalytics() {
+    const url = window.location.href;
+    if (navigator.share) {
+        navigator.share({
+            title: 'تحليلات ثلوثية الأعمال',
+            url: url
+        });
+    } else {
+        navigator.clipboard.writeText(url).then(() => {
+            alert('تم نسخ رابط التحليلات');
+        });
+    }
+}
+</script>
+{% endblock %}

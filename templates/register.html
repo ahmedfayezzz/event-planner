@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}التسجيل - ثلوثية الأعمال{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="fw-bold mb-3">انضم إلى ثلوثية الأعمال</h1>
+                {% if session %}
+                <div class="alert alert-info">
+                    <h5 class="mb-2">التسجيل في: {{ session.title }}</h5>
+                    <p class="mb-0">التجمع رقم {{ session.session_number }} - {{ session.date.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+                {% else %}
+                <p class="text-muted">املأ النموذج أدناه للانضمام إلى مجتمع المؤثرين وأصحاب الأعمال</p>
+                {% endif %}
+            </div>
+
+            <!-- Registration Form -->
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <form method="POST" id="registrationForm">
+                        {% if session %}
+                        <input type="hidden" name="session_id" value="{{ session.id }}">
+                        {% endif %}
+                        
+                        <!-- Personal Information -->
+                        <div class="section-header mb-4">
+                            <h4 class="text-primary">
+                                <i class="fas fa-user me-2"></i>
+                                المعلومات الشخصية
+                            </h4>
+                            <hr>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label required">الاسم الكامل</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label required">البريد الإلكتروني</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="phone" class="form-label required">رقم الجوال</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" placeholder="+966 5X XXX XXXX" required>
+                        </div>
+
+                        <!-- Social Media -->
+                        <div class="section-header mb-4 mt-5">
+                            <h4 class="text-primary">
+                                <i class="fas fa-share-alt me-2"></i>
+                                حسابات التواصل الاجتماعي
+                            </h4>
+                            <hr>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="instagram" class="form-label">رابط إنستغرام</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fab fa-instagram text-danger"></i></span>
+                                    <input type="url" class="form-control" id="instagram" name="instagram" placeholder="https://instagram.com/username">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="snapchat" class="form-label">رابط سناب شات</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fab fa-snapchat text-warning"></i></span>
+                                    <input type="url" class="form-control" id="snapchat" name="snapchat" placeholder="https://snapchat.com/add/username">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="twitter" class="form-label">رابط X (تويتر)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fab fa-x-twitter"></i></span>
+                                    <input type="url" class="form-control" id="twitter" name="twitter" placeholder="https://x.com/username">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Business Information -->
+                        <div class="section-header mb-4 mt-5">
+                            <h4 class="text-primary">
+                                <i class="fas fa-briefcase me-2"></i>
+                                معلومات العمل
+                            </h4>
+                            <hr>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="activity_type" class="form-label">نوع النشاط</label>
+                                <select class="form-select" id="activity_type" name="activity_type">
+                                    <option value="">اختر نوع النشاط</option>
+                                    <option value="مؤثر">مؤثر / مؤثرة</option>
+                                    <option value="ريادي">رائد أعمال</option>
+                                    <option value="مسوق">مسوق / مسوقة</option>
+                                    <option value="مصور">مصور / مصورة</option>
+                                    <option value="مصمم">مصمم / مصممة</option>
+                                    <option value="كاتب">كاتب / كاتبة محتوى</option>
+                                    <option value="مستثمر">مستثمر</option>
+                                    <option value="استشاري">استشاري</option>
+                                    <option value="طالب">طالب / طالبة</option>
+                                    <option value="أخرى">أخرى</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="company_name" class="form-label">اسم الشركة / المشروع</label>
+                                <input type="text" class="form-control" id="company_name" name="company_name" placeholder="اختياري">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="position" class="form-label">المنصب / الوظيفة</label>
+                            <input type="text" class="form-control" id="position" name="position" placeholder="مثال: مدير التسويق، مؤسس، مستقل">
+                        </div>
+
+                        <!-- Goals -->
+                        <div class="section-header mb-4 mt-5">
+                            <h4 class="text-primary">
+                                <i class="fas fa-target me-2"></i>
+                                الهدف من المشاركة
+                            </h4>
+                            <hr>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="goal" class="form-label required">ما هو هدفك من حضور ثلوثية الأعمال؟</label>
+                            <textarea class="form-control" id="goal" name="goal" rows="4" 
+                                placeholder="مثال: بناء شراكات جديدة، تعلم استراتيجيات التسويق، توسيع شبكة العلاقات..." required></textarea>
+                            <div class="form-text">
+                                <i class="fas fa-robot text-info me-1"></i>
+                                سيقوم الذكاء الاصطناعي بتطوير وصف احترافي بناءً على هدفك
+                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    أوافق على <a href="#" class="text-primary">الشروط والأحكام</a> وسياسة الخصوصية
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                <i class="fas fa-user-plus me-2"></i>
+                                سجل الآن
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Already Registered -->
+            <div class="text-center mt-4">
+                <p class="text-muted">
+                    مسجل مسبقاً؟ 
+                    <a href="{{ url_for('sessions') }}" class="text-primary">تصفح الجلسات المتاحة</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registrationForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const goal = document.getElementById('goal').value.trim();
+        const terms = document.getElementById('terms').checked;
+        
+        if (!name || !email || !phone || !goal || !terms) {
+            e.preventDefault();
+            alert('يرجى ملء جميع الحقول المطلوبة والموافقة على الشروط');
+            return;
+        }
+        
+        // Validate email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            e.preventDefault();
+            alert('يرجى إدخال بريد إلكتروني صحيح');
+            return;
+        }
+        
+        // Show loading state
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري التسجيل...';
+        submitBtn.disabled = true;
+    });
+    
+    // Format phone number
+    const phoneInput = document.getElementById('phone');
+    phoneInput.addEventListener('input', function() {
+        let value = this.value.replace(/\D/g, '');
+        
+        if (value.startsWith('966')) {
+            value = '+' + value;
+        } else if (value.startsWith('05')) {
+            value = '+966' + value.substring(1);
+        } else if (value.startsWith('5') && value.length === 9) {
+            value = '+966' + value;
+        }
+        
+        this.value = value;
+    });
+    
+    // Social media URL validation
+    const socialInputs = ['instagram', 'snapchat', 'twitter'];
+    socialInputs.forEach(platform => {
+        const input = document.getElementById(platform);
+        input.addEventListener('blur', function() {
+            if (this.value && !this.value.startsWith('http')) {
+                if (platform === 'instagram' && !this.value.includes('instagram.com')) {
+                    this.value = 'https://instagram.com/' + this.value;
+                } else if (platform === 'snapchat' && !this.value.includes('snapchat.com')) {
+                    this.value = 'https://snapchat.com/add/' + this.value;
+                } else if (platform === 'twitter' && !this.value.includes('x.com') && !this.value.includes('twitter.com')) {
+                    this.value = 'https://x.com/' + this.value;
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

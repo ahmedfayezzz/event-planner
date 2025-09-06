@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}الجلسات - ثلوثية الأعمال{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Page Header -->
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h1 class="fw-bold mb-3">جلسات ثلوثية الأعمال</h1>
+            <p class="lead text-muted">
+                اكتشف جميع الجلسات المتاحة وسجل في التي تناسب اهتماماتك
+            </p>
+        </div>
+    </div>
+
+    <!-- Sessions Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="filter-tabs">
+                <ul class="nav nav-pills justify-content-center" id="sessionTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="all-tab" data-bs-toggle="pill" data-bs-target="#all" type="button" role="tab">
+                            <i class="fas fa-calendar me-2"></i>
+                            جميع الجلسات
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="upcoming-tab" data-bs-toggle="pill" data-bs-target="#upcoming" type="button" role="tab">
+                            <i class="fas fa-clock me-2"></i>
+                            القادمة
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="open-tab" data-bs-toggle="pill" data-bs-target="#open" type="button" role="tab">
+                            <i class="fas fa-unlock me-2"></i>
+                            مفتوحة للتسجيل
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="completed-tab" data-bs-toggle="pill" data-bs-target="#completed" type="button" role="tab">
+                            <i class="fas fa-check me-2"></i>
+                            مكتملة
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sessions Content -->
+    <div class="tab-content" id="sessionTabsContent">
+        <div class="tab-pane fade show active" id="all" role="tabpanel">
+            <div class="row g-4">
+                {% for session in sessions %}
+                <div class="col-lg-6">
+                    <div class="session-card bg-white rounded-3 shadow-sm border h-100">
+                        <div class="card-body p-4">
+                            <!-- Session Header -->
+                            <div class="session-header d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <span class="badge bg-primary mb-2">التجمع رقم {{ session.session_number }}</span>
+                                    <h5 class="card-title mb-2">{{ session.title }}</h5>
+                                    {% if session.description %}
+                                    <p class="text-muted small mb-0">{{ session.description[:100] }}{% if session.description|length > 100 %}...{% endif %}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="session-status">
+                                    {% if session.status == 'open' %}
+                                    <span class="badge bg-success">مفتوحة</span>
+                                    {% elif session.status == 'closed' %}
+                                    <span class="badge bg-secondary">مغلقة</span>
+                                    {% elif session.status == 'completed' %}
+                                    <span class="badge bg-info">مكتملة</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Session Details -->
+                            <div class="session-details mb-3">
+                                <div class="detail-row d-flex align-items-center mb-2">
+                                    <i class="fas fa-calendar-alt text-primary me-3"></i>
+                                    <div>
+                                        <strong>{{ session.date.strftime('%A') }}</strong>
+                                        <span class="text-muted">{{ session.date.strftime('%Y-%m-%d') }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-row d-flex align-items-center mb-2">
+                                    <i class="fas fa-clock text-primary me-3"></i>
+                                    <span>{{ session.date.strftime('%H:%M') }}</span>
+                                </div>
+                                
+                                {% if session.guest_name %}
+                                <div class="detail-row d-flex align-items-center mb-2">
+                                    <i class="fas fa-user-tie text-primary me-3"></i>
+                                    <div>
+                                        <span>الضيف: <strong>{{ session.guest_name }}</strong></span>
+                                        {% if session.guest_profile %}
+                                        <a href="{{ session.guest_profile }}" target="_blank" class="text-decoration-none ms-2">
+                                            <i class="fas fa-external-link-alt small"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if session.location %}
+                                <div class="detail-row d-flex align-items-center mb-2">
+                                    <i class="fas fa-map-marker-alt text-primary me-3"></i>
+                                    <span>{{ session.location }}</span>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="detail-row d-flex align-items-center">
+                                    <i class="fas fa-users text-primary me-3"></i>
+                                    <div class="flex-grow-1">
+                                        <span>{{ session.get_registration_count() }} / {{ session.max_participants }} مشارك</span>
+                                        <div class="progress mt-1" style="height: 4px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                style="width: {{ (session.get_registration_count() / session.max_participants * 100) if session.max_participants > 0 else 0 }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Session Actions -->
+                            <div class="session-actions mt-auto">
+                                {% if session.can_register() %}
+                                <a href="{{ url_for('register', session_id=session.id) }}" class="btn btn-primary w-100">
+                                    <i class="fas fa-user-plus me-2"></i>
+                                    سجل الآن
+                                </a>
+                                {% elif session.is_full() %}
+                                <button class="btn btn-secondary w-100" disabled>
+                                    <i class="fas fa-users me-2"></i>
+                                    مكتمل
+                                </button>
+                                {% elif session.status == 'completed' %}
+                                <button class="btn btn-outline-info w-100" disabled>
+                                    <i class="fas fa-check me-2"></i>
+                                    انتهت الجلسة
+                                </button>
+                                {% else %}
+                                <button class="btn btn-outline-secondary w-100" disabled>
+                                    <i class="fas fa-lock me-2"></i>
+                                    مغلقة
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if not sessions %}
+            <div class="text-center py-5">
+                <i class="fas fa-calendar-times text-muted fa-4x mb-3"></i>
+                <h4 class="text-muted">لا توجد جلسات متاحة</h4>
+                <p class="text-muted">ترقبوا الإعلان عن الجلسات القادمة قريباً</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Upcoming Sessions Tab -->
+        <div class="tab-pane fade" id="upcoming" role="tabpanel">
+            <div class="row g-4">
+                {% for session in sessions %}
+                {% if session.date > moment().utcnow() %}
+                <div class="col-lg-6">
+                    <!-- Same session card structure -->
+                    <div class="session-card bg-white rounded-3 shadow-sm border h-100">
+                        <!-- Card content -->
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Open Sessions Tab -->
+        <div class="tab-pane fade" id="open" role="tabpanel">
+            <div class="row g-4">
+                {% for session in sessions %}
+                {% if session.status == 'open' %}
+                <div class="col-lg-6">
+                    <!-- Same session card structure -->
+                    <div class="session-card bg-white rounded-3 shadow-sm border h-100">
+                        <!-- Card content -->
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Completed Sessions Tab -->
+        <div class="tab-pane fade" id="completed" role="tabpanel">
+            <div class="row g-4">
+                {% for session in sessions %}
+                {% if session.status == 'completed' %}
+                <div class="col-lg-6">
+                    <!-- Same session card structure -->
+                    <div class="session-card bg-white rounded-3 shadow-sm border h-100">
+                        <!-- Card content -->
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="cta-section bg-primary text-white p-5 rounded-3 text-center">
+                <h3 class="fw-bold mb-3">لم تجد الجلسة المناسبة؟</h3>
+                <p class="mb-4">سجل في منصتنا لتكون أول من يعلم بالجلسات الجديدة</p>
+                <a href="{{ url_for('register') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-bell me-2"></i>
+                    سجل للحصول على التحديثات
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filter sessions based on active tab
+    const tabs = document.querySelectorAll('#sessionTabs button');
+    const now = new Date();
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const target = this.getAttribute('data-bs-target');
+            filterSessions(target);
+        });
+    });
+    
+    function filterSessions(filter) {
+        const sessionCards = document.querySelectorAll('.session-card');
+        
+        sessionCards.forEach(card => {
+            const cardParent = card.closest('.col-lg-6');
+            const sessionDate = new Date(card.querySelector('[data-session-date]')?.dataset.sessionDate);
+            const sessionStatus = card.querySelector('.session-status .badge')?.textContent.trim();
+            
+            let show = true;
+            
+            switch(filter) {
+                case '#upcoming':
+                    show = sessionDate > now;
+                    break;
+                case '#open':
+                    show = sessionStatus === 'مفتوحة';
+                    break;
+                case '#completed':
+                    show = sessionStatus === 'مكتملة';
+                    break;
+                default:
+                    show = true;
+            }
+            
+            if (cardParent) {
+                cardParent.style.display = show ? 'block' : 'none';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

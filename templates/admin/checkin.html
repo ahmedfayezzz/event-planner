@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+
+{% block title %}تسجيل الحضور - {{ session.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Session Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-2">{{ session.title }}</h2>
+                            <p class="mb-1">التجمع رقم {{ session.session_number }}</p>
+                            <p class="mb-0">{{ session.date.strftime('%A, %Y-%m-%d في %H:%M') }}</p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <div class="session-stats">
+                                <h4 class="mb-1">{{ session.get_registration_count() }}</h4>
+                                <p class="mb-0">مشارك مسجل</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Scanner Section -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-qrcode me-2"></i>
+                        ماسح QR Code
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div id="qr-scanner" style="width: 100%; max-width: 400px; margin: 0 auto;">
+                        <video id="qr-video" style="width: 100%; border-radius: 8px;"></video>
+                    </div>
+                    <div class="mt-3">
+                        <button id="start-scan" class="btn btn-success me-2">
+                            <i class="fas fa-play me-2"></i>
+                            بدء المسح
+                        </button>
+                        <button id="stop-scan" class="btn btn-secondary" disabled>
+                            <i class="fas fa-stop me-2"></i>
+                            إيقاف المسح
+                        </button>
+                    </div>
+                    <div id="scan-result" class="mt-3 alert alert-info" style="display: none;">
+                        <h6>نتيجة المسح:</h6>
+                        <p id="scan-text"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        إحصائيات سريعة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="stat-item">
+                                <h4 class="text-primary" id="total-registered">{{ registrations|length }}</h4>
+                                <small class="text-muted">مسجل</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-item">
+                                <h4 class="text-success" id="total-attended">0</h4>
+                                <small class="text-muted">حاضر</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-item">
+                                <h4 class="text-warning" id="total-pending">{{ registrations|length }}</h4>
+                                <small class="text-muted">في الانتظار</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="progress">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 0%" id="attendance-progress">
+                                0%
+                            </div>
+                        </div>
+                        <small class="text-muted">معدل الحضور</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Participants List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        قائمة المشاركين
+                    </h5>
+                    <div class="header-actions">
+                        <button class="btn btn-sm btn-outline-primary me-2" onclick="exportAttendance()">
+                            <i class="fas fa-download me-1"></i>
+                            تصدير
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="markAllPresent()">
+                            <i class="fas fa-check-double me-1"></i>
+                            تسجيل الكل
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="participants-table">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>المشارك</th>
+                                    <th>النشاط</th>
+                                    <th>الحالة</th>
+                                    <th>وقت التسجيل</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for registration in registrations %}
+                                <tr id="participant-{{ registration.user.id }}" data-user-id="{{ registration.user.id }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                {{ registration.user.name[0] }}
+                                            </div>
+                                            <div>
+                                                <strong>{{ registration.user.name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ registration.user.email }}</small>
+                                                {% if registration.user.phone %}
+                                                <br>
+                                                <small class="text-muted">{{ registration.user.phone }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if registration.user.activity_type %}
+                                        <span class="badge bg-info">{{ registration.user.activity_type }}</span>
+                                        {% endif %}
+                                        {% if registration.user.company_name %}
+                                        <br><small class="text-muted">{{ registration.user.company_name }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="attendance-status badge bg-warning">
+                                            <i class="fas fa-clock me-1"></i>
+                                            في الانتظار
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="check-in-time text-muted">--</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-success check-in-btn" 
+                                                    onclick="markAttendance({{ registration.user.id }}, true)">
+                                                <i class="fas fa-check me-1"></i>
+                                                حاضر
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" 
+                                                    onclick="viewProfile({{ registration.user.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Confirmation Modal -->
+<div class="modal fade" id="attendanceModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تأكيد الحضور</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <div id="attendee-info">
+                        <!-- Attendee information will be populated here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-success" id="confirmAttendance">
+                    <i class="fas fa-check me-2"></i>
+                    تأكيد الحضور
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/qr-scanner.js') }}"></script>
+<script>
+let currentUserId = null;
+let scanner = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeQRScanner();
+    loadAttendanceData();
+});
+
+function initializeQRScanner() {
+    const startBtn = document.getElementById('start-scan');
+    const stopBtn = document.getElementById('stop-scan');
+    const video = document.getElementById('qr-video');
+    
+    startBtn.addEventListener('click', function() {
+        startQRScanner(video);
+        this.disabled = true;
+        stopBtn.disabled = false;
+    });
+    
+    stopBtn.addEventListener('click', function() {
+        stopQRScanner();
+        this.disabled = true;
+        startBtn.disabled = false;
+    });
+}
+
+function startQRScanner(video) {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(function(stream) {
+            video.srcObject = stream;
+            video.play();
+            
+            // Initialize QR code scanning
+            scanner = new QRScanner(video, function(result) {
+                handleQRScanResult(result);
+            });
+            
+            scanner.start();
+        })
+        .catch(function(error) {
+            console.error('Error accessing camera:', error);
+            alert('فشل في الوصول للكاميرا. يرجى التأكد من منح الإذن.');
+        });
+}
+
+function stopQRScanner() {
+    if (scanner) {
+        scanner.stop();
+        scanner = null;
+    }
+    
+    const video = document.getElementById('qr-video');
+    if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+    }
+}
+
+function handleQRScanResult(result) {
+    const scanResult = document.getElementById('scan-result');
+    const scanText = document.getElementById('scan-text');
+    
+    scanResult.style.display = 'block';
+    scanText.textContent = result;
+    
+    // Try to extract user ID from QR code
+    const userId = extractUserIdFromQR(result);
+    if (userId) {
+        markAttendance(userId, true, true);
+    }
+}
+
+function extractUserIdFromQR(qrText) {
+    // Extract user ID from QR code format
+    // This depends on your QR code format
+    const match = qrText.match(/user[_-]?(\d+)/i);
+    return match ? parseInt(match[1]) : null;
+}
+
+function markAttendance(userId, attended, qrVerified = false) {
+    currentUserId = userId;
+    
+    // Show confirmation modal
+    const modal = new bootstrap.Modal(document.getElementById('attendanceModal'));
+    const attendeeInfo = document.getElementById('attendee-info');
+    
+    // Get participant info
+    const participantRow = document.getElementById(`participant-${userId}`);
+    const name = participantRow.querySelector('strong').textContent;
+    const email = participantRow.querySelector('small').textContent;
+    
+    attendeeInfo.innerHTML = `
+        <div class="avatar-lg bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3">
+            ${name[0]}
+        </div>
+        <h5>${name}</h5>
+        <p class="text-muted">${email}</p>
+        ${qrVerified ? '<p class="text-success"><i class="fas fa-qrcode me-1"></i>تم التحقق بواسطة QR Code</p>' : ''}
+    `;
+    
+    modal.show();
+    
+    // Handle confirmation
+    document.getElementById('confirmAttendance').onclick = function() {
+        submitAttendance(userId, attended, qrVerified);
+        modal.hide();
+    };
+}
+
+function submitAttendance(userId, attended, qrVerified = false) {
+    fetch(`/admin/checkin/{{ session.id }}/${userId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            attended: attended,
+            qr_verified: qrVerified
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateParticipantStatus(userId, attended);
+            updateStats();
+            
+            // Show success message
+            showNotification('تم تسجيل الحضور بنجاح', 'success');
+        } else {
+            showNotification('فشل في تسجيل الحضور', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('حدث خطأ في تسجيل الحضور', 'error');
+    });
+}
+
+function updateParticipantStatus(userId, attended) {
+    const row = document.getElementById(`participant-${userId}`);
+    const statusElement = row.querySelector('.attendance-status');
+    const timeElement = row.querySelector('.check-in-time');
+    const actionBtn = row.querySelector('.check-in-btn');
+    
+    if (attended) {
+        statusElement.className = 'attendance-status badge bg-success';
+        statusElement.innerHTML = '<i class="fas fa-check me-1"></i>حاضر';
+        
+        const now = new Date();
+        timeElement.textContent = now.toLocaleTimeString('ar-SA');
+        
+        actionBtn.className = 'btn btn-sm btn-outline-success';
+        actionBtn.innerHTML = '<i class="fas fa-check me-1"></i>حاضر';
+        actionBtn.disabled = true;
+    }
+}
+
+function updateStats() {
+    const totalRegistered = document.querySelectorAll('#participants-table tbody tr').length;
+    const totalAttended = document.querySelectorAll('.attendance-status.bg-success').length;
+    const totalPending = totalRegistered - totalAttended;
+    const attendanceRate = Math.round((totalAttended / totalRegistered) * 100);
+    
+    document.getElementById('total-attended').textContent = totalAttended;
+    document.getElementById('total-pending').textContent = totalPending;
+    
+    const progressBar = document.getElementById('attendance-progress');
+    progressBar.style.width = attendanceRate + '%';
+    progressBar.textContent = attendanceRate + '%';
+}
+
+function loadAttendanceData() {
+    // Load existing attendance data
+    fetch(`/api/session/{{ session.id }}/attendance`)
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(attendance => {
+                if (attendance.attended) {
+                    updateParticipantStatus(attendance.user_id, true);
+                }
+            });
+            updateStats();
+        })
+        .catch(error => {
+            console.error('Error loading attendance data:', error);
+        });
+}
+
+function markAllPresent() {
+    if (confirm('هل تريد تسجيل حضور جميع المشاركين؟')) {
+        const pendingRows = document.querySelectorAll('#participants-table tbody tr');
+        pendingRows.forEach(row => {
+            const userId = row.dataset.userId;
+            const statusElement = row.querySelector('.attendance-status');
+            
+            if (!statusElement.classList.contains('bg-success')) {
+                submitAttendance(parseInt(userId), true);
+            }
+        });
+    }
+}
+
+function exportAttendance() {
+    window.open(`/admin/export/attendance?session_id={{ session.id }}`, '_blank');
+}
+
+function viewProfile(userId) {
+    window.open(`/u/${userId}`, '_blank');
+}
+
+function showNotification(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 1060; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

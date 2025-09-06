@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}الصفحة غير موجودة - ثلوثية الأعمال{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 text-center">
+            <!-- Error Illustration -->
+            <div class="error-illustration mb-4">
+                <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="80" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
+                    <text x="100" y="120" text-anchor="middle" font-size="48" font-weight="bold" fill="#6c757d">404</text>
+                </svg>
+            </div>
+            
+            <!-- Error Message -->
+            <h1 class="display-4 fw-bold text-muted mb-3">الصفحة غير موجودة</h1>
+            <p class="lead text-muted mb-4">
+                عذراً، الصفحة التي تبحث عنها غير موجودة أو تم نقلها إلى مكان آخر.
+            </p>
+            
+            <!-- Action Buttons -->
+            <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-home me-2"></i>
+                    العودة للرئيسية
+                </a>
+                <a href="{{ url_for('sessions') }}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-calendar me-2"></i>
+                    تصفح الجلسات
+                </a>
+            </div>
+            
+            <!-- Quick Links -->
+            <div class="mt-5">
+                <h5 class="mb-3">ربما تبحث عن:</h5>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <a href="{{ url_for('register') }}" class="text-decoration-none">
+                            <div class="card h-100 border-primary">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-user-plus text-primary fa-2x mb-2"></i>
+                                    <h6>التسجيل</h6>
+                                    <small class="text-muted">انضم إلى مجتمعنا</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-sm-6">
+                        <a href="{{ url_for('sessions') }}" class="text-decoration-none">
+                            <div class="card h-100 border-success">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calendar-week text-success fa-2x mb-2"></i>
+                                    <h6>الجلسات</h6>
+                                    <small class="text-muted">الجلسات القادمة</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Track 404 errors for analytics
+if (typeof gtag !== 'undefined') {
+    gtag('event', 'page_view', {
+        page_title: '404 - Page Not Found',
+        page_location: window.location.href
+    });
+}
+
+// Auto-redirect after 10 seconds (optional)
+setTimeout(function() {
+    const autoRedirect = confirm('هل تريد العودة إلى الصفحة الرئيسية؟');
+    if (autoRedirect) {
+        window.location.href = "{{ url_for('index') }}";
+    }
+}, 10000);
+</script>
+{% endblock %}

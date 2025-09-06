@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}ثلوثية الأعمال - الرئيسية{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section bg-gradient text-white py-5">
+    <div class="container">
+        <div class="row align-items-center min-vh-50">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">
+                    مرحباً بك في<br>
+                    <span class="text-primary">ثلوثية الأعمال</span>
+                </h1>
+                <p class="lead mb-4">
+                    منصة أسبوعية تجمع المؤثرين وأصحاب المشاريع كل يوم ثلاثاء بهدف بناء علاقات وفرص عمل وتعاون مثمر.
+                </p>
+                <div class="d-flex gap-3">
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>
+                        سجل الآن
+                    </a>
+                    <a href="{{ url_for('sessions') }}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-calendar me-2"></i>
+                        الجلسات القادمة
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-6 text-center">
+                {% if next_session %}
+                <!-- Countdown Timer -->
+                <div class="countdown-card p-4 bg-white text-dark rounded-3 shadow-lg">
+                    <h4 class="mb-3">الجلسة القادمة</h4>
+                    <h5 class="text-primary mb-3">{{ next_session.title }}</h5>
+                    <p class="mb-3">التجمع رقم {{ next_session.session_number }}</p>
+                    
+                    <div id="countdown-timer" class="countdown-display" data-session-id="{{ next_session.id }}">
+                        <div class="row text-center">
+                            <div class="col-3">
+                                <div class="countdown-item">
+                                    <span class="countdown-number" id="days">00</span>
+                                    <span class="countdown-label">يوم</span>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="countdown-item">
+                                    <span class="countdown-number" id="hours">00</span>
+                                    <span class="countdown-label">ساعة</span>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="countdown-item">
+                                    <span class="countdown-number" id="minutes">00</span>
+                                    <span class="countdown-label">دقيقة</span>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="countdown-item">
+                                    <span class="countdown-number" id="seconds">00</span>
+                                    <span class="countdown-label">ثانية</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('register', session_id=next_session.id) }}" class="btn btn-success">
+                            <i class="fas fa-calendar-plus me-2"></i>
+                            سجل في هذه الجلسة
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <h5>لا توجد جلسات مجدولة حالياً</h5>
+                    <p>ترقبوا الإعلان عن الجلسات القادمة قريباً</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section py-5">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-12">
+                <h2 class="fw-bold mb-3">لماذا ثلوثية الأعمال؟</h2>
+                <p class="lead text-muted">منصة احترافية لبناء شبكة علاقات قوية في عالم الأعمال والتأثير</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card text-center p-4 h-100">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-network-wired text-primary fa-3x"></i>
+                    </div>
+                    <h4>شبكة علاقات قوية</h4>
+                    <p class="text-muted">تواصل مع المؤثرين وأصحاب الأعمال الرائدين في المملكة</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card text-center p-4 h-100">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-calendar-week text-primary fa-3x"></i>
+                    </div>
+                    <h4>لقاءات أسبوعية</h4>
+                    <p class="text-muted">كل يوم ثلاثاء، لقاء جديد مع ضيوف مميزين ومواضيع ملهمة</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card text-center p-4 h-100">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-chart-line text-primary fa-3x"></i>
+                    </div>
+                    <h4>فرص نمو حقيقية</h4>
+                    <p class="text-muted">اكتشف شراكات جديدة وفرص استثمار مع نخبة من رجال الأعمال</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Upcoming Sessions -->
+{% if upcoming_sessions %}
+<section class="sessions-section py-5 bg-light">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12 text-center">
+                <h2 class="fw-bold mb-3">الجلسات القادمة</h2>
+                <p class="text-muted">لا تفوت الفرصة للمشاركة في هذه الجلسات المميزة</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            {% for session in upcoming_sessions %}
+            <div class="col-md-4">
+                <div class="session-card bg-white rounded-3 shadow-sm p-4 h-100">
+                    <div class="session-header mb-3">
+                        <span class="badge bg-primary mb-2">التجمع رقم {{ session.session_number }}</span>
+                        <h5 class="card-title">{{ session.title }}</h5>
+                    </div>
+                    
+                    <div class="session-details mb-3">
+                        <div class="detail-item mb-2">
+                            <i class="fas fa-calendar-alt text-muted me-2"></i>
+                            <span>{{ session.date.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                        
+                        <div class="detail-item mb-2">
+                            <i class="fas fa-clock text-muted me-2"></i>
+                            <span>{{ session.date.strftime('%H:%M') }}</span>
+                        </div>
+                        
+                        {% if session.guest_name %}
+                        <div class="detail-item mb-2">
+                            <i class="fas fa-user-tie text-muted me-2"></i>
+                            <span>الضيف: {{ session.guest_name }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="detail-item mb-2">
+                            <i class="fas fa-users text-muted me-2"></i>
+                            <span>{{ session.get_registration_count() }} / {{ session.max_participants }} مشارك</span>
+                        </div>
+                    </div>
+                    
+                    <div class="session-actions">
+                        {% if session.can_register() %}
+                        <a href="{{ url_for('register', session_id=session.id) }}" class="btn btn-primary w-100">
+                            <i class="fas fa-plus me-2"></i>
+                            سجل الآن
+                        </a>
+                        {% elif session.is_full() %}
+                        <button class="btn btn-secondary w-100" disabled>
+                            <i class="fas fa-users me-2"></i>
+                            مكتمل
+                        </button>
+                        {% else %}
+                        <button class="btn btn-outline-secondary w-100" disabled>
+                            <i class="fas fa-lock me-2"></i>
+                            مغلق
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{{ url_for('sessions') }}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-calendar me-2"></i>
+                عرض جميع الجلسات
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- CTA Section -->
+<section class="cta-section py-5 bg-primary text-white">
+    <div class="container text-center">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h2 class="fw-bold mb-3">ابدأ رحلتك مع ثلوثية الأعمال</h2>
+                <p class="lead mb-4">
+                    انضم إلى مجتمع من المؤثرين وأصحاب المشاريع الطموحين واكتشف فرص لا محدودة للنمو والتطوير
+                </p>
+                <a href="{{ url_for('register') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-rocket me-2"></i>
+                    سجل مجاناً الآن
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize countdown timer
+    const countdownElement = document.getElementById('countdown-timer');
+    if (countdownElement) {
+        const sessionId = countdownElement.dataset.sessionId;
+        startCountdown(sessionId);
+    }
+});
+
+function startCountdown(sessionId) {
+    function updateCountdown() {
+        fetch(`/api/countdown/${sessionId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.expired) {
+                    document.getElementById('countdown-timer').innerHTML = '<p class="text-muted">انتهت الجلسة</p>';
+                    return;
+                }
+                
+                document.getElementById('days').textContent = String(data.days).padStart(2, '0');
+                document.getElementById('hours').textContent = String(data.hours).padStart(2, '0');
+                document.getElementById('minutes').textContent = String(data.minutes).padStart(2, '0');
+                document.getElementById('seconds').textContent = String(data.seconds).padStart(2, '0');
+            })
+            .catch(error => {
+                console.error('Error updating countdown:', error);
+            });
+    }
+    
+    // Update immediately and then every second
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+}
+</script>
+{% endblock %}
