@@ -41,6 +41,7 @@ def register():
         company_name = request.form.get('company_name')
         position = request.form.get('position')
         activity_type = request.form.get('activity_type')
+        gender = request.form.get('gender')
         goal = request.form.get('goal')
         session_id = request.form.get('session_id')
         
@@ -77,6 +78,7 @@ def register():
                 company_name=company_name,
                 position=position,
                 activity_type=activity_type,
+                gender=gender,
                 goal=goal,
                 ai_description=ai_description
             )
@@ -268,6 +270,87 @@ def session_qr(session_id):
     session_obj = Session.query.get_or_404(session_id)
     qr_code = generate_qr_code(f"{request.url_root}admin/checkin/{session_id}")
     return jsonify({'qr_code': qr_code})
+
+@app.route('/admin/session/<int:session_id>/attendees')
+@login_required
+def session_attendees(session_id):
+    session_obj = Session.query.get_or_404(session_id)
+    registrations = Registration.query.filter_by(session_id=session_id).join(User).all()
+    attendances = Attendance.query.filter_by(session_id=session_id).all()
+    
+    # Create attendance lookup
+    attendance_dict = {a.user_id: a.attended for a in attendances}
+    
+    return render_template('admin/session_attendees.html', 
+                         session=session_obj, 
+                         registrations=registrations,
+                         attendance_dict=attendance_dict)
+
+@app.route('/admin/registration/<int:registration_id>/approve', methods=['POST'])
+@login_required
+def approve_registration(registration_id):
+    try:
+        registration = Registration.query.get_or_404(registration_id)
+        registration.is_approved = True
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        app.logger.error(f"Registration approval failed: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/admin/attendance', methods=['POST'])
+@login_required  
+def mark_attendance():
+    try:
+        data = request.json
+        session_id = data.get('session_id')
+        user_id = data.get('user_id')
+        attended = data.get('attended', True)
+        
+        # Check if attendance record exists
+        attendance = Attendance.query.filter_by(
+            session_id=session_id,
+            user_id=user_id
+        ).first()
+        
+        if attendance:
+            attendance.attended = attended
+            if attended:
+                attendance.check_in_time = datetime.utcnow()
+        else:
+            attendance = Attendance(
+                session_id=session_id,
+                user_id=user_id,
+                attended=attended,
+                check_in_time=datetime.utcnow() if attended else None
+            )
+            db.session.add(attendance)
+        
+        db.session.commit()
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        app.logger.error(f"Attendance marking failed: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/admin/session/<int:session_id>/approve-all', methods=['POST'])
+@login_required
+def approve_all_registrations(session_id):
+    try:
+        registrations = Registration.query.filter_by(
+            session_id=session_id,
+            is_approved=False
+        ).all()
+        
+        for registration in registrations:
+            registration.is_approved = True
+        
+        db.session.commit()
+        return jsonify({'success': True, 'count': len(registrations)})
+        
+    except Exception as e:
+        app.logger.error(f"Bulk approval failed: {e}")
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/admin/checkin/<int:session_id>')
 @login_required

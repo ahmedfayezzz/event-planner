@@ -15,6 +15,7 @@ class User(db.Model):
     company_name = db.Column(db.String(100))
     position = db.Column(db.String(100))
     activity_type = db.Column(db.String(100))
+    gender = db.Column(db.String(10))
     goal = db.Column(db.Text)
     ai_description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

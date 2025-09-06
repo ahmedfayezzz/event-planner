@@ -47,9 +47,19 @@
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="phone" class="form-label required">رقم الجوال</label>
-                            <input type="tel" class="form-control" id="phone" name="phone" placeholder="+966 5X XXX XXXX" required>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label required">رقم الجوال</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="+966 5X XXX XXXX" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="gender" class="form-label">الجنس</label>
+                                <select class="form-select" id="gender" name="gender">
+                                    <option value="">اختر الجنس</option>
+                                    <option value="رجال">رجال</option>
+                                    <option value="سيدات">سيدات</option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- Social Media -->
@@ -107,6 +117,7 @@
                                     <option value="كاتب">كاتب / كاتبة محتوى</option>
                                     <option value="مستثمر">مستثمر</option>
                                     <option value="استشاري">استشاري</option>
+                                    <option value="موظف">موظف</option>
                                     <option value="طالب">طالب / طالبة</option>
                                     <option value="أخرى">أخرى</option>
                                 </select>

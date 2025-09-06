@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}المسجلون في {{ session.title }} - ثلوثية الأعمال{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="fw-bold mb-2">المسجلون في الجلسة</h1>
+                    <p class="text-muted mb-0">{{ session.title }} - {{ session.date.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-right me-2"></i>
+                        العودة للوحة التحكم
+                    </a>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#qrModal">
+                        <i class="fas fa-qrcode me-2"></i>
+                        QR Code للحضور
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card bg-primary text-white p-3 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="fw-bold mb-1">{{ registrations|length }}</h4>
+                        <p class="mb-0 small">إجمالي المسجلين</p>
+                    </div>
+                    <i class="fas fa-users fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card bg-success text-white p-3 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        {% set attended_count = registrations|selectattr('user_id', 'in', attendance_dict)|list|length %}
+                        <h4 class="fw-bold mb-1">{{ attended_count }}</h4>
+                        <p class="mb-0 small">حضروا فعلياً</p>
+                    </div>
+                    <i class="fas fa-user-check fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card bg-warning text-white p-3 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        {% set approved_count = registrations|selectattr('is_approved', 'equalto', true)|list|length %}
+                        <h4 class="fw-bold mb-1">{{ approved_count }}</h4>
+                        <p class="mb-0 small">موافق عليهم</p>
+                    </div>
+                    <i class="fas fa-user-check fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card bg-info text-white p-3 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        {% set attendance_rate = ((attended_count / registrations|length * 100) if registrations else 0) | round(1) %}
+                        <h4 class="fw-bold mb-1">{{ attendance_rate }}%</h4>
+                        <p class="mb-0 small">معدل الحضور</p>
+                    </div>
+                    <i class="fas fa-percentage fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendees List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        قائمة المسجلين
+                    </h5>
+                    <div>
+                        <button class="btn btn-sm btn-success me-2" onclick="approveAll()">
+                            <i class="fas fa-check-double me-1"></i>
+                            موافقة على الجميع
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="exportAttendees()">
+                            <i class="fas fa-download me-1"></i>
+                            تصدير القائمة
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if registrations %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th width="5%">#</th>
+                                    <th>المشارك</th>
+                                    <th>الشركة/النشاط</th>
+                                    <th>تاريخ التسجيل</th>
+                                    <th>حالة الموافقة</th>
+                                    <th>الحضور</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for registration in registrations %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                {{ registration.user.name[0] }}
+                                            </div>
+                                            <div>
+                                                <strong>{{ registration.user.name }}</strong>
+                                                <br><small class="text-muted">{{ registration.user.email }}</small>
+                                                {% if registration.user.phone %}
+                                                <br><small class="text-muted">{{ registration.user.phone }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if registration.user.company_name %}
+                                        <strong>{{ registration.user.company_name }}</strong><br>
+                                        {% endif %}
+                                        {% if registration.user.position %}
+                                        <small class="text-muted">{{ registration.user.position }}</small><br>
+                                        {% endif %}
+                                        {% if registration.user.activity_type %}
+                                        <span class="badge bg-light text-dark">{{ registration.user.activity_type }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ registration.registered_at.strftime('%Y-%m-%d') }}</small><br>
+                                        <small class="text-muted">{{ registration.registered_at.strftime('%H:%M') }}</small>
+                                    </td>
+                                    <td>
+                                        {% if registration.is_approved %}
+                                        <span class="badge bg-success">موافق عليه</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">في الانتظار</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if registration.user.id in attendance_dict %}
+                                            {% if attendance_dict[registration.user.id] %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>حضر
+                                            </span>
+                                            {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times me-1"></i>غاب
+                                            </span>
+                                            {% endif %}
+                                        {% else %}
+                                        <span class="badge bg-secondary">لم يسجل</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            {% if not registration.is_approved %}
+                                            <button class="btn btn-outline-success" onclick="approveRegistration({{ registration.id }})">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if registration.user.id not in attendance_dict %}
+                                            <button class="btn btn-outline-primary" onclick="markAttendance({{ session.id }}, {{ registration.user.id }}, true)">
+                                                <i class="fas fa-user-plus"></i>
+                                            </button>
+                                            {% elif not attendance_dict[registration.user.id] %}
+                                            <button class="btn btn-outline-primary" onclick="markAttendance({{ session.id }}, {{ registration.user.id }}, true)">
+                                                <i class="fas fa-user-check"></i>
+                                            </button>
+                                            {% endif %}
+                                            <button class="btn btn-outline-info" onclick="viewProfile({{ registration.user.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-times text-muted fa-4x mb-3"></i>
+                        <h4 class="text-muted">لا توجد تسجيلات</h4>
+                        <p class="text-muted">لم يسجل أي مشارك في هذه الجلسة بعد</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QR Code Modal -->
+<div class="modal fade" id="qrModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">QR Code للحضور</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-3">اسمح للمشاركين بمسح هذا الرمز لتسجيل الحضور</p>
+                <div id="qrCodeContainer">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                </div>
+                <p class="small text-muted mt-3">الرمز خاص بجلسة: {{ session.title }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function approveRegistration(registrationId) {
+    fetch('/admin/registration/' + registrationId + '/approve', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('حدث خطأ في الموافقة');
+        }
+    });
+}
+
+function markAttendance(sessionId, userId, attended) {
+    fetch('/admin/attendance', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            session_id: sessionId,
+            user_id: userId,
+            attended: attended
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('حدث خطأ في تسجيل الحضور');
+        }
+    });
+}
+
+function approveAll() {
+    if (confirm('هل أنت متأكد من الموافقة على جميع التسجيلات؟')) {
+        fetch('/admin/session/{{ session.id }}/approve-all', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('حدث خطأ في الموافقة على التسجيلات');
+            }
+        });
+    }
+}
+
+function exportAttendees() {
+    window.open('/admin/session/{{ session.id }}/export');
+}
+
+function viewProfile(userId) {
+    // يمكن إضافة modal لعرض تفاصيل المشارك
+    window.open('/admin/user/' + userId);
+}
+
+// Load QR Code when modal opens
+document.getElementById('qrModal').addEventListener('shown.bs.modal', function () {
+    fetch('/admin/session/{{ session.id }}/qr')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('qrCodeContainer').innerHTML = 
+                '<img src="data:image/png;base64,' + data.qr_code + '" alt="QR Code" class="img-fluid">';
+        })
+        .catch(error => {
+            document.getElementById('qrCodeContainer').innerHTML = 
+                '<p class="text-danger">خطأ في تحميل الرمز</p>';
+        });
+});
+</script>
+{% endblock %}

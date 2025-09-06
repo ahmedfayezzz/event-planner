@@ -202,6 +202,9 @@
                                     <i class="fas fa-ellipsis-v"></i>
                                 </button>
                                 <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('session_attendees', session_id=session.id) }}">
+                                        <i class="fas fa-users me-2"></i>قائمة المسجلين
+                                    </a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('admin_checkin', session_id=session.id) }}">
                                         <i class="fas fa-qrcode me-2"></i>تسجيل الحضور
                                     </a></li>
