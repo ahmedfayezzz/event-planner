@@ -43,6 +43,7 @@ class Session(db.Model):
     max_participants = db.Column(db.Integer, default=50)
     status = db.Column(db.String(20), default='open')  # open, closed, completed
     requires_approval = db.Column(db.Boolean, default=False)
+    show_participant_count = db.Column(db.Boolean, default=True)
     location = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     

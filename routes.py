@@ -143,6 +143,62 @@ def profile(username):
     
     return render_template('profile.html', user=user, registrations=registrations)
 
+@app.route('/user/login', methods=['GET', 'POST'])
+def user_login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        
+        # Find user by email and phone (simple authentication)
+        user = User.query.filter_by(email=email).first()
+        
+        if user and user.phone.replace('+966', '').replace(' ', '')[-9:] == phone.replace(' ', ''):
+            flask_session['user_id'] = user.id
+            flash('تم تسجيل الدخول بنجاح!', 'success')
+            return redirect(url_for('user_dashboard'))
+        else:
+            flash('البيانات غير صحيحة. تأكد من البريد الإلكتروني ورقم الجوال.', 'error')
+    
+    return render_template('user_login.html')
+
+@app.route('/user/dashboard')
+def user_dashboard():
+    if 'user_id' not in flask_session:
+        flash('يجب تسجيل الدخول أولاً', 'error')
+        return redirect(url_for('user_login'))
+    
+    user = User.query.get_or_404(flask_session['user_id'])
+    return render_template('user_dashboard.html', user=user)
+
+@app.route('/user/logout')
+def user_logout():
+    flask_session.pop('user_id', None)
+    flash('تم تسجيل الخروج بنجاح', 'success')
+    return redirect(url_for('index'))
+
+@app.route('/my-qr/<int:session_id>')
+def my_qr_code(session_id):
+    if 'user_id' not in flask_session:
+        return jsonify({'error': 'غير مصرح'}), 401
+    
+    user_id = flask_session['user_id']
+    session_obj = Session.query.get_or_404(session_id)
+    
+    # Check if user is registered for this session
+    registration = Registration.query.filter_by(
+        user_id=user_id,
+        session_id=session_id,
+        is_approved=True
+    ).first()
+    
+    if not registration:
+        return jsonify({'error': 'غير مسجل في هذه الجلسة'}), 403
+    
+    # Generate QR code for this specific user and session
+    qr_data = f"user:{user_id},session:{session_id},reg:{registration.id}"
+    qr_code = generate_qr_code(qr_data)
+    return jsonify({'qr_code': qr_code})
+
 @app.route('/sessions')
 def sessions():
     all_sessions = Session.query.order_by(Session.date.desc()).all()

@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة العضو - ثلوثية الأعمال{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="fw-bold mb-2">مرحباً، {{ user.name }}</h1>
+                    <p class="text-muted mb-0">إليك نظرة عامة على تسجيلاتك وحضورك</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('user_logout') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-sign-out-alt me-2"></i>
+                        خروج
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="stat-card bg-primary text-white p-4 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="fw-bold mb-1">{{ user.registrations|length }}</h3>
+                        <p class="mb-0">جلسة سجلت فيها</p>
+                    </div>
+                    <i class="fas fa-calendar-check fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="stat-card bg-success text-white p-4 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="fw-bold mb-1">{{ user.get_attendance_count() }}</h3>
+                        <p class="mb-0">جلسة حضرتها</p>
+                    </div>
+                    <i class="fas fa-user-check fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="stat-card bg-info text-white p-4 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        {% set attendance_rate = ((user.get_attendance_count() / user.registrations|length * 100) if user.registrations else 0) | round(1) %}
+                        <h3 class="fw-bold mb-1">{{ attendance_rate }}%</h3>
+                        <p class="mb-0">معدل الحضور</p>
+                    </div>
+                    <i class="fas fa-percentage fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Profile Information -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user me-2"></i>
+                        معلوماتي الشخصية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="profile-info">
+                        <div class="info-item mb-3">
+                            <label class="fw-bold text-muted small">الاسم</label>
+                            <p class="mb-0">{{ user.name }}</p>
+                        </div>
+                        
+                        <div class="info-item mb-3">
+                            <label class="fw-bold text-muted small">البريد الإلكتروني</label>
+                            <p class="mb-0">{{ user.email }}</p>
+                        </div>
+                        
+                        <div class="info-item mb-3">
+                            <label class="fw-bold text-muted small">رقم الجوال</label>
+                            <p class="mb-0">{{ user.phone }}</p>
+                        </div>
+
+                        {% if user.gender %}
+                        <div class="info-item mb-3">
+                            <label class="fw-bold text-muted small">الجنس</label>
+                            <p class="mb-0">{{ user.gender }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if user.company_name %}
+                        <div class="info-item mb-3">
+                            <label class="fw-bold text-muted small">الشركة</label>
+                            <p class="mb-0">{{ user.company_name }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if user.position %}
+                        <div class="info-item mb-3">
+                            <label class="fw-bold text-muted small">المنصب</label>
+                            <p class="mb-0">{{ user.position }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if user.activity_type %}
+                        <div class="info-item mb-3">
+                            <label class="fw-bold text-muted small">نوع النشاط</label>
+                            <span class="badge bg-primary">{{ user.activity_type }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if user.goal %}
+                        <div class="info-item mb-3">
+                            <label class="fw-bold text-muted small">الهدف من المشاركة</label>
+                            <p class="mb-0 small">{{ user.goal }}</p>
+                        </div>
+                        {% endif %}
+
+                        {% if user.ai_description %}
+                        <div class="info-item mb-3">
+                            <label class="fw-bold text-muted small">الوصف المهني (بالذكاء الاصطناعي)</label>
+                            <p class="mb-0 small text-muted fst-italic">{{ user.ai_description }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button class="btn btn-outline-primary btn-sm w-100" onclick="editProfile()">
+                            <i class="fas fa-edit me-2"></i>
+                            تحديث المعلومات
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registrations -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        تسجيلاتي في الجلسات
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if user.registrations %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>الجلسة</th>
+                                    <th>التاريخ</th>
+                                    <th>الحالة</th>
+                                    <th>الحضور</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for registration in user.registrations %}
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <strong>{{ registration.session.title }}</strong>
+                                            <br><small class="text-muted">التجمع رقم {{ registration.session.session_number }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <small>{{ registration.session.date.strftime('%Y-%m-%d') }}</small>
+                                            <br><small class="text-muted">{{ registration.session.date.strftime('%H:%M') }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if registration.is_approved %}
+                                        <span class="badge bg-success">مؤكد</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">في الانتظار</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set user_attendance = registration.session.attendances|selectattr('user_id', 'equalto', user.id)|first %}
+                                        {% if user_attendance and user_attendance.attended %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>حضر
+                                        </span>
+                                        {% elif registration.session.status == 'completed' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times me-1"></i>غاب
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">لم تبدأ</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if registration.session.status == 'open' and registration.is_approved %}
+                                        <a href="#" onclick="generateMyQR({{ registration.session.id }})" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-qrcode"></i>
+                                        </a>
+                                        {% endif %}
+                                        <button class="btn btn-sm btn-outline-info" onclick="viewSession({{ registration.session.id }})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times text-muted fa-4x mb-3"></i>
+                        <h5 class="text-muted">لا توجد تسجيلات</h5>
+                        <p class="text-muted">لم تسجل في أي جلسة بعد</p>
+                        <a href="{{ url_for('sessions') }}" class="btn btn-primary">
+                            <i class="fas fa-calendar-plus me-2"></i>
+                            تصفح الجلسات المتاحة
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QR Code Modal -->
+<div class="modal fade" id="myQRModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">رمز الحضور الخاص بي</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-3">اعرض هذا الرمز للمسؤولين لتسجيل حضورك</p>
+                <div id="myQrCodeContainer">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                </div>
+                <p class="small text-muted mt-3">لا تشارك هذا الرمز مع أي شخص آخر</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generateMyQR(sessionId) {
+    const modal = new bootstrap.Modal(document.getElementById('myQRModal'));
+    const container = document.getElementById('myQrCodeContainer');
+    
+    container.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">جاري التحميل...</span></div>';
+    modal.show();
+    
+    fetch('/my-qr/' + sessionId)
+        .then(response => response.json())
+        .then(data => {
+            if (data.qr_code) {
+                container.innerHTML = `<img src="data:image/png;base64,${data.qr_code}" class="img-fluid" alt="QR Code">`;
+            } else {
+                container.innerHTML = '<p class="text-danger">خطأ في إنشاء الرمز</p>';
+            }
+        })
+        .catch(error => {
+            container.innerHTML = '<p class="text-danger">خطأ في التحميل</p>';
+        });
+}
+
+function viewSession(sessionId) {
+    window.open('/sessions#session-' + sessionId, '_blank');
+}
+
+function editProfile() {
+    alert('سيتم إضافة هذه الميزة قريباً');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}دخول الأعضاء - ثلوثية الأعمال{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold mb-3">دخول الأعضاء</h2>
+                        <p class="text-muted">ادخل بياناتك لمراجعة تسجيلاتك</p>
+                    </div>
+
+                    <form method="POST" id="userLoginForm">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">البريد الإلكتروني</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="phone" class="form-label">رقم الجوال</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" placeholder="5XXXXXXXX" required>
+                            <div class="form-text">ادخل آخر 9 أرقام من رقم جوالك</div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>
+                                دخول
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <p class="mb-2">لست عضواً بعد؟</p>
+                        <a href="{{ url_for('register') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-user-plus me-2"></i>
+                            تسجيل جديد
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

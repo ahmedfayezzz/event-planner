@@ -66,7 +66,10 @@ def send_confirmation_email(email, name, session):
             return False
         
         # Create message
-        msg = email.mime.multipart.MimeMultipart()
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        
+        msg = MIMEMultipart()
         msg['From'] = smtp_username
         msg['To'] = email
         msg['Subject'] = f"تأكيد التسجيل - {session.title}"
@@ -86,7 +89,7 @@ def send_confirmation_email(email, name, session):
         فريق ثلوثية الأعمال
         """
         
-        msg.attach(email.mime.text.MimeText(body, 'plain', 'utf-8'))
+        msg.attach(MIMEText(body, 'plain', 'utf-8'))
         
         # Send email
         server = smtplib.SMTP(smtp_server, smtp_port)
