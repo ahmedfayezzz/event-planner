@@ -168,7 +168,7 @@
         <div class="tab-pane fade" id="upcoming" role="tabpanel">
             <div class="row g-4">
                 {% for session in sessions %}
-                {% if session.date > moment().utcnow() %}
+                {% if session.status != 'completed' %}
                 <div class="col-lg-6">
                     <!-- Same session card structure -->
                     <div class="session-card bg-white rounded-3 shadow-sm border h-100">
