@@ -1,7 +1,8 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify, make_response, session as flask_session
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db
-from models import User, Session, Registration, Attendance, Admin, AIAnalytics
+from models import User, Session, Registration, Attendance, Admin
+from sqlalchemy import func
 from ai_service import generate_professional_description, analyze_participant_data, search_participants
 from utils import generate_username, send_confirmation_email, generate_qr_code, export_to_csv
 from werkzeug.security import check_password_hash, generate_password_hash

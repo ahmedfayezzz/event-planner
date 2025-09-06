@@ -35,7 +35,7 @@ def generate_professional_description(goal, activity_type=""):
             model="gpt-5",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
-            max_tokens=200
+            max_completion_tokens=200
         )
         
         result = json.loads(response.choices[0].message.content)
@@ -123,7 +123,7 @@ def analyze_participant_data(analysis_type):
             model="gpt-5",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
-            max_tokens=1000
+            max_completion_tokens=1000
         )
         
         result = json.loads(response.choices[0].message.content)
@@ -180,7 +180,7 @@ def search_participants(query):
             model="gpt-5",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
-            max_tokens=1000
+            max_completion_tokens=1000
         )
         
         result = json.loads(response.choices[0].message.content)
@@ -234,7 +234,7 @@ def generate_session_insights(session_id):
             model="gpt-5",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
-            max_tokens=800
+            max_completion_tokens=800
         )
         
         return json.loads(response.choices[0].message.content)
