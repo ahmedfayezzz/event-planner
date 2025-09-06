@@ -1,8 +1,8 @@
-# Business Tuesdays Platform (ثلوثية الأعمال)
+# ثلوثية الأعمال Platform (Business Tuesdays)
 
 ## Overview
 
-Business Tuesdays Platform is a weekly networking platform designed specifically for Arabic-speaking influencers and business owners. The platform facilitates weekly Tuesday gatherings aimed at building professional relationships, business opportunities, and meaningful collaborations. The system handles user registration, session management, attendance tracking, and provides AI-powered insights for better community engagement.
+ثلوثية الأعمال (Business Tuesdays) is a comprehensive Arabic event management platform designed specifically for weekly Tuesday gatherings of influencers and business owners. The platform facilitates networking, professional development, and business collaboration through a complete digital ecosystem that includes user registration, session management, QR code attendance tracking, AI-powered analytics dashboard, and intelligent participant data search.
 
 ## User Preferences
 
@@ -33,8 +33,10 @@ Preferred communication style: Simple, everyday language.
 
 ### AI Integration
 - **AI Service**: OpenAI GPT-5 integration for generating professional Arabic descriptions
-- **Smart Analytics**: AI-powered participant data analysis and insights
+- **Smart Analytics**: AI-powered participant data analysis and insights dashboard
 - **Natural Language Processing**: Arabic language processing for goal analysis and description generation
+- **Intelligent Search**: AI-powered search functionality for finding participants based on natural language queries
+- **Dynamic Recommendations**: System-generated recommendations for improving platform engagement
 
 ### Authentication & Authorization
 - **Admin Authentication**: Flask-Login based session management
@@ -44,8 +46,11 @@ Preferred communication style: Simple, everyday language.
 ### Core Features
 - **QR Code Generation**: Automated QR code creation for participant check-ins
 - **Email Integration**: Confirmation emails for registrations
-- **Analytics Dashboard**: Real-time statistics and AI-powered insights
+- **Advanced Analytics Dashboard**: Real-time statistics with AI-powered insights and interactive charts
+- **Intelligent Search**: Natural language search through participant data using AI
 - **Export Functionality**: CSV export capabilities for user and session data
+- **AI-Powered Recommendations**: Dynamic system recommendations for platform improvement
+- **Session Performance Tracking**: Comprehensive attendance and engagement metrics
 - **Multilingual Support**: Arabic-first design with RTL layout support
 
 ## External Dependencies
