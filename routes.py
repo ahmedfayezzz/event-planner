@@ -448,7 +448,7 @@ def session_attendees(session_id):
     attendance_dict = {a.user_id: a.attended for a in attendances}
     
     return render_template('admin/session_attendees.html', 
-                         session=session_obj, 
+                         session_obj=session_obj, 
                          registrations=registrations,
                          attendance_dict=attendance_dict)
 

@@ -55,6 +55,8 @@ class Session(db.Model):
     custom_confirmation_message = db.Column(db.Text)  # Custom confirmation message
     embed_enabled = db.Column(db.Boolean, default=True)  # Allow embedding
     slug = db.Column(db.String(100))  # URL slug for pretty URLs
+    invite_only = db.Column(db.Boolean, default=False)  # Invite-only registration
+    invite_message = db.Column(db.Text)  # Custom invitation message
     
     # Relationships
     registrations = db.relationship('Registration', backref='session', lazy=True)
@@ -122,6 +124,19 @@ class Admin(UserMixin, db.Model):
     password_hash = db.Column(db.String(256))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
+
+class Invite(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('session.id'), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    token = db.Column(db.String(128), unique=True, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at = db.Column(db.DateTime)
+    
+    # Relationship
+    session = db.relationship('Session', backref='invites')
 
 class AIAnalytics(db.Model):
     id = db.Column(db.Integer, primary_key=True)

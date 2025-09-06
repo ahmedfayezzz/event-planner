@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}المسجلون في {{ session.title }} - ثلوثية الأعمال{% endblock %}
+{% block title %}المسجلون في {{ session_obj.title }} - ثلوثية الأعمال{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -10,7 +10,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="fw-bold mb-2">المسجلون في الجلسة</h1>
-                    <p class="text-muted mb-0">{{ session.title }} - {{ session.date.strftime('%Y-%m-%d %H:%M') }}</p>
+                    <p class="text-muted mb-0">{{ session_obj.title }} - {{ session_obj.date.strftime('%Y-%m-%d %H:%M') }}</p>
                 </div>
                 <div>
                     <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary me-2">

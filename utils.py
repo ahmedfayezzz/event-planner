@@ -9,7 +9,8 @@ from models import User
 import os
 import random
 import string
-from datetime import datetime
+from datetime import datetime, timedelta
+import secrets
 
 def generate_username(name):
     """Generate a unique username from name"""
@@ -222,3 +223,70 @@ def validate_email(email):
     """Validate email format"""
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
+
+def generate_invite_token():
+    """Generate secure random token for invitations"""
+    return secrets.token_urlsafe(32)
+
+def send_invitation_email(email, session, token, custom_message=None):
+    """Send invitation email with registration link"""
+    try:
+        # Email configuration
+        smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+        smtp_username = os.environ.get("SMTP_USERNAME", "")
+        smtp_password = os.environ.get("SMTP_PASSWORD", "")
+        
+        if not all([smtp_username, smtp_password]):
+            print("SMTP credentials not configured")
+            return False
+        
+        # Create message
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        
+        msg = MIMEMultipart()
+        msg['From'] = smtp_username
+        msg['To'] = email
+        msg['Subject'] = f"دعوة خاصة - {session.title}"
+        
+        # Generate registration link
+        registration_link = f"{os.environ.get('BASE_URL', 'https://your-domain.com')}/event/{session.slug or session.id}/register?token={token}"
+        
+        # Use custom message or default
+        if custom_message:
+            body = custom_message.replace('[رابط التسجيل]', registration_link)
+        else:
+            body = f"""
+مرحباً،
+
+نود دعوتك لحضور جلسة "{session.title}" في ثلوثية الأعمال.
+
+تفاصيل الجلسة:
+📅 التاريخ: {session.date.strftime('%Y-%m-%d')}
+🕐 الوقت: {session.date.strftime('%H:%M')}
+📍 المكان: {session.location or 'سيتم الإعلان عنه لاحقاً'}
+
+هذه دعوة خاصة. استخدم الرابط أدناه للتسجيل:
+{registration_link}
+
+نتطلع لرؤيتك معنا!
+
+فريق ثلوثية الأعمال
+            """
+        
+        msg.attach(MIMEText(body, 'plain', 'utf-8'))
+        
+        # Send email
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(smtp_username, smtp_password)
+        text = msg.as_string()
+        server.sendmail(smtp_username, email, text)
+        server.quit()
+        
+        return True
+        
+    except Exception as e:
+        print(f"Invitation email sending failed: {e}")
+        return False
