@@ -53,7 +53,8 @@ def register():
         # Check if email exists
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
-            user = existing_user
+            flash(f'يوجد حساب مسجل بهذا البريد الإلكتروني. يرجى تسجيل الدخول من <a href="{url_for("user_login")}" class="alert-link">هنا</a>', 'info')
+            return redirect(url_for('user_login'))
         else:
             # Generate unique username
             username = generate_username(name)
@@ -105,12 +106,16 @@ def register():
                     db.session.commit()
                     
                     # Send confirmation email
+                    email_sent = False
                     try:
-                        send_confirmation_email(user.email, user.name, session_obj)
+                        email_sent = send_confirmation_email(user.email, user.name, session_obj)
                     except Exception as e:
                         app.logger.error(f"Email sending failed: {e}")
                     
-                    flash('تم التسجيل بنجاح! ستتلقى تأكيداً عبر البريد الإلكتروني.', 'success')
+                    if email_sent:
+                        flash('تم التسجيل بنجاح! تم إرسال تأكيد عبر البريد الإلكتروني.', 'success')
+                    else:
+                        flash('تم التسجيل بنجاح! لم نتمكن من إرسال تأكيد البريد الإلكتروني حالياً.', 'warning')
                 else:
                     flash('أنت مسجل مسبقاً في هذه الجلسة.', 'info')
             else:
