@@ -1,0 +1,362 @@
+/* ثلوثية الأعمال - الهوية البصرية الجديدة */
+/* Brand Identity CSS for ثلوثية الأعمال Platform */
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+/* CSS Custom Properties - Brand Colors */
+:root {
+  /* Brand Colors */
+  --brand-primary: #2C2C2C;        /* أسود أنثراسيت */
+  --brand-secondary: #3E8E41;      /* أخضر زيتوني/زمردي */
+  --brand-accent: #DFA1D8;         /* بمسة ورد الطائف */
+  
+  /* Extended Color Palette */
+  --brand-primary-light: #404040;
+  --brand-primary-dark: #1a1a1a;
+  --brand-secondary-light: #4fa154;
+  --brand-secondary-dark: #2d6930;
+  --brand-accent-light: #e6b1e0;
+  --brand-accent-dark: #d391cf;
+  
+  /* Semantic Colors */
+  --brand-success: var(--brand-secondary);
+  --brand-info: #2196F3;
+  --brand-warning: #FF9800;
+  --brand-danger: #F44336;
+  
+  /* Typography */
+  --font-arabic: 'Amiri', 'Arabic Typesetting', 'Traditional Arabic', serif;
+  --font-english: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-system: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* Spacing & Layout */
+  --border-radius-sm: 6px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(44, 44, 44, 0.1);
+  --shadow-md: 0 4px 8px rgba(44, 44, 44, 0.15);
+  --shadow-lg: 0 8px 16px rgba(44, 44, 44, 0.2);
+}
+
+/* Global Typography */
+body {
+  font-family: var(--font-arabic);
+  color: var(--brand-primary);
+  line-height: 1.7;
+}
+
+/* Arabic Text Enhancement */
+.arabic-text, 
+[lang="ar"],
+h1, h2, h3, h4, h5, h6,
+.navbar-brand,
+.btn,
+.card-title,
+.form-label {
+  font-family: var(--font-arabic);
+  font-weight: 400;
+}
+
+/* English Text */
+.english-text,
+[lang="en"],
+code, pre,
+.badge,
+.progress,
+input[type="email"],
+input[type="url"] {
+  font-family: var(--font-english);
+}
+
+/* Brand Typography Hierarchy */
+h1, .h1 {
+  font-weight: 700;
+  color: var(--brand-primary);
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+h2, .h2 {
+  font-weight: 600;
+  color: var(--brand-primary);
+  font-size: 2rem;
+  margin-bottom: 1.25rem;
+}
+
+h3, .h3 {
+  font-weight: 600;
+  color: var(--brand-primary);
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Brand Button Styles */
+.btn-primary {
+  background-color: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: white;
+  font-weight: 500;
+  border-radius: var(--border-radius-md);
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--brand-primary-light);
+  border-color: var(--brand-primary-light);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-success,
+.btn-secondary {
+  background-color: var(--brand-secondary);
+  border-color: var(--brand-secondary);
+  color: white;
+  font-weight: 500;
+  border-radius: var(--border-radius-md);
+}
+
+.btn-success:hover,
+.btn-secondary:hover {
+  background-color: var(--brand-secondary-dark);
+  border-color: var(--brand-secondary-dark);
+  transform: translateY(-1px);
+}
+
+.btn-accent {
+  background-color: var(--brand-accent);
+  border-color: var(--brand-accent);
+  color: var(--brand-primary);
+  font-weight: 500;
+  border-radius: var(--border-radius-md);
+}
+
+.btn-accent:hover {
+  background-color: var(--brand-accent-dark);
+  border-color: var(--brand-accent-dark);
+  color: var(--brand-primary);
+  transform: translateY(-1px);
+}
+
+/* Navigation Brand Colors */
+.navbar {
+  background-color: var(--brand-primary) !important;
+  box-shadow: var(--shadow-md);
+  padding: 1rem 0;
+}
+
+.navbar-brand {
+  color: white !important;
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.navbar-nav .nav-link {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 500;
+  margin: 0 0.5rem;
+  border-radius: var(--border-radius-sm);
+  padding: 0.5rem 1rem !important;
+  transition: all 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link.active {
+  color: white !important;
+  background-color: var(--brand-secondary);
+}
+
+/* Card Components */
+.card {
+  border: none;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  background-color: var(--brand-primary);
+  color: white;
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0 !important;
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+/* Form Elements */
+.form-control {
+  border-radius: var(--border-radius-md);
+  border: 2px solid #e0e0e0;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-arabic);
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: var(--brand-secondary);
+  box-shadow: 0 0 0 0.2rem rgba(62, 142, 65, 0.25);
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--brand-primary);
+  margin-bottom: 0.5rem;
+}
+
+.form-check-input:checked {
+  background-color: var(--brand-secondary);
+  border-color: var(--brand-secondary);
+}
+
+/* Badge & Status Elements */
+.badge {
+  font-family: var(--font-english);
+  font-weight: 500;
+  border-radius: var(--border-radius-sm);
+  padding: 0.375rem 0.75rem;
+}
+
+.badge.bg-primary {
+  background-color: var(--brand-primary) !important;
+}
+
+.badge.bg-success {
+  background-color: var(--brand-secondary) !important;
+}
+
+.badge.bg-info {
+  background-color: var(--brand-accent) !important;
+  color: var(--brand-primary) !important;
+}
+
+/* Alert Components */
+.alert {
+  border-radius: var(--border-radius-md);
+  border: none;
+  font-weight: 500;
+}
+
+.alert-success {
+  background-color: rgba(62, 142, 65, 0.1);
+  color: var(--brand-secondary-dark);
+  border-left: 4px solid var(--brand-secondary);
+}
+
+.alert-info {
+  background-color: rgba(223, 161, 216, 0.1);
+  color: var(--brand-primary);
+  border-left: 4px solid var(--brand-accent);
+}
+
+/* Progress Bars */
+.progress {
+  border-radius: var(--border-radius-sm);
+  height: 8px;
+  background-color: rgba(44, 44, 44, 0.1);
+}
+
+.progress-bar {
+  background-color: var(--brand-secondary);
+  border-radius: var(--border-radius-sm);
+}
+
+/* Table Styling */
+.table thead th {
+  background-color: var(--brand-primary);
+  color: white;
+  border: none;
+  font-weight: 600;
+  padding: 1rem;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(62, 142, 65, 0.05);
+}
+
+/* Modal Enhancements */
+.modal-header {
+  background-color: var(--brand-primary);
+  color: white;
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.modal-content {
+  border: none;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Footer */
+.footer {
+  background-color: var(--brand-primary);
+  color: white;
+  padding: 2rem 0;
+  margin-top: 4rem;
+}
+
+/* Utility Classes */
+.text-brand-primary { color: var(--brand-primary) !important; }
+.text-brand-secondary { color: var(--brand-secondary) !important; }
+.text-brand-accent { color: var(--brand-accent) !important; }
+
+.bg-brand-primary { background-color: var(--brand-primary) !important; }
+.bg-brand-secondary { background-color: var(--brand-secondary) !important; }
+.bg-brand-accent { background-color: var(--brand-accent) !important; }
+
+.border-brand-primary { border-color: var(--brand-primary) !important; }
+.border-brand-secondary { border-color: var(--brand-secondary) !important; }
+.border-brand-accent { border-color: var(--brand-accent) !important; }
+
+/* Animation & Interactions */
+.btn, .card, .form-control {
+  transition: all 0.3s ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  h1, .h1 { font-size: 2rem; }
+  h2, .h2 { font-size: 1.75rem; }
+  h3, .h3 { font-size: 1.375rem; }
+  
+  .navbar-brand { font-size: 1.25rem; }
+  
+  .card-body { padding: 1rem; }
+}
+
+/* Dark Mode Support (Future) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand-primary: #f5f5f5;
+    --brand-primary-light: #ffffff;
+    --brand-primary-dark: #e0e0e0;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .btn, .navbar, .modal, .alert { 
+    display: none !important; 
+  }
+  
+  body { 
+    color: black !important; 
+    font-size: 12pt; 
+  }
+}

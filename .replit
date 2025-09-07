@@ -30,7 +30,7 @@ args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
 waitForPort = 5000
 
 [agent]
-integrations = ["python_openai==1.0.0"]
+integrations = ["flask_google_oauth==1.0.0", "python_openai==1.0.0"]
 
 [[ports]]
 localPort = 5000

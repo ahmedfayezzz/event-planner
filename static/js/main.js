@@ -135,11 +135,12 @@ function formatPhoneNumber(input) {
 }
 
 function validatePhoneNumber(input) {
-    const phoneRegex = /^\+966[5]\d{8}$/;
+    // Accept multiple Saudi phone number formats
+    const phoneRegex = /^(\+966[5-9]\d{8}|05\d{8}|5\d{8})$/;
     const isValid = phoneRegex.test(input.value);
     
     if (input.value && !isValid) {
-        input.setCustomValidity('يرجى إدخال رقم جوال صحيح (+966xxxxxxxxx)');
+        input.setCustomValidity('يرجى إدخال رقم جوال صحيح (مثال: 05xxxxxxxx أو 966xxxxxxxxx)');
         input.classList.add('is-invalid');
     } else {
         input.setCustomValidity('');

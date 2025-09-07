@@ -157,12 +157,17 @@ def user_login():
         # Find user by email and phone (simple authentication)
         user = User.query.filter_by(email=email).first()
         
-        if user and user.phone.replace('+966', '').replace(' ', '')[-9:] == phone.replace(' ', ''):
-            flask_session['user_id'] = user.id
-            flash('تم تسجيل الدخول بنجاح!', 'success')
-            return redirect(url_for('user_dashboard'))
-        else:
-            flash('البيانات غير صحيحة. تأكد من البريد الإلكتروني ورقم الجوال.', 'error')
+        if user:
+            # Clean and normalize both phone numbers for comparison
+            user_phone_clean = re.sub(r'\D', '', user.phone)[-9:]  # Last 9 digits
+            input_phone_clean = re.sub(r'\D', '', phone)[-9:]      # Last 9 digits
+            
+            if user_phone_clean == input_phone_clean:
+                flask_session['user_id'] = user.id
+                flash('تم تسجيل الدخول بنجاح!', 'success')
+                return redirect(url_for('user_dashboard'))
+        
+        flash('البيانات غير صحيحة. تأكد من البريد الإلكتروني ورقم الجوال.', 'error')
     
     return render_template('user_login.html')
 
