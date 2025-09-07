@@ -158,12 +158,12 @@ def user_login():
         # Find user by email and phone (simple authentication)
         user = User.query.filter_by(email=email).first()
         
-        if user:
+        if user and phone:
             # Clean and normalize both phone numbers for comparison
-            user_phone_clean = re.sub(r'\D', '', user.phone)[-9:]  # Last 9 digits
-            input_phone_clean = re.sub(r'\D', '', phone)[-9:]      # Last 9 digits
+            user_phone_clean = re.sub(r'\D', '', user.phone or '')[-9:]  # Last 9 digits
+            input_phone_clean = re.sub(r'\D', '', phone or '')[-9:]      # Last 9 digits
             
-            if user_phone_clean == input_phone_clean:
+            if user_phone_clean == input_phone_clean and user_phone_clean:
                 flask_session['user_id'] = user.id
                 flash('تم تسجيل الدخول بنجاح!', 'success')
                 return redirect(url_for('user_dashboard'))
