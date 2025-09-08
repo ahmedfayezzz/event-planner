@@ -48,6 +48,9 @@ def generate_professional_description(goal, activity_type=""):
 def analyze_participant_data(analysis_type):
     """Analyze participant data using AI for insights"""
     try:
+        # Initialize data variable
+        data = {}
+        
         # Get data based on analysis type
         if analysis_type == "demographics":
             users = User.query.all()
@@ -97,6 +100,20 @@ def analyze_participant_data(analysis_type):
             
             data["repeat_attendees"] = len([count for count in user_attendance_count.values() if count > 1])
         
+        else:
+            # Fallback for unknown analysis types
+            data = {"error": f"Unknown analysis type: {analysis_type}"}
+        
+        # If no OpenAI API key available, return basic data analysis
+        if not OPENAI_API_KEY:
+            return {
+                "summary": "تحليل البيانات الأساسي",
+                "key_insights": ["البيانات متوفرة للمراجعة"],
+                "recommendations": ["تفعيل خدمة الذكاء الاصطناعي للحصول على تحليل أعمق"],
+                "metrics": data,
+                "raw_data": data
+            }
+        
         # Generate AI analysis
         prompt = f"""
         أنت محلل بيانات خبير. حلل البيانات التالية واستخرج رؤى مفيدة باللغة العربية:
@@ -123,16 +140,29 @@ def analyze_participant_data(analysis_type):
             model="gpt-5",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
-            max_completion_tokens=1000
+            max_tokens=1000
         )
         
-        result = json.loads(response.choices[0].message.content)
-        result["raw_data"] = data
-        return result
+        # Safely parse the JSON response
+        content = response.choices[0].message.content
+        if content:
+            result = json.loads(content)
+            result["raw_data"] = data
+            return result
+        else:
+            raise ValueError("Empty response from AI service")
         
     except Exception as e:
         logging.error(f"AI analysis failed: {e}")
-        return None
+        # Return fallback data structure
+        return {
+            "summary": "حدث خطأ في تحليل البيانات",
+            "key_insights": ["يرجى المحاولة مرة أخرى لاحقاً"],
+            "recommendations": ["التحقق من اتصال الإنترنت وإعدادات الذكاء الاصطناعي"],
+            "metrics": data if 'data' in locals() else {},
+            "raw_data": data if 'data' in locals() else {},
+            "error": str(e)
+        }
 
 def search_participants(query):
     """Intelligent search through participant data using natural language"""
