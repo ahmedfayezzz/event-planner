@@ -137,7 +137,7 @@
                             <div class="col-md-6">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="show_countdown" 
-                                           name="show_countdown" {% if session.show_countdown %}checked{% endif %}>
+                                           name="show_countdown" {% if session_obj.show_countdown %}checked{% endif %}>
                                     <label class="form-check-label" for="show_countdown">
                                         إظهار العد التنازلي
                                     </label>
@@ -146,7 +146,7 @@
                             <div class="col-md-6">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="show_guest_profile" 
-                                           name="show_guest_profile" {% if session.show_guest_profile %}checked{% endif %}>
+                                           name="show_guest_profile" {% if session_obj.show_guest_profile %}checked{% endif %}>
                                     <label class="form-check-label" for="show_guest_profile">
                                         إظهار ملف الضيف التعريفي
                                     </label>
@@ -158,7 +158,7 @@
                             <div class="col-md-6">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="enable_mini_view" 
-                                           name="enable_mini_view" {% if session.enable_mini_view %}checked{% endif %}>
+                                           name="enable_mini_view" {% if session_obj.enable_mini_view %}checked{% endif %}>
                                     <label class="form-check-label" for="enable_mini_view">
                                         تفعيل الوضع المصغر للتضمين
                                     </label>
@@ -167,7 +167,7 @@
                             <div class="col-md-6">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="embed_enabled" 
-                                           name="embed_enabled" {% if session.embed_enabled %}checked{% endif %}>
+                                           name="embed_enabled" {% if session_obj.embed_enabled %}checked{% endif %}>
                                     <label class="form-check-label" for="embed_enabled">
                                         السماح بالتضمين (Embed)
                                     </label>
@@ -179,7 +179,7 @@
                             <div class="col-md-12">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="invite_only" 
-                                           name="invite_only" {% if session.invite_only %}checked{% endif %} onchange="toggleInviteSettings()">
+                                           name="invite_only" {% if session_obj.invite_only %}checked{% endif %} onchange="toggleInviteSettings()">
                                     <label class="form-check-label" for="invite_only">
                                         <strong>🟩 تفعيل التسجيل بالدعوة فقط</strong>
                                     </label>
@@ -189,7 +189,7 @@
                         </div>
                         
                         <!-- Invite Management (Show if invite_only is enabled) -->
-                        <div id="inviteSettings" class="{% if not session.invite_only %}d-none{% endif %}">
+                        <div id="inviteSettings" class="{% if not session_obj.invite_only %}d-none{% endif %}">
                             <div class="card bg-light mb-3">
                                 <div class="card-header">
                                     <h6 class="mb-0"><i class="fas fa-envelope me-2"></i>إدارة الدعوات</h6>
@@ -199,13 +199,13 @@
                                     <div class="row mb-3">
                                         <div class="col-md-4">
                                             <div class="text-center">
-                                                <h4 class="text-primary">{{ session.invites|length }}</h4>
+                                                <h4 class="text-primary">{{ session_obj.invites|length }}</h4>
                                                 <small>دعوات مرسلة</small>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="text-center">
-                                                <h4 class="text-success">{{ session.invites|selectattr('used', 'equalto', True)|list|length }}</h4>
+                                                <h4 class="text-success">{{ session_obj.invites|selectattr('used', 'equalto', True)|list|length }}</h4>
                                                 <small>تم استخدامها</small>
                                             </div>
                                         </div>

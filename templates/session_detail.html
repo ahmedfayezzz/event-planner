@@ -135,7 +135,7 @@
                                     {% endif %}
                                     
                                     <p class="text-muted small">
-                                        تاريخ التسجيل: {{ existing_registration.created_at.strftime('%Y-%m-%d') }}
+                                        تاريخ التسجيل: {{ existing_registration.registered_at.strftime('%Y-%m-%d') if existing_registration.registered_at else 'غير محدد' }}
                                     </p>
                                     
                                     {% if existing_registration.is_approved %}

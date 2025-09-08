@@ -377,13 +377,13 @@ def admin_new_session():
             guest_profile=request.form.get('guest_profile'),
             location=request.form.get('location'),
             max_participants=int(request.form.get('max_participants', 50)),
-            requires_approval=bool(request.form.get('requires_approval')),
-            show_participant_count=bool(request.form.get('show_participant_count')),
-            show_countdown=bool(request.form.get('show_countdown')),
-            show_guest_profile=bool(request.form.get('show_guest_profile')),
-            enable_mini_view=bool(request.form.get('enable_mini_view')),
-            embed_enabled=bool(request.form.get('embed_enabled')),
-            invite_only=bool(request.form.get('invite_only'))
+            requires_approval='requires_approval' in request.form,
+            show_participant_count='show_participant_count' in request.form,
+            show_countdown='show_countdown' in request.form,
+            show_guest_profile='show_guest_profile' in request.form,
+            enable_mini_view='enable_mini_view' in request.form,
+            embed_enabled='embed_enabled' in request.form,
+            invite_only='invite_only' in request.form
         )
         
         db.session.add(session)
@@ -407,13 +407,13 @@ def admin_edit_session(session_id):
         session_obj.guest_profile = request.form.get('guest_profile')
         session_obj.location = request.form.get('location')
         session_obj.max_participants = int(request.form.get('max_participants', 50))
-        session_obj.requires_approval = bool(request.form.get('requires_approval'))
-        session_obj.show_participant_count = bool(request.form.get('show_participant_count'))
-        session_obj.show_countdown = bool(request.form.get('show_countdown'))
-        session_obj.show_guest_profile = bool(request.form.get('show_guest_profile'))
-        session_obj.enable_mini_view = bool(request.form.get('enable_mini_view'))
-        session_obj.embed_enabled = bool(request.form.get('embed_enabled'))
-        session_obj.invite_only = bool(request.form.get('invite_only'))
+        session_obj.requires_approval = 'requires_approval' in request.form
+        session_obj.show_participant_count = 'show_participant_count' in request.form
+        session_obj.show_countdown = 'show_countdown' in request.form
+        session_obj.show_guest_profile = 'show_guest_profile' in request.form
+        session_obj.enable_mini_view = 'enable_mini_view' in request.form
+        session_obj.embed_enabled = 'embed_enabled' in request.form
+        session_obj.invite_only = 'invite_only' in request.form
         session_obj.status = request.form.get('status')
         
         db.session.commit()
