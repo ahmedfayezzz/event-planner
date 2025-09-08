@@ -420,7 +420,7 @@ def admin_edit_session(session_id):
         flash('تم تحديث الجلسة بنجاح!', 'success')
         return redirect(url_for('admin_sessions'))
     
-    return render_template('admin/edit_session.html', session=session_obj)
+    return render_template('admin/edit_session.html', session_obj=session_obj)
 
 @app.route('/event/<path:identifier>')
 def event_page(identifier):
@@ -448,7 +448,7 @@ def event_embed(identifier):
     # Check if mini view is enabled
     template = 'embed_mini.html' if session_obj.enable_mini_view else 'embed_full.html'
     
-    return render_template(template, session=session_obj)
+    return render_template(template, session_obj=session_obj)
 
 @app.route('/admin/sessions/<int:session_id>/embed-code')
 @login_required
@@ -628,7 +628,7 @@ def admin_checkin(session_id):
     ).join(User).all()
     
     return render_template('admin/checkin.html', 
-                         session=session_obj, 
+                         session_obj=session_obj, 
                          registrations=registrations)
 
 @app.route('/admin/checkin/<int:session_id>/<int:user_id>', methods=['POST'])

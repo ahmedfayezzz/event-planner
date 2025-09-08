@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}تسجيل الحضور - {{ session.title }}{% endblock %}
+{% block title %}تسجيل الحضور - {{ session_obj.title }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -11,13 +11,13 @@
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-md-8">
-                            <h2 class="mb-2">{{ session.title }}</h2>
-                            <p class="mb-1">التجمع رقم {{ session.session_number }}</p>
-                            <p class="mb-0">{{ session.date.strftime('%A, %Y-%m-%d في %H:%M') }}</p>
+                            <h2 class="mb-2">{{ session_obj.title }}</h2>
+                            <p class="mb-1">التجمع رقم {{ session_obj.session_number }}</p>
+                            <p class="mb-0">{{ session_obj.date.strftime('%A, %Y-%m-%d في %H:%M') }}</p>
                         </div>
                         <div class="col-md-4 text-md-end">
                             <div class="session-stats">
-                                <h4 class="mb-1">{{ session.get_registration_count() }}</h4>
+                                <h4 class="mb-1">{{ session_obj.get_registration_count() }}</h4>
                                 <p class="mb-0">مشارك مسجل</p>
                             </div>
                         </div>

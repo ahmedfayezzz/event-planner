@@ -8,7 +8,7 @@
         <div class="col-lg-8">
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="fw-bold">تعديل الجلسة رقم {{ session.session_number }}</h2>
+                <h2 class="fw-bold">تعديل الجلسة رقم {{ session_obj.session_number }}</h2>
                 <a href="{{ url_for('admin_sessions') }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-right me-2"></i>
                     العودة للقائمة
@@ -32,14 +32,14 @@
                             <div class="col-md-12">
                                 <label for="title" class="form-label required">عنوان الجلسة</label>
                                 <input type="text" class="form-control" id="title" name="title" 
-                                       value="{{ session.title }}" required>
+                                       value="{{ session_obj.title }}" required>
                             </div>
                         </div>
                         
                         <div class="row mb-3">
                             <div class="col-md-12">
                                 <label for="description" class="form-label">وصف الجلسة</label>
-                                <textarea class="form-control" id="description" name="description" rows="3">{{ session.description or '' }}</textarea>
+                                <textarea class="form-control" id="description" name="description" rows="3">{{ session_obj.description or '' }}</textarea>
                             </div>
                         </div>
                         
@@ -47,12 +47,12 @@
                             <div class="col-md-6">
                                 <label for="date" class="form-label required">التاريخ والوقت</label>
                                 <input type="datetime-local" class="form-control" id="date" name="date" 
-                                       value="{{ session.date.strftime('%Y-%m-%dT%H:%M') }}" required>
+                                       value="{{ session_obj.date.strftime('%Y-%m-%dT%H:%M') }}" required>
                             </div>
                             <div class="col-md-6">
                                 <label for="location" class="form-label">مكان الانعقاد</label>
                                 <input type="text" class="form-control" id="location" name="location" 
-                                       value="{{ session.location or '' }}">
+                                       value="{{ session_obj.location or '' }}">
                             </div>
                         </div>
 
@@ -69,12 +69,12 @@
                             <div class="col-md-6">
                                 <label for="guest_name" class="form-label">اسم الضيف</label>
                                 <input type="text" class="form-control" id="guest_name" name="guest_name" 
-                                       value="{{ session.guest_name or '' }}">
+                                       value="{{ session_obj.guest_name or '' }}">
                             </div>
                             <div class="col-md-6">
                                 <label for="guest_profile" class="form-label">ملف الضيف التعريفي</label>
                                 <input type="text" class="form-control" id="guest_profile" name="guest_profile" 
-                                       value="{{ session.guest_profile or '' }}" placeholder="وصف مختصر أو رابط">
+                                       value="{{ session_obj.guest_profile or '' }}" placeholder="وصف مختصر أو رابط">
                             </div>
                         </div>
 
@@ -91,14 +91,14 @@
                             <div class="col-md-6">
                                 <label for="max_participants" class="form-label">الحد الأقصى للمقاعد</label>
                                 <input type="number" class="form-control" id="max_participants" name="max_participants" 
-                                       value="{{ session.max_participants }}" min="1" max="500">
+                                       value="{{ session_obj.max_participants }}" min="1" max="500">
                             </div>
                             <div class="col-md-6">
                                 <label for="status" class="form-label">حالة الجلسة</label>
                                 <select class="form-select" id="status" name="status">
-                                    <option value="open" {% if session.status == 'open' %}selected{% endif %}>مفتوحة للتسجيل</option>
-                                    <option value="closed" {% if session.status == 'closed' %}selected{% endif %}>مغلقة</option>
-                                    <option value="completed" {% if session.status == 'completed' %}selected{% endif %}>مكتملة</option>
+                                    <option value="open" {% if session_obj.status == 'open' %}selected{% endif %}>مفتوحة للتسجيل</option>
+                                    <option value="closed" {% if session_obj.status == 'closed' %}selected{% endif %}>مغلقة</option>
+                                    <option value="completed" {% if session_obj.status == 'completed' %}selected{% endif %}>مكتملة</option>
                                 </select>
                             </div>
                         </div>
@@ -116,7 +116,7 @@
                             <div class="col-md-6">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="requires_approval" 
-                                           name="requires_approval" {% if session.requires_approval %}checked{% endif %}>
+                                           name="requires_approval" {% if session_obj.requires_approval %}checked{% endif %}>
                                     <label class="form-check-label" for="requires_approval">
                                         يتطلب موافقة المشرف
                                     </label>
@@ -125,7 +125,7 @@
                             <div class="col-md-6">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="show_participant_count" 
-                                           name="show_participant_count" {% if session.show_participant_count %}checked{% endif %}>
+                                           name="show_participant_count" {% if session_obj.show_participant_count %}checked{% endif %}>
                                     <label class="form-check-label" for="show_participant_count">
                                         إظهار عدد المشاركين
                                     </label>

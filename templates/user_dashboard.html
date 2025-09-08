@@ -206,9 +206,9 @@
                                             <i class="fas fa-qrcode"></i>
                                         </a>
                                         {% endif %}
-                                        <button class="btn btn-sm btn-outline-info" onclick="viewSession({{ registration.session.id }})">
+                                        <a href="{{ url_for('session_detail', session_id=registration.session.id) }}" class="btn btn-sm btn-outline-info">
                                             <i class="fas fa-eye"></i>
-                                        </button>
+                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -265,7 +265,7 @@ function generateMyQR(sessionId) {
         .then(response => response.json())
         .then(data => {
             if (data.qr_code) {
-                container.innerHTML = `<img src="data:image/png;base64,${data.qr_code}" class="img-fluid" alt="QR Code">`;
+                container.innerHTML = `<img src="${data.qr_code}" class="img-fluid" alt="QR Code">`;
             } else {
                 container.innerHTML = '<p class="text-danger">خطأ في إنشاء الرمز</p>';
             }
