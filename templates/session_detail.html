@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}{{ session_obj.title }} - ثلوثية الأعمال{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Session Header -->
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header" style="background-color: var(--brand-primary); color: white;">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h2 class="mb-0">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                {{ session_obj.title }}
+                            </h2>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge bg-light text-dark fs-6">
+                                التجمع رقم {{ session_obj.session_number }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body p-4">
+                    <!-- Session Info -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-clock text-primary me-3"></i>
+                                <div>
+                                    <strong>التاريخ والوقت</strong>
+                                    <p class="mb-0">{{ session_obj.date.strftime('%A, %B %d, %Y في %I:%M %p') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-map-marker-alt" style="color: var(--brand-secondary);" me-3"></i>
+                                <div>
+                                    <strong>المكان</strong>
+                                    <p class="mb-0">{{ session_obj.location or 'سيتم الإعلان عنه لاحقاً' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if session_obj.guest_name %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-user-tie me-2"></i>
+                                    ضيف الشرف
+                                </h6>
+                                <p class="mb-0">{{ session_obj.guest_name }}</p>
+                                {% if session_obj.guest_profile %}
+                                <small class="text-muted">{{ session_obj.guest_profile }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if session_obj.description %}
+                    <div class="mb-4">
+                        <h5 style="color: var(--brand-secondary);">
+                            <i class="fas fa-info-circle me-2"></i>
+                            تفاصيل الجلسة
+                        </h5>
+                        <p class="text-muted">{{ session_obj.description }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Registration Status -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 style="color: var(--brand-primary);">{{ session_obj.get_registration_count() }}</h4>
+                                <small class="text-muted">مسجل حالياً</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 style="color: var(--brand-secondary);">{{ session_obj.max_participants }}</h4>
+                                <small class="text-muted">الحد الأقصى</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="progress mt-3" style="height: 10px;">
+                        <div class="progress-bar" style="background-color: var(--brand-secondary);"
+                             role="progressbar" 
+                             style="width: {{ (session_obj.get_registration_count() / session_obj.max_participants * 100) if session_obj.max_participants > 0 else 0 }}%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Info & Registration -->
+            <div class="card shadow border-0">
+                <div class="card-body p-4">
+                    <div class="row">
+                        <!-- User Info -->
+                        <div class="col-md-8">
+                            <h5 style="color: var(--brand-primary);">
+                                <i class="fas fa-user me-2"></i>
+                                مرحباً، {{ user.name }}
+                            </h5>
+                            <div class="text-muted">
+                                <p class="mb-1">📧 {{ user.email }}</p>
+                                <p class="mb-1">📱 {{ user.phone }}</p>
+                                {% if user.company_name %}
+                                <p class="mb-1">🏢 {{ user.company_name }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Registration Action -->
+                        <div class="col-md-4">
+                            {% if existing_registration %}
+                                <div class="text-center">
+                                    {% if existing_registration.is_approved %}
+                                        <div class="alert alert-success mb-3">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            <strong>تم تأكيد تسجيلك!</strong>
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-warning mb-3">
+                                            <i class="fas fa-clock me-2"></i>
+                                            <strong>في انتظار الموافقة</strong>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <p class="text-muted small">
+                                        تاريخ التسجيل: {{ existing_registration.created_at.strftime('%Y-%m-%d') }}
+                                    </p>
+                                </div>
+                            {% elif session_obj.can_register() %}
+                                <form method="POST" action="{{ url_for('register_for_session', session_id=session_obj.id) }}">
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-success btn-lg">
+                                            <i class="fas fa-plus-circle me-2"></i>
+                                            تسجيل في الجلسة
+                                        </button>
+                                    </div>
+                                </form>
+                            {% else %}
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                    <strong>التسجيل مغلق</strong>
+                                    <p class="mb-0 small">
+                                        {% if session_obj.get_registration_count() >= session_obj.max_participants %}
+                                        الجلسة مكتملة
+                                        {% else %}
+                                        التسجيل غير متاح حالياً
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="text-center mt-4">
+                <a href="{{ url_for('sessions') }}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    جميع الجلسات
+                </a>
+                <a href="{{ url_for('user_dashboard') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-tachometer-alt me-2"></i>
+                    لوحة التحكم
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

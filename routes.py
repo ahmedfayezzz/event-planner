@@ -31,6 +31,12 @@ def index():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    # Check if user is already logged in
+    session_id = request.args.get('session_id')
+    if 'user_id' in flask_session and session_id:
+        # User is logged in and trying to register for a session
+        return redirect(url_for('session_detail', session_id=session_id))
+    
     if request.method == 'POST':
         # Get form data
         name = request.form.get('name')
@@ -151,9 +157,13 @@ def profile(username):
 
 @app.route('/user/login', methods=['GET', 'POST'])
 def user_login():
+    # Get the next URL to redirect to after login
+    next_page = request.args.get('next')
+    
     if request.method == 'POST':
         email = request.form.get('email')
         phone = request.form.get('phone')
+        next_page = request.form.get('next')  # Also get from form
         
         # Find user by email and phone (simple authentication)
         user = User.query.filter_by(email=email).first()
@@ -166,11 +176,15 @@ def user_login():
             if user_phone_clean == input_phone_clean and user_phone_clean:
                 flask_session['user_id'] = user.id
                 flash('تم تسجيل الدخول بنجاح!', 'success')
+                
+                # Redirect to next page if available, otherwise user dashboard
+                if next_page:
+                    return redirect(next_page)
                 return redirect(url_for('user_dashboard'))
         
         flash('البيانات غير صحيحة. تأكد من البريد الإلكتروني ورقم الجوال.', 'error')
     
-    return render_template('user_login.html')
+    return render_template('user_login.html', next=next_page)
 
 @app.route('/user/dashboard')
 def user_dashboard():
@@ -218,7 +232,77 @@ def sessions():
 @app.route('/session/<int:session_id>/register')
 def session_register(session_id):
     session_obj = Session.query.get_or_404(session_id)
+    
+    # If user is logged in, redirect to session detail instead of general registration
+    if 'user_id' in flask_session:
+        return redirect(url_for('session_detail', session_id=session_id))
+    
     return redirect(url_for('register', session_id=session_id))
+
+@app.route('/session/<int:session_id>')
+def session_detail(session_id):
+    """Show session details with registration option for logged-in users"""
+    session_obj = Session.query.get_or_404(session_id)
+    
+    # If user not logged in, redirect to login with return URL
+    if 'user_id' not in flask_session:
+        login_url = url_for('user_login', next=request.url)
+        flash('يرجى تسجيل الدخول للمتابعة', 'info')
+        return redirect(login_url)
+    
+    user = User.query.get(flask_session['user_id'])
+    
+    # Check if user is already registered
+    existing_registration = Registration.query.filter_by(
+        user_id=user.id, 
+        session_id=session_id
+    ).first()
+    
+    return render_template('session_detail.html', 
+                         session_obj=session_obj, 
+                         user=user,
+                         existing_registration=existing_registration)
+
+@app.route('/session/<int:session_id>/register', methods=['POST'])
+def register_for_session(session_id):
+    """Register logged-in user for a specific session"""
+    if 'user_id' not in flask_session:
+        flash('يجب تسجيل الدخول أولاً', 'error')
+        return redirect(url_for('user_login'))
+    
+    session_obj = Session.query.get_or_404(session_id)
+    user_id = flask_session['user_id']
+    
+    # Check if already registered
+    existing_registration = Registration.query.filter_by(
+        user_id=user_id, 
+        session_id=session_id
+    ).first()
+    
+    if existing_registration:
+        flash('أنت مسجل في هذه الجلسة بالفعل', 'info')
+        return redirect(url_for('session_detail', session_id=session_id))
+    
+    # Check if session can accept registration
+    if not session_obj.can_register():
+        flash('لا يمكن التسجيل في هذه الجلسة', 'error')
+        return redirect(url_for('session_detail', session_id=session_id))
+    
+    # Create registration
+    registration = Registration(
+        user_id=user_id,
+        session_id=session_id,
+        is_approved=not session_obj.requires_approval
+    )
+    db.session.add(registration)
+    db.session.commit()
+    
+    if session_obj.requires_approval:
+        flash('تم تسجيلك في الجلسة، في انتظار الموافقة من الإدارة', 'success')
+    else:
+        flash('تم تسجيلك في الجلسة بنجاح!', 'success')
+    
+    return redirect(url_for('session_detail', session_id=session_id))
 
 # Admin Routes
 @app.route('/admin/login', methods=['GET', 'POST'])
