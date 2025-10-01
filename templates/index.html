@@ -4,121 +4,74 @@
 
 {% block content %}
 <!-- Hero Section -->
-<section class="hero-section bg-gradient text-white py-5">
+<section class="hero-section bg-light py-5" style="background-color: #FAFBFC !important;">
     <div class="container">
         <div class="row align-items-center min-vh-50">
-            <div class="col-lg-6">
-                <h1 class="display-4 fw-bold mb-4">
-                    مرحباً بك في<br>
-                    <span class="text-primary">ثلوثية الأعمال</span>
+            <div class="col-12 text-center">
+                <h1 class="display-3 fw-bold mb-4" style="color: #2C2C2C;">
+                    مرحباً بك في ثلوثية الأعمال
                 </h1>
-                <p class="lead mb-4">
-                    منصة أسبوعية تجمع المؤثرين وأصحاب المشاريع كل يوم ثلاثاء بهدف بناء علاقات وفرص عمل وتعاون مثمر.
+                <p class="lead mb-4 text-muted mx-auto" style="max-width: 700px;">
+                    منصة أسبوعية تجمع الأوائل وأصحاب المشاريع الطموحين، كل يوم ثلاثاء، بهدف بناء علاقات وفرص عمل وتعاون مثمر
                 </p>
-                <div class="d-flex gap-3">
-                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
-                        <i class="fas fa-user-plus me-2"></i>
+                <div class="d-flex gap-3 justify-content-center mb-4">
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-5 py-3">
                         سجل الآن
                     </a>
-                    <a href="{{ url_for('sessions') }}" class="btn btn-outline-light btn-lg">
-                        <i class="fas fa-calendar me-2"></i>
+                    <a href="{{ url_for('sessions') }}" class="btn btn-outline-primary btn-lg px-5 py-3">
                         الجلسات القادمة
                     </a>
                 </div>
-            </div>
-            
-            <div class="col-lg-6 text-center">
-                {% if next_session %}
-                <!-- Countdown Timer -->
-                <div class="countdown-card p-4 bg-white text-dark rounded-3 shadow-lg">
-                    <h4 class="mb-3">الجلسة القادمة</h4>
-                    <h5 class="text-primary mb-3">{{ next_session.title }}</h5>
-                    <p class="mb-3">التجمع رقم {{ next_session.session_number }}</p>
-                    
-                    <div id="countdown-timer" class="countdown-display" data-session-id="{{ next_session.id }}">
-                        <div class="row text-center">
-                            <div class="col-3">
-                                <div class="countdown-item">
-                                    <span class="countdown-number" id="days">00</span>
-                                    <span class="countdown-label">يوم</span>
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="countdown-item">
-                                    <span class="countdown-number" id="hours">00</span>
-                                    <span class="countdown-label">ساعة</span>
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="countdown-item">
-                                    <span class="countdown-number" id="minutes">00</span>
-                                    <span class="countdown-label">دقيقة</span>
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="countdown-item">
-                                    <span class="countdown-number" id="seconds">00</span>
-                                    <span class="countdown-label">ثانية</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-3">
-                        <a href="{{ url_for('register', session_id=next_session.id) }}" class="btn btn-success">
-                            <i class="fas fa-calendar-plus me-2"></i>
-                            سجل في هذه الجلسة
-                        </a>
-                    </div>
+                
+                <!-- Session Status -->
+                <div class="alert alert-light border-0 d-inline-block px-5 py-3" style="background-color: #F0F4F8;">
+                    <span class="text-muted">
+                        <i class="fas fa-calendar-times me-2"></i>
+                        لا توجد جلسات مجدولة حالياً · ترقبوا الإعلان عن الجلسات القادمة
+                    </span>
                 </div>
-                {% else %}
-                <div class="alert alert-info">
-                    <h5>لا توجد جلسات مجدولة حالياً</h5>
-                    <p>ترقبوا الإعلان عن الجلسات القادمة قريباً</p>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
 </section>
 
 <!-- Features Section -->
-<section class="features-section py-5">
+<section class="features-section py-5 bg-white">
     <div class="container">
         <div class="row text-center mb-5">
             <div class="col-12">
-                <h2 class="fw-bold mb-3">لماذا ثلوثية الأعمال؟</h2>
+                <h2 class="fw-bold mb-3" style="color: #2C2C2C;">لماذا ثلوثية الأعمال؟</h2>
                 <p class="lead text-muted">منصة احترافية لبناء شبكة علاقات قوية في عالم الأعمال والتأثير</p>
             </div>
         </div>
         
         <div class="row g-4">
             <div class="col-md-4">
-                <div class="feature-card text-center p-4 h-100">
-                    <div class="feature-icon mb-3">
-                        <i class="fas fa-network-wired text-primary fa-3x"></i>
+                <div class="feature-card text-center p-5 h-100" style="background-color: #F8F9FA; border-radius: 12px;">
+                    <div class="feature-icon mb-4">
+                        <i class="fas fa-users text-primary fa-3x"></i>
                     </div>
-                    <h4>شبكة علاقات قوية</h4>
-                    <p class="text-muted">تواصل مع المؤثرين وأصحاب الأعمال الرائدين في المملكة</p>
+                    <h4 class="mb-3" style="color: #2C2C2C;">شبكة علاقات قوية</h4>
+                    <p class="text-muted">تواصل مع الأوائل وأصحاب الأعمال الرائدين والمبدعين</p>
                 </div>
             </div>
             
             <div class="col-md-4">
-                <div class="feature-card text-center p-4 h-100">
-                    <div class="feature-icon mb-3">
-                        <i class="fas fa-calendar-week text-primary fa-3x"></i>
+                <div class="feature-card text-center p-5 h-100" style="background-color: #F8F9FA; border-radius: 12px;">
+                    <div class="feature-icon mb-4">
+                        <i class="fas fa-calendar-alt text-primary fa-3x"></i>
                     </div>
-                    <h4>لقاءات أسبوعية</h4>
+                    <h4 class="mb-3" style="color: #2C2C2C;">لقاءات أسبوعية</h4>
                     <p class="text-muted">كل يوم ثلاثاء، لقاء جديد مع ضيوف مميزين ومواضيع ملهمة</p>
                 </div>
             </div>
             
             <div class="col-md-4">
-                <div class="feature-card text-center p-4 h-100">
-                    <div class="feature-icon mb-3">
+                <div class="feature-card text-center p-5 h-100" style="background-color: #F8F9FA; border-radius: 12px;">
+                    <div class="feature-icon mb-4">
                         <i class="fas fa-chart-line text-primary fa-3x"></i>
                     </div>
-                    <h4>فرص نمو حقيقية</h4>
+                    <h4 class="mb-3" style="color: #2C2C2C;">فرص نمو حقيقية</h4>
                     <p class="text-muted">اكتشف شراكات جديدة وفرص استثمار مع نخبة من رجال الأعمال</p>
                 </div>
             </div>
@@ -204,16 +157,15 @@
 {% endif %}
 
 <!-- CTA Section -->
-<section class="cta-section py-5 bg-primary text-white">
+<section class="cta-section py-5 text-white" style="background: linear-gradient(135deg, #4A90E2 0%, #3A7AC8 100%);">
     <div class="container text-center">
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <h2 class="fw-bold mb-3">ابدأ رحلتك مع ثلوثية الأعمال</h2>
-                <p class="lead mb-4">
-                    انضم إلى مجتمع من المؤثرين وأصحاب المشاريع الطموحين واكتشف فرص لا محدودة للنمو والتطوير
+                <h2 class="fw-bold mb-4">ابدأ رحلتك مع ثلوثية الأعمال</h2>
+                <p class="lead mb-4" style="opacity: 0.95;">
+                    انضم إلى مجتمع من الطموحين والمبدعين واكتشف فرص لا محدودة للنمو والتطوير
                 </p>
-                <a href="{{ url_for('register') }}" class="btn btn-light btn-lg">
-                    <i class="fas fa-rocket me-2"></i>
+                <a href="{{ url_for('register') }}" class="btn btn-light btn-lg px-5 py-3" style="color: #4A90E2; font-weight: 600;">
                     سجل مجاناً الآن
                 </a>
             </div>

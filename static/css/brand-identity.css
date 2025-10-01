@@ -6,18 +6,18 @@
 
 /* CSS Custom Properties - Brand Colors */
 :root {
-  /* Brand Colors */
-  --brand-primary: #2C2C2C;        /* أسود أنثراسيت */
-  --brand-secondary: #3E8E41;      /* أخضر زيتوني/زمردي */
-  --brand-accent: #DFA1D8;         /* بمسة ورد الطائف */
+  /* Brand Colors - التصميم الجديد */
+  --brand-primary: #4A90E2;        /* أزرق ملكي */
+  --brand-secondary: #4A90E2;      /* أزرق ملكي */
+  --brand-accent: #6BB6FF;         /* أزرق فاتح */
   
   /* Extended Color Palette */
-  --brand-primary-light: #404040;
-  --brand-primary-dark: #1a1a1a;
-  --brand-secondary-light: #4fa154;
-  --brand-secondary-dark: #2d6930;
-  --brand-accent-light: #e6b1e0;
-  --brand-accent-dark: #d391cf;
+  --brand-primary-light: #6BA3E8;
+  --brand-primary-dark: #3A7AC8;
+  --brand-secondary-light: #6BA3E8;
+  --brand-secondary-dark: #3A7AC8;
+  --brand-accent-light: #8BC9FF;
+  --brand-accent-dark: #4A9FFF;
   
   /* Semantic Colors */
   --brand-success: var(--brand-secondary);
