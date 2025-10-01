@@ -58,14 +58,14 @@
                         <div class="card-body p-4">
                             <!-- Session Header -->
                             <div class="session-header d-flex justify-content-between align-items-start mb-3">
-                                <div>
+                                <div class="flex-grow-1">
                                     <span class="badge bg-primary mb-2">التجمع رقم {{ session.session_number }}</span>
                                     <h5 class="card-title mb-2">{{ session.title }}</h5>
                                     {% if session.description %}
                                     <p class="text-muted small mb-0">{{ session.description[:100] }}{% if session.description|length > 100 %}...{% endif %}</p>
                                     {% endif %}
                                 </div>
-                                <div class="session-status">
+                                <div class="session-status d-flex flex-column gap-2 align-items-end">
                                     {% if session.status == 'open' %}
                                     <span class="badge bg-success">مفتوحة</span>
                                     {% elif session.status == 'closed' %}
@@ -73,6 +73,14 @@
                                     {% elif session.status == 'completed' %}
                                     <span class="badge bg-info">مكتملة</span>
                                     {% endif %}
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary btn-sm" onclick="shareSessionOnX({{ session.id }})" title="مشاركة">
+                                            <i class="fab fa-x-twitter"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" onclick="copyLink({{ session.id }})" title="نسخ الرابط">
+                                            <i class="fas fa-link"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -275,5 +283,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+function shareSessionOnX(sessionId) {
+    const url = window.location.origin + '/session/' + sessionId;
+    const text = 'انضم لي في ثلوثية الأعمال! 🚀';
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(twitterUrl, '_blank', 'width=550,height=420');
+}
+
+function copyLink(sessionId) {
+    const url = window.location.origin + '/session/' + sessionId;
+    navigator.clipboard.writeText(url).then(() => {
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        btn.classList.add('btn-success');
+        btn.classList.remove('btn-outline-secondary');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+        }, 2000);
+    }).catch(err => {
+        alert('فشل نسخ الرابط');
+        console.error('Error copying link:', err);
+    });
+}
 </script>
 {% endblock %}

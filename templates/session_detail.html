@@ -21,6 +21,18 @@
                                 التجمع رقم {{ session_obj.session_number }}
                             </span>
                         </div>
+                        <div class="col-auto">
+                            <div class="btn-group">
+                                <button class="btn btn-light btn-sm" onclick="shareOnX({{ session_obj.id }})" title="مشاركة على X">
+                                    <i class="fab fa-x-twitter me-1"></i>
+                                    مشاركة
+                                </button>
+                                <button class="btn btn-outline-light btn-sm" onclick="copySessionLink({{ session_obj.id }})" title="نسخ الرابط">
+                                    <i class="fas fa-link me-1"></i>
+                                    نسخ الرابط
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -235,6 +247,34 @@ function showMyQR(sessionId) {
             console.error('Error:', error);
             qrCodeDiv.innerHTML = '<div class="alert alert-danger">خطأ في تحميل رمز الاستجابة</div>';
         });
+}
+
+function shareOnX(sessionId) {
+    const url = window.location.origin + '/session/' + sessionId;
+    const text = 'انضم لي في ثلوثية الأعمال! 🚀';
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(twitterUrl, '_blank', 'width=550,height=420');
+}
+
+function copySessionLink(sessionId) {
+    const url = window.location.origin + '/session/' + sessionId;
+    navigator.clipboard.writeText(url).then(() => {
+        // Show success message
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-1"></i> تم النسخ!';
+        btn.classList.add('btn-success');
+        btn.classList.remove('btn-outline-light');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-light');
+        }, 2000);
+    }).catch(err => {
+        alert('فشل نسخ الرابط');
+        console.error('Error copying link:', err);
+    });
 }
 </script>
 {% endblock %}
