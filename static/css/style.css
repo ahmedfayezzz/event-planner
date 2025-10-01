@@ -5,7 +5,7 @@
 
 /* CSS Variables for Theming */
 :root {
-    --primary-color: #0d6efd;
+    --primary-color: #4A90E2;
     --secondary-color: #6c757d;
     --success-color: #198754;
     --warning-color: #ffc107;
@@ -14,9 +14,9 @@
     --light-color: #f8f9fa;
     --dark-color: #212529;
     
-    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --gradient-primary: linear-gradient(135deg, #4A90E2 0%, #3A7AC8 100%);
+    --gradient-secondary: linear-gradient(135deg, #6BA3E8 0%, #4A90E2 100%);
+    --gradient-success: linear-gradient(135deg, #4A90E2 0%, #3A7AC8 100%);
     
     --border-radius: 0.5rem;
     --border-radius-lg: 1rem;
