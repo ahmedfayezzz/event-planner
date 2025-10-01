@@ -74,10 +74,10 @@
                                     <span class="badge bg-info">مكتملة</span>
                                     {% endif %}
                                     <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary btn-sm" onclick="shareSessionOnX({{ session.id }})" title="مشاركة">
+                                        <button class="btn btn-light btn-sm" onclick="shareSessionOnX({{ session.id }})" title="مشاركة">
                                             <i class="fab fa-x-twitter"></i>
                                         </button>
-                                        <button class="btn btn-outline-secondary btn-sm" onclick="copyLink({{ session.id }})" title="نسخ الرابط">
+                                        <button class="btn btn-light btn-sm" onclick="copyLink({{ session.id }})" title="نسخ الرابط">
                                             <i class="fas fa-link"></i>
                                         </button>
                                     </div>
@@ -298,12 +298,12 @@ function copyLink(sessionId) {
         const originalHTML = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-check"></i>';
         btn.classList.add('btn-success');
-        btn.classList.remove('btn-outline-secondary');
+        btn.classList.remove('btn-light');
         
         setTimeout(() => {
             btn.innerHTML = originalHTML;
             btn.classList.remove('btn-success');
-            btn.classList.add('btn-outline-secondary');
+            btn.classList.add('btn-light');
         }, 2000);
     }).catch(err => {
         alert('فشل نسخ الرابط');
