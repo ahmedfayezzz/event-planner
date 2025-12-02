@@ -133,10 +133,14 @@
                     </div>
                     
                     <div class="mt-4">
-                        <button class="btn btn-outline-primary btn-sm w-100" onclick="editProfile()">
+                        <button class="btn btn-outline-primary btn-sm w-100 mb-2" onclick="editProfile()">
                             <i class="fas fa-edit me-2"></i>
                             تحديث المعلومات
                         </button>
+                        <a href="{{ url_for('change_password') }}" class="btn btn-outline-secondary btn-sm w-100">
+                            <i class="fas fa-key me-2"></i>
+                            تغيير كلمة المرور
+                        </a>
                     </div>
                 </div>
             </div>

@@ -194,6 +194,26 @@
                             </div>
                         </div>
 
+                        <!-- Password Section (shown when create account is checked) -->
+                        <div id="passwordSection" class="mb-4" style="display: none;">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <h6 class="mb-3"><i class="fas fa-lock me-2"></i>كلمة المرور</h6>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="password" class="form-label required">كلمة المرور</label>
+                                            <input type="password" class="form-control" id="password" name="password" minlength="8">
+                                            <div class="form-text">يجب أن تكون 8 أحرف على الأقل</div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="confirm_password" class="form-label required">تأكيد كلمة المرور</label>
+                                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" minlength="8">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Terms and Conditions -->
                         <div class="mb-4">
                             <div class="form-check">
@@ -317,6 +337,25 @@ function renumberCompanions() {
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('sessionRegistrationForm');
     const submitBtn = document.getElementById('submitBtn');
+    const createAccountCheckbox = document.getElementById('createAccount');
+    const passwordSection = document.getElementById('passwordSection');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+
+    // Toggle password section visibility
+    createAccountCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            passwordSection.style.display = 'block';
+            passwordInput.required = true;
+            confirmPasswordInput.required = true;
+        } else {
+            passwordSection.style.display = 'none';
+            passwordInput.required = false;
+            confirmPasswordInput.required = false;
+            passwordInput.value = '';
+            confirmPasswordInput.value = '';
+        }
+    });
 
     // Form validation
     form.addEventListener('submit', function(e) {
@@ -324,6 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const email = document.getElementById('email').value.trim();
         const phone = document.getElementById('phone').value.trim();
         const terms = document.getElementById('terms').checked;
+        const createAccount = createAccountCheckbox.checked;
 
         if (!name || !email || !phone || !terms) {
             e.preventDefault();
@@ -337,6 +377,30 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             alert('يرجى إدخال بريد إلكتروني صحيح');
             return;
+        }
+
+        // Validate password if creating account
+        if (createAccount) {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            if (!password) {
+                e.preventDefault();
+                alert('يرجى إدخال كلمة المرور لإنشاء الحساب');
+                return;
+            }
+
+            if (password.length < 8) {
+                e.preventDefault();
+                alert('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                alert('كلمة المرور وتأكيدها غير متطابقتين');
+                return;
+            }
         }
 
         // Show loading state

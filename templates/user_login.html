@@ -17,18 +17,27 @@
                         {% if next %}
                         <input type="hidden" name="next" value="{{ next }}">
                         {% endif %}
-                        
+
                         <div class="mb-3">
                             <label for="email" class="form-label">البريد الإلكتروني</label>
                             <input type="email" class="form-control" id="email" name="email" required>
                         </div>
-                        
-                        <div class="mb-4">
-                            <label for="phone" class="form-label">رقم الجوال</label>
-                            <input type="tel" class="form-control" id="phone" name="phone" placeholder="5XXXXXXXX" required>
-                            <div class="form-text">ادخل آخر 9 أرقام من رقم جوالك</div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">كلمة المرور</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
                         </div>
-                        
+
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="remember_me" id="rememberMe">
+                                <label class="form-check-label" for="rememberMe">
+                                    تذكرني
+                                </label>
+                            </div>
+                            <a href="{{ url_for('forgot_password') }}" class="text-muted small">نسيت كلمة المرور؟</a>
+                        </div>
+
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary btn-lg" style="background-color: var(--brand-secondary); border-color: var(--brand-secondary);">
                                 <i class="fas fa-sign-in-alt me-2"></i>

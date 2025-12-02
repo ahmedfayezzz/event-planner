@@ -106,6 +106,60 @@ def send_confirmation_email(email, name, session):
         print(f"Email sending failed: {e}")
         return False
 
+def send_password_reset_email(email, name, reset_url):
+    """Send password reset email to user"""
+    try:
+        # Email configuration
+        smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+        smtp_username = os.environ.get("SMTP_USERNAME", "")
+        smtp_password = os.environ.get("SMTP_PASSWORD", "")
+
+        if not all([smtp_username, smtp_password]):
+            print("SMTP credentials not configured")
+            return False
+
+        # Create message
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+
+        msg = MIMEMultipart()
+        msg['From'] = smtp_username
+        msg['To'] = email
+        msg['Subject'] = "إعادة تعيين كلمة المرور - ثلوثية الأعمال"
+
+        body = f"""
+        مرحباً {name},
+
+        لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.
+
+        اضغط على الرابط التالي لإعادة تعيين كلمة المرور:
+        {reset_url}
+
+        هذا الرابط صالح لمدة ساعة واحدة فقط.
+
+        إذا لم تطلب إعادة تعيين كلمة المرور، يمكنك تجاهل هذه الرسالة.
+
+        فريق ثلوثية الأعمال
+        """
+
+        msg.attach(MIMEText(body, 'plain', 'utf-8'))
+
+        # Send email
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(smtp_username, smtp_password)
+        text = msg.as_string()
+        server.sendmail(smtp_username, email, text)
+        server.quit()
+
+        return True
+
+    except Exception as e:
+        print(f"Password reset email sending failed: {e}")
+        return False
+
+
 def send_whatsapp_message(phone, message):
     """Send WhatsApp message (placeholder for Twilio integration)"""
     try:
@@ -113,7 +167,7 @@ def send_whatsapp_message(phone, message):
         # For now, just log the message
         print(f"WhatsApp to {phone}: {message}")
         return True
-        
+
     except Exception as e:
         print(f"WhatsApp sending failed: {e}")
         return False

@@ -62,6 +62,18 @@
                             </div>
                         </div>
 
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="password" class="form-label required">كلمة المرور</label>
+                                <input type="password" class="form-control" id="password" name="password" minlength="8" required>
+                                <div class="form-text">يجب أن تكون 8 أحرف على الأقل</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="confirm_password" class="form-label required">تأكيد كلمة المرور</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" minlength="8" required>
+                            </div>
+                        </div>
+
                         <!-- Social Media -->
                         <div class="section-header mb-4 mt-5">
                             <h4 style="color: var(--brand-secondary);">
@@ -196,15 +208,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const name = document.getElementById('name').value.trim();
         const email = document.getElementById('email').value.trim();
         const phone = document.getElementById('phone').value.trim();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm_password').value;
         const goal = document.getElementById('goal').value.trim();
         const terms = document.getElementById('terms').checked;
-        
-        if (!name || !email || !phone || !goal || !terms) {
+
+        if (!name || !email || !phone || !password || !goal || !terms) {
             e.preventDefault();
             alert('يرجى ملء جميع الحقول المطلوبة والموافقة على الشروط');
             return;
         }
-        
+
         // Validate email
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
@@ -212,7 +226,21 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('يرجى إدخال بريد إلكتروني صحيح');
             return;
         }
-        
+
+        // Validate password length
+        if (password.length < 8) {
+            e.preventDefault();
+            alert('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+            return;
+        }
+
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            alert('كلمة المرور وتأكيدها غير متطابقتين');
+            return;
+        }
+
         // Show loading state
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري التسجيل...';
         submitBtn.disabled = true;

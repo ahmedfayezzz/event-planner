@@ -11,6 +11,45 @@ import json
 import csv
 import io
 import re
+import secrets
+
+
+@app.before_request
+def check_refresh_token():
+    """Auto-login user if valid refresh token cookie exists"""
+    # Skip if user already logged in
+    if 'user_id' in flask_session:
+        return
+
+    # Skip for static files and certain endpoints
+    if request.endpoint in ['static', 'user_login', 'user_logout', 'register']:
+        return
+
+    # Check for refresh token cookie
+    refresh_token = request.cookies.get('refresh_token')
+    if not refresh_token:
+        return
+
+    # Find user with this refresh token
+    user = User.query.filter_by(refresh_token=refresh_token).first()
+    if not user:
+        return
+
+    # Check if token is expired
+    if user.refresh_token_expires and user.refresh_token_expires < datetime.utcnow():
+        # Token expired - clear it
+        user.refresh_token = None
+        user.refresh_token_expires = None
+        db.session.commit()
+        return
+
+    # Valid token - auto-login user
+    flask_session['user_id'] = user.id
+
+    # Refresh the token (extend expiration)
+    user.refresh_token_expires = datetime.utcnow() + timedelta(days=30)
+    db.session.commit()
+
 
 @app.route('/')
 def index():
@@ -45,6 +84,8 @@ def register():
         name = request.form.get('name')
         email = request.form.get('email')
         phone = request.form.get('phone')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
         instagram = request.form.get('instagram')
         snapchat = request.form.get('snapchat')
         twitter = request.form.get('twitter')
@@ -54,12 +95,21 @@ def register():
         gender = request.form.get('gender')
         goal = request.form.get('goal')
         session_id = request.form.get('session_id')
-        
+
         # Validate required fields
-        if not all([name, email, phone, goal]):
+        if not all([name, email, phone, password, goal]):
             flash('جميع الحقول المطلوبة يجب ملؤها', 'error')
             return redirect(url_for('register'))
-        
+
+        # Validate password
+        if len(password) < 8:
+            flash('كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'error')
+            return redirect(url_for('register'))
+
+        if password != confirm_password:
+            flash('كلمة المرور وتأكيدها غير متطابقتين', 'error')
+            return redirect(url_for('register'))
+
         # Check if email exists
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
@@ -68,7 +118,7 @@ def register():
         else:
             # Generate unique username
             username = generate_username(name)
-            
+
             # Generate AI description if goal is provided
             ai_description = ""
             if goal:
@@ -76,7 +126,7 @@ def register():
                     ai_description = generate_professional_description(goal, activity_type or "")
                 except Exception as e:
                     app.logger.error(f"AI description generation failed: {e}")
-            
+
             # Create new user
             user = User(
                 name=name,
@@ -93,9 +143,10 @@ def register():
                 goal=goal,
                 ai_description=ai_description
             )
+            user.set_password(password)
             db.session.add(user)
             db.session.commit()
-        
+
         flash('تم إنشاء الملف الشخصي بنجاح!', 'success')
         return redirect(url_for('profile', username=user.username))
 
@@ -122,6 +173,8 @@ def guest_session_register(session_id):
         email = request.form.get('email')
         name = request.form.get('name')
         phone = request.form.get('phone')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
         instagram = request.form.get('instagram')
         snapchat = request.form.get('snapchat')
         twitter = request.form.get('twitter')
@@ -136,6 +189,18 @@ def guest_session_register(session_id):
         if not all([name, email, phone]):
             flash('الاسم والبريد الإلكتروني ورقم الجوال مطلوبة', 'error')
             return redirect(url_for('guest_session_register', session_id=session_id))
+
+        # Validate password if creating account
+        if create_account:
+            if not password:
+                flash('كلمة المرور مطلوبة لإنشاء الحساب', 'error')
+                return redirect(url_for('guest_session_register', session_id=session_id))
+            if len(password) < 8:
+                flash('كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'error')
+                return redirect(url_for('guest_session_register', session_id=session_id))
+            if password != confirm_password:
+                flash('كلمة المرور وتأكيدها غير متطابقتين', 'error')
+                return redirect(url_for('guest_session_register', session_id=session_id))
 
         # Check if email already exists as a user
         existing_user = User.query.filter_by(email=email).first()
@@ -186,6 +251,7 @@ def guest_session_register(session_id):
                 goal=goal,
                 ai_description=ai_description
             )
+            user.set_password(password)
             db.session.add(user)
             db.session.flush()  # Get user.id before creating registration
 
@@ -272,31 +338,51 @@ def profile(username):
 def user_login():
     # Get the next URL to redirect to after login
     next_page = request.args.get('next')
-    
+
     if request.method == 'POST':
         email = request.form.get('email')
-        phone = request.form.get('phone')
+        password = request.form.get('password')
+        remember_me = request.form.get('remember_me') == 'on'
         next_page = request.form.get('next')  # Also get from form
-        
-        # Find user by email and phone (simple authentication)
+
+        # Find user by email
         user = User.query.filter_by(email=email).first()
-        
-        if user and phone:
-            # Clean and normalize both phone numbers for comparison
-            user_phone_clean = re.sub(r'\D', '', user.phone or '')[-9:]  # Last 9 digits
-            input_phone_clean = re.sub(r'\D', '', phone or '')[-9:]      # Last 9 digits
-            
-            if user_phone_clean == input_phone_clean and user_phone_clean:
-                flask_session['user_id'] = user.id
-                flash('تم تسجيل الدخول بنجاح!', 'success')
-                
-                # Redirect to next page if available, otherwise user dashboard
+
+        if user and user.check_password(password):
+            flask_session['user_id'] = user.id
+            flash('تم تسجيل الدخول بنجاح!', 'success')
+
+            # Handle "Remember me" - set refresh token
+            response = None
+            if remember_me:
+                refresh_token = secrets.token_urlsafe(32)
+                user.refresh_token = refresh_token
+                user.refresh_token_expires = datetime.utcnow() + timedelta(days=30)
+                db.session.commit()
+
+                # Determine redirect
+                if next_page:
+                    response = make_response(redirect(next_page))
+                else:
+                    response = make_response(redirect(url_for('user_dashboard')))
+
+                # Set HTTP-only cookie
+                response.set_cookie(
+                    'refresh_token',
+                    refresh_token,
+                    max_age=30*24*60*60,  # 30 days
+                    httponly=True,
+                    samesite='Lax'
+                )
+                return response
+            else:
+                # Redirect without setting refresh token
                 if next_page:
                     return redirect(next_page)
                 return redirect(url_for('user_dashboard'))
-        
-        flash('البيانات غير صحيحة. تأكد من البريد الإلكتروني ورقم الجوال.', 'error')
-    
+
+        flash('البريد الإلكتروني أو كلمة المرور غير صحيحة', 'error')
+
     return render_template('user_login.html', next=next_page)
 
 @app.route('/user/dashboard')
@@ -310,9 +396,134 @@ def user_dashboard():
 
 @app.route('/user/logout')
 def user_logout():
+    # Invalidate refresh token in database
+    if 'user_id' in flask_session:
+        user = User.query.get(flask_session['user_id'])
+        if user:
+            user.refresh_token = None
+            user.refresh_token_expires = None
+            db.session.commit()
+
     flask_session.pop('user_id', None)
     flash('تم تسجيل الخروج بنجاح', 'success')
-    return redirect(url_for('index'))
+
+    # Clear refresh token cookie
+    response = make_response(redirect(url_for('index')))
+    response.delete_cookie('refresh_token')
+    return response
+
+@app.route('/user/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Handle forgot password request"""
+    if request.method == 'POST':
+        email = request.form.get('email')
+
+        if not email:
+            flash('يرجى إدخال البريد الإلكتروني', 'error')
+            return redirect(url_for('forgot_password'))
+
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            # Generate reset token
+            reset_token = secrets.token_urlsafe(32)
+            user.reset_token = reset_token
+            user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+            db.session.commit()
+
+            # Send reset email
+            try:
+                from utils import send_password_reset_email
+                reset_url = url_for('reset_password', token=reset_token, _external=True)
+                send_password_reset_email(user.email, user.name, reset_url)
+            except Exception as e:
+                app.logger.error(f"Password reset email failed: {e}")
+
+        # Always show success message (don't reveal if email exists)
+        flash('إذا كان البريد الإلكتروني مسجلاً، ستصلك رسالة تحتوي على رابط إعادة تعيين كلمة المرور', 'success')
+        return redirect(url_for('user_login'))
+
+    return render_template('forgot_password.html')
+
+
+@app.route('/user/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Handle password reset via token"""
+    user = User.query.filter_by(reset_token=token).first()
+
+    if not user or not user.reset_token_expires or user.reset_token_expires < datetime.utcnow():
+        flash('رابط إعادة تعيين كلمة المرور غير صالح أو منتهي الصلاحية', 'error')
+        return redirect(url_for('forgot_password'))
+
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        if not password:
+            flash('يرجى إدخال كلمة المرور الجديدة', 'error')
+            return redirect(url_for('reset_password', token=token))
+
+        if len(password) < 8:
+            flash('كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'error')
+            return redirect(url_for('reset_password', token=token))
+
+        if password != confirm_password:
+            flash('كلمة المرور وتأكيدها غير متطابقتين', 'error')
+            return redirect(url_for('reset_password', token=token))
+
+        # Set new password and clear reset token
+        user.set_password(password)
+        user.reset_token = None
+        user.reset_token_expires = None
+        db.session.commit()
+
+        flash('تم تغيير كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول', 'success')
+        return redirect(url_for('user_login'))
+
+    return render_template('reset_password.html', token=token)
+
+
+@app.route('/user/change-password', methods=['GET', 'POST'])
+def change_password():
+    """Handle password change for logged-in users"""
+    if 'user_id' not in flask_session:
+        flash('يجب تسجيل الدخول أولاً', 'error')
+        return redirect(url_for('user_login'))
+
+    user = User.query.get_or_404(flask_session['user_id'])
+
+    if request.method == 'POST':
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+
+        # Verify current password
+        if not user.check_password(current_password):
+            flash('كلمة المرور الحالية غير صحيحة', 'error')
+            return redirect(url_for('change_password'))
+
+        # Validate new password
+        if not new_password:
+            flash('يرجى إدخال كلمة المرور الجديدة', 'error')
+            return redirect(url_for('change_password'))
+
+        if len(new_password) < 8:
+            flash('كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل', 'error')
+            return redirect(url_for('change_password'))
+
+        if new_password != confirm_password:
+            flash('كلمة المرور الجديدة وتأكيدها غير متطابقتين', 'error')
+            return redirect(url_for('change_password'))
+
+        # Set new password
+        user.set_password(new_password)
+        db.session.commit()
+
+        flash('تم تغيير كلمة المرور بنجاح!', 'success')
+        return redirect(url_for('user_dashboard'))
+
+    return render_template('change_password.html')
+
 
 @app.route('/my-qr/<int:session_id>')
 def my_qr_code(session_id):

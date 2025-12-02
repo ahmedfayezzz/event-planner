@@ -128,11 +128,14 @@ def create_sample_data():
         
         # Create users
         users = []
+        default_password = 'password123'  # Default password for all sample users
+        print(f"📝 كلمة المرور الافتراضية للمستخدمين: {default_password}")
+
         for user_data in sample_users:
             # Generate username from name
             name_parts = user_data['name'].split()
             username = f"{name_parts[0]}_{name_parts[1]}_{random.randint(100, 999)}"
-            
+
             user = User(
                 name=user_data['name'],
                 username=username,
@@ -148,6 +151,7 @@ def create_sample_data():
                 ai_description=f"خبير في مجال {user_data['activity_type']} مع خبرة واسعة في {user_data['position'].lower()}. يسعى لتحقيق أهداف طموحة في السوق السعودي.",
                 created_at=datetime.utcnow() - timedelta(days=random.randint(1, 30))
             )
+            user.set_password(default_password)
             users.append(user)
             db.session.add(user)
         

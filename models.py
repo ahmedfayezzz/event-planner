@@ -2,6 +2,7 @@ from app import db
 from flask_login import UserMixin
 from datetime import datetime
 from sqlalchemy import func
+from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -9,6 +10,7 @@ class User(db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(120), nullable=False)
     phone = db.Column(db.String(20), nullable=False)
+    password_hash = db.Column(db.String(256))
     instagram = db.Column(db.String(200))
     snapchat = db.Column(db.String(200))
     twitter = db.Column(db.String(200))
@@ -21,14 +23,32 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_approved = db.Column(db.Boolean, default=True)
     is_active = db.Column(db.Boolean, default=True)
-    
+
+    # Password reset fields
+    reset_token = db.Column(db.String(128))
+    reset_token_expires = db.Column(db.DateTime)
+
+    # Remember me / refresh token fields
+    refresh_token = db.Column(db.String(128))
+    refresh_token_expires = db.Column(db.DateTime)
+
     # Relationships
     registrations = db.relationship('Registration', backref='user', lazy=True)
     attendances = db.relationship('Attendance', backref='user', lazy=True)
 
+    def set_password(self, password):
+        """Hash and set the user's password"""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        """Check if the provided password matches the hash"""
+        if not self.password_hash:
+            return False
+        return check_password_hash(self.password_hash, password)
+
     def get_attendance_count(self):
         return len([a for a in self.attendances if a.attended])
-    
+
     def get_profile_url(self):
         return f"/u/{self.username}"
 
@@ -41,6 +61,7 @@ class Session(db.Model):
     guest_name = db.Column(db.String(100))
     guest_profile = db.Column(db.String(200))
     max_participants = db.Column(db.Integer, default=50)
+    max_companions = db.Column(db.Integer, default=5)  # Max companions per registration
     status = db.Column(db.String(20), default='open')  # open, closed, completed
     requires_approval = db.Column(db.Boolean, default=False)
     show_participant_count = db.Column(db.Boolean, default=True)
@@ -103,11 +124,53 @@ class Session(db.Model):
 
 class Registration(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Nullable for guest registrations
     session_id = db.Column(db.Integer, db.ForeignKey('session.id'), nullable=False)
     registered_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_approved = db.Column(db.Boolean, default=True)
     approval_notes = db.Column(db.Text)
+
+    # Guest registration fields (used when user_id is NULL)
+    guest_name = db.Column(db.String(100))
+    guest_email = db.Column(db.String(120))
+    guest_phone = db.Column(db.String(20))
+    guest_instagram = db.Column(db.String(200))
+    guest_snapchat = db.Column(db.String(200))
+    guest_twitter = db.Column(db.String(200))
+    guest_company_name = db.Column(db.String(100))
+    guest_position = db.Column(db.String(100))
+    guest_activity_type = db.Column(db.String(100))
+    guest_gender = db.Column(db.String(10))
+    guest_goal = db.Column(db.Text)
+
+    # Relationships
+    companions = db.relationship('Companion', backref='registration', lazy=True, cascade='all, delete-orphan')
+
+    def is_guest_registration(self):
+        """Check if this is a guest registration (no user account)"""
+        return self.user_id is None
+
+    def get_registrant_name(self):
+        """Get the name of the registrant (user or guest)"""
+        if self.user_id:
+            return self.user.name
+        return self.guest_name
+
+    def get_registrant_email(self):
+        """Get the email of the registrant (user or guest)"""
+        if self.user_id:
+            return self.user.email
+        return self.guest_email
+
+    def get_registrant_phone(self):
+        """Get the phone of the registrant (user or guest)"""
+        if self.user_id:
+            return self.user.phone
+        return self.guest_phone
+
+    def get_companion_count(self):
+        """Get the number of companions for this registration"""
+        return len(self.companions)
 
 class Attendance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -116,6 +179,28 @@ class Attendance(db.Model):
     attended = db.Column(db.Boolean, default=False)
     check_in_time = db.Column(db.DateTime)
     qr_verified = db.Column(db.Boolean, default=False)
+
+
+class Companion(db.Model):
+    """Companion attached to a registration"""
+    id = db.Column(db.Integer, primary_key=True)
+    registration_id = db.Column(db.Integer, db.ForeignKey('registration.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    company = db.Column(db.String(100))
+    title = db.Column(db.String(100))
+    phone = db.Column(db.String(20))
+    email = db.Column(db.String(120))  # Optional, for future invite functionality
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # For invitation tracking (admin can invite companions to create accounts)
+    invite_sent = db.Column(db.Boolean, default=False)
+    invite_sent_at = db.Column(db.DateTime)
+    invite_token = db.Column(db.String(128))
+    converted_to_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+
+    # Relationships
+    converted_user = db.relationship('User', foreign_keys=[converted_to_user_id])
+
 
 class Admin(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
