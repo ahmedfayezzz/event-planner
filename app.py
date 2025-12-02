@@ -38,6 +38,45 @@ def load_user(user_id):
     from models import Admin
     return Admin.query.get(int(user_id))
 
+# Arabic date/number filters
+def to_arabic_numerals(text):
+    """Convert Western numerals to Arabic-Indic numerals"""
+    arabic_numerals = {'0': '٠', '1': '١', '2': '٢', '3': '٣', '4': '٤',
+                       '5': '٥', '6': '٦', '7': '٧', '8': '٨', '9': '٩'}
+    return ''.join(arabic_numerals.get(c, c) for c in str(text))
+
+@app.template_filter('arabic_date')
+def arabic_date_filter(date_obj):
+    """Format date in Arabic with Arabic numerals"""
+    if not date_obj:
+        return ""
+    arabic_days = {
+        0: "الاثنين", 1: "الثلاثاء", 2: "الأربعاء", 3: "الخميس",
+        4: "الجمعة", 5: "السبت", 6: "الأحد"
+    }
+    arabic_months = {
+        1: "يناير", 2: "فبراير", 3: "مارس", 4: "أبريل",
+        5: "مايو", 6: "يونيو", 7: "يوليو", 8: "أغسطس",
+        9: "سبتمبر", 10: "أكتوبر", 11: "نوفمبر", 12: "ديسمبر"
+    }
+    day_name = arabic_days[date_obj.weekday()]
+    month_name = arabic_months[date_obj.month]
+    day = to_arabic_numerals(date_obj.day)
+    year = to_arabic_numerals(date_obj.year)
+    return f"{day_name} {day} {month_name} {year}"
+
+@app.template_filter('arabic_time')
+def arabic_time_filter(date_obj):
+    """Format time with Arabic numerals"""
+    if not date_obj:
+        return ""
+    return to_arabic_numerals(date_obj.strftime('%H:%M'))
+
+@app.template_filter('arabic_num')
+def arabic_num_filter(num):
+    """Convert number to Arabic numerals"""
+    return to_arabic_numerals(num)
+
 with app.app_context():
     # Import models and routes
     import models

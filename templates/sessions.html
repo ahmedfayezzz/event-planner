@@ -20,25 +20,29 @@
             <div class="filter-tabs">
                 <ul class="nav nav-pills justify-content-center" id="sessionTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="all-tab" data-bs-toggle="pill" data-bs-target="#all" type="button" role="tab">
+                        <button class="nav-link active" id="all-tab" data-bs-toggle="pill" data-bs-target="#all"
+                            type="button" role="tab">
                             <i class="fas fa-calendar me-2"></i>
                             جميع الجلسات
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="upcoming-tab" data-bs-toggle="pill" data-bs-target="#upcoming" type="button" role="tab">
+                        <button class="nav-link" id="upcoming-tab" data-bs-toggle="pill" data-bs-target="#upcoming"
+                            type="button" role="tab">
                             <i class="fas fa-clock me-2"></i>
                             القادمة
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="open-tab" data-bs-toggle="pill" data-bs-target="#open" type="button" role="tab">
+                        <button class="nav-link" id="open-tab" data-bs-toggle="pill" data-bs-target="#open"
+                            type="button" role="tab">
                             <i class="fas fa-unlock me-2"></i>
                             مفتوحة للتسجيل
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="completed-tab" data-bs-toggle="pill" data-bs-target="#completed" type="button" role="tab">
+                        <button class="nav-link" id="completed-tab" data-bs-toggle="pill" data-bs-target="#completed"
+                            type="button" role="tab">
                             <i class="fas fa-check me-2"></i>
                             مكتملة
                         </button>
@@ -62,7 +66,8 @@
                                     <span class="badge bg-primary mb-2">التجمع رقم {{ session.session_number }}</span>
                                     <h5 class="card-title mb-2">{{ session.title }}</h5>
                                     {% if session.description %}
-                                    <p class="text-muted small mb-0">{{ session.description[:100] }}{% if session.description|length > 100 %}...{% endif %}</p>
+                                    <p class="text-muted small mb-0">{{ session.description[:100] }}{% if
+                                        session.description|length > 100 %}...{% endif %}</p>
                                     {% endif %}
                                 </div>
                                 <div class="session-status d-flex flex-column gap-2 align-items-end">
@@ -74,10 +79,12 @@
                                     <span class="badge bg-info">مكتملة</span>
                                     {% endif %}
                                     <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-light btn-sm" onclick="shareSessionOnX({{ session.id }})" title="مشاركة">
+                                        <button class="btn btn-light btn-sm" onclick="shareSessionOnX({{ session.id }})"
+                                            title="مشاركة">
                                             <i class="fab fa-x-twitter"></i>
                                         </button>
-                                        <button class="btn btn-light btn-sm" onclick="copyLink({{ session.id }})" title="نسخ الرابط">
+                                        <button class="btn btn-light btn-sm" onclick="copyLink({{ session.id }})"
+                                            title="نسخ الرابط">
                                             <i class="fas fa-link"></i>
                                         </button>
                                     </div>
@@ -89,44 +96,45 @@
                                 <div class="detail-row d-flex align-items-center mb-2">
                                     <i class="fas fa-calendar-alt text-primary me-3"></i>
                                     <div>
-                                        <strong>{{ session.date.strftime('%A') }}</strong>
-                                        <span class="text-muted">{{ session.date.strftime('%Y-%m-%d') }}</span>
+                                        <strong>{{ session.date|arabic_date }}</strong>
                                     </div>
                                 </div>
-                                
+
                                 <div class="detail-row d-flex align-items-center mb-2">
                                     <i class="fas fa-clock text-primary me-3"></i>
-                                    <span>{{ session.date.strftime('%H:%M') }}</span>
+                                    <span>{{ session.date|arabic_time }}</span>
                                 </div>
-                                
+
                                 {% if session.guest_name %}
                                 <div class="detail-row d-flex align-items-center mb-2">
                                     <i class="fas fa-user-tie text-primary me-3"></i>
                                     <div>
                                         <span>الضيف: <strong>{{ session.guest_name }}</strong></span>
                                         {% if session.guest_profile %}
-                                        <a href="{{ session.guest_profile }}" target="_blank" class="text-decoration-none ms-2">
+                                        <a href="{{ session.guest_profile }}" target="_blank"
+                                            class="text-decoration-none ms-2">
                                             <i class="fas fa-external-link-alt small"></i>
                                         </a>
                                         {% endif %}
                                     </div>
                                 </div>
                                 {% endif %}
-                                
+
                                 {% if session.location %}
                                 <div class="detail-row d-flex align-items-center mb-2">
                                     <i class="fas fa-map-marker-alt text-primary me-3"></i>
                                     <span>{{ session.location }}</span>
                                 </div>
                                 {% endif %}
-                                
+
                                 {% if session.show_participant_count %}
                                 <div class="detail-row d-flex align-items-center">
                                     <i class="fas fa-users text-primary me-3"></i>
                                     <div class="flex-grow-1">
-                                        <span>{{ session.get_registration_count() }} / {{ session.max_participants }} مشارك</span>
+                                        <span>{{ session.get_registration_count()|arabic_num }} / {{
+                                            session.max_participants|arabic_num }} مشارك</span>
                                         <div class="progress mt-1" style="height: 4px;">
-                                            <div class="progress-bar" role="progressbar" 
+                                            <div class="progress-bar" role="progressbar"
                                                 style="width: {{ (session.get_registration_count() / session.max_participants * 100) if session.max_participants > 0 else 0 }}%">
                                             </div>
                                         </div>
@@ -138,7 +146,8 @@
                             <!-- Session Actions -->
                             <div class="session-actions mt-auto">
                                 {% if session.can_register() %}
-                                <a href="{{ url_for('register', session_id=session.id) }}" class="btn btn-primary w-100">
+                                <a href="{{ url_for('register', session_id=session.id) }}"
+                                    class="btn btn-primary w-100">
                                     <i class="fas fa-user-plus me-2"></i>
                                     سجل الآن
                                 </a>
@@ -164,7 +173,7 @@
                 </div>
                 {% endfor %}
             </div>
-            
+
             {% if not sessions %}
             <div class="text-center py-5">
                 <i class="fas fa-calendar-times text-muted fa-4x mb-3"></i>
@@ -241,82 +250,82 @@
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Filter sessions based on active tab
-    const tabs = document.querySelectorAll('#sessionTabs button');
-    const now = new Date();
-    
-    tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            const target = this.getAttribute('data-bs-target');
-            filterSessions(target);
+    document.addEventListener('DOMContentLoaded', function () {
+        // Filter sessions based on active tab
+        const tabs = document.querySelectorAll('#sessionTabs button');
+        const now = new Date();
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function () {
+                const target = this.getAttribute('data-bs-target');
+                filterSessions(target);
+            });
         });
+
+        function filterSessions(filter) {
+            const sessionCards = document.querySelectorAll('.session-card');
+
+            sessionCards.forEach(card => {
+                const cardParent = card.closest('.col-lg-6');
+                const sessionDate = new Date(card.querySelector('[data-session-date]')?.dataset.sessionDate);
+                const sessionStatus = card.querySelector('.session-status .badge')?.textContent.trim();
+
+                let show = true;
+
+                switch (filter) {
+                    case '#upcoming':
+                        show = sessionDate > now;
+                        break;
+                    case '#open':
+                        show = sessionStatus === 'مفتوحة';
+                        break;
+                    case '#completed':
+                        show = sessionStatus === 'مكتملة';
+                        break;
+                    default:
+                        show = true;
+                }
+
+                if (cardParent) {
+                    cardParent.style.display = show ? 'block' : 'none';
+                }
+            });
+        }
     });
-    
-    function filterSessions(filter) {
-        const sessionCards = document.querySelectorAll('.session-card');
-        
-        sessionCards.forEach(card => {
-            const cardParent = card.closest('.col-lg-6');
-            const sessionDate = new Date(card.querySelector('[data-session-date]')?.dataset.sessionDate);
-            const sessionStatus = card.querySelector('.session-status .badge')?.textContent.trim();
-            
-            let show = true;
-            
-            switch(filter) {
-                case '#upcoming':
-                    show = sessionDate > now;
-                    break;
-                case '#open':
-                    show = sessionStatus === 'مفتوحة';
-                    break;
-                case '#completed':
-                    show = sessionStatus === 'مكتملة';
-                    break;
-                default:
-                    show = true;
-            }
-            
-            if (cardParent) {
-                cardParent.style.display = show ? 'block' : 'none';
-            }
+
+    function shareSessionOnX(sessionId) {
+        shareOnX(sessionId);
+    }
+
+    function shareOnX(sessionId) {
+        const url = window.location.origin + '/session/' + sessionId;
+        const text = 'انضم لي في ثلوثية الأعمال! 🚀';
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+        window.open(twitterUrl, '_blank', 'width=550,height=420');
+    }
+
+    function copyLink(sessionId) {
+        copySessionLink(sessionId);
+    }
+
+    function copySessionLink(sessionId) {
+        const url = window.location.origin + '/session/' + sessionId;
+        navigator.clipboard.writeText(url).then(() => {
+            const btn = event.target.closest('button');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            btn.classList.add('btn-success');
+            btn.classList.remove('btn-light');
+
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-light');
+            }, 2000);
+        }).catch(err => {
+            alert('فشل نسخ الرابط');
+            console.error('Error copying link:', err);
         });
     }
-});
-
-function shareSessionOnX(sessionId) {
-    shareOnX(sessionId);
-}
-
-function shareOnX(sessionId) {
-    const url = window.location.origin + '/session/' + sessionId;
-    const text = 'انضم لي في ثلوثية الأعمال! 🚀';
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-    window.open(twitterUrl, '_blank', 'width=550,height=420');
-}
-
-function copyLink(sessionId) {
-    copySessionLink(sessionId);
-}
-
-function copySessionLink(sessionId) {
-    const url = window.location.origin + '/session/' + sessionId;
-    navigator.clipboard.writeText(url).then(() => {
-        const btn = event.target.closest('button');
-        const originalHTML = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check"></i>';
-        btn.classList.add('btn-success');
-        btn.classList.remove('btn-light');
-        
-        setTimeout(() => {
-            btn.innerHTML = originalHTML;
-            btn.classList.remove('btn-success');
-            btn.classList.add('btn-light');
-        }, 2000);
-    }).catch(err => {
-        alert('فشل نسخ الرابط');
-        console.error('Error copying link:', err);
-    });
-}
 </script>
 {% endblock %}

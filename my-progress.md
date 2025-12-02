@@ -1,0 +1,2 @@
+- remove dark mode support (broken styles)
+- fix date formatting in session list card
