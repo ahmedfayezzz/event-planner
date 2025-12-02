@@ -151,9 +151,39 @@ def register():
             )
             user.set_password(password)
             db.session.add(user)
+            db.session.flush()  # Get user.id
+
+            # Link previous guest registrations to this user account
+            guest_registrations = Registration.query.filter(
+                Registration.user_id.is_(None),
+                db.or_(
+                    Registration.guest_email == email,
+                    Registration.guest_phone == phone
+                )
+            ).all()
+
+            for reg in guest_registrations:
+                reg.user_id = user.id
+                # Clear guest fields since now linked to user
+                reg.guest_name = None
+                reg.guest_email = None
+                reg.guest_phone = None
+                reg.guest_instagram = None
+                reg.guest_snapchat = None
+                reg.guest_twitter = None
+                reg.guest_company_name = None
+                reg.guest_position = None
+                reg.guest_activity_type = None
+                reg.guest_gender = None
+                reg.guest_goal = None
+
             db.session.commit()
 
-        flash('تم إنشاء الملف الشخصي بنجاح!', 'success')
+            if guest_registrations:
+                flash(f'تم إنشاء الملف الشخصي وربط {len(guest_registrations)} تسجيل سابق بحسابك!', 'success')
+            else:
+                flash('تم إنشاء الملف الشخصي بنجاح!', 'success')
+
         return redirect(url_for('profile', username=user.username))
 
     # GET request - account creation only (no session)
@@ -239,6 +269,7 @@ def guest_session_register(session_id):
                 return redirect(url_for('guest_session_register', session_id=session_id))
 
         user = None
+        previous_guest_regs = []
         if create_account:
             # Create user account
             username = generate_username(name)
@@ -267,6 +298,31 @@ def guest_session_register(session_id):
             user.set_password(password)
             db.session.add(user)
             db.session.flush()  # Get user.id before creating registration
+
+            # Link previous guest registrations to this user account (excluding current session)
+            previous_guest_regs = Registration.query.filter(
+                Registration.user_id.is_(None),
+                Registration.session_id != session_id,
+                db.or_(
+                    Registration.guest_email == email,
+                    Registration.guest_phone == phone
+                )
+            ).all()
+
+            for reg in previous_guest_regs:
+                reg.user_id = user.id
+                # Clear guest fields since now linked to user
+                reg.guest_name = None
+                reg.guest_email = None
+                reg.guest_phone = None
+                reg.guest_instagram = None
+                reg.guest_snapchat = None
+                reg.guest_twitter = None
+                reg.guest_company_name = None
+                reg.guest_position = None
+                reg.guest_activity_type = None
+                reg.guest_gender = None
+                reg.guest_goal = None
 
         # Create registration
         registration = Registration(
@@ -314,7 +370,10 @@ def guest_session_register(session_id):
             app.logger.error(f"Email sending failed: {e}")
 
         if user:
-            flash('تم التسجيل وإنشاء الحساب بنجاح!', 'success')
+            if previous_guest_regs:
+                flash(f'تم التسجيل وإنشاء الحساب وربط {len(previous_guest_regs)} تسجيل سابق بحسابك!', 'success')
+            else:
+                flash('تم التسجيل وإنشاء الحساب بنجاح!', 'success')
             return redirect(url_for('profile', username=user.username))
         else:
             flash('تم التسجيل بنجاح!', 'success')
