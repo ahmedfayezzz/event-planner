@@ -344,15 +344,6 @@ h3, .h3 {
   .card-body { padding: 1rem; }
 }
 
-/* Dark Mode Support (Future) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --brand-primary: #f5f5f5;
-    --brand-primary-light: #ffffff;
-    --brand-primary-dark: #e0e0e0;
-  }
-}
-
 /* Print Styles */
 @media print {
   .btn, .navbar, .modal, .alert { 
