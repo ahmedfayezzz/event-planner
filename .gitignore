@@ -1,0 +1,24 @@
+# Environment
+.env
+venv/
+.venv/
+
+# Database
+*.db
+*.sqlite
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Local
+.local/
+*.log
