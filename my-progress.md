@@ -2,4 +2,11 @@
 - fix date formatting in session list card
 - fix share and copy link actions in session card
 - separate registration, companion
-- 
+- authentication system upgrade:
+  - login via email + password (replaced phone-based auth)
+  - "remember me" with 30-day refresh token (HTTP-only cookie)
+  - forgot password flow with email reset link (1-hour expiry)
+  - change password for logged-in users
+  - password fields in account registration
+  - password fields in session registration (when "create account" checked)
+  - sample users password: password123

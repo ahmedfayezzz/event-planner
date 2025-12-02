@@ -115,6 +115,12 @@ def register():
         if existing_user:
             flash(f'يوجد حساب مسجل بهذا البريد الإلكتروني. يرجى تسجيل الدخول من <a href="{url_for("user_login")}" class="alert-link">هنا</a>', 'info')
             return redirect(url_for('user_login'))
+
+        # Check if phone exists
+        existing_phone = User.query.filter_by(phone=phone).first()
+        if existing_phone:
+            flash('رقم الجوال مسجل مسبقاً. يرجى استخدام رقم آخر أو تسجيل الدخول', 'error')
+            return redirect(url_for('register'))
         else:
             # Generate unique username
             username = generate_username(name)
@@ -224,6 +230,13 @@ def guest_session_register(session_id):
         if existing_guest_reg:
             flash('هذا البريد الإلكتروني مسجل بالفعل في هذه الجلسة', 'info')
             return redirect(url_for('guest_session_register', session_id=session_id))
+
+        # Check if phone exists (only needed when creating account)
+        if create_account:
+            existing_phone = User.query.filter_by(phone=phone).first()
+            if existing_phone:
+                flash('رقم الجوال مسجل مسبقاً. يرجى استخدام رقم آخر أو تسجيل الدخول', 'error')
+                return redirect(url_for('guest_session_register', session_id=session_id))
 
         user = None
         if create_account:
