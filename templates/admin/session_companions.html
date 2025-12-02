@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}المرافقون - {{ session_obj.title }} - ثلوثية الأعمال{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="fw-bold mb-2">المرافقون</h1>
+                    <p class="text-muted mb-0">{{ session_obj.title }} - التجمع رقم {{ session_obj.session_number|arabic_num }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin_session_attendees', session_id=session_obj.id) }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-right me-2"></i>
+                        العودة للمسجلين
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="stat-card bg-info text-white p-3 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="fw-bold mb-1">{{ total_companions|arabic_num }}</h4>
+                        <p class="mb-0 small">إجمالي المرافقين</p>
+                    </div>
+                    <i class="fas fa-users fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Companions List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-friends me-2"></i>
+                        قائمة المرافقين
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if companions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th width="5%">#</th>
+                                    <th>اسم المرافق</th>
+                                    <th>الشركة</th>
+                                    <th>المنصب</th>
+                                    <th>الجوال</th>
+                                    <th>البريد</th>
+                                    <th>المسجل الأساسي</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in companions %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <strong>{{ item.companion.name }}</strong>
+                                    </td>
+                                    <td>{{ item.companion.company or '-' }}</td>
+                                    <td>{{ item.companion.title or '-' }}</td>
+                                    <td>
+                                        {% if item.companion.phone %}
+                                        <a href="tel:{{ item.companion.phone }}" class="text-decoration-none">
+                                            {{ item.companion.phone }}
+                                        </a>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.companion.email %}
+                                        <a href="mailto:{{ item.companion.email }}" class="text-decoration-none">
+                                            {{ item.companion.email }}
+                                        </a>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ item.registrant_name }}</span>
+                                        <br>
+                                        <small class="text-muted">{{ item.registrant_email }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-friends text-muted fa-4x mb-3"></i>
+                        <h4 class="text-muted">لا يوجد مرافقون</h4>
+                        <p class="text-muted">لم يضف أي مشارك مرافقين في هذه الجلسة</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

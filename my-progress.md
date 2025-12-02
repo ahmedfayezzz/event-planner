@@ -1,2 +1,5 @@
 - remove dark mode support (broken styles)
 - fix date formatting in session list card
+- fix share and copy link actions in session card
+- separate registration, companion
+- 

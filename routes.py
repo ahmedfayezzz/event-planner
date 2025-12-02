@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify, make_response, session as flask_session
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db
-from models import User, Session, Registration, Attendance, Admin
+from models import User, Session, Registration, Attendance, Admin, Companion
 from sqlalchemy import func
 from ai_service import generate_professional_description, analyze_participant_data, search_participants
 from utils import generate_username, send_confirmation_email, generate_qr_code, export_to_csv
@@ -31,12 +31,15 @@ def index():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    # Check if user is already logged in
+    # If session_id provided, redirect to session registration
     session_id = request.args.get('session_id')
-    if 'user_id' in flask_session and session_id:
-        # User is logged in and trying to register for a session
-        return redirect(url_for('session_detail', session_id=session_id))
-    
+    if session_id:
+        return redirect(url_for('guest_session_register', session_id=session_id))
+
+    # Check if user is already logged in
+    if 'user_id' in flask_session:
+        return redirect(url_for('user_dashboard'))
+
     if request.method == 'POST':
         # Get form data
         name = request.form.get('name')
@@ -93,52 +96,162 @@ def register():
             db.session.add(user)
             db.session.commit()
         
-        # Register for session if specified
-        if session_id:
-            session_obj = Session.query.get(session_id)
-            if session_obj and session_obj.can_register():
-                # Check if already registered
-                existing_reg = Registration.query.filter_by(
-                    user_id=user.id, 
-                    session_id=session_id
-                ).first()
-                
-                if not existing_reg:
-                    registration = Registration(
-                        user_id=user.id,
-                        session_id=session_id,
-                        is_approved=not session_obj.requires_approval
-                    )
-                    db.session.add(registration)
-                    db.session.commit()
-                    
-                    # Send confirmation email
-                    email_sent = False
-                    try:
-                        email_sent = send_confirmation_email(user.email, user.name, session_obj)
-                    except Exception as e:
-                        app.logger.error(f"Email sending failed: {e}")
-                    
-                    if email_sent:
-                        flash('تم التسجيل بنجاح! تم إرسال تأكيد عبر البريد الإلكتروني.', 'success')
-                    else:
-                        flash('تم التسجيل بنجاح! لم نتمكن من إرسال تأكيد البريد الإلكتروني حالياً.', 'warning')
-                else:
-                    flash('أنت مسجل مسبقاً في هذه الجلسة.', 'info')
-            else:
-                flash('عذراً، هذه الجلسة مكتملة أو مغلقة.', 'error')
-        else:
-            flash('تم إنشاء الملف الشخصي بنجاح!', 'success')
-        
+        flash('تم إنشاء الملف الشخصي بنجاح!', 'success')
         return redirect(url_for('profile', username=user.username))
-    
+
+    # GET request - account creation only (no session)
+    return render_template('register.html', selected_session=None)
+
+
+@app.route('/session/<int:session_id>/guest-register', methods=['GET', 'POST'])
+def guest_session_register(session_id):
+    """Handle session registration with optional account creation"""
+    session_obj = Session.query.get_or_404(session_id)
+
+    # Check if session can accept registrations
+    if not session_obj.can_register():
+        flash('عذراً، التسجيل مغلق لهذه الجلسة', 'error')
+        return redirect(url_for('sessions'))
+
+    # If user is logged in, redirect to session detail to register there
+    if 'user_id' in flask_session:
+        return redirect(url_for('session_detail', session_id=session_id))
+
+    if request.method == 'POST':
+        # Get form data
+        email = request.form.get('email')
+        name = request.form.get('name')
+        phone = request.form.get('phone')
+        instagram = request.form.get('instagram')
+        snapchat = request.form.get('snapchat')
+        twitter = request.form.get('twitter')
+        company_name = request.form.get('company_name')
+        position = request.form.get('position')
+        activity_type = request.form.get('activity_type')
+        gender = request.form.get('gender')
+        goal = request.form.get('goal')
+        create_account = request.form.get('create_account') == 'on'
+
+        # Validate required fields
+        if not all([name, email, phone]):
+            flash('الاسم والبريد الإلكتروني ورقم الجوال مطلوبة', 'error')
+            return redirect(url_for('guest_session_register', session_id=session_id))
+
+        # Check if email already exists as a user
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            # Check if already registered for this session
+            existing_reg = Registration.query.filter_by(
+                user_id=existing_user.id,
+                session_id=session_id
+            ).first()
+            if existing_reg:
+                flash('هذا البريد الإلكتروني مسجل بالفعل في هذه الجلسة', 'info')
+            else:
+                flash(f'يوجد حساب مسجل بهذا البريد الإلكتروني. يرجى <a href="{url_for("user_login", next=url_for("session_detail", session_id=session_id))}" class="alert-link">تسجيل الدخول</a> للتسجيل في الجلسة.', 'info')
+            return redirect(url_for('guest_session_register', session_id=session_id))
+
+        # Check for existing guest registration with same email for this session
+        existing_guest_reg = Registration.query.filter_by(
+            guest_email=email,
+            session_id=session_id
+        ).first()
+        if existing_guest_reg:
+            flash('هذا البريد الإلكتروني مسجل بالفعل في هذه الجلسة', 'info')
+            return redirect(url_for('guest_session_register', session_id=session_id))
+
+        user = None
+        if create_account:
+            # Create user account
+            username = generate_username(name)
+            ai_description = ""
+            if goal:
+                try:
+                    ai_description = generate_professional_description(goal, activity_type or "")
+                except Exception as e:
+                    app.logger.error(f"AI description generation failed: {e}")
+
+            user = User(
+                name=name,
+                username=username,
+                email=email,
+                phone=phone,
+                instagram=instagram,
+                snapchat=snapchat,
+                twitter=twitter,
+                company_name=company_name,
+                position=position,
+                activity_type=activity_type,
+                gender=gender,
+                goal=goal,
+                ai_description=ai_description
+            )
+            db.session.add(user)
+            db.session.flush()  # Get user.id before creating registration
+
+        # Create registration
+        registration = Registration(
+            user_id=user.id if user else None,
+            session_id=session_id,
+            is_approved=not session_obj.requires_approval,
+            guest_name=name if not user else None,
+            guest_email=email if not user else None,
+            guest_phone=phone if not user else None,
+            guest_instagram=instagram if not user else None,
+            guest_snapchat=snapchat if not user else None,
+            guest_twitter=twitter if not user else None,
+            guest_company_name=company_name if not user else None,
+            guest_position=position if not user else None,
+            guest_activity_type=activity_type if not user else None,
+            guest_gender=gender if not user else None,
+            guest_goal=goal if not user else None
+        )
+        db.session.add(registration)
+        db.session.flush()  # Get registration.id for companions
+
+        # Process companions
+        companion_count = int(request.form.get('companion_count', 0))
+        max_companions = session_obj.max_companions or 5
+
+        for i in range(min(companion_count, max_companions)):
+            companion_name = request.form.get(f'companion_name_{i}')
+            if companion_name and companion_name.strip():
+                companion = Companion(
+                    registration_id=registration.id,
+                    name=companion_name.strip(),
+                    company=request.form.get(f'companion_company_{i}', '').strip() or None,
+                    title=request.form.get(f'companion_title_{i}', '').strip() or None,
+                    phone=request.form.get(f'companion_phone_{i}', '').strip() or None,
+                    email=request.form.get(f'companion_email_{i}', '').strip() or None
+                )
+                db.session.add(companion)
+
+        db.session.commit()
+
+        # Send confirmation email
+        try:
+            send_confirmation_email(email, name, session_obj)
+        except Exception as e:
+            app.logger.error(f"Email sending failed: {e}")
+
+        if user:
+            flash('تم التسجيل وإنشاء الحساب بنجاح!', 'success')
+            return redirect(url_for('profile', username=user.username))
+        else:
+            flash('تم التسجيل بنجاح!', 'success')
+            return redirect(url_for('registration_confirmation', registration_id=registration.id))
+
     # GET request
-    session_id = request.args.get('session_id')
-    session_obj = None
-    if session_id:
-        session_obj = Session.query.get(session_id)
-    
-    return render_template('register.html', selected_session=session_obj)
+    return render_template('session_register.html',
+                         session_obj=session_obj,
+                         max_companions=session_obj.max_companions or 5)
+
+
+@app.route('/registration/<int:registration_id>/confirmation')
+def registration_confirmation(registration_id):
+    """Show registration confirmation page for guest registrations"""
+    registration = Registration.query.get_or_404(registration_id)
+    return render_template('registration_confirmation.html', registration=registration)
 
 @app.route('/u/<username>')
 def profile(username):
@@ -377,6 +490,7 @@ def admin_new_session():
             guest_profile=request.form.get('guest_profile'),
             location=request.form.get('location'),
             max_participants=int(request.form.get('max_participants', 50)),
+            max_companions=int(request.form.get('max_companions', 5)),
             requires_approval='requires_approval' in request.form,
             show_participant_count='show_participant_count' in request.form,
             show_countdown='show_countdown' in request.form,
@@ -407,6 +521,7 @@ def admin_edit_session(session_id):
         session_obj.guest_profile = request.form.get('guest_profile')
         session_obj.location = request.form.get('location')
         session_obj.max_participants = int(request.form.get('max_participants', 50))
+        session_obj.max_companions = int(request.form.get('max_companions', 5))
         session_obj.requires_approval = 'requires_approval' in request.form
         session_obj.show_participant_count = 'show_participant_count' in request.form
         session_obj.show_countdown = 'show_countdown' in request.form
@@ -618,6 +733,29 @@ def approve_all_registrations(session_id):
         app.logger.error(f"Bulk approval failed: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/admin/session/<int:session_id>/companions')
+@login_required
+def admin_session_companions(session_id):
+    """View all companions for a session"""
+    session_obj = Session.query.get_or_404(session_id)
+    registrations = Registration.query.filter_by(session_id=session_id).all()
+
+    companions_data = []
+    for reg in registrations:
+        for companion in reg.companions:
+            companions_data.append({
+                'companion': companion,
+                'registration': reg,
+                'registrant_name': reg.get_registrant_name(),
+                'registrant_email': reg.get_registrant_email()
+            })
+
+    return render_template('admin/session_companions.html',
+                         session_obj=session_obj,
+                         companions=companions_data,
+                         total_companions=len(companions_data))
+
+
 @app.route('/admin/checkin/<int:session_id>')
 @login_required
 def admin_checkin(session_id):
@@ -625,10 +763,10 @@ def admin_checkin(session_id):
     registrations = Registration.query.filter_by(
         session_id=session_id,
         is_approved=True
-    ).join(User).all()
-    
-    return render_template('admin/checkin.html', 
-                         session_obj=session_obj, 
+    ).all()
+
+    return render_template('admin/checkin.html',
+                         session_obj=session_obj,
                          registrations=registrations)
 
 @app.route('/admin/checkin/<int:session_id>/<int:user_id>', methods=['POST'])

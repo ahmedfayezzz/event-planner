@@ -6,7 +6,7 @@ This will populate the database with realistic test data for demonstration purpo
 """
 
 from app import app, db
-from models import User, Session, Registration, Attendance
+from models import User, Session, Registration, Attendance, Companion
 from datetime import datetime, timedelta
 import random
 
@@ -161,7 +161,8 @@ def create_sample_data():
                 'guest_name': 'المهندس عبدالعزيز الراجحي',
                 'guest_profile': 'رائد أعمال ومؤسس عدة شركات ناجحة',
                 'location': 'فندق الفور سيزونز - الرياض',
-                'status': 'completed'
+                'status': 'completed',
+                'max_companions': 3
             },
             {
                 'session_number': 2,
@@ -171,7 +172,8 @@ def create_sample_data():
                 'guest_name': 'المهندسة نورا الغامدي',
                 'guest_profile': 'رئيسة تنفيذية لشركة تقنية ناشئة',
                 'location': 'مركز الملك عبدالعزيز للحوار الوطني',
-                'status': 'completed'
+                'status': 'completed',
+                'max_companions': 5
             },
             {
                 'session_number': 3,
@@ -181,7 +183,8 @@ def create_sample_data():
                 'guest_name': 'الأستاذ خالد العمري',
                 'guest_profile': 'خبير تسويق رقمي ومؤلف كتاب "التسويق بالذكاء"',
                 'location': 'قاعة الأمير سلطان - جامعة الملك سعود',
-                'status': 'completed'
+                'status': 'completed',
+                'max_companions': 2
             },
             {
                 'session_number': 4,
@@ -191,7 +194,8 @@ def create_sample_data():
                 'guest_name': 'الدكتور أحمد المالكي',
                 'guest_profile': 'خبير في الاستثمار ومدير صندوق رؤية الأعمال',
                 'location': 'مركز الرياض الدولي للمؤتمرات والمعارض',
-                'status': 'open'
+                'status': 'open',
+                'max_companions': 5
             },
             {
                 'session_number': 5,
@@ -201,7 +205,8 @@ def create_sample_data():
                 'guest_name': 'الدكتورة ريم الشمري',
                 'guest_profile': 'استشارية قيادة ومدربة معتمدة دولياً',
                 'location': 'فندق الريتز كارلتون - الرياض',
-                'status': 'open'
+                'status': 'open',
+                'max_companions': 4
             },
             {
                 'session_number': 6,
@@ -211,7 +216,8 @@ def create_sample_data():
                 'guest_name': 'المهندس فهد الشهراني',
                 'guest_profile': 'مدير الابتكار في أرامكو السعودية',
                 'location': 'واحة الملك سلمان للعلوم',
-                'status': 'open'
+                'status': 'open',
+                'max_companions': 3
             }
         ]
         
@@ -227,7 +233,8 @@ def create_sample_data():
                 guest_profile=session_data['guest_profile'],
                 location=session_data['location'],
                 status=session_data['status'],
-                max_participants=random.randint(40, 60)
+                max_participants=random.randint(40, 60),
+                max_companions=session_data.get('max_companions', 5)
             )
             sessions.append(session)
             db.session.add(session)
@@ -236,15 +243,65 @@ def create_sample_data():
         db.session.commit()
         print(f"✅ تم إنشاء {len(users)} مشارك و {len(sessions)} جلسة")
         
+        # Sample companion names for random selection
+        companion_names = [
+            ('عمر سعد الغامدي', 'شركة الغامدي للتجارة', 'مدير مبيعات'),
+            ('لينا محمد العتيبي', 'مكتب العتيبي للمحاماة', 'محامية'),
+            ('ماجد خالد السبيعي', 'مؤسسة السبيعي', 'مدير عام'),
+            ('دانا عبدالله الحربي', 'وكالة الحربي الإعلامية', 'مديرة إبداعية'),
+            ('راشد فيصل المطيري', 'شركة المطيري التقنية', 'مهندس برمجيات'),
+            ('منى سالم القحطاني', 'استشارات القحطاني', 'مستشارة مالية'),
+            ('بدر عبدالرحمن الزهراني', 'مجموعة الزهراني', 'مطور أعمال'),
+            ('ريما حسن الشمري', 'دار الشمري للتصميم', 'مصممة'),
+        ]
+
+        # Sample guest registrations data
+        guest_registrations_data = [
+            {
+                'name': 'طارق عبدالله الحسني',
+                'email': 'tariq.hasani@example.com',
+                'phone': '+966511234567',
+                'company_name': 'مؤسسة الحسني للاستيراد',
+                'position': 'مدير عام',
+                'activity_type': 'التجارة',
+                'gender': 'رجال',
+                'goal': 'توسيع شبكة العلاقات التجارية'
+            },
+            {
+                'name': 'غادة فهد النصار',
+                'email': 'ghada.nassar@example.com',
+                'phone': '+966512345678',
+                'instagram': 'ghada_business',
+                'company_name': 'مشروع النصار',
+                'position': 'مؤسسة',
+                'activity_type': 'ريادي',
+                'gender': 'سيدات',
+                'goal': 'التعرف على مستثمرين محتملين'
+            },
+            {
+                'name': 'سلطان مشاري الدخيل',
+                'email': 'sultan.dakhil@example.com',
+                'phone': '+966513456789',
+                'twitter': 'sultan_dakhil',
+                'company_name': 'وكالة الدخيل الرقمية',
+                'position': 'مدير تسويق',
+                'activity_type': 'مسوق',
+                'gender': 'رجال',
+                'goal': 'تعلم استراتيجيات جديدة في التسويق'
+            }
+        ]
+
         # Create registrations and attendances
         total_registrations = 0
         total_attendances = 0
-        
+        total_companions = 0
+        total_guest_registrations = 0
+
         for session in sessions:
             # Randomly register users for each session
             num_registrants = random.randint(5, min(len(users), session.max_participants))
             selected_users = random.sample(users, num_registrants)
-            
+
             for user in selected_users:
                 registration = Registration(
                     user_id=user.id,
@@ -253,13 +310,30 @@ def create_sample_data():
                     is_approved=True
                 )
                 db.session.add(registration)
+                db.session.flush()  # Get registration ID for companions
                 total_registrations += 1
-                
+
+                # Randomly add companions (30% chance, 1-2 companions)
+                if random.random() < 0.3 and session.max_companions > 0:
+                    num_companions = random.randint(1, min(2, session.max_companions))
+                    selected_companions = random.sample(companion_names, num_companions)
+
+                    for comp_name, comp_company, comp_title in selected_companions:
+                        companion = Companion(
+                            registration_id=registration.id,
+                            name=comp_name,
+                            company=comp_company,
+                            title=comp_title,
+                            phone=f'+9665{random.randint(10000000, 99999999)}'
+                        )
+                        db.session.add(companion)
+                        total_companions += 1
+
                 # Create attendance for completed sessions
                 if session.status == 'completed':
                     # 80% attendance rate on average
                     attended = random.random() < 0.8
-                    
+
                     attendance = Attendance(
                         user_id=user.id,
                         session_id=session.id,
@@ -268,16 +342,40 @@ def create_sample_data():
                         qr_verified=attended
                     )
                     db.session.add(attendance)
-                    
+
                     if attended:
                         total_attendances += 1
-        
+
+            # Add guest registrations to open sessions
+            if session.status == 'open':
+                for guest_data in random.sample(guest_registrations_data, random.randint(1, len(guest_registrations_data))):
+                    guest_reg = Registration(
+                        user_id=None,  # Guest registration
+                        session_id=session.id,
+                        registered_at=datetime.utcnow() - timedelta(days=random.randint(1, 5)),
+                        is_approved=random.choice([True, False]),
+                        guest_name=guest_data['name'],
+                        guest_email=guest_data['email'],
+                        guest_phone=guest_data['phone'],
+                        guest_instagram=guest_data.get('instagram'),
+                        guest_twitter=guest_data.get('twitter'),
+                        guest_company_name=guest_data.get('company_name'),
+                        guest_position=guest_data.get('position'),
+                        guest_activity_type=guest_data.get('activity_type'),
+                        guest_gender=guest_data.get('gender'),
+                        guest_goal=guest_data.get('goal')
+                    )
+                    db.session.add(guest_reg)
+                    total_registrations += 1
+                    total_guest_registrations += 1
+
         # Commit all registrations and attendances
         db.session.commit()
-        
+
         print(f"✅ تم إنشاء {total_registrations} تسجيل و {total_attendances} حضور")
+        print(f"✅ تم إنشاء {total_guest_registrations} تسجيل ضيف و {total_companions} مرافق")
         print("🎉 تم إكمال إنشاء البيانات التجريبية بنجاح!")
-        
+
         # Display summary
         print("\n📊 ملخص البيانات المنشأة:")
         print(f"👥 إجمالي المشاركين: {len(users)}")
@@ -285,8 +383,12 @@ def create_sample_data():
         print(f"✅ الجلسات المكتملة: {sum(1 for s in sessions if s.status == 'completed')}")
         print(f"🔄 الجلسات المفتوحة: {sum(1 for s in sessions if s.status == 'open')}")
         print(f"📝 إجمالي التسجيلات: {total_registrations}")
+        print(f"🎫 تسجيلات الضيوف: {total_guest_registrations}")
+        print(f"👥 إجمالي المرافقين: {total_companions}")
         print(f"🎯 إجمالي الحضور: {total_attendances}")
-        print(f"📈 معدل الحضور: {(total_attendances / total_registrations * 100):.1f}%")
+        user_registrations = total_registrations - total_guest_registrations
+        if user_registrations > 0:
+            print(f"📈 معدل الحضور: {(total_attendances / user_registrations * 100):.1f}%")
 
 if __name__ == '__main__':
     create_sample_data()

@@ -90,7 +90,7 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="max_participants" class="form-label">الحد الأقصى للمقاعد</label>
-                                <input type="number" class="form-control" id="max_participants" name="max_participants" 
+                                <input type="number" class="form-control" id="max_participants" name="max_participants"
                                        value="{{ session_obj.max_participants }}" min="1" max="500">
                             </div>
                             <div class="col-md-6">
@@ -100,6 +100,15 @@
                                     <option value="closed" {% if session_obj.status == 'closed' %}selected{% endif %}>مغلقة</option>
                                     <option value="completed" {% if session_obj.status == 'completed' %}selected{% endif %}>مكتملة</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="max_companions" class="form-label">الحد الأقصى للمرافقين</label>
+                                <input type="number" class="form-control" id="max_companions" name="max_companions"
+                                       value="{{ session_obj.max_companions or 5 }}" min="0" max="20">
+                                <small class="form-text text-muted">عدد المرافقين المسموح لكل مسجل (0 = بدون مرافقين)</small>
                             </div>
                         </div>
 

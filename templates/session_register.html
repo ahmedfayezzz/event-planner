@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block title %}التسجيل في {{ session_obj.title }} - ثلوثية الأعمال{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Session Info Header -->
+            <div class="card border-primary mb-4">
+                <div class="card-body text-center">
+                    <span class="badge bg-primary mb-2">التجمع رقم {{ session_obj.session_number|arabic_num }}</span>
+                    <h2 class="fw-bold mb-2">{{ session_obj.title }}</h2>
+                    <p class="mb-2">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        {{ session_obj.date|arabic_date }}
+                        <span class="mx-2">|</span>
+                        <i class="fas fa-clock me-2"></i>
+                        {{ session_obj.date|arabic_time }}
+                    </p>
+                    {% if session_obj.location %}
+                    <p class="mb-0 text-muted">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        {{ session_obj.location }}
+                    </p>
+                    {% endif %}
+                    {% if session_obj.guest_name %}
+                    <p class="mb-0 mt-2">
+                        <i class="fas fa-user-tie me-2"></i>
+                        الضيف: <strong>{{ session_obj.guest_name }}</strong>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Registration Form -->
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <form method="POST" id="sessionRegistrationForm">
+                        <!-- Personal Information -->
+                        <div class="section-header mb-4">
+                            <h4 style="color: var(--brand-secondary);">
+                                <i class="fas fa-user me-2"></i>
+                                المعلومات الشخصية
+                            </h4>
+                            <hr style="border-color: var(--brand-secondary);">
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label required">الاسم الكامل</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label required">البريد الإلكتروني</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label required">رقم الجوال</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="+966 5X XXX XXXX" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="gender" class="form-label">الجنس</label>
+                                <select class="form-select" id="gender" name="gender">
+                                    <option value="">اختر الجنس</option>
+                                    <option value="رجال">رجال</option>
+                                    <option value="سيدات">سيدات</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Social Media -->
+                        <div class="section-header mb-4 mt-5">
+                            <h4 style="color: var(--brand-secondary);">
+                                <i class="fas fa-share-alt me-2"></i>
+                                حسابات التواصل الاجتماعي
+                            </h4>
+                            <hr style="border-color: var(--brand-secondary);">
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="instagram" class="form-label">رابط إنستغرام</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fab fa-instagram text-danger"></i></span>
+                                    <input type="url" class="form-control" id="instagram" name="instagram" placeholder="https://instagram.com/username">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="snapchat" class="form-label">رابط سناب شات</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fab fa-snapchat text-warning"></i></span>
+                                    <input type="url" class="form-control" id="snapchat" name="snapchat" placeholder="https://snapchat.com/add/username">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="twitter" class="form-label">رابط X (تويتر)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fab fa-x-twitter"></i></span>
+                                    <input type="url" class="form-control" id="twitter" name="twitter" placeholder="https://x.com/username">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Business Information -->
+                        <div class="section-header mb-4 mt-5">
+                            <h4 class="text-primary">
+                                <i class="fas fa-briefcase me-2"></i>
+                                معلومات العمل
+                            </h4>
+                            <hr>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="activity_type" class="form-label">نوع النشاط</label>
+                                <select class="form-select" id="activity_type" name="activity_type">
+                                    <option value="">اختر نوع النشاط</option>
+                                    <option value="مؤثر">مؤثر / مؤثرة</option>
+                                    <option value="ريادي">رائد أعمال</option>
+                                    <option value="مسوق">مسوق / مسوقة</option>
+                                    <option value="مصور">مصور / مصورة</option>
+                                    <option value="مصمم">مصمم / مصممة</option>
+                                    <option value="كاتب">كاتب / كاتبة محتوى</option>
+                                    <option value="مستثمر">مستثمر</option>
+                                    <option value="استشاري">استشاري</option>
+                                    <option value="موظف">موظف</option>
+                                    <option value="طالب">طالب / طالبة</option>
+                                    <option value="أخرى">أخرى</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="company_name" class="form-label">اسم الشركة / المشروع</label>
+                                <input type="text" class="form-control" id="company_name" name="company_name" placeholder="اختياري">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="position" class="form-label">المنصب / الوظيفة</label>
+                            <input type="text" class="form-control" id="position" name="position" placeholder="مثال: مدير التسويق، مؤسس، مستقل">
+                        </div>
+
+                        <!-- Goals -->
+                        <div class="section-header mb-4 mt-5">
+                            <h4 class="text-primary">
+                                <i class="fas fa-bullseye me-2"></i>
+                                الهدف من المشاركة
+                            </h4>
+                            <hr>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="goal" class="form-label">ما هو هدفك من حضور ثلوثية الأعمال؟</label>
+                            <textarea class="form-control" id="goal" name="goal" rows="3"
+                                placeholder="مثال: بناء شراكات جديدة، تعلم استراتيجيات التسويق، توسيع شبكة العلاقات..."></textarea>
+                        </div>
+
+                        <!-- Companions Section -->
+                        {% if max_companions > 0 %}
+                        <div class="section-header mb-4 mt-5">
+                            <h4 class="text-primary">
+                                <i class="fas fa-users me-2"></i>
+                                المرافقون
+                                <span class="badge bg-info fs-6 me-2">اختياري - الحد الأقصى: {{ max_companions|arabic_num }}</span>
+                            </h4>
+                            <hr>
+                        </div>
+
+                        <div class="mb-4">
+                            <p class="text-muted mb-3">يمكنك إضافة مرافقين لحضور الجلسة معك</p>
+                            <input type="hidden" name="companion_count" id="companionCount" value="0">
+                            <div id="companionsContainer"></div>
+                            <button type="button" class="btn btn-outline-primary" id="addCompanionBtn" onclick="addCompanion()">
+                                <i class="fas fa-plus me-2"></i>
+                                إضافة مرافق
+                            </button>
+                        </div>
+                        {% endif %}
+
+                        <!-- Create Account Option -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="create_account" id="createAccount">
+                                    <label class="form-check-label" for="createAccount">
+                                        <strong>إنشاء حساب</strong>
+                                        <br>
+                                        <small class="text-muted">سيتم حفظ بياناتك للتسجيل السريع في الجلسات القادمة وعرض ملفك الشخصي</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    أوافق على <a href="#" class="text-primary">الشروط والأحكام</a> وسياسة الخصوصية
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                <i class="fas fa-check-circle me-2"></i>
+                                تأكيد التسجيل
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Already Registered -->
+            <div class="text-center mt-4">
+                <p class="text-muted">
+                    لديك حساب؟
+                    <a href="{{ url_for('user_login', next=url_for('session_detail', session_id=session_obj.id)) }}" class="text-primary">سجل دخول</a>
+                    للتسجيل بشكل أسرع
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const maxCompanions = {{ max_companions }};
+let companionIndex = 0;
+
+function addCompanion() {
+    const container = document.getElementById('companionsContainer');
+    const currentCount = container.querySelectorAll('.companion-entry').length;
+
+    if (currentCount >= maxCompanions) {
+        alert('لقد وصلت إلى الحد الأقصى للمرافقين ({{ max_companions|arabic_num }})');
+        return;
+    }
+
+    const index = companionIndex++;
+    const html = `
+        <div class="companion-entry card mb-3" id="companion_${index}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0"><i class="fas fa-user me-2"></i>المرافق ${currentCount + 1}</h6>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeCompanion(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <input type="text" class="form-control" name="companion_name_${index}" placeholder="الاسم *" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <input type="text" class="form-control" name="companion_company_${index}" placeholder="الشركة">
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <input type="text" class="form-control" name="companion_title_${index}" placeholder="المنصب">
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <input type="tel" class="form-control" name="companion_phone_${index}" placeholder="رقم الجوال">
+                    </div>
+                    <div class="col-12">
+                        <input type="email" class="form-control" name="companion_email_${index}" placeholder="البريد الإلكتروني (اختياري)">
+                        <small class="form-text text-muted">سيتم استخدامه لدعوة المرافق لإنشاء حساب لاحقاً</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    container.insertAdjacentHTML('beforeend', html);
+    updateCompanionCount();
+    updateAddButton();
+}
+
+function removeCompanion(index) {
+    const element = document.getElementById(`companion_${index}`);
+    if (element) {
+        element.remove();
+        updateCompanionCount();
+        updateAddButton();
+        renumberCompanions();
+    }
+}
+
+function updateCompanionCount() {
+    const container = document.getElementById('companionsContainer');
+    const count = container.querySelectorAll('.companion-entry').length;
+    document.getElementById('companionCount').value = companionIndex; // Use index for form processing
+}
+
+function updateAddButton() {
+    const container = document.getElementById('companionsContainer');
+    const currentCount = container.querySelectorAll('.companion-entry').length;
+    const btn = document.getElementById('addCompanionBtn');
+    if (btn) {
+        btn.disabled = currentCount >= maxCompanions;
+    }
+}
+
+function renumberCompanions() {
+    const entries = document.querySelectorAll('.companion-entry');
+    entries.forEach((entry, idx) => {
+        const title = entry.querySelector('h6');
+        if (title) {
+            title.innerHTML = `<i class="fas fa-user me-2"></i>المرافق ${idx + 1}`;
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('sessionRegistrationForm');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const terms = document.getElementById('terms').checked;
+
+        if (!name || !email || !phone || !terms) {
+            e.preventDefault();
+            alert('يرجى ملء جميع الحقول المطلوبة والموافقة على الشروط');
+            return;
+        }
+
+        // Validate email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            e.preventDefault();
+            alert('يرجى إدخال بريد إلكتروني صحيح');
+            return;
+        }
+
+        // Show loading state
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري التسجيل...';
+        submitBtn.disabled = true;
+    });
+
+    // Format phone number
+    const phoneInput = document.getElementById('phone');
+    phoneInput.addEventListener('input', function() {
+        let value = this.value.replace(/\D/g, '');
+
+        if (value.startsWith('966')) {
+            value = '+' + value;
+        } else if (value.startsWith('05')) {
+            value = '+966' + value.substring(1);
+        } else if (value.startsWith('5') && value.length === 9) {
+            value = '+966' + value;
+        }
+
+        this.value = value;
+    });
+
+    // Social media URL validation
+    const socialInputs = ['instagram', 'snapchat', 'twitter'];
+    socialInputs.forEach(platform => {
+        const input = document.getElementById(platform);
+        if (input) {
+            input.addEventListener('blur', function() {
+                if (this.value && !this.value.startsWith('http')) {
+                    if (platform === 'instagram' && !this.value.includes('instagram.com')) {
+                        this.value = 'https://instagram.com/' + this.value;
+                    } else if (platform === 'snapchat' && !this.value.includes('snapchat.com')) {
+                        this.value = 'https://snapchat.com/add/' + this.value;
+                    } else if (platform === 'twitter' && !this.value.includes('x.com') && !this.value.includes('twitter.com')) {
+                        this.value = 'https://x.com/' + this.value;
+                    }
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

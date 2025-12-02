@@ -79,13 +79,13 @@
                                     <span class="badge bg-info">مكتملة</span>
                                     {% endif %}
                                     <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-light btn-sm" onclick="shareSessionOnX({{ session.id }})"
+                                        <button class="btn btn-light btn-sm" onclick="shareSession(event, {{ session.id }})"
                                             title="مشاركة">
-                                            <i class="fab fa-x-twitter"></i>
+                                            <i class="fas fa-share-alt"></i>
                                         </button>
-                                        <button class="btn btn-light btn-sm" onclick="copyLink({{ session.id }})"
+                                        <button class="btn btn-light btn-sm" onclick="copyLink(event, {{ session.id }})"
                                             title="نسخ الرابط">
-                                            <i class="fas fa-link"></i>
+                                            <i class="fas fa-copy"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -293,25 +293,36 @@
         }
     });
 
-    function shareSessionOnX(sessionId) {
-        shareOnX(sessionId);
-    }
-
-    function shareOnX(sessionId) {
+    function shareSession(e, sessionId) {
+        e.preventDefault();
+        e.stopPropagation();
         const url = window.location.origin + '/session/' + sessionId;
         const text = 'انضم لي في ثلوثية الأعمال! 🚀';
-        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-        window.open(twitterUrl, '_blank', 'width=550,height=420');
+
+        if (navigator.share) {
+            navigator.share({
+                title: 'ثلوثية الأعمال',
+                text: text,
+                url: url
+            }).catch(err => {
+                console.log('Share cancelled or failed:', err);
+            });
+        } else {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('تم نسخ الرابط');
+            }).catch(() => {
+                alert('فشل نسخ الرابط');
+            });
+        }
     }
 
-    function copyLink(sessionId) {
-        copySessionLink(sessionId);
-    }
-
-    function copySessionLink(sessionId) {
+    function copyLink(e, sessionId) {
+        e.preventDefault();
+        e.stopPropagation();
+        const btn = e.target.closest('button');
         const url = window.location.origin + '/session/' + sessionId;
+
         navigator.clipboard.writeText(url).then(() => {
-            const btn = event.target.closest('button');
             const originalHTML = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-check"></i>';
             btn.classList.add('btn-success');

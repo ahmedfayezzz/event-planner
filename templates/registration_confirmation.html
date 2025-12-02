@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}تأكيد التسجيل - ثلوثية الأعمال{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <!-- Success Card -->
+            <div class="card border-success shadow-lg">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+                    </div>
+                    <h2 class="fw-bold mb-3">تم التسجيل بنجاح!</h2>
+                    <p class="text-muted mb-4">شكراً لتسجيلك في ثلوثية الأعمال</p>
+
+                    <!-- Registration Details -->
+                    <div class="card bg-light mb-4">
+                        <div class="card-body text-start">
+                            <h5 class="card-title mb-3">
+                                <i class="fas fa-info-circle text-primary me-2"></i>
+                                تفاصيل التسجيل
+                            </h5>
+
+                            <div class="mb-2">
+                                <strong>الجلسة:</strong>
+                                {{ registration.session.title }}
+                            </div>
+                            <div class="mb-2">
+                                <strong>رقم التجمع:</strong>
+                                {{ registration.session.session_number|arabic_num }}
+                            </div>
+                            <div class="mb-2">
+                                <strong>التاريخ:</strong>
+                                {{ registration.session.date|arabic_date }}
+                            </div>
+                            <div class="mb-2">
+                                <strong>الوقت:</strong>
+                                {{ registration.session.date|arabic_time }}
+                            </div>
+                            {% if registration.session.location %}
+                            <div class="mb-2">
+                                <strong>المكان:</strong>
+                                {{ registration.session.location }}
+                            </div>
+                            {% endif %}
+
+                            <hr>
+
+                            <div class="mb-2">
+                                <strong>الاسم:</strong>
+                                {{ registration.get_registrant_name() }}
+                            </div>
+                            <div class="mb-2">
+                                <strong>البريد الإلكتروني:</strong>
+                                {{ registration.get_registrant_email() }}
+                            </div>
+
+                            {% if registration.companions %}
+                            <hr>
+                            <div class="mb-2">
+                                <strong>المرافقون ({{ registration.get_companion_count()|arabic_num }}):</strong>
+                                <ul class="mb-0 mt-1">
+                                    {% for companion in registration.companions %}
+                                    <li>{{ companion.name }}{% if companion.company %} - {{ companion.company }}{% endif %}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Status Badge -->
+                    {% if registration.is_approved %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check me-2"></i>
+                        تسجيلك مؤكد
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-clock me-2"></i>
+                        تسجيلك بانتظار الموافقة من المنظمين
+                    </div>
+                    {% endif %}
+
+                    <!-- Email Notice -->
+                    <p class="text-muted small mb-4">
+                        <i class="fas fa-envelope me-1"></i>
+                        سيتم إرسال تفاصيل التسجيل إلى بريدك الإلكتروني
+                    </p>
+
+                    <!-- Actions -->
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('sessions') }}" class="btn btn-primary">
+                            <i class="fas fa-calendar me-2"></i>
+                            تصفح الجلسات الأخرى
+                        </a>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-home me-2"></i>
+                            العودة للرئيسية
+                        </a>
+                    </div>
+
+                    <!-- Create Account Suggestion -->
+                    {% if registration.is_guest_registration() %}
+                    <hr class="my-4">
+                    <div class="text-muted">
+                        <p class="mb-2">هل تريد التسجيل بشكل أسرع في المرات القادمة؟</p>
+                        <a href="{{ url_for('register') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-user-plus me-2"></i>
+                            إنشاء حساب
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

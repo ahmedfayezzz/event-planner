@@ -17,6 +17,10 @@
                         <i class="fas fa-arrow-right me-2"></i>
                         العودة للوحة التحكم
                     </a>
+                    <a href="{{ url_for('admin_session_companions', session_id=session_obj.id) }}" class="btn btn-outline-info me-2">
+                        <i class="fas fa-user-friends me-2"></i>
+                        المرافقون
+                    </a>
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#qrModal">
                         <i class="fas fa-qrcode me-2"></i>
                         QR Code للحضور
@@ -109,6 +113,7 @@
                                     <th width="5%">#</th>
                                     <th>المشارك</th>
                                     <th>الشركة/النشاط</th>
+                                    <th>المرافقون</th>
                                     <th>تاريخ التسجيل</th>
                                     <th>حالة الموافقة</th>
                                     <th>الحضور</th>
@@ -121,27 +126,40 @@
                                     <td>{{ loop.index }}</td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
-                                                {{ registration.user.name[0] }}
+                                            <div class="avatar-sm {{ 'bg-primary' if registration.user else 'bg-secondary' }} text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                {{ registration.get_registrant_name()[0] if registration.get_registrant_name() else '?' }}
                                             </div>
                                             <div>
-                                                <strong>{{ registration.user.name }}</strong>
-                                                <br><small class="text-muted">{{ registration.user.email }}</small>
-                                                {% if registration.user.phone %}
-                                                <br><small class="text-muted">{{ registration.user.phone }}</small>
+                                                <strong>{{ registration.get_registrant_name() }}</strong>
+                                                {% if registration.is_guest_registration() %}
+                                                <span class="badge bg-secondary ms-1">ضيف</span>
+                                                {% endif %}
+                                                <br><small class="text-muted">{{ registration.get_registrant_email() }}</small>
+                                                {% if registration.get_registrant_phone() %}
+                                                <br><small class="text-muted">{{ registration.get_registrant_phone() }}</small>
                                                 {% endif %}
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        {% if registration.user.company_name %}
-                                        <strong>{{ registration.user.company_name }}</strong><br>
+                                        {% set company = registration.user.company_name if registration.user else registration.guest_company_name %}
+                                        {% set position = registration.user.position if registration.user else registration.guest_position %}
+                                        {% set activity = registration.user.activity_type if registration.user else registration.guest_activity_type %}
+                                        {% if company %}
+                                        <strong>{{ company }}</strong><br>
                                         {% endif %}
-                                        {% if registration.user.position %}
-                                        <small class="text-muted">{{ registration.user.position }}</small><br>
+                                        {% if position %}
+                                        <small class="text-muted">{{ position }}</small><br>
                                         {% endif %}
-                                        {% if registration.user.activity_type %}
-                                        <span class="badge bg-light text-dark">{{ registration.user.activity_type }}</span>
+                                        {% if activity %}
+                                        <span class="badge bg-light text-dark">{{ activity }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if registration.companions|length > 0 %}
+                                        <span class="badge bg-info">{{ registration.companions|length|arabic_num }} مرافق</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -156,7 +174,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if registration.user.id in attendance_dict %}
+                                        {% if registration.user and registration.user.id in attendance_dict %}
                                             {% if attendance_dict[registration.user.id] %}
                                             <span class="badge bg-success">
                                                 <i class="fas fa-check me-1"></i>حضر
@@ -173,22 +191,24 @@
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
                                             {% if not registration.is_approved %}
-                                            <button class="btn btn-outline-success" onclick="approveRegistration({{ registration.id }})">
+                                            <button class="btn btn-outline-success" onclick="approveRegistration({{ registration.id }})" title="موافقة">
                                                 <i class="fas fa-check"></i>
                                             </button>
                                             {% endif %}
-                                            {% if registration.user.id not in attendance_dict %}
-                                            <button class="btn btn-outline-primary" onclick="markAttendance({{ session.id }}, {{ registration.user.id }}, true)">
-                                                <i class="fas fa-user-plus"></i>
-                                            </button>
-                                            {% elif not attendance_dict[registration.user.id] %}
-                                            <button class="btn btn-outline-primary" onclick="markAttendance({{ session.id }}, {{ registration.user.id }}, true)">
-                                                <i class="fas fa-user-check"></i>
-                                            </button>
+                                            {% if registration.user %}
+                                                {% if registration.user.id not in attendance_dict %}
+                                                <button class="btn btn-outline-primary" onclick="markAttendance({{ session_obj.id }}, {{ registration.user.id }}, true)" title="تسجيل حضور">
+                                                    <i class="fas fa-user-plus"></i>
+                                                </button>
+                                                {% elif not attendance_dict[registration.user.id] %}
+                                                <button class="btn btn-outline-primary" onclick="markAttendance({{ session_obj.id }}, {{ registration.user.id }}, true)" title="تسجيل حضور">
+                                                    <i class="fas fa-user-check"></i>
+                                                </button>
+                                                {% endif %}
+                                                <button class="btn btn-outline-info" onclick="viewProfile({{ registration.user.id }})" title="عرض الملف">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
                                             {% endif %}
-                                            <button class="btn btn-outline-info" onclick="viewProfile({{ registration.user.id }})">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
                                         </div>
                                     </td>
                                 </tr>
