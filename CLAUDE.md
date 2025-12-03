@@ -62,10 +62,9 @@ This project does not have a test suite configured.
 SESSION_SECRET=<secret-key>
 DATABASE_URL=postgresql://...  # Default: sqlite:///business_tuesdays.db
 OPENAI_API_KEY=sk-...
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=<email>
-SMTP_PASSWORD=<app-password>
+RESEND_API_KEY=re_...          # Resend API key for email sending
+FROM_EMAIL=noreply@yourdomain.com  # Verified sender email in Resend
+BASE_URL=https://yourdomain.com    # Base URL for email links
 ```
 
 ## Important Conventions

@@ -13,7 +13,7 @@
                         <p class="text-muted">ادخل بياناتك لمراجعة تسجيلاتك</p>
                     </div>
 
-                    <form method="POST" id="userLoginForm">
+                    <form method="POST" id="userLoginForm" novalidate>
                         {% if next %}
                         <input type="hidden" name="next" value="{{ next }}">
                         {% endif %}
@@ -21,11 +21,13 @@
                         <div class="mb-3">
                             <label for="email" class="form-label">البريد الإلكتروني</label>
                             <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="invalid-feedback">يرجى إدخال بريد إلكتروني صحيح</div>
                         </div>
 
                         <div class="mb-3">
                             <label for="password" class="form-label">كلمة المرور</label>
                             <input type="password" class="form-control" id="password" name="password" required>
+                            <div class="invalid-feedback">يرجى إدخال كلمة المرور</div>
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -39,7 +41,7 @@
                         </div>
 
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg" style="background-color: var(--brand-secondary); border-color: var(--brand-secondary);">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" style="background-color: var(--brand-secondary); border-color: var(--brand-secondary);">
                                 <i class="fas fa-sign-in-alt me-2"></i>
                                 دخول
                             </button>
@@ -60,4 +62,80 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('userLoginForm');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Helper function to show/hide validation errors
+    function setFieldError(field, hasError, message = null) {
+        if (hasError) {
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+            if (message) {
+                const feedback = field.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                    feedback.textContent = message;
+                }
+            }
+        } else {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+        }
+    }
+
+    // Clear validation on input
+    const inputs = form.querySelectorAll('input');
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.classList.remove('is-invalid');
+        });
+    });
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const emailField = document.getElementById('email');
+        const passwordField = document.getElementById('password');
+
+        const email = emailField.value.trim();
+        const password = passwordField.value;
+
+        let hasErrors = false;
+
+        // Validate email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            setFieldError(emailField, true);
+            hasErrors = true;
+        } else {
+            setFieldError(emailField, false);
+        }
+
+        // Validate password
+        if (!password) {
+            setFieldError(passwordField, true);
+            hasErrors = true;
+        } else {
+            setFieldError(passwordField, false);
+        }
+
+        if (hasErrors) {
+            e.preventDefault();
+            // Focus first error field
+            const firstError = form.querySelector('.is-invalid');
+            if (firstError) {
+                firstError.focus();
+            }
+            return;
+        }
+
+        // Show loading state
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري الدخول...';
+        submitBtn.disabled = true;
+    });
+});
+</script>
 {% endblock %}

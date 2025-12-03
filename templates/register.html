@@ -22,7 +22,7 @@
             <!-- Registration Form -->
             <div class="card shadow-lg border-0">
                 <div class="card-body p-5">
-                    <form method="POST" id="registrationForm">
+                    <form method="POST" id="registrationForm" novalidate>
                         {% if selected_session %}
                         <input type="hidden" name="session_id" value="{{ selected_session.id }}">
                         {% endif %}
@@ -40,17 +40,20 @@
                             <div class="col-md-6">
                                 <label for="name" class="form-label required">الاسم الكامل</label>
                                 <input type="text" class="form-control" id="name" name="name" required>
+                                <div class="invalid-feedback">يرجى إدخال الاسم الكامل</div>
                             </div>
                             <div class="col-md-6">
                                 <label for="email" class="form-label required">البريد الإلكتروني</label>
                                 <input type="email" class="form-control" id="email" name="email" required>
+                                <div class="invalid-feedback">يرجى إدخال بريد إلكتروني صحيح</div>
                             </div>
                         </div>
-                        
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="phone" class="form-label required">رقم الجوال</label>
                                 <input type="tel" class="form-control" id="phone" name="phone" placeholder="+966 5X XXX XXXX" required>
+                                <div class="invalid-feedback">يرجى إدخال رقم الجوال</div>
                             </div>
                             <div class="col-md-6">
                                 <label for="gender" class="form-label">الجنس</label>
@@ -66,11 +69,13 @@
                             <div class="col-md-6">
                                 <label for="password" class="form-label required">كلمة المرور</label>
                                 <input type="password" class="form-control" id="password" name="password" minlength="8" required>
+                                <div class="invalid-feedback">كلمة المرور يجب أن تكون 8 أحرف على الأقل</div>
                                 <div class="form-text">يجب أن تكون 8 أحرف على الأقل</div>
                             </div>
                             <div class="col-md-6">
                                 <label for="confirm_password" class="form-label required">تأكيد كلمة المرور</label>
                                 <input type="password" class="form-control" id="confirm_password" name="confirm_password" minlength="8" required>
+                                <div class="invalid-feedback">كلمة المرور غير متطابقة</div>
                             </div>
                         </div>
 
@@ -156,8 +161,9 @@
                         
                         <div class="mb-4">
                             <label for="goal" class="form-label required">ما هو هدفك من حضور ثلوثية الأعمال؟</label>
-                            <textarea class="form-control" id="goal" name="goal" rows="4" 
+                            <textarea class="form-control" id="goal" name="goal" rows="4"
                                 placeholder="مثال: بناء شراكات جديدة، تعلم استراتيجيات التسويق، توسيع شبكة العلاقات..." required></textarea>
+                            <div class="invalid-feedback">يرجى إدخال هدفك من المشاركة</div>
                             <div class="form-text">
                                 <i class="fas fa-robot text-info me-1"></i>
                                 سيقوم الذكاء الاصطناعي بتطوير وصف احترافي بناءً على هدفك
@@ -202,42 +208,117 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('registrationForm');
     const submitBtn = document.getElementById('submitBtn');
-    
+
+    // Helper function to show/hide validation errors
+    function setFieldError(field, hasError, message = null) {
+        if (hasError) {
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+            if (message) {
+                const feedback = field.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                    feedback.textContent = message;
+                }
+            }
+        } else {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+        }
+    }
+
+    // Clear validation on input
+    const inputs = form.querySelectorAll('input, textarea, select');
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.classList.remove('is-invalid');
+        });
+    });
+
     // Form validation
     form.addEventListener('submit', function(e) {
-        const name = document.getElementById('name').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const phone = document.getElementById('phone').value.trim();
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirm_password').value;
-        const goal = document.getElementById('goal').value.trim();
-        const terms = document.getElementById('terms').checked;
+        const nameField = document.getElementById('name');
+        const emailField = document.getElementById('email');
+        const phoneField = document.getElementById('phone');
+        const passwordField = document.getElementById('password');
+        const confirmPasswordField = document.getElementById('confirm_password');
+        const goalField = document.getElementById('goal');
+        const termsField = document.getElementById('terms');
 
-        if (!name || !email || !phone || !password || !goal || !terms) {
-            e.preventDefault();
-            alert('يرجى ملء جميع الحقول المطلوبة والموافقة على الشروط');
-            return;
+        const name = nameField.value.trim();
+        const email = emailField.value.trim();
+        const phone = phoneField.value.trim();
+        const password = passwordField.value;
+        const confirmPassword = confirmPasswordField.value;
+        const goal = goalField.value.trim();
+        const terms = termsField.checked;
+
+        let hasErrors = false;
+
+        // Validate name
+        if (!name) {
+            setFieldError(nameField, true);
+            hasErrors = true;
+        } else {
+            setFieldError(nameField, false);
         }
 
         // Validate email
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            e.preventDefault();
-            alert('يرجى إدخال بريد إلكتروني صحيح');
-            return;
+        if (!email || !emailRegex.test(email)) {
+            setFieldError(emailField, true);
+            hasErrors = true;
+        } else {
+            setFieldError(emailField, false);
+        }
+
+        // Validate phone
+        if (!phone) {
+            setFieldError(phoneField, true);
+            hasErrors = true;
+        } else {
+            setFieldError(phoneField, false);
         }
 
         // Validate password length
-        if (password.length < 8) {
-            e.preventDefault();
-            alert('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
-            return;
+        if (!password || password.length < 8) {
+            setFieldError(passwordField, true);
+            hasErrors = true;
+        } else {
+            setFieldError(passwordField, false);
         }
 
         // Validate passwords match
-        if (password !== confirmPassword) {
+        if (!confirmPassword || password !== confirmPassword) {
+            setFieldError(confirmPasswordField, true, 'كلمة المرور غير متطابقة');
+            hasErrors = true;
+        } else {
+            setFieldError(confirmPasswordField, false);
+        }
+
+        // Validate goal
+        if (!goal) {
+            setFieldError(goalField, true);
+            hasErrors = true;
+        } else {
+            setFieldError(goalField, false);
+        }
+
+        // Validate terms
+        if (!terms) {
+            termsField.classList.add('is-invalid');
+            hasErrors = true;
+        } else {
+            termsField.classList.remove('is-invalid');
+        }
+
+        if (hasErrors) {
             e.preventDefault();
-            alert('كلمة المرور وتأكيدها غير متطابقتين');
+            // Scroll to first error
+            const firstError = form.querySelector('.is-invalid');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstError.focus();
+            }
             return;
         }
 

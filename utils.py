@@ -2,15 +2,56 @@ import re
 import qrcode
 import io
 import base64
-import smtplib
-import email.mime.text
-import email.mime.multipart
+import resend
 from models import User
 import os
 import random
 import string
 from datetime import datetime, timedelta
 import secrets
+
+
+def _send_email(to, subject, text=None, html=None, attachments=None):
+    """
+    Abstract email sending layer using Resend.
+
+    Args:
+        to: Recipient email address (string or list)
+        subject: Email subject
+        text: Plain text body (optional if html provided)
+        html: HTML body (optional)
+        attachments: List of attachment dicts with keys: filename, content, content_id (optional)
+
+    Returns:
+        True on success, False on failure
+    """
+    try:
+        resend.api_key = os.environ.get("RESEND_API_KEY", "")
+        from_email = os.environ.get("FROM_EMAIL", "")
+
+        if not all([resend.api_key, from_email]):
+            print("Resend credentials not configured")
+            return False
+
+        email_params = {
+            "from": from_email,
+            "to": [to] if isinstance(to, str) else to,
+            "subject": subject
+        }
+
+        if text:
+            email_params["text"] = text
+        if html:
+            email_params["html"] = html
+        if attachments:
+            email_params["attachments"] = attachments
+
+        resend.Emails.send(email_params)
+        return True
+
+    except Exception as e:
+        print(f"Email sending failed: {e}")
+        return False
 
 def generate_username(name):
     """Generate a unique username from name"""
@@ -53,82 +94,33 @@ def generate_qr_code(data):
         print(f"QR code generation failed: {e}")
         return None
 
-def send_confirmation_email(email, name, session):
+def send_confirmation_email(email_address, name, session):
     """Send confirmation email to participant"""
-    try:
-        # Email configuration
-        smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-        smtp_username = os.environ.get("SMTP_USERNAME", "")
-        smtp_password = os.environ.get("SMTP_PASSWORD", "")
-        
-        if not all([smtp_username, smtp_password]):
-            print("SMTP credentials not configured")
-            return False
-        
-        # Create message
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-        
-        msg = MIMEMultipart()
-        msg['From'] = smtp_username
-        msg['To'] = email
-        msg['Subject'] = f"تأكيد التسجيل - {session.title}"
-        
-        body = f"""
-        مرحباً {name},
-        
-        تم تأكيد تسجيلك في:
-        {session.title}
-        التجمع رقم {session.session_number}
-        
-        التاريخ: {session.date.strftime('%Y-%m-%d %H:%M')}
-        المكان: {session.location or 'سيتم الإعلان عنه لاحقاً'}
-        
-        نتطلع لرؤيتك معنا!
-        
-        فريق ثلوثية الأعمال
-        """
-        
-        msg.attach(MIMEText(body, 'plain', 'utf-8'))
-        
-        # Send email
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(smtp_username, smtp_password)
-        text = msg.as_string()
-        server.sendmail(smtp_username, email, text)
-        server.quit()
-        
-        return True
-        
-    except Exception as e:
-        print(f"Email sending failed: {e}")
-        return False
+    body = f"""
+مرحباً {name},
+
+تم تأكيد تسجيلك في:
+{session.title}
+التجمع رقم {session.session_number}
+
+التاريخ: {session.date.strftime('%Y-%m-%d %H:%M')}
+المكان: {session.location or 'سيتم الإعلان عنه لاحقاً'}
+
+نتطلع لرؤيتك معنا!
+
+فريق ثلوثية الأعمال
+    """
+
+    return _send_email(
+        to=email_address,
+        subject=f"تأكيد التسجيل - {session.title}",
+        text=body
+    )
 
 
-def send_registration_pending_email(email, name, session):
+def send_registration_pending_email(email_address, name, session):
     """Send registration received email (pending approval)"""
-    try:
-        # Email configuration
-        smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-        smtp_username = os.environ.get("SMTP_USERNAME", "")
-        smtp_password = os.environ.get("SMTP_PASSWORD", "")
-
-        if not all([smtp_username, smtp_password]):
-            print("SMTP credentials not configured")
-            return False
-
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-
-        msg = MIMEMultipart()
-        msg['From'] = smtp_username
-        msg['To'] = email
-        msg['Subject'] = f"استلام التسجيل - {session.title}"
-
-        body = f"""
+    body = f"""
 مرحباً {name},
 
 شكراً لتسجيلك في:
@@ -141,57 +133,28 @@ def send_registration_pending_email(email, name, session):
 تسجيلك قيد المراجعة وسيتم إخطارك بالموافقة قريباً.
 
 فريق ثلوثية الأعمال
-        """
+    """
 
-        msg.attach(MIMEText(body, 'plain', 'utf-8'))
-
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(smtp_username, smtp_password)
-        text = msg.as_string()
-        server.sendmail(smtp_username, email, text)
-        server.quit()
-
-        return True
-
-    except Exception as e:
-        print(f"Registration pending email sending failed: {e}")
-        return False
+    return _send_email(
+        to=email_address,
+        subject=f"استلام التسجيل - {session.title}",
+        text=body
+    )
 
 
-def send_registration_confirmed_email(email, name, session, qr_data=None):
+def send_registration_confirmed_email(email_address, name, session, qr_data=None):
     """Send registration confirmed email with optional QR code"""
-    try:
-        # Email configuration
-        smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-        smtp_username = os.environ.get("SMTP_USERNAME", "")
-        smtp_password = os.environ.get("SMTP_PASSWORD", "")
-
-        if not all([smtp_username, smtp_password]):
-            print("SMTP credentials not configured")
-            return False
-
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-        from email.mime.image import MIMEImage
-
-        msg = MIMEMultipart('related')
-        msg['From'] = smtp_username
-        msg['To'] = email
-        msg['Subject'] = f"تأكيد التسجيل - {session.title}"
-
-        # Build HTML body with optional QR code
-        qr_section = ""
-        if qr_data and session.send_qr_in_email:
-            qr_section = """
+    # Build HTML body with optional QR code
+    qr_section = ""
+    if qr_data and session.send_qr_in_email:
+        qr_section = """
 <br><br>
 <p style="text-align: center;"><strong>رمز الحضور الخاص بك:</strong></p>
 <p style="text-align: center;"><img src="cid:qrcode" alt="QR Code" style="max-width: 200px;"></p>
 <p style="text-align: center; font-size: 12px;">أظهر هذا الرمز عند الحضور</p>
 """
 
-        html_body = f"""
+    html_body = f"""
 <html>
 <head>
 <meta charset="utf-8">
@@ -211,13 +174,9 @@ def send_registration_confirmed_email(email, name, session, qr_data=None):
 <p>فريق ثلوثية الأعمال</p>
 </body>
 </html>
-        """
+    """
 
-        msg_alternative = MIMEMultipart('alternative')
-        msg.attach(msg_alternative)
-
-        # Plain text version
-        plain_body = f"""
+    plain_body = f"""
 مرحباً {name},
 
 تم تأكيد تسجيلك في:
@@ -230,73 +189,46 @@ def send_registration_confirmed_email(email, name, session, qr_data=None):
 نتطلع لرؤيتك معنا!
 
 فريق ثلوثية الأعمال
-        """
+    """
 
-        msg_alternative.attach(MIMEText(plain_body, 'plain', 'utf-8'))
-        msg_alternative.attach(MIMEText(html_body, 'html', 'utf-8'))
+    # Build attachments if QR code provided
+    attachments = None
+    if qr_data and session.send_qr_in_email:
+        if qr_data.startswith('data:image/png;base64,'):
+            qr_base64 = qr_data.split(',')[1]
+            attachments = [{
+                "filename": "qrcode.png",
+                "content": qr_base64,
+                "content_id": "qrcode"
+            }]
 
-        # Attach QR code image if provided
-        if qr_data and session.send_qr_in_email:
-            # Extract base64 data from data URI
-            if qr_data.startswith('data:image/png;base64,'):
-                img_data = base64.b64decode(qr_data.split(',')[1])
-                img = MIMEImage(img_data)
-                img.add_header('Content-ID', '<qrcode>')
-                img.add_header('Content-Disposition', 'inline', filename='qrcode.png')
-                msg.attach(img)
-
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(smtp_username, smtp_password)
-        text = msg.as_string()
-        server.sendmail(smtp_username, email, text)
-        server.quit()
-
-        return True
-
-    except Exception as e:
-        print(f"Registration confirmed email sending failed: {e}")
-        return False
+    return _send_email(
+        to=email_address,
+        subject=f"تأكيد التسجيل - {session.title}",
+        html=html_body,
+        text=plain_body,
+        attachments=attachments
+    )
 
 
-def send_companion_registered_email(email, companion_name, registrant_name, session, is_approved=False, qr_data=None):
+def send_companion_registered_email(email_address, companion_name, registrant_name, session, is_approved=False, qr_data=None):
     """Send email to companion notifying them of registration"""
-    try:
-        # Email configuration
-        smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-        smtp_username = os.environ.get("SMTP_USERNAME", "")
-        smtp_password = os.environ.get("SMTP_PASSWORD", "")
-
-        if not all([smtp_username, smtp_password]):
-            print("SMTP credentials not configured")
-            return False
-
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-        from email.mime.image import MIMEImage
-
-        msg = MIMEMultipart('related')
-        msg['From'] = smtp_username
-        msg['To'] = email
-        msg['Subject'] = f"تم تسجيلك كمرافق - {session.title}"
-
-        # Build status message and optional QR
-        if is_approved:
-            status_message = "نتطلع لرؤيتك معنا!"
-            qr_section = ""
-            if qr_data and session.send_qr_in_email:
-                qr_section = """
+    # Build status message and optional QR
+    if is_approved:
+        status_message = "نتطلع لرؤيتك معنا!"
+        qr_section = ""
+        if qr_data and session.send_qr_in_email:
+            qr_section = """
 <br><br>
 <p style="text-align: center;"><strong>رمز الحضور الخاص بك:</strong></p>
 <p style="text-align: center;"><img src="cid:qrcode" alt="QR Code" style="max-width: 200px;"></p>
 <p style="text-align: center; font-size: 12px;">أظهر هذا الرمز عند الحضور</p>
 """
-        else:
-            status_message = "تسجيلك قيد المراجعة وسيتم إخطارك بالموافقة قريباً."
-            qr_section = ""
+    else:
+        status_message = "تسجيلك قيد المراجعة وسيتم إخطارك بالموافقة قريباً."
+        qr_section = ""
 
-        html_body = f"""
+    html_body = f"""
 <html>
 <head>
 <meta charset="utf-8">
@@ -316,13 +248,9 @@ def send_companion_registered_email(email, companion_name, registrant_name, sess
 <p>فريق ثلوثية الأعمال</p>
 </body>
 </html>
-        """
+    """
 
-        msg_alternative = MIMEMultipart('alternative')
-        msg.attach(msg_alternative)
-
-        # Plain text version
-        plain_body = f"""
+    plain_body = f"""
 مرحباً {companion_name},
 
 تم تسجيلك كمرافق للأستاذ/ة {registrant_name} في:
@@ -335,87 +263,50 @@ def send_companion_registered_email(email, companion_name, registrant_name, sess
 {status_message}
 
 فريق ثلوثية الأعمال
-        """
+    """
 
-        msg_alternative.attach(MIMEText(plain_body, 'plain', 'utf-8'))
-        msg_alternative.attach(MIMEText(html_body, 'html', 'utf-8'))
+    # Build attachments if QR code provided
+    attachments = None
+    if is_approved and qr_data and session.send_qr_in_email:
+        if qr_data.startswith('data:image/png;base64,'):
+            qr_base64 = qr_data.split(',')[1]
+            attachments = [{
+                "filename": "qrcode.png",
+                "content": qr_base64,
+                "content_id": "qrcode"
+            }]
 
-        # Attach QR code image if provided
-        if is_approved and qr_data and session.send_qr_in_email:
-            if qr_data.startswith('data:image/png;base64,'):
-                img_data = base64.b64decode(qr_data.split(',')[1])
-                from email.mime.image import MIMEImage
-                img = MIMEImage(img_data)
-                img.add_header('Content-ID', '<qrcode>')
-                img.add_header('Content-Disposition', 'inline', filename='qrcode.png')
-                msg.attach(img)
-
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(smtp_username, smtp_password)
-        text = msg.as_string()
-        server.sendmail(smtp_username, email, text)
-        server.quit()
-
-        return True
-
-    except Exception as e:
-        print(f"Companion registered email sending failed: {e}")
-        return False
+    return _send_email(
+        to=email_address,
+        subject=f"تم تسجيلك كمرافق - {session.title}",
+        html=html_body,
+        text=plain_body,
+        attachments=attachments
+    )
 
 
-def send_password_reset_email(email, name, reset_url):
+def send_password_reset_email(email_address, name, reset_url):
     """Send password reset email to user"""
-    try:
-        # Email configuration
-        smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-        smtp_username = os.environ.get("SMTP_USERNAME", "")
-        smtp_password = os.environ.get("SMTP_PASSWORD", "")
+    body = f"""
+مرحباً {name},
 
-        if not all([smtp_username, smtp_password]):
-            print("SMTP credentials not configured")
-            return False
+لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.
 
-        # Create message
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
+اضغط على الرابط التالي لإعادة تعيين كلمة المرور:
+{reset_url}
 
-        msg = MIMEMultipart()
-        msg['From'] = smtp_username
-        msg['To'] = email
-        msg['Subject'] = "إعادة تعيين كلمة المرور - ثلوثية الأعمال"
+هذا الرابط صالح لمدة ساعة واحدة فقط.
 
-        body = f"""
-        مرحباً {name},
+إذا لم تطلب إعادة تعيين كلمة المرور، يمكنك تجاهل هذه الرسالة.
 
-        لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.
+فريق ثلوثية الأعمال
+    """
 
-        اضغط على الرابط التالي لإعادة تعيين كلمة المرور:
-        {reset_url}
-
-        هذا الرابط صالح لمدة ساعة واحدة فقط.
-
-        إذا لم تطلب إعادة تعيين كلمة المرور، يمكنك تجاهل هذه الرسالة.
-
-        فريق ثلوثية الأعمال
-        """
-
-        msg.attach(MIMEText(body, 'plain', 'utf-8'))
-
-        # Send email
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(smtp_username, smtp_password)
-        text = msg.as_string()
-        server.sendmail(smtp_username, email, text)
-        server.quit()
-
-        return True
-
-    except Exception as e:
-        print(f"Password reset email sending failed: {e}")
-        return False
+    return _send_email(
+        to=email_address,
+        subject="إعادة تعيين كلمة المرور - ثلوثية الأعمال",
+        text=body
+    )
 
 
 def send_whatsapp_message(phone, message):
@@ -540,36 +431,16 @@ def generate_invite_token():
     """Generate secure random token for invitations"""
     return secrets.token_urlsafe(32)
 
-def send_invitation_email(email, session, token, custom_message=None):
+def send_invitation_email(email_address, session, token, custom_message=None):
     """Send invitation email with registration link"""
-    try:
-        # Email configuration
-        smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-        smtp_username = os.environ.get("SMTP_USERNAME", "")
-        smtp_password = os.environ.get("SMTP_PASSWORD", "")
-        
-        if not all([smtp_username, smtp_password]):
-            print("SMTP credentials not configured")
-            return False
-        
-        # Create message
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-        
-        msg = MIMEMultipart()
-        msg['From'] = smtp_username
-        msg['To'] = email
-        msg['Subject'] = f"دعوة خاصة - {session.title}"
-        
-        # Generate registration link
-        registration_link = f"{os.environ.get('BASE_URL', 'https://your-domain.com')}/event/{session.slug or session.id}/register?token={token}"
-        
-        # Use custom message or default
-        if custom_message:
-            body = custom_message.replace('[رابط التسجيل]', registration_link)
-        else:
-            body = f"""
+    # Generate registration link
+    registration_link = f"{os.environ.get('BASE_URL', 'https://your-domain.com')}/event/{session.slug or session.id}/register?token={token}"
+
+    # Use custom message or default
+    if custom_message:
+        body = custom_message.replace('[رابط التسجيل]', registration_link)
+    else:
+        body = f"""
 مرحباً،
 
 نود دعوتك لحضور جلسة "{session.title}" في ثلوثية الأعمال.
@@ -585,20 +456,10 @@ def send_invitation_email(email, session, token, custom_message=None):
 نتطلع لرؤيتك معنا!
 
 فريق ثلوثية الأعمال
-            """
-        
-        msg.attach(MIMEText(body, 'plain', 'utf-8'))
-        
-        # Send email
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(smtp_username, smtp_password)
-        text = msg.as_string()
-        server.sendmail(smtp_username, email, text)
-        server.quit()
-        
-        return True
-        
-    except Exception as e:
-        print(f"Invitation email sending failed: {e}")
-        return False
+        """
+
+    return _send_email(
+        to=email_address,
+        subject=f"دعوة خاصة - {session.title}",
+        text=body
+    )
