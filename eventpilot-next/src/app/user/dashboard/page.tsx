@@ -11,6 +11,31 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
 
+interface RegistrationItem {
+  id: string;
+  isApproved: boolean;
+  registeredAt: Date;
+  session: {
+    id: string;
+    title: string;
+    date: Date;
+    location: string | null;
+    sessionNumber: number;
+  };
+  companions: { id: string; name: string }[];
+}
+
+interface AttendanceItem {
+  id: string;
+  attended: boolean;
+  checkInTime: Date | null;
+  session: {
+    id: string;
+    title: string;
+    date: Date;
+  };
+}
+
 export default function UserDashboardPage() {
   const { data: authSession, status } = useSession();
   const { data: dashboard, isLoading } = api.user.getDashboard.useQuery(undefined, {
@@ -74,7 +99,7 @@ export default function UserDashboardPage() {
 
           <TabsContent value="upcoming" className="space-y-4">
             {dashboard?.upcomingRegistrations && dashboard.upcomingRegistrations.length > 0 ? (
-              dashboard.upcomingRegistrations.map((reg) => (
+              dashboard.upcomingRegistrations.map((reg: RegistrationItem) => (
                 <RegistrationCard key={reg.id} registration={reg} />
               ))
             ) : (
@@ -91,7 +116,7 @@ export default function UserDashboardPage() {
 
           <TabsContent value="past" className="space-y-4">
             {dashboard?.pastRegistrations && dashboard.pastRegistrations.length > 0 ? (
-              dashboard.pastRegistrations.map((reg) => (
+              dashboard.pastRegistrations.map((reg: RegistrationItem) => (
                 <RegistrationCard key={reg.id} registration={reg} isPast />
               ))
             ) : (

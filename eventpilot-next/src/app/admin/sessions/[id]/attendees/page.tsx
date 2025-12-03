@@ -20,6 +20,17 @@ import { toast } from "sonner";
 import { formatArabicDate } from "@/lib/utils";
 import { ArrowRight, Search, Check, Download, Users, CheckCheck } from "lucide-react";
 
+interface RegistrationItem {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  isGuest: boolean;
+  isApproved: boolean;
+  registeredAt: Date;
+  companions?: { id: string }[];
+}
+
 export default function SessionAttendeesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [search, setSearch] = useState("");
@@ -73,7 +84,7 @@ export default function SessionAttendeesPage({ params }: { params: Promise<{ id:
     if (!search.trim()) return registrations;
 
     const searchLower = search.toLowerCase();
-    return registrations.filter((reg) =>
+    return registrations.filter((reg: RegistrationItem) =>
       reg.name?.toLowerCase().includes(searchLower) ||
       reg.email?.toLowerCase().includes(searchLower) ||
       reg.phone?.includes(search)
@@ -85,8 +96,8 @@ export default function SessionAttendeesPage({ params }: { params: Promise<{ id:
     if (!registrations) return { total: 0, approved: 0, pending: 0 };
     return {
       total: registrations.length,
-      approved: registrations.filter((r) => r.isApproved).length,
-      pending: registrations.filter((r) => !r.isApproved).length,
+      approved: registrations.filter((r: RegistrationItem) => r.isApproved).length,
+      pending: registrations.filter((r: RegistrationItem) => !r.isApproved).length,
     };
   }, [registrations]);
 
@@ -220,7 +231,7 @@ export default function SessionAttendeesPage({ params }: { params: Promise<{ id:
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRegistrations.map((reg) => (
+                {filteredRegistrations.map((reg: RegistrationItem) => (
                   <TableRow key={reg.id}>
                     <TableCell className="font-medium">{reg.name}</TableCell>
                     <TableCell>{reg.email}</TableCell>

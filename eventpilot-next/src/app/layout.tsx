@@ -1,17 +1,10 @@
 import type { Metadata } from "next";
-import { Cairo } from "next/font/google";
 import { TRPCProvider } from "@/components/providers/trpc-provider";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import "./globals.css";
-
-const cairo = Cairo({
-  variable: "--font-cairo",
-  subsets: ["arabic", "latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "ثلوثية الأعمال - EventPilot",
@@ -25,7 +18,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${cairo.variable} font-sans antialiased min-h-screen flex flex-col`}>
+      <head>
+        {/* Load Cairo font from Google Fonts via link tag */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-cairo antialiased min-h-screen flex flex-col">
         <SessionProvider>
           <TRPCProvider>
             <Navbar />

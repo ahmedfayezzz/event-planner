@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { Prisma } from "@prisma/client";
 import {
   createTRPCRouter,
   publicProcedure,
@@ -34,7 +33,8 @@ export const invitationRouter = createTRPCRouter({
         .map((r) => r.userId)
         .filter((id): id is string => id !== null);
 
-      const where: Prisma.UserWhereInput = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: Record<string, any> = {
         id: { notIn: registeredIds },
         isActive: true,
       };

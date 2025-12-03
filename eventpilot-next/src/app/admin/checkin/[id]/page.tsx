@@ -28,6 +28,20 @@ import { toast } from "sonner";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
 import { ArrowRight, QrCode, Check, X, Search, Users, Camera, CameraOff } from "lucide-react";
 
+// Attendee type for the attendance list
+interface AttendeeItem {
+  registrationId: string;
+  userId: string | null;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  isGuest: boolean;
+  attended: boolean;
+  checkInTime: Date | null;
+  qrVerified: boolean;
+  companionCount: number;
+}
+
 // Dynamically import QR scanner to avoid SSR issues
 const Scanner = dynamic(
   () => import("@yudiel/react-qr-scanner").then((mod) => mod.Scanner),
@@ -95,12 +109,12 @@ export default function CheckInPage({ params }: { params: Promise<{ id: string }
     }
   }, [lastScanned, markQRMutation]);
 
-  const filteredAttendees = attendance?.attendanceList.filter((a) =>
+  const filteredAttendees: AttendeeItem[] = (attendance?.attendanceList || []).filter((a: AttendeeItem) =>
     !search.trim() ||
     a.name?.toLowerCase().includes(search.toLowerCase()) ||
     a.email?.toLowerCase().includes(search.toLowerCase()) ||
     a.phone?.includes(search)
-  ) || [];
+  );
 
   if (isLoading) {
     return (

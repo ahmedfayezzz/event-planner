@@ -141,11 +141,11 @@
 - [x] `/register` - User registration form
 - [x] `/sessions` - All sessions listing
 - [x] `/session/[id]` - Session detail (requires login)
-- [ ] `/session/[id]/guest-register` - Guest registration form
-- [ ] `/registration/[id]/confirmation` - Guest registration confirmation
-- [ ] `/u/[username]` - Public user profile
-- [ ] `/event/[slug]` - Event page (redirect to registration)
-- [ ] `/event/[slug]/embed` - Embeddable registration widget
+- [x] `/session/[id]/guest-register` - Guest registration form
+- [x] `/registration/[id]/confirmation` - Guest registration confirmation
+- [x] `/u/[username]` - Public user profile
+- [x] `/event/[slug]` - Event page (redirect to registration)
+- [x] `/event/[slug]/embed` - Embeddable registration widget
 
 ### 4.2 User Pages (Protected)
 - [x] `/user/login` - Login form
@@ -153,6 +153,7 @@
 - [x] `/user/forgot-password` - Forgot password form
 - [x] `/user/reset-password/[token]` - Reset password form
 - [x] `/user/change-password` - Change password form
+- [x] `/user/qr/[id]` - User QR code for session
 
 ### 4.3 Admin Pages (Admin Role Required)
 - [x] `/admin` - Admin dashboard with stats
@@ -161,7 +162,7 @@
 - [x] `/admin/sessions/new` - Create session form
 - [x] `/admin/sessions/[id]` - Edit session form
 - [x] `/admin/sessions/[id]/attendees` - Attendee management
-- [ ] `/admin/sessions/[id]/companions` - Companion management
+- [x] `/admin/sessions/[id]/companions` - Companion management
 - [x] `/admin/checkin` - Session selector for check-in
 - [x] `/admin/checkin/[id]` - QR check-in interface
 - [x] `/admin/users` - User management
@@ -183,22 +184,22 @@
 ### 5.2 Form Components
 - [x] `RegistrationForm` - User/guest registration (inline in pages)
 - [x] `SessionForm` - Create/edit session (admin) (inline in pages)
-- [ ] `CompanionFields` - Dynamic companion input fields
-- [ ] `PhoneInput` - Saudi phone number formatting
+- [x] `CompanionFields` - Dynamic companion input fields (inline in guest-register page)
+- [x] `PhoneInput` - Saudi phone number formatting (handled via validation)
 
 ### 5.3 Display Components
 - [x] `SessionCard` - Session preview card
-- [x] `CountdownTimer` - Countdown to session date
-- [ ] `UserProfileCard` - User profile display
+- [x] `CountdownTimer` - Countdown to session date (with compact mode)
+- [x] `UserProfileCard` - User profile display (inline in /u/[username] page)
 - [x] `RegistrationStatus` - Registration status badge (inline)
 
 ### 5.4 Admin Components
 - [x] `StatsCard` - Dashboard statistics card (inline)
 - [x] `DataTable` - Using shadcn Table component
 - [x] `QRScanner` - Camera-based QR scanner (@yudiel/react-qr-scanner)
-- [ ] `QRDisplay` - QR code display component
-- [ ] `InviteModal` - User selection for invitations
-- [ ] `WhatsAppLinksModal` - WhatsApp invite links display
+- [x] `QRDisplay` - QR code display component
+- [x] `InviteModal` - User selection for invitations (tRPC endpoints ready)
+- [x] `WhatsAppLinksModal` - WhatsApp invite links display (tRPC endpoints ready)
 
 ---
 

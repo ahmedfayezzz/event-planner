@@ -8,6 +8,7 @@ interface CountdownTimerProps {
   title?: string;
   onExpire?: () => void;
   className?: string;
+  compact?: boolean;
 }
 
 interface TimeLeft {
@@ -17,7 +18,7 @@ interface TimeLeft {
   seconds: number;
 }
 
-export function CountdownTimer({ targetDate, title, onExpire }: CountdownTimerProps) {
+export function CountdownTimer({ targetDate, title, onExpire, compact }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
   const [expired, setExpired] = useState(false);
 
@@ -57,8 +58,10 @@ export function CountdownTimer({ targetDate, title, onExpire }: CountdownTimerPr
 
   if (expired) {
     return (
-      <div className="text-center py-8">
-        <p className="text-2xl font-bold text-primary">بدأت الجلسة!</p>
+      <div className={compact ? "text-center py-2" : "text-center py-8"}>
+        <p className={compact ? "text-lg font-bold text-primary" : "text-2xl font-bold text-primary"}>
+          بدأت الجلسة!
+        </p>
       </div>
     );
   }
@@ -67,7 +70,7 @@ export function CountdownTimer({ targetDate, title, onExpire }: CountdownTimerPr
     return (
       <div className="flex justify-center gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-24 w-20 animate-pulse rounded-lg bg-muted" />
+          <div key={i} className={compact ? "h-12 w-12 animate-pulse rounded-lg bg-muted" : "h-24 w-20 animate-pulse rounded-lg bg-muted"} />
         ))}
       </div>
     );
@@ -79,6 +82,30 @@ export function CountdownTimer({ targetDate, title, onExpire }: CountdownTimerPr
     { value: timeLeft.minutes, label: "دقيقة" },
     { value: timeLeft.seconds, label: "ثانية" },
   ];
+
+  if (compact) {
+    return (
+      <div className="space-y-2">
+        {title && (
+          <h3 className="text-center text-sm font-semibold text-muted-foreground">
+            {title}
+          </h3>
+        )}
+        <div className="flex justify-center gap-2">
+          {timeUnits.map((unit, index) => (
+            <div key={index} className="min-w-[50px] bg-muted/50 rounded-lg p-2 text-center">
+              <div className="text-lg font-bold text-primary">
+                {unit.value.toString().padStart(2, "0")}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {unit.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

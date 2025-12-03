@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { Prisma } from "@prisma/client";
 import {
   createTRPCRouter,
   publicProcedure,
@@ -25,7 +24,8 @@ export const sessionRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      const where: Prisma.SessionWhereInput = {};
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: Record<string, any> = {};
 
       if (input?.status) {
         where.status = input.status;

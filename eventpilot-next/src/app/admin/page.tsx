@@ -17,6 +17,31 @@ import {
 import { formatArabicDate } from "@/lib/utils";
 import { Users, Calendar, CheckCircle, Clock, Plus } from "lucide-react";
 
+interface UpcomingSession {
+  id: string;
+  title: string;
+  date: Date;
+  registrationCount: number;
+  maxParticipants: number;
+}
+
+interface RecentRegistration {
+  id: string;
+  name: string | null;
+  sessionTitle: string | null;
+  registeredAt: Date;
+  isApproved: boolean;
+}
+
+interface AttendanceStat {
+  sessionId: string;
+  title: string;
+  date: Date;
+  registrations: number;
+  attendees: number;
+  attendanceRate: number;
+}
+
 export default function AdminDashboardPage() {
   const { data: dashboard, isLoading } = api.admin.getDashboard.useQuery();
 
@@ -142,7 +167,7 @@ export default function AdminDashboardPage() {
               </p>
             ) : (
               <div className="space-y-4">
-                {dashboard.upcomingSessions.map((session) => (
+                {dashboard.upcomingSessions.map((session: UpcomingSession) => (
                   <Link
                     key={session.id}
                     href={`/admin/sessions/${session.id}`}
@@ -179,7 +204,7 @@ export default function AdminDashboardPage() {
               </p>
             ) : (
               <div className="space-y-3">
-                {dashboard.recentRegistrations.slice(0, 5).map((reg) => (
+                {dashboard.recentRegistrations.slice(0, 5).map((reg: RecentRegistration) => (
                   <div
                     key={reg.id}
                     className="flex items-center justify-between gap-2"
@@ -222,7 +247,7 @@ export default function AdminDashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dashboard.attendanceStats.map((stat) => (
+                {dashboard.attendanceStats.map((stat: AttendanceStat) => (
                   <TableRow key={stat.sessionId}>
                     <TableCell className="font-medium">{stat.title}</TableCell>
                     <TableCell>{formatArabicDate(new Date(stat.date))}</TableCell>

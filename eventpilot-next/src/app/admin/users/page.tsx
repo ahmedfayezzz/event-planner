@@ -33,6 +33,21 @@ import { toast } from "sonner";
 import { formatArabicDate } from "@/lib/utils";
 import { Search, Users, MoreVertical, Shield, UserX, UserCheck, Download } from "lucide-react";
 
+interface UserItem {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  username: string;
+  role: string;
+  isActive: boolean;
+  createdAt: Date;
+  companyName?: string | null;
+  position?: string | null;
+  registrationCount: number;
+  attendanceCount: number;
+}
+
 export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -166,7 +181,7 @@ export default function AdminUsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.users.map((user) => (
+                {data.users.map((user: UserItem) => (
                   <TableRow key={user.id} className={!user.isActive ? "opacity-60" : ""}>
                     <TableCell>
                       <div>

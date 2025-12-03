@@ -24,6 +24,16 @@ import {
 import { formatArabicDate } from "@/lib/utils";
 import { Plus, Eye, Edit, Users } from "lucide-react";
 
+interface SessionItem {
+  id: string;
+  sessionNumber: number;
+  title: string;
+  date: Date;
+  status: string;
+  maxParticipants: number;
+  registrationCount: number;
+}
+
 export default function AdminSessionsPage() {
   const [tab, setTab] = useState<"all" | "upcoming" | "completed">("all");
 
@@ -118,7 +128,7 @@ export default function AdminSessionsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.sessions.map((session) => (
+                    {data.sessions.map((session: SessionItem) => (
                       <TableRow key={session.id}>
                         <TableCell className="font-medium">
                           {session.sessionNumber}

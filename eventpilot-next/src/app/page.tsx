@@ -9,6 +9,22 @@ import { SessionCard } from "@/components/session-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, Lightbulb, Zap, Calendar, ArrowLeft } from "lucide-react";
 
+interface SessionItem {
+  id: string;
+  title: string;
+  sessionNumber: number;
+  date: Date;
+  status: string;
+  maxParticipants: number;
+  registrationCount: number | null;
+  isFull: boolean;
+  canRegister: boolean;
+  guestName: string | null;
+  showGuestProfile?: boolean;
+  description?: string | null;
+  location: string | null;
+}
+
 export default function HomePage() {
   const { data: upcomingSessions, isLoading } = api.session.getUpcoming.useQuery({
     limit: 3,
@@ -126,7 +142,7 @@ export default function HomePage() {
             </div>
           ) : upcomingSessions && upcomingSessions.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {upcomingSessions.map((session) => (
+              {upcomingSessions.map((session: SessionItem) => (
                 <SessionCard key={session.id} session={session} />
               ))}
             </div>

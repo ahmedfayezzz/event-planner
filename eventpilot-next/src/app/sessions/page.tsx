@@ -5,6 +5,19 @@ import { SessionCard } from "@/components/session-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+interface SessionItem {
+  id: string;
+  title: string;
+  sessionNumber: number;
+  date: Date;
+  status: string;
+  maxParticipants: number;
+  registrationCount: number;
+  isFull: boolean;
+  guestName: string | null;
+  location: string | null;
+}
+
 export default function SessionsPage() {
   const { data: allSessions, isLoading: loadingAll } = api.session.list.useQuery({});
   const { data: upcomingSessions, isLoading: loadingUpcoming } = api.session.list.useQuery({
@@ -39,7 +52,7 @@ export default function SessionsPage() {
             </div>
           ) : upcomingSessions?.sessions && upcomingSessions.sessions.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {upcomingSessions.sessions.map((session) => (
+              {upcomingSessions.sessions.map((session: SessionItem) => (
                 <SessionCard key={session.id} session={session} />
               ))}
             </div>
@@ -63,7 +76,7 @@ export default function SessionsPage() {
             </div>
           ) : allSessions?.sessions && allSessions.sessions.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {allSessions.sessions.map((session) => (
+              {allSessions.sessions.map((session: SessionItem) => (
                 <SessionCard key={session.id} session={session} />
               ))}
             </div>

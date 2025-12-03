@@ -9,6 +9,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatArabicDate } from "@/lib/utils";
 import { QrCode, Calendar } from "lucide-react";
 
+interface SessionItem {
+  id: string;
+  title: string;
+  sessionNumber: number;
+  date: Date;
+  registrationCount: number;
+}
+
 export default function CheckInSelectPage() {
   const { data, isLoading } = api.session.list.useQuery({ upcoming: true });
 
@@ -43,7 +51,7 @@ export default function CheckInSelectPage() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {data.sessions.map((session) => (
+          {data.sessions.map((session: SessionItem) => (
             <Card key={session.id} className="hover:border-primary transition-colors">
               <CardHeader>
                 <div className="flex items-start justify-between">

@@ -241,11 +241,13 @@ export const attendanceRouter = createTRPCRouter({
         where: { sessionId: input.sessionId },
       });
 
-      const attendanceMap = new Map(attendances.map((a) => [a.userId, a]));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const attendanceMap = new Map<string, any>(attendances.map((a) => [a.userId, a]));
 
       // Combine data
       const attendanceList = registrations.map((r) => {
-        const attendance = r.userId ? attendanceMap.get(r.userId) : null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const attendance: any = r.userId ? attendanceMap.get(r.userId) : null;
 
         return {
           registrationId: r.id,
