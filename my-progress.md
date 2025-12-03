@@ -21,3 +21,7 @@
   - companion emails: companions receive notification and are converted to guest registrations
   - QR code in emails: session setting to include/exclude QR code in confirmation emails
   - emails triggered at: guest registration, logged-in user registration, individual/bulk approval
+- registration deadline:
+  - configurable "close registration X hours before session" in admin forms
+  - relative to session date (hours before)
+  - enforced by can_register() method in Session model

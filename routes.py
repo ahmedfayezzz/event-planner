@@ -816,17 +816,25 @@ def admin_new_session():
         # Get the highest session number
         last_session = Session.query.order_by(Session.session_number.desc()).first()
         session_number = (last_session.session_number + 1) if last_session else 1
-        
+
+        # Calculate registration deadline from hours before session
+        session_date = datetime.strptime(request.form.get('date'), '%Y-%m-%dT%H:%M')
+        deadline_hours = request.form.get('registration_deadline_hours', '').strip()
+        registration_deadline = None
+        if deadline_hours and int(deadline_hours) > 0:
+            registration_deadline = session_date - timedelta(hours=int(deadline_hours))
+
         session = Session(
             session_number=session_number,
             title=request.form.get('title'),
             description=request.form.get('description'),
-            date=datetime.strptime(request.form.get('date'), '%Y-%m-%dT%H:%M'),
+            date=session_date,
             guest_name=request.form.get('guest_name'),
             guest_profile=request.form.get('guest_profile'),
             location=request.form.get('location'),
             max_participants=int(request.form.get('max_participants', 50)),
             max_companions=int(request.form.get('max_companions', 5)),
+            registration_deadline=registration_deadline,
             requires_approval='requires_approval' in request.form,
             show_participant_count='show_participant_count' in request.form,
             show_countdown='show_countdown' in request.form,
@@ -836,7 +844,7 @@ def admin_new_session():
             invite_only='invite_only' in request.form,
             send_qr_in_email='send_qr_in_email' in request.form
         )
-        
+
         db.session.add(session)
         db.session.commit()
         
@@ -859,6 +867,14 @@ def admin_edit_session(session_id):
         session_obj.location = request.form.get('location')
         session_obj.max_participants = int(request.form.get('max_participants', 50))
         session_obj.max_companions = int(request.form.get('max_companions', 5))
+
+        # Calculate registration deadline from hours before session
+        deadline_hours = request.form.get('registration_deadline_hours', '').strip()
+        if deadline_hours and int(deadline_hours) > 0:
+            session_obj.registration_deadline = session_obj.date - timedelta(hours=int(deadline_hours))
+        else:
+            session_obj.registration_deadline = None
+
         session_obj.requires_approval = 'requires_approval' in request.form
         session_obj.show_participant_count = 'show_participant_count' in request.form
         session_obj.show_countdown = 'show_countdown' in request.form
@@ -872,7 +888,7 @@ def admin_edit_session(session_id):
         db.session.commit()
         flash('تم تحديث الجلسة بنجاح!', 'success')
         return redirect(url_for('admin_sessions'))
-    
+
     return render_template('admin/edit_session.html', session_obj=session_obj)
 
 @app.route('/event/<path:identifier>')
