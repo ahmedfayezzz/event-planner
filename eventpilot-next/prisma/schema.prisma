@@ -1,0 +1,184 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  username      String    @unique
+  email         String    @unique
+  phone         String    @unique
+  passwordHash  String?
+
+  // Social media
+  instagram     String?
+  snapchat      String?
+  twitter       String?
+
+  // Professional info
+  companyName   String?
+  position      String?
+  activityType  String?
+  gender        String?
+  goal          String?
+  aiDescription String?
+
+  // Status
+  isApproved    Boolean   @default(true)
+  isActive      Boolean   @default(true)
+  role          Role      @default(USER)
+
+  // Password reset
+  resetToken        String?
+  resetTokenExpires DateTime?
+
+  // Remember me / refresh token
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  registrations Registration[]
+  attendances   Attendance[]
+  companionsConverted Companion[] @relation("ConvertedUser")
+}
+
+model Session {
+  id              String   @id @default(cuid())
+  sessionNumber   Int      @unique
+  title           String
+  description     String?
+  date            DateTime
+
+  // Guest info
+  guestName       String?
+  guestProfile    String?
+
+  // Capacity
+  maxParticipants Int      @default(50)
+  maxCompanions   Int      @default(5)
+
+  // Status
+  status          String   @default("open") // open, closed, completed
+
+  // Settings
+  requiresApproval      Boolean  @default(false)
+  showParticipantCount  Boolean  @default(true)
+  location              String?
+
+  // Advanced Settings
+  registrationDeadline  DateTime?
+  showCountdown         Boolean  @default(true)
+  showGuestProfile      Boolean  @default(true)
+  enableMiniView        Boolean  @default(false)
+  customConfirmationMessage String?
+  embedEnabled          Boolean  @default(true)
+  slug                  String?  @unique
+  inviteOnly            Boolean  @default(false)
+  inviteMessage         String?
+  sendQrInEmail         Boolean  @default(true)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  registrations Registration[]
+  attendances   Attendance[]
+  invites       Invite[]
+}
+
+model Registration {
+  id          String   @id @default(cuid())
+  userId      String?
+  sessionId   String
+  registeredAt DateTime @default(now())
+  isApproved  Boolean  @default(true)
+  approvalNotes String?
+
+  // Guest registration fields (used when userId is NULL)
+  guestName         String?
+  guestEmail        String?
+  guestPhone        String?
+  guestInstagram    String?
+  guestSnapchat     String?
+  guestTwitter      String?
+  guestCompanyName  String?
+  guestPosition     String?
+  guestActivityType String?
+  guestGender       String?
+  guestGoal         String?
+
+  // Relations
+  user        User?     @relation(fields: [userId], references: [id])
+  session     Session   @relation(fields: [sessionId], references: [id])
+  companions  Companion[]
+
+  @@unique([userId, sessionId])
+}
+
+model Attendance {
+  id          String   @id @default(cuid())
+  userId      String
+  sessionId   String
+  attended    Boolean  @default(false)
+  checkInTime DateTime?
+  qrVerified  Boolean  @default(false)
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id])
+  session     Session  @relation(fields: [sessionId], references: [id])
+
+  @@unique([userId, sessionId])
+}
+
+model Companion {
+  id              String   @id @default(cuid())
+  registrationId  String
+  name            String
+  company         String?
+  title           String?
+  phone           String?
+  email           String?
+  createdAt       DateTime @default(now())
+
+  // Invitation tracking
+  inviteSent      Boolean  @default(false)
+  inviteSentAt    DateTime?
+  inviteToken     String?
+  convertedToUserId String?
+
+  // Relations
+  registration    Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  convertedUser   User?        @relation("ConvertedUser", fields: [convertedToUserId], references: [id])
+}
+
+model Invite {
+  id          String   @id @default(cuid())
+  sessionId   String
+  email       String
+  token       String   @unique
+  used        Boolean  @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  sentAt      DateTime?
+
+  // Relations
+  session     Session  @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId])
+}

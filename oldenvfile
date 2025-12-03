@@ -1,0 +1,9 @@
+# Required
+DATABASE_URL="sqlite:///business_tuesdays.db"
+SESSION_SECRET="your-secret-key-here"
+
+# Optional (for full features)
+OPENAI_API_KEY="sk-..."
+RESEND_API_KEY="re_CXtvwcLK_2H6ugm7yKez8LiafejATw6jo"          # Resend API key
+FROM_EMAIL="onboarding@resend.com"  # Verified sender in Resend
+BASE_URL="http://localhost:5000"    # Base URL for email links

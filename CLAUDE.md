@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+while doing the migration from flask to nextjs always mark tasks as done in MIGRATION_TASKS.md when completed.
+
 ## Project Overview
 
 EventPilot is a professional event management platform for weekly networking sessions ("Business Tuesdays"). It's a full-stack Flask web application with Arabic RTL support and OpenAI integration.
@@ -47,14 +49,14 @@ This project does not have a test suite configured.
 
 ## Key Routes
 
-| Path | Purpose |
-|------|---------|
-| `/` | Homepage with countdown |
-| `/register` | User registration |
-| `/user/login` | Login via email+phone |
-| `/session/<id>` | Session details |
-| `/admin/login` | Admin panel (default: admin/admin123) |
-| `/api/analytics/*` | AI-powered analytics endpoints |
+| Path               | Purpose                               |
+|--------------------|---------------------------------------|
+| `/`                | Homepage with countdown               |
+| `/register`        | User registration                     |
+| `/user/login`      | Login via email+phone                 |
+| `/session/<id>`    | Session details                       |
+| `/admin/login`     | Admin panel (default: admin/admin123) |
+| `/api/analytics/*` | AI-powered analytics endpoints        |
 
 ## Environment Variables
 
