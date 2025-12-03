@@ -11,6 +11,11 @@ from datetime import datetime, timedelta
 import secrets
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def _send_email(to, subject, text=None, html=None, attachments=None):
     """
     Abstract email sending layer using Resend.
@@ -25,17 +30,23 @@ def _send_email(to, subject, text=None, html=None, attachments=None):
     Returns:
         True on success, False on failure
     """
+    recipient = [to] if isinstance(to, str) else to
+
     try:
         resend.api_key = os.environ.get("RESEND_API_KEY", "")
         from_email = os.environ.get("FROM_EMAIL", "")
 
-        if not all([resend.api_key, from_email]):
-            print("Resend credentials not configured")
+        if not resend.api_key:
+            logger.warning("RESEND_API_KEY not configured - email not sent to %s", recipient)
+            return False
+
+        if not from_email:
+            logger.warning("FROM_EMAIL not configured - email not sent to %s", recipient)
             return False
 
         email_params = {
             "from": from_email,
-            "to": [to] if isinstance(to, str) else to,
+            "to": recipient,
             "subject": subject
         }
 
@@ -46,11 +57,13 @@ def _send_email(to, subject, text=None, html=None, attachments=None):
         if attachments:
             email_params["attachments"] = attachments
 
-        resend.Emails.send(email_params)
+        logger.info("Sending email to %s: %s", recipient, subject)
+        response = resend.Emails.send(email_params)
+        logger.info("Email sent successfully to %s (id: %s)", recipient, response.get('id', 'unknown'))
         return True
 
     except Exception as e:
-        print(f"Email sending failed: {e}")
+        logger.error("Email sending failed to %s: %s", recipient, str(e))
         return False
 
 def generate_username(name):
