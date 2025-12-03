@@ -1,12 +1,13 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify, make_response, session as flask_session
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db
-from models import User, Session, Registration, Attendance, Admin, Companion
+from models import User, Session, Registration, Attendance, Admin, Companion, Invite
 from sqlalchemy import func
 from ai_service import generate_professional_description, analyze_participant_data, search_participants
 from utils import (
     generate_username, send_confirmation_email, generate_qr_code, export_to_csv,
-    send_registration_pending_email, send_registration_confirmed_email, send_companion_registered_email
+    send_registration_pending_email, send_registration_confirmed_email, send_companion_registered_email,
+    generate_invite_token, send_invitation_email, format_phone_number
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, timedelta
@@ -1366,6 +1367,216 @@ def api_recommendations():
     except Exception as e:
         app.logger.error(f"Recommendations API error: {e}")
         return jsonify({'error': 'خطأ في الخادم'}), 500
+
+# Admin API Routes for Invitations
+@app.route('/api/admin/users-for-invite/<int:session_id>')
+@login_required
+def api_users_for_invite(session_id):
+    """Get list of users available for invitation to a session"""
+    try:
+        session_obj = Session.query.get_or_404(session_id)
+
+        # Get all users
+        users = User.query.filter_by(is_active=True).all()
+
+        # Get users who are already registered for this session
+        registered_user_ids = set(
+            r.user_id for r in Registration.query.filter_by(session_id=session_id).all()
+            if r.user_id is not None
+        )
+
+        # Get users who already have invites for this session
+        invited_emails = set(
+            i.email.lower() for i in Invite.query.filter_by(session_id=session_id).all()
+        )
+
+        users_list = []
+        for user in users:
+            users_list.append({
+                'id': user.id,
+                'name': user.name,
+                'email': user.email,
+                'phone': user.phone,
+                'already_registered': user.id in registered_user_ids,
+                'already_invited': user.email.lower() in invited_emails
+            })
+
+        return jsonify({
+            'success': True,
+            'users': users_list
+        })
+
+    except Exception as e:
+        app.logger.error(f"Users for invite API error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/admin/send-invites/<int:session_id>', methods=['POST'])
+@login_required
+def api_send_invites(session_id):
+    """Send email invitations to selected users"""
+    try:
+        session_obj = Session.query.get_or_404(session_id)
+        data = request.get_json()
+        user_ids = data.get('user_ids', [])
+
+        if not user_ids:
+            return jsonify({'success': False, 'message': 'لم يتم تحديد مستخدمين'}), 400
+
+        sent_count = 0
+        for user_id in user_ids:
+            user = User.query.get(user_id)
+            if not user:
+                continue
+
+            # Check if already invited
+            existing_invite = Invite.query.filter_by(
+                session_id=session_id,
+                email=user.email
+            ).first()
+
+            if existing_invite:
+                continue
+
+            # Create invite record
+            token = generate_invite_token()
+            invite = Invite(
+                session_id=session_id,
+                email=user.email,
+                token=token,
+                expires_at=session_obj.date,  # Invite expires at session time
+                sent_at=datetime.utcnow()
+            )
+            db.session.add(invite)
+
+            # Send invitation email
+            if send_invitation_email(user.email, session_obj, token, session_obj.invite_message):
+                sent_count += 1
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'sent_count': sent_count
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Send invites API error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/admin/generate-whatsapp-invites/<int:session_id>', methods=['POST'])
+@login_required
+def api_generate_whatsapp_invites(session_id):
+    """Generate WhatsApp links for selected users"""
+    try:
+        import urllib.parse
+
+        session_obj = Session.query.get_or_404(session_id)
+        data = request.get_json()
+        user_ids = data.get('user_ids', [])
+
+        if not user_ids:
+            return jsonify({'success': False, 'message': 'لم يتم تحديد مستخدمين'}), 400
+
+        links = []
+        for user_id in user_ids:
+            user = User.query.get(user_id)
+            if not user or not user.phone:
+                continue
+
+            # Generate invite token for tracking
+            token = generate_invite_token()
+
+            # Check if invite exists, if not create one
+            existing_invite = Invite.query.filter_by(
+                session_id=session_id,
+                email=user.email
+            ).first()
+
+            if not existing_invite:
+                invite = Invite(
+                    session_id=session_id,
+                    email=user.email,
+                    token=token,
+                    expires_at=session_obj.date
+                )
+                db.session.add(invite)
+            else:
+                token = existing_invite.token
+
+            # Build registration link
+            import os
+            base_url = os.environ.get('BASE_URL', request.host_url.rstrip('/'))
+            registration_link = f"{base_url}/event/{session_obj.slug or session_obj.id}/register?token={token}"
+
+            # Build WhatsApp message
+            message = f"""مرحباً {user.name}،
+
+نود دعوتك لحضور جلسة "{session_obj.title}" في ثلوثية الأعمال.
+
+📅 التاريخ: {session_obj.date.strftime('%Y-%m-%d')}
+🕐 الوقت: {session_obj.date.strftime('%H:%M')}
+📍 المكان: {session_obj.location or 'سيتم الإعلان عنه لاحقاً'}
+
+للتسجيل، استخدم الرابط التالي:
+{registration_link}
+
+نتطلع لرؤيتك معنا!"""
+
+            # Format phone number for WhatsApp (remove + and leading zeros)
+            formatted_phone = format_phone_number(user.phone)
+            # WhatsApp API expects number without + sign
+            wa_phone = formatted_phone.replace('+', '')
+
+            # Create WhatsApp URL
+            encoded_message = urllib.parse.quote(message)
+            whatsapp_url = f"https://wa.me/{wa_phone}?text={encoded_message}"
+
+            links.append({
+                'name': user.name,
+                'phone': user.phone,
+                'whatsapp_url': whatsapp_url
+            })
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'links': links
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Generate WhatsApp invites API error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/admin/session-invites/<int:session_id>')
+@login_required
+def api_session_invites(session_id):
+    """Get all invites for a session"""
+    try:
+        invites = Invite.query.filter_by(session_id=session_id).order_by(Invite.created_at.desc()).all()
+
+        invites_list = [{
+            'id': invite.id,
+            'email': invite.email,
+            'used': invite.used,
+            'sent_at': invite.sent_at.strftime('%Y-%m-%d %H:%M') if invite.sent_at else None,
+            'expires_at': invite.expires_at.strftime('%Y-%m-%d %H:%M') if invite.expires_at else None
+        } for invite in invites]
+
+        return jsonify({
+            'success': True,
+            'invites': invites_list
+        })
+
+    except Exception as e:
+        app.logger.error(f"Session invites API error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 
 # Error handlers
 @app.errorhandler(404)

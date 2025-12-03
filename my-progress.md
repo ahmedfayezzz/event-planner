@@ -25,3 +25,10 @@
   - configurable "close registration X hours before session" in admin forms
   - relative to session date (hours before)
   - enforced by can_register() method in Session model
+- invitation system for invite-only sessions:
+  - admin can select existing users to invite from user list
+  - search/filter users by name or email
+  - send email invitations with unique registration tokens
+  - generate WhatsApp links with pre-filled messages (opens wa.me with personalized invite)
+  - track invitation status (sent, used)
+  - view all invitations for a session
