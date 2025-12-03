@@ -4,7 +4,10 @@ from app import app, db
 from models import User, Session, Registration, Attendance, Admin, Companion
 from sqlalchemy import func
 from ai_service import generate_professional_description, analyze_participant_data, search_participants
-from utils import generate_username, send_confirmation_email, generate_qr_code, export_to_csv
+from utils import (
+    generate_username, send_confirmation_email, generate_qr_code, export_to_csv,
+    send_registration_pending_email, send_registration_confirmed_email, send_companion_registered_email
+)
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, timedelta
 import json
@@ -49,6 +52,22 @@ def check_refresh_token():
     # Refresh the token (extend expiration)
     user.refresh_token_expires = datetime.utcnow() + timedelta(days=30)
     db.session.commit()
+
+
+def create_companion_guest_registration(companion, session_obj, is_approved):
+    """Convert a companion to a guest registration"""
+    registration = Registration(
+        session_id=session_obj.id,
+        guest_name=companion.name,
+        guest_email=companion.email,
+        guest_phone=companion.phone,
+        guest_company_name=companion.company,
+        guest_position=companion.title,
+        is_approved=is_approved
+    )
+    db.session.add(registration)
+    db.session.commit()
+    return registration
 
 
 @app.route('/')
@@ -363,9 +382,32 @@ def guest_session_register(session_id):
 
         db.session.commit()
 
-        # Send confirmation email
+        # Send appropriate email based on approval requirement
         try:
-            send_confirmation_email(email, name, session_obj)
+            if session_obj.requires_approval:
+                # Session requires approval - send pending email
+                send_registration_pending_email(email, name, session_obj)
+                # Send pending notification to companions
+                for companion in registration.companions:
+                    if companion.email:
+                        comp_reg = create_companion_guest_registration(companion, session_obj, is_approved=False)
+                        send_companion_registered_email(
+                            companion.email, companion.name, name, session_obj,
+                            is_approved=False, qr_data=None
+                        )
+            else:
+                # No approval required - send confirmed email with QR
+                qr_data = generate_qr_code(f"reg:{registration.id},session:{session_id}")
+                send_registration_confirmed_email(email, name, session_obj, qr_data)
+                # Create approved guest registrations for companions and send emails
+                for companion in registration.companions:
+                    if companion.email:
+                        comp_reg = create_companion_guest_registration(companion, session_obj, is_approved=True)
+                        comp_qr = generate_qr_code(f"reg:{comp_reg.id},session:{session_id}")
+                        send_companion_registered_email(
+                            companion.email, companion.name, name, session_obj,
+                            is_approved=True, qr_data=comp_qr
+                        )
         except Exception as e:
             app.logger.error(f"Email sending failed: {e}")
 
@@ -692,12 +734,23 @@ def register_for_session(session_id):
     )
     db.session.add(registration)
     db.session.commit()
-    
+
+    # Send appropriate email based on approval requirement
+    user = User.query.get(user_id)
+    try:
+        if session_obj.requires_approval:
+            send_registration_pending_email(user.email, user.name, session_obj)
+        else:
+            qr_data = generate_qr_code(f"reg:{registration.id},session:{session_id}")
+            send_registration_confirmed_email(user.email, user.name, session_obj, qr_data)
+    except Exception as e:
+        app.logger.error(f"Email sending failed: {e}")
+
     if session_obj.requires_approval:
         flash('تم تسجيلك في الجلسة، في انتظار الموافقة من الإدارة', 'success')
     else:
         flash('تم تسجيلك في الجلسة بنجاح!', 'success')
-    
+
     return redirect(url_for('session_detail', session_id=session_id))
 
 # Admin Routes
@@ -780,7 +833,8 @@ def admin_new_session():
             show_guest_profile='show_guest_profile' in request.form,
             enable_mini_view='enable_mini_view' in request.form,
             embed_enabled='embed_enabled' in request.form,
-            invite_only='invite_only' in request.form
+            invite_only='invite_only' in request.form,
+            send_qr_in_email='send_qr_in_email' in request.form
         )
         
         db.session.add(session)
@@ -812,8 +866,9 @@ def admin_edit_session(session_id):
         session_obj.enable_mini_view = 'enable_mini_view' in request.form
         session_obj.embed_enabled = 'embed_enabled' in request.form
         session_obj.invite_only = 'invite_only' in request.form
+        session_obj.send_qr_in_email = 'send_qr_in_email' in request.form
         session_obj.status = request.form.get('status')
-        
+
         db.session.commit()
         flash('تم تحديث الجلسة بنجاح!', 'success')
         return redirect(url_for('admin_sessions'))
@@ -957,6 +1012,26 @@ def approve_registration(registration_id):
         registration = Registration.query.get_or_404(registration_id)
         registration.is_approved = True
         db.session.commit()
+
+        # Send confirmation email to registrant
+        try:
+            email = registration.get_registrant_email()
+            name = registration.get_registrant_name()
+            qr_data = generate_qr_code(f"reg:{registration.id},session:{registration.session_id}")
+            send_registration_confirmed_email(email, name, registration.session, qr_data)
+
+            # Handle companions - create guest registrations and send emails
+            for companion in registration.companions:
+                if companion.email:
+                    comp_reg = create_companion_guest_registration(companion, registration.session, is_approved=True)
+                    comp_qr = generate_qr_code(f"reg:{comp_reg.id},session:{registration.session_id}")
+                    send_companion_registered_email(
+                        companion.email, companion.name, name, registration.session,
+                        is_approved=True, qr_data=comp_qr
+                    )
+        except Exception as e:
+            app.logger.error(f"Approval email sending failed: {e}")
+
         return jsonify({'success': True})
     except Exception as e:
         app.logger.error(f"Registration approval failed: {e}")
@@ -1001,17 +1076,41 @@ def mark_attendance():
 @login_required
 def approve_all_registrations(session_id):
     try:
+        session_obj = Session.query.get_or_404(session_id)
         registrations = Registration.query.filter_by(
             session_id=session_id,
             is_approved=False
         ).all()
-        
+
         for registration in registrations:
             registration.is_approved = True
-        
+
         db.session.commit()
-        return jsonify({'success': True, 'count': len(registrations)})
-        
+
+        # Send confirmation emails to all approved registrations
+        emails_sent = 0
+        for registration in registrations:
+            try:
+                email = registration.get_registrant_email()
+                name = registration.get_registrant_name()
+                qr_data = generate_qr_code(f"reg:{registration.id},session:{session_id}")
+                send_registration_confirmed_email(email, name, session_obj, qr_data)
+                emails_sent += 1
+
+                # Handle companions - create guest registrations and send emails
+                for companion in registration.companions:
+                    if companion.email:
+                        comp_reg = create_companion_guest_registration(companion, session_obj, is_approved=True)
+                        comp_qr = generate_qr_code(f"reg:{comp_reg.id},session:{session_id}")
+                        send_companion_registered_email(
+                            companion.email, companion.name, name, session_obj,
+                            is_approved=True, qr_data=comp_qr
+                        )
+            except Exception as e:
+                app.logger.error(f"Bulk approval email failed for {email}: {e}")
+
+        return jsonify({'success': True, 'count': len(registrations), 'emails_sent': emails_sent})
+
     except Exception as e:
         app.logger.error(f"Bulk approval failed: {e}")
         return jsonify({'success': False, 'error': str(e)})

@@ -185,18 +185,28 @@
                         </div>
                         
                         <div class="row mb-3">
-                            <div class="col-md-12">
+                            <div class="col-md-6">
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="invite_only" 
+                                    <input class="form-check-input" type="checkbox" id="invite_only"
                                            name="invite_only" {% if session_obj.invite_only %}checked{% endif %} onchange="toggleInviteSettings()">
                                     <label class="form-check-label" for="invite_only">
-                                        <strong>🟩 تفعيل التسجيل بالدعوة فقط</strong>
+                                        <strong>تفعيل التسجيل بالدعوة فقط</strong>
                                     </label>
-                                    <small class="form-text text-muted">فقط من وصلهم رابط خاص عبر الإيميل يمكنهم التسجيل</small>
+                                    <small class="form-text text-muted d-block">فقط من وصلهم رابط خاص عبر الإيميل يمكنهم التسجيل</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="send_qr_in_email"
+                                           name="send_qr_in_email" {% if session_obj.send_qr_in_email %}checked{% endif %}>
+                                    <label class="form-check-label" for="send_qr_in_email">
+                                        إرسال رمز QR في بريد التأكيد
+                                    </label>
+                                    <small class="form-text text-muted d-block">إرفاق رمز الحضور في رسالة التأكيد</small>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Invite Management (Show if invite_only is enabled) -->
                         <div id="inviteSettings" class="{% if not session_obj.invite_only %}d-none{% endif %}">
                             <div class="card bg-light mb-3">

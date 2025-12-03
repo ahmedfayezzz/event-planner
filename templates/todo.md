@@ -10,7 +10,7 @@
 - email flow for registration confirmation and reminders
 - barcode option in session creation form and barcode generation and validation logic for each uer (only when approved)
 - invitation pdf attachement
-- show next sessions in 
+- show next sessions in hero section
 - send email announcements about new sessions to all registered users manually from admin panel (see if it can be done manually)
 - add deadline for session registration
 - registration invitation for closed sessions

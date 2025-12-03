@@ -78,7 +78,8 @@ class Session(db.Model):
     slug = db.Column(db.String(100))  # URL slug for pretty URLs
     invite_only = db.Column(db.Boolean, default=False)  # Invite-only registration
     invite_message = db.Column(db.Text)  # Custom invitation message
-    
+    send_qr_in_email = db.Column(db.Boolean, default=True)  # Include QR code in confirmation emails
+
     # Relationships
     registrations = db.relationship('Registration', backref='session', lazy=True)
     attendances = db.relationship('Attendance', backref='session', lazy=True)

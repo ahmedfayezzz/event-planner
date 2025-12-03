@@ -10,3 +10,14 @@
   - password fields in account registration
   - password fields in session registration (when "create account" checked)
   - sample users password: password123
+- unique constraints on email and phone (globally unique)
+- link previous guest registrations to user account:
+  - when user creates account, finds guest registrations with matching email or phone
+  - automatically links them to the new user account
+  - shows count of linked registrations in success message
+- email flow for registration confirmation:
+  - pending email: sent when user registers for session requiring approval
+  - confirmed email: sent when registration is approved (or immediately if auto-approve)
+  - companion emails: companions receive notification and are converted to guest registrations
+  - QR code in emails: session setting to include/exclude QR code in confirmation emails
+  - emails triggered at: guest registration, logged-in user registration, individual/bulk approval
