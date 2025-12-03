@@ -39,12 +39,12 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="name" class="form-label required">الاسم الكامل</label>
-                                <input type="text" class="form-control" id="name" name="name" required>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ form_data.name if form_data else '' }}" required>
                                 <div class="invalid-feedback">يرجى إدخال الاسم الكامل</div>
                             </div>
                             <div class="col-md-6">
                                 <label for="email" class="form-label required">البريد الإلكتروني</label>
-                                <input type="email" class="form-control" id="email" name="email" required>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ form_data.email if form_data else '' }}" required>
                                 <div class="invalid-feedback">يرجى إدخال بريد إلكتروني صحيح</div>
                             </div>
                         </div>
@@ -52,15 +52,15 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="phone" class="form-label required">رقم الجوال</label>
-                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="+966 5X XXX XXXX" required>
+                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="+966 5X XXX XXXX" value="{{ form_data.phone if form_data else '' }}" required>
                                 <div class="invalid-feedback">يرجى إدخال رقم الجوال</div>
                             </div>
                             <div class="col-md-6">
                                 <label for="gender" class="form-label">الجنس</label>
                                 <select class="form-select" id="gender" name="gender">
                                     <option value="">اختر الجنس</option>
-                                    <option value="رجال">رجال</option>
-                                    <option value="سيدات">سيدات</option>
+                                    <option value="رجال" {{ 'selected' if form_data and form_data.gender == 'رجال' else '' }}>رجال</option>
+                                    <option value="سيدات" {{ 'selected' if form_data and form_data.gender == 'سيدات' else '' }}>سيدات</option>
                                 </select>
                             </div>
                         </div>
@@ -93,21 +93,21 @@
                                 <label for="instagram" class="form-label">رابط إنستغرام</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fab fa-instagram text-danger"></i></span>
-                                    <input type="url" class="form-control" id="instagram" name="instagram" placeholder="https://instagram.com/username">
+                                    <input type="url" class="form-control" id="instagram" name="instagram" placeholder="https://instagram.com/username" value="{{ form_data.instagram if form_data else '' }}">
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <label for="snapchat" class="form-label">رابط سناب شات</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fab fa-snapchat text-warning"></i></span>
-                                    <input type="url" class="form-control" id="snapchat" name="snapchat" placeholder="https://snapchat.com/add/username">
+                                    <input type="url" class="form-control" id="snapchat" name="snapchat" placeholder="https://snapchat.com/add/username" value="{{ form_data.snapchat if form_data else '' }}">
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <label for="twitter" class="form-label">رابط X (تويتر)</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fab fa-x-twitter"></i></span>
-                                    <input type="url" class="form-control" id="twitter" name="twitter" placeholder="https://x.com/username">
+                                    <input type="url" class="form-control" id="twitter" name="twitter" placeholder="https://x.com/username" value="{{ form_data.twitter if form_data else '' }}">
                                 </div>
                             </div>
                         </div>
@@ -126,28 +126,28 @@
                                 <label for="activity_type" class="form-label">نوع النشاط</label>
                                 <select class="form-select" id="activity_type" name="activity_type">
                                     <option value="">اختر نوع النشاط</option>
-                                    <option value="مؤثر">مؤثر / مؤثرة</option>
-                                    <option value="ريادي">رائد أعمال</option>
-                                    <option value="مسوق">مسوق / مسوقة</option>
-                                    <option value="مصور">مصور / مصورة</option>
-                                    <option value="مصمم">مصمم / مصممة</option>
-                                    <option value="كاتب">كاتب / كاتبة محتوى</option>
-                                    <option value="مستثمر">مستثمر</option>
-                                    <option value="استشاري">استشاري</option>
-                                    <option value="موظف">موظف</option>
-                                    <option value="طالب">طالب / طالبة</option>
-                                    <option value="أخرى">أخرى</option>
+                                    <option value="مؤثر" {{ 'selected' if form_data and form_data.activity_type == 'مؤثر' else '' }}>مؤثر / مؤثرة</option>
+                                    <option value="ريادي" {{ 'selected' if form_data and form_data.activity_type == 'ريادي' else '' }}>رائد أعمال</option>
+                                    <option value="مسوق" {{ 'selected' if form_data and form_data.activity_type == 'مسوق' else '' }}>مسوق / مسوقة</option>
+                                    <option value="مصور" {{ 'selected' if form_data and form_data.activity_type == 'مصور' else '' }}>مصور / مصورة</option>
+                                    <option value="مصمم" {{ 'selected' if form_data and form_data.activity_type == 'مصمم' else '' }}>مصمم / مصممة</option>
+                                    <option value="كاتب" {{ 'selected' if form_data and form_data.activity_type == 'كاتب' else '' }}>كاتب / كاتبة محتوى</option>
+                                    <option value="مستثمر" {{ 'selected' if form_data and form_data.activity_type == 'مستثمر' else '' }}>مستثمر</option>
+                                    <option value="استشاري" {{ 'selected' if form_data and form_data.activity_type == 'استشاري' else '' }}>استشاري</option>
+                                    <option value="موظف" {{ 'selected' if form_data and form_data.activity_type == 'موظف' else '' }}>موظف</option>
+                                    <option value="طالب" {{ 'selected' if form_data and form_data.activity_type == 'طالب' else '' }}>طالب / طالبة</option>
+                                    <option value="أخرى" {{ 'selected' if form_data and form_data.activity_type == 'أخرى' else '' }}>أخرى</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
                                 <label for="company_name" class="form-label">اسم الشركة / المشروع</label>
-                                <input type="text" class="form-control" id="company_name" name="company_name" placeholder="اختياري">
+                                <input type="text" class="form-control" id="company_name" name="company_name" placeholder="اختياري" value="{{ form_data.company_name if form_data else '' }}">
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="position" class="form-label">المنصب / الوظيفة</label>
-                            <input type="text" class="form-control" id="position" name="position" placeholder="مثال: مدير التسويق، مؤسس، مستقل">
+                            <input type="text" class="form-control" id="position" name="position" placeholder="مثال: مدير التسويق، مؤسس، مستقل" value="{{ form_data.position if form_data else '' }}">
                         </div>
 
                         <!-- Goals -->
@@ -162,7 +162,7 @@
                         <div class="mb-4">
                             <label for="goal" class="form-label required">ما هو هدفك من حضور ثلوثية الأعمال؟</label>
                             <textarea class="form-control" id="goal" name="goal" rows="4"
-                                placeholder="مثال: بناء شراكات جديدة، تعلم استراتيجيات التسويق، توسيع شبكة العلاقات..." required></textarea>
+                                placeholder="مثال: بناء شراكات جديدة، تعلم استراتيجيات التسويق، توسيع شبكة العلاقات..." required>{{ form_data.goal if form_data else '' }}</textarea>
                             <div class="invalid-feedback">يرجى إدخال هدفك من المشاركة</div>
                             <div class="form-text">
                                 <i class="fas fa-robot text-info me-1"></i>

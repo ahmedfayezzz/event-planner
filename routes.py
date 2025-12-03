@@ -116,31 +116,39 @@ def register():
         goal = request.form.get('goal')
         session_id = request.form.get('session_id')
 
+        # Store form data for re-rendering on error
+        form_data = {
+            'name': name, 'email': email, 'phone': phone,
+            'instagram': instagram, 'snapchat': snapchat, 'twitter': twitter,
+            'company_name': company_name, 'position': position,
+            'activity_type': activity_type, 'gender': gender, 'goal': goal
+        }
+
         # Validate required fields
         if not all([name, email, phone, password, goal]):
             flash('جميع الحقول المطلوبة يجب ملؤها', 'error')
-            return redirect(url_for('register'))
+            return render_template('register.html', selected_session=None, form_data=form_data)
 
         # Validate password
         if len(password) < 8:
             flash('كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'error')
-            return redirect(url_for('register'))
+            return render_template('register.html', selected_session=None, form_data=form_data)
 
         if password != confirm_password:
             flash('كلمة المرور وتأكيدها غير متطابقتين', 'error')
-            return redirect(url_for('register'))
+            return render_template('register.html', selected_session=None, form_data=form_data)
 
         # Check if email exists
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
             flash(f'يوجد حساب مسجل بهذا البريد الإلكتروني. يرجى تسجيل الدخول من <a href="{url_for("user_login")}" class="alert-link">هنا</a>', 'info')
-            return redirect(url_for('user_login'))
+            return render_template('register.html', selected_session=None, form_data=form_data)
 
         # Check if phone exists
         existing_phone = User.query.filter_by(phone=phone).first()
         if existing_phone:
             flash('رقم الجوال مسجل مسبقاً. يرجى استخدام رقم آخر أو تسجيل الدخول', 'error')
-            return redirect(url_for('register'))
+            return render_template('register.html', selected_session=None, form_data=form_data)
         else:
             # Generate unique username
             username = generate_username(name)
@@ -241,22 +249,36 @@ def guest_session_register(session_id):
         goal = request.form.get('goal')
         create_account = request.form.get('create_account') == 'on'
 
+        # Store form data for re-rendering on error
+        form_data = {
+            'name': name, 'email': email, 'phone': phone,
+            'instagram': instagram, 'snapchat': snapchat, 'twitter': twitter,
+            'company_name': company_name, 'position': position,
+            'activity_type': activity_type, 'gender': gender, 'goal': goal,
+            'create_account': create_account
+        }
+
+        # Helper to render with form data
+        def render_with_error():
+            return render_template('session_register.html', session_obj=session_obj,
+                                   max_companions=session_obj.max_companions, form_data=form_data)
+
         # Validate required fields
         if not all([name, email, phone]):
             flash('الاسم والبريد الإلكتروني ورقم الجوال مطلوبة', 'error')
-            return redirect(url_for('guest_session_register', session_id=session_id))
+            return render_with_error()
 
         # Validate password if creating account
         if create_account:
             if not password:
                 flash('كلمة المرور مطلوبة لإنشاء الحساب', 'error')
-                return redirect(url_for('guest_session_register', session_id=session_id))
+                return render_with_error()
             if len(password) < 8:
                 flash('كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'error')
-                return redirect(url_for('guest_session_register', session_id=session_id))
+                return render_with_error()
             if password != confirm_password:
                 flash('كلمة المرور وتأكيدها غير متطابقتين', 'error')
-                return redirect(url_for('guest_session_register', session_id=session_id))
+                return render_with_error()
 
         # Check if email already exists as a user
         existing_user = User.query.filter_by(email=email).first()
@@ -270,7 +292,7 @@ def guest_session_register(session_id):
                 flash('هذا البريد الإلكتروني مسجل بالفعل في هذه الجلسة', 'info')
             else:
                 flash(f'يوجد حساب مسجل بهذا البريد الإلكتروني. يرجى <a href="{url_for("user_login", next=url_for("session_detail", session_id=session_id))}" class="alert-link">تسجيل الدخول</a> للتسجيل في الجلسة.', 'info')
-            return redirect(url_for('guest_session_register', session_id=session_id))
+            return render_with_error()
 
         # Check for existing guest registration with same email for this session
         existing_guest_reg = Registration.query.filter_by(
@@ -279,14 +301,14 @@ def guest_session_register(session_id):
         ).first()
         if existing_guest_reg:
             flash('هذا البريد الإلكتروني مسجل بالفعل في هذه الجلسة', 'info')
-            return redirect(url_for('guest_session_register', session_id=session_id))
+            return render_with_error()
 
         # Check if phone exists (only needed when creating account)
         if create_account:
             existing_phone = User.query.filter_by(phone=phone).first()
             if existing_phone:
                 flash('رقم الجوال مسجل مسبقاً. يرجى استخدام رقم آخر أو تسجيل الدخول', 'error')
-                return redirect(url_for('guest_session_register', session_id=session_id))
+                return render_with_error()
 
         user = None
         previous_guest_regs = []
@@ -497,6 +519,8 @@ def user_login():
                 return redirect(url_for('user_dashboard'))
 
         flash('البريد الإلكتروني أو كلمة المرور غير صحيحة', 'error')
+        # Preserve email on error
+        return render_template('user_login.html', next=next_page, form_data={'email': email})
 
     return render_template('user_login.html', next=next_page)
 
