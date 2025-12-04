@@ -47,15 +47,18 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
 
   if (isLoading) {
     return (
-      <div className="container flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <Skeleton className="h-8 w-48 mx-auto" />
-            <Skeleton className="h-4 w-64 mx-auto mt-2" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-muted/30 to-accent/5 py-8 md:py-12 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5"></div>
+        <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/10 rounded-full blur-3xl"></div>
+        <Card className="w-full max-w-md border border-white/50 shadow-2xl bg-white/70 backdrop-blur-xl rounded-xl md:rounded-2xl relative z-10">
+          <CardHeader className="text-center px-4 md:px-6 pt-5 md:pt-6 pb-2 md:pb-4">
+            <Skeleton className="h-6 md:h-8 w-48 mx-auto" />
+            <Skeleton className="h-3 md:h-4 w-64 mx-auto mt-2" />
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
+          <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6">
+            <Skeleton className="h-10 md:h-11 w-full" />
+            <Skeleton className="h-10 md:h-11 w-full" />
           </CardContent>
         </Card>
       </div>
@@ -64,16 +67,19 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
 
   if (!validation?.valid) {
     return (
-      <div className="container flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">رابط غير صالح</CardTitle>
-            <CardDescription>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-muted/30 to-accent/5 py-8 md:py-12 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5"></div>
+        <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/10 rounded-full blur-3xl"></div>
+        <Card className="w-full max-w-md border border-white/50 shadow-2xl bg-white/70 backdrop-blur-xl rounded-xl md:rounded-2xl relative z-10">
+          <CardHeader className="text-center px-4 md:px-6 pt-5 md:pt-6 pb-2 md:pb-4">
+            <CardTitle className="text-xl md:text-2xl text-primary">رابط غير صالح</CardTitle>
+            <CardDescription className="text-xs md:text-sm">
               رابط إعادة تعيين كلمة المرور غير صالح أو منتهي الصلاحية
             </CardDescription>
           </CardHeader>
-          <CardFooter className="flex flex-col gap-4">
-            <Button asChild className="w-full">
+          <CardFooter className="flex flex-col gap-3 md:gap-4 px-4 md:px-6 pb-5 md:pb-6">
+            <Button asChild className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg transition-all hover:shadow-xl h-10 md:h-11">
               <Link href="/user/forgot-password">طلب رابط جديد</Link>
             </Button>
           </CardFooter>
@@ -83,18 +89,21 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
   }
 
   return (
-    <div className="container flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">إعادة تعيين كلمة المرور</CardTitle>
-          <CardDescription>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-muted/30 to-accent/5 py-8 md:py-12 px-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5"></div>
+      <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/10 rounded-full blur-3xl"></div>
+      <Card className="w-full max-w-md border border-white/50 shadow-2xl bg-white/70 backdrop-blur-xl rounded-xl md:rounded-2xl relative z-10">
+        <CardHeader className="text-center px-4 md:px-6 pt-5 md:pt-6 pb-2 md:pb-4">
+          <CardTitle className="text-xl md:text-2xl text-primary">إعادة تعيين كلمة المرور</CardTitle>
+          <CardDescription className="text-xs md:text-sm">
             أدخل كلمة المرور الجديدة
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">كلمة المرور الجديدة</Label>
+          <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6">
+            <div className="space-y-1.5 md:space-y-2">
+              <Label htmlFor="password" className="text-sm">كلمة المرور الجديدة</Label>
               <Input
                 id="password"
                 type="password"
@@ -102,10 +111,11 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={resetPasswordMutation.isPending}
+                className="bg-white/60 backdrop-blur-sm border-white/50 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
+            <div className="space-y-1.5 md:space-y-2">
+              <Label htmlFor="confirmPassword" className="text-sm">تأكيد كلمة المرور</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -113,13 +123,14 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 disabled={resetPasswordMutation.isPending}
+                className="bg-white/60 backdrop-blur-sm border-white/50 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all"
               />
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="px-4 md:px-6 pb-5 md:pb-6">
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg transition-all hover:shadow-xl h-10 md:h-11"
               disabled={resetPasswordMutation.isPending}
             >
               {resetPasswordMutation.isPending ? "جارٍ الحفظ..." : "حفظ كلمة المرور"}

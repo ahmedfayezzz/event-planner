@@ -48,17 +48,17 @@ function LoginForm() {
   };
 
   return (
-    <Card className="w-full border-none shadow-2xl bg-white/80 backdrop-blur-md">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center text-primary">تسجيل الدخول</CardTitle>
-        <CardDescription className="text-center">
+    <Card className="w-full border border-white/50 shadow-2xl bg-white/70 backdrop-blur-xl rounded-xl md:rounded-2xl">
+      <CardHeader className="space-y-1 pb-2 md:pb-4 px-4 md:px-6 pt-5 md:pt-6">
+        <CardTitle className="text-xl md:text-2xl font-bold text-center text-primary">تسجيل الدخول</CardTitle>
+        <CardDescription className="text-center text-xs md:text-sm">
           أدخل بريدك الإلكتروني وكلمة المرور
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">البريد الإلكتروني</Label>
+        <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6">
+          <div className="space-y-1.5 md:space-y-2">
+            <Label htmlFor="email" className="text-sm">البريد الإلكتروني</Label>
             <Input
               id="email"
               type="email"
@@ -67,15 +67,15 @@ function LoginForm() {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
               disabled={isLoading}
-              className="bg-white/50 border-primary/20 focus:border-primary"
+              className="bg-white/60 backdrop-blur-sm border-white/50 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5 md:space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">كلمة المرور</Label>
+              <Label htmlFor="password" className="text-sm">كلمة المرور</Label>
               <Link
                 href="/user/forgot-password"
-                className="text-sm text-primary hover:text-primary/80 hover:underline font-medium"
+                className="text-xs md:text-sm text-primary hover:text-primary/80 hover:underline font-medium"
               >
                 نسيت كلمة المرور؟
               </Link>
@@ -88,15 +88,15 @@ function LoginForm() {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
               disabled={isLoading}
-              className="bg-white/50 border-primary/20 focus:border-primary"
+              className="bg-white/60 backdrop-blur-sm border-white/50 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all"
             />
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg transition-all hover:shadow-xl" disabled={isLoading}>
+        <CardFooter className="flex flex-col gap-3 md:gap-4 px-4 md:px-6 pb-5 md:pb-6">
+          <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg transition-all hover:shadow-xl h-10 md:h-11" disabled={isLoading}>
             {isLoading ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
           </Button>
-          <div className="text-center text-sm">
+          <div className="text-center text-xs md:text-sm">
             ليس لديك حساب؟{" "}
             <Link href="/register" className="font-semibold text-secondary hover:text-secondary/80 hover:underline">
               إنشاء حساب جديد
@@ -135,8 +135,11 @@ function LoginFormSkeleton() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-muted/30 to-accent/5 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5"></div>
+      {/* Decorative glass orbs */}
+      <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/10 rounded-full blur-3xl"></div>
       <div className="w-full max-w-md space-y-8 relative z-10">
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-bold tracking-tight text-primary">

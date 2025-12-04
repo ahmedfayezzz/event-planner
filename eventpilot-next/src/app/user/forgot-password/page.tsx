@@ -29,16 +29,19 @@ export default function ForgotPasswordPage() {
 
   if (submitted) {
     return (
-      <div className="container flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">تم إرسال الرابط</CardTitle>
-            <CardDescription>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-muted/30 to-accent/5 py-8 md:py-12 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5"></div>
+        <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/10 rounded-full blur-3xl"></div>
+        <Card className="w-full max-w-md border border-white/50 shadow-2xl bg-white/70 backdrop-blur-xl rounded-xl md:rounded-2xl relative z-10">
+          <CardHeader className="text-center px-4 md:px-6 pt-5 md:pt-6 pb-2 md:pb-4">
+            <CardTitle className="text-xl md:text-2xl text-primary">تم إرسال الرابط</CardTitle>
+            <CardDescription className="text-xs md:text-sm">
               إذا كان البريد الإلكتروني مسجلاً لدينا، ستصلك رسالة تحتوي على رابط إعادة تعيين كلمة المرور.
             </CardDescription>
           </CardHeader>
-          <CardFooter className="flex flex-col gap-4">
-            <Button variant="outline" asChild className="w-full">
+          <CardFooter className="flex flex-col gap-3 md:gap-4 px-4 md:px-6 pb-5 md:pb-6">
+            <Button variant="outline" asChild className="w-full h-10 md:h-11">
               <Link href="/user/login">العودة لتسجيل الدخول</Link>
             </Button>
           </CardFooter>
@@ -48,18 +51,21 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="container flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">نسيت كلمة المرور</CardTitle>
-          <CardDescription>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-muted/30 to-accent/5 py-8 md:py-12 px-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5"></div>
+      <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/10 rounded-full blur-3xl"></div>
+      <Card className="w-full max-w-md border border-white/50 shadow-2xl bg-white/70 backdrop-blur-xl rounded-xl md:rounded-2xl relative z-10">
+        <CardHeader className="text-center px-4 md:px-6 pt-5 md:pt-6 pb-2 md:pb-4">
+          <CardTitle className="text-xl md:text-2xl text-primary">نسيت كلمة المرور</CardTitle>
+          <CardDescription className="text-xs md:text-sm">
             أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة تعيين كلمة المرور
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">البريد الإلكتروني</Label>
+          <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6">
+            <div className="space-y-1.5 md:space-y-2">
+              <Label htmlFor="email" className="text-sm">البريد الإلكتروني</Label>
               <Input
                 id="email"
                 type="email"
@@ -68,20 +74,21 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={forgotPasswordMutation.isPending}
+                className="bg-white/60 backdrop-blur-sm border-white/50 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all"
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col gap-4">
+          <CardFooter className="flex flex-col gap-3 md:gap-4 px-4 md:px-6 pb-5 md:pb-6">
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg transition-all hover:shadow-xl h-10 md:h-11"
               disabled={forgotPasswordMutation.isPending}
             >
               {forgotPasswordMutation.isPending ? "جارٍ الإرسال..." : "إرسال رابط إعادة التعيين"}
             </Button>
             <Link
               href="/user/login"
-              className="text-sm text-muted-foreground hover:text-primary"
+              className="text-xs md:text-sm text-muted-foreground hover:text-primary"
             >
               العودة لتسجيل الدخول
             </Link>
