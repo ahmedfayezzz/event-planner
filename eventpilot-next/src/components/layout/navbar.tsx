@@ -25,11 +25,14 @@ export function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+    <nav className="sticky top-0 z-50 w-full border-b border-accent/20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="container flex h-20 items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold text-primary">ثلوثية الأعمال</span>
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-xl shadow-md group-hover:bg-primary/90 transition-colors">
+            ث
+          </div>
+          <span className="text-2xl font-bold text-primary tracking-tight">ثلوثية الأعمال</span>
         </Link>
 
         {/* Navigation Links */}

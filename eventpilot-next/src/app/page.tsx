@@ -35,31 +35,33 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero Section with Gradient */}
-      <section className="relative bg-gradient-hero text-white py-20 md:py-32 overflow-hidden">
+      <section className="relative bg-gradient-hero text-white py-24 md:py-32 overflow-hidden">
         <div className="container relative z-10 text-center space-y-8">
-          <div className="animate-fade-in">
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
+          <div className="animate-fade-in space-y-4">
+            <h1 className="text-4xl md:text-7xl font-bold tracking-tight font-cairo leading-tight">
               ثلوثية الأعمال
             </h1>
-            <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mt-4">
-              منصة التواصل المهني الأسبوعية - حيث يلتقي رواد الأعمال لتبادل الخبرات وبناء العلاقات
+            <p className="text-lg md:text-2xl text-white/90 max-w-3xl mx-auto font-light leading-relaxed">
+              ملتقى النخبة من رواد الأعمال وصناع القرار.
+              <br className="hidden md:block" />
+              نصنع الفرص، ونبني الشراكات الاستراتيجية في بيئة مهنية راقية.
             </p>
           </div>
 
           {/* Countdown to next session */}
           {isLoading ? (
             <div className="py-8">
-              <Skeleton className="h-8 w-48 mx-auto mb-4 bg-white/20" />
+              <Skeleton className="h-8 w-48 mx-auto mb-4 bg-white/10" />
               <div className="flex justify-center gap-4">
                 {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className="h-24 w-20 bg-white/20" />
+                  <Skeleton key={i} className="h-24 w-20 bg-white/10" />
                 ))}
               </div>
             </div>
           ) : nextSession ? (
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 max-w-2xl mx-auto animate-slide-up">
-              <CardContent className="py-8">
-                <p className="text-white/80 mb-4">الجلسة القادمة: {nextSession.title}</p>
+            <Card className="bg-white/5 backdrop-blur-md border-white/10 max-w-3xl mx-auto animate-slide-up shadow-2xl">
+              <CardContent className="py-10">
+                <p className="text-secondary mb-6 text-lg font-medium">الجلسة القادمة: {nextSession.title}</p>
                 <CountdownTimer
                   targetDate={new Date(nextSession.date)}
                   className="text-white"
@@ -67,51 +69,54 @@ export default function HomePage() {
               </CardContent>
             </Card>
           ) : (
-            <p className="text-white/80 py-8">
+            <p className="text-white/80 py-8 text-lg">
               لا توجد جلسات قادمة حالياً
             </p>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up">
-            <Button size="lg" variant="secondary" className="btn-lift" asChild>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center animate-slide-up pt-8">
+            <Button size="lg" variant="secondary" className="btn-lift text-lg px-8 py-6 h-auto font-bold shadow-lg hover:shadow-xl" asChild>
               <Link href="/sessions">
-                <Calendar className="ml-2 h-5 w-5" />
-                عرض الجلسات
+                <Calendar className="ml-2 h-6 w-6" />
+                تصفح الجلسات
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="btn-lift bg-transparent border-white text-white hover:bg-white/10" asChild>
+            <Button size="lg" variant="outline" className="btn-lift bg-transparent border-white/30 text-white hover:bg-white/10 text-lg px-8 py-6 h-auto" asChild>
               <Link href="/register">
-                إنشاء حساب
-                <ArrowLeft className="mr-2 h-5 w-5" />
+                عضوية جديدة
+                <ArrowLeft className="mr-2 h-6 w-6" />
               </Link>
             </Button>
           </div>
         </div>
 
-        {/* Decorative elements */}
-        <div className="absolute top-20 left-10 w-20 h-20 bg-white/10 rounded-full blur-2xl" />
-        <div className="absolute bottom-20 right-10 w-32 h-32 bg-white/10 rounded-full blur-3xl" />
+        {/* Decorative elements - Golden Glows */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-secondary/20 rounded-full blur-[100px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/40 rounded-full blur-[100px]" />
+        </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 bg-card border-y">
-        <div className="container">
-          <div className="grid gap-8 md:grid-cols-4 text-center">
-            <div className="space-y-2">
-              <div className="stat-value">50+</div>
-              <div className="stat-label">جلسة منعقدة</div>
+      <section className="py-12 bg-primary text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5"></div>
+        <div className="container relative z-10">
+          <div className="grid gap-8 md:grid-cols-4 text-center divide-y md:divide-y-0 md:divide-x md:divide-x-reverse divide-white/10 animate-fade-in">
+            <div className="space-y-2 pt-8 md:pt-0 hover:scale-105 transition-transform duration-300">
+              <div className="stat-value text-secondary text-4xl md:text-5xl font-bold drop-shadow-sm">50+</div>
+              <div className="stat-label text-white/90 text-lg font-medium">جلسة منعقدة</div>
             </div>
-            <div className="space-y-2">
-              <div className="stat-value">500+</div>
-              <div className="stat-label">عضو مسجل</div>
+            <div className="space-y-2 pt-8 md:pt-0 hover:scale-105 transition-transform duration-300">
+              <div className="stat-value text-secondary text-4xl md:text-5xl font-bold drop-shadow-sm">500+</div>
+              <div className="stat-label text-white/90 text-lg font-medium">عضو مسجل</div>
             </div>
-            <div className="space-y-2">
-              <div className="stat-value">1000+</div>
-              <div className="stat-label">حضور</div>
+            <div className="space-y-2 pt-8 md:pt-0 hover:scale-105 transition-transform duration-300">
+              <div className="stat-value text-secondary text-4xl md:text-5xl font-bold drop-shadow-sm">1000+</div>
+              <div className="stat-label text-white/90 text-lg font-medium">حضور</div>
             </div>
-            <div className="space-y-2">
-              <div className="stat-value">100+</div>
-              <div className="stat-label">شراكة ناجحة</div>
+            <div className="space-y-2 pt-8 md:pt-0 hover:scale-105 transition-transform duration-300">
+              <div className="stat-value text-secondary text-4xl md:text-5xl font-bold drop-shadow-sm">100+</div>
+              <div className="stat-label text-white/90 text-lg font-medium">شراكة ناجحة</div>
             </div>
           </div>
         </div>
@@ -167,49 +172,55 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 md:py-24 bg-muted/50">
+      <section className="py-20 md:py-32 bg-muted/30">
         <div className="container">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">لماذا ثلوثية الأعمال؟</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              نوفر لك بيئة مثالية للتواصل المهني وتطوير أعمالك
+          <div className="text-center mb-16 space-y-4 animate-fade-in">
+            <h2 className="text-3xl md:text-4xl font-bold text-primary">لماذا ثلوثية الأعمال؟</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+              نوفر لك بيئة مثالية للتواصل المهني وتطوير أعمالك من خلال لقاءات دورية تجمع النخبة
             </p>
           </div>
 
           <div className="grid gap-8 md:grid-cols-3">
-            <Card className="card-hover text-center">
-              <CardContent className="pt-8 pb-6 space-y-4">
-                <div className="feature-icon mx-auto">
-                  <Users className="h-8 w-8" />
+            <Card className="card-hover text-center border-none shadow-lg bg-white/50 backdrop-blur-sm hover:bg-white transition-colors group animate-slide-up" style={{ animationDelay: "0.1s" }}>
+              <CardContent className="pt-10 pb-8 space-y-6">
+                <div className="feature-icon mx-auto bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors w-20 h-20 rounded-3xl">
+                  <Users className="h-10 w-10" />
                 </div>
-                <h3 className="text-xl font-semibold">تواصل مهني</h3>
-                <p className="text-muted-foreground">
-                  التقِ بأفضل رواد الأعمال والمهنيين في مجالك
-                </p>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-primary">تواصل مهني</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    التقِ بأفضل رواد الأعمال والمهنيين في مجالك لبناء شبكة علاقات قوية ومستدامة
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="card-hover text-center">
-              <CardContent className="pt-8 pb-6 space-y-4">
-                <div className="feature-icon mx-auto">
-                  <Lightbulb className="h-8 w-8" />
+            <Card className="card-hover text-center border-none shadow-lg bg-white/50 backdrop-blur-sm hover:bg-white transition-colors group animate-slide-up" style={{ animationDelay: "0.2s" }}>
+              <CardContent className="pt-10 pb-8 space-y-6">
+                <div className="feature-icon mx-auto bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors w-20 h-20 rounded-3xl">
+                  <Lightbulb className="h-10 w-10" />
                 </div>
-                <h3 className="text-xl font-semibold">تبادل الخبرات</h3>
-                <p className="text-muted-foreground">
-                  استفد من خبرات الآخرين وشارك معرفتك
-                </p>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-primary">تبادل الخبرات</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    استفد من تجارب الآخرين وشارك معرفتك في بيئة تفاعلية تشجع على التعلم والنمو
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="card-hover text-center">
-              <CardContent className="pt-8 pb-6 space-y-4">
-                <div className="feature-icon mx-auto">
-                  <Zap className="h-8 w-8" />
+            <Card className="card-hover text-center border-none shadow-lg bg-white/50 backdrop-blur-sm hover:bg-white transition-colors group animate-slide-up" style={{ animationDelay: "0.3s" }}>
+              <CardContent className="pt-10 pb-8 space-y-6">
+                <div className="feature-icon mx-auto bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors w-20 h-20 rounded-3xl">
+                  <Zap className="h-10 w-10" />
                 </div>
-                <h3 className="text-xl font-semibold">فرص جديدة</h3>
-                <p className="text-muted-foreground">
-                  اكتشف فرص عمل وشراكات جديدة
-                </p>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-primary">فرص واعدة</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    اكتشف فرصاً استثمارية وشراكات استراتيجية قد تغير مسار مشروعك للأفضل
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>

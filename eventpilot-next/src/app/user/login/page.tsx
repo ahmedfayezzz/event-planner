@@ -48,11 +48,11 @@ function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">تسجيل الدخول</CardTitle>
-        <CardDescription>
-          أدخل بياناتك للدخول إلى حسابك
+    <Card className="w-full border-none shadow-2xl bg-white/80 backdrop-blur-md">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center text-primary">تسجيل الدخول</CardTitle>
+        <CardDescription className="text-center">
+          أدخل بريدك الإلكتروني وكلمة المرور
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
@@ -62,11 +62,12 @@ function LoginForm() {
             <Input
               id="email"
               type="email"
-              placeholder="example@email.com"
+              placeholder="name@example.com"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
               disabled={isLoading}
+              className="bg-white/50 border-primary/20 focus:border-primary"
             />
           </div>
           <div className="space-y-2">
@@ -74,7 +75,7 @@ function LoginForm() {
               <Label htmlFor="password">كلمة المرور</Label>
               <Link
                 href="/user/forgot-password"
-                className="text-sm text-primary hover:underline"
+                className="text-sm text-primary hover:text-primary/80 hover:underline font-medium"
               >
                 نسيت كلمة المرور؟
               </Link>
@@ -87,19 +88,20 @@ function LoginForm() {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
               disabled={isLoading}
+              className="bg-white/50 border-primary/20 focus:border-primary"
             />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg transition-all hover:shadow-xl" disabled={isLoading}>
             {isLoading ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
           </Button>
-          <p className="text-sm text-muted-foreground text-center">
+          <div className="text-center text-sm">
             ليس لديك حساب؟{" "}
-            <Link href="/register" className="text-primary hover:underline">
+            <Link href="/register" className="font-semibold text-secondary hover:text-secondary/80 hover:underline">
               إنشاء حساب جديد
             </Link>
-          </p>
+          </div>
         </CardFooter>
       </form>
     </Card>
@@ -133,10 +135,22 @@ function LoginFormSkeleton() {
 
 export default function LoginPage() {
   return (
-    <div className="container flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
-      <Suspense fallback={<LoginFormSkeleton />}>
-        <LoginForm />
-      </Suspense>
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5"></div>
+      <div className="w-full max-w-md space-y-8 relative z-10">
+        <div className="text-center">
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-primary">
+            مرحباً بك مجدداً
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            سجل دخولك للمتابعة إلى لوحة التحكم
+          </p>
+        </div>
+
+        <Suspense fallback={<LoginFormSkeleton />}>
+          <LoginForm />
+        </Suspense>
+      </div>
     </div>
   );
 }
