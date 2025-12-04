@@ -56,7 +56,7 @@ export default function ChangePasswordPage() {
       <div className="absolute inset-0 bg-pattern-dots opacity-[0.08]"></div>
       <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/10 rounded-full blur-3xl"></div>
-      <Card className="w-full max-w-md border border-white/50 shadow-2xl bg-white/70 backdrop-blur-xl rounded-xl md:rounded-2xl relative z-10">
+      <Card className="w-full max-w-md bg-gradient-to-br from-white to-primary/5 backdrop-blur-xl border border-primary/10 shadow-2xl hover:border-primary/20 transition-all rounded-xl md:rounded-2xl relative z-10">
         <CardHeader className="text-center px-4 md:px-6 pt-5 md:pt-6 pb-2 md:pb-4">
           <CardTitle className="text-xl md:text-2xl text-primary">تغيير كلمة المرور</CardTitle>
           <CardDescription className="text-xs md:text-sm">
@@ -74,7 +74,7 @@ export default function ChangePasswordPage() {
                 onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
                 required
                 disabled={changePasswordMutation.isPending}
-                className="bg-white/60 backdrop-blur-sm border-white/50 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all"
+                className="bg-white/60 backdrop-blur-sm border border-primary/10 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all shadow-none"
               />
             </div>
             <div className="space-y-1.5 md:space-y-2">
@@ -86,7 +86,7 @@ export default function ChangePasswordPage() {
                 onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
                 required
                 disabled={changePasswordMutation.isPending}
-                className="bg-white/60 backdrop-blur-sm border-white/50 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all"
+                className="bg-white/60 backdrop-blur-sm border border-primary/10 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all shadow-none"
               />
             </div>
             <div className="space-y-1.5 md:space-y-2">
@@ -98,7 +98,7 @@ export default function ChangePasswordPage() {
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 required
                 disabled={changePasswordMutation.isPending}
-                className="bg-white/60 backdrop-blur-sm border-white/50 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all"
+                className="bg-white/60 backdrop-blur-sm border border-primary/10 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all shadow-none"
               />
             </div>
           </CardContent>

@@ -48,7 +48,7 @@ function LoginForm() {
   };
 
   return (
-    <Card className="w-full border border-white/50 shadow-2xl bg-white/70 backdrop-blur-xl rounded-xl md:rounded-2xl">
+    <Card className="w-full bg-gradient-to-br from-white to-primary/5 backdrop-blur-xl border border-primary/10 shadow-2xl hover:border-primary/20 transition-all rounded-xl md:rounded-2xl">
       <CardHeader className="space-y-1 pb-2 md:pb-4 px-4 md:px-6 pt-5 md:pt-6">
         <CardTitle className="text-xl md:text-2xl font-bold text-center text-primary">تسجيل الدخول</CardTitle>
         <CardDescription className="text-center text-xs md:text-sm">
@@ -67,7 +67,7 @@ function LoginForm() {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
               disabled={isLoading}
-              className="bg-white/60 backdrop-blur-sm border-white/50 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all"
+              className="bg-white/60 backdrop-blur-sm border border-primary/10 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all shadow-none"
             />
           </div>
           <div className="space-y-1.5 md:space-y-2">
@@ -88,7 +88,7 @@ function LoginForm() {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
               disabled={isLoading}
-              className="bg-white/60 backdrop-blur-sm border-white/50 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all"
+              className="bg-white/60 backdrop-blur-sm border border-primary/10 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all shadow-none"
             />
           </div>
         </CardContent>
