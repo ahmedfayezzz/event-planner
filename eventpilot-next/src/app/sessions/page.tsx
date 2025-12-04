@@ -41,7 +41,7 @@ export default function SessionsPage() {
 
         <TabsContent value="upcoming">
           {loadingUpcoming ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div dir="rtl" className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="space-y-4">
                   <Skeleton className="h-48 w-full" />
@@ -51,7 +51,7 @@ export default function SessionsPage() {
               ))}
             </div>
           ) : upcomingSessions?.sessions && upcomingSessions.sessions.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div dir="rtl" className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {upcomingSessions.sessions.map((session: SessionItem) => (
                 <SessionCard key={session.id} session={session} />
               ))}
@@ -65,7 +65,7 @@ export default function SessionsPage() {
 
         <TabsContent value="all">
           {loadingAll ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div dir="rtl" className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="space-y-4">
                   <Skeleton className="h-48 w-full" />
@@ -75,7 +75,7 @@ export default function SessionsPage() {
               ))}
             </div>
           ) : allSessions?.sessions && allSessions.sessions.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div dir="rtl" className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {allSessions.sessions.map((session: SessionItem) => (
                 <SessionCard key={session.id} session={session} />
               ))}

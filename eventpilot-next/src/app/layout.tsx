@@ -31,7 +31,7 @@ export default function RootLayout({
         <SessionProvider>
           <TRPCProvider>
             <Navbar />
-            <main className="flex-1">{children}</main>
+            <main className="flex-1 pt-20">{children}</main>
             <Footer />
             <Toaster position="top-center" />
           </TRPCProvider>

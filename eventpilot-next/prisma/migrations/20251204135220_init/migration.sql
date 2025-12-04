@@ -1,6 +1,9 @@
+-- CreateEnum
+CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
+
 -- CreateTable
 CREATE TABLE "User" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "username" TEXT NOT NULL,
     "email" TEXT NOT NULL,
@@ -17,22 +20,24 @@ CREATE TABLE "User" (
     "aiDescription" TEXT,
     "isApproved" BOOLEAN NOT NULL DEFAULT true,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "role" TEXT NOT NULL DEFAULT 'USER',
+    "role" "Role" NOT NULL DEFAULT 'USER',
     "resetToken" TEXT,
-    "resetTokenExpires" DATETIME,
+    "resetTokenExpires" TIMESTAMP(3),
     "refreshToken" TEXT,
-    "refreshTokenExpires" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "refreshTokenExpires" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Session" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "sessionNumber" INTEGER NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
-    "date" DATETIME NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
     "guestName" TEXT,
     "guestProfile" TEXT,
     "maxParticipants" INTEGER NOT NULL DEFAULT 50,
@@ -41,7 +46,7 @@ CREATE TABLE "Session" (
     "requiresApproval" BOOLEAN NOT NULL DEFAULT false,
     "showParticipantCount" BOOLEAN NOT NULL DEFAULT true,
     "location" TEXT,
-    "registrationDeadline" DATETIME,
+    "registrationDeadline" TIMESTAMP(3),
     "showCountdown" BOOLEAN NOT NULL DEFAULT true,
     "showGuestProfile" BOOLEAN NOT NULL DEFAULT true,
     "enableMiniView" BOOLEAN NOT NULL DEFAULT false,
@@ -51,16 +56,18 @@ CREATE TABLE "Session" (
     "inviteOnly" BOOLEAN NOT NULL DEFAULT false,
     "inviteMessage" TEXT,
     "sendQrInEmail" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Registration" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "userId" TEXT,
     "sessionId" TEXT NOT NULL,
-    "registeredAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "registeredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "isApproved" BOOLEAN NOT NULL DEFAULT true,
     "approvalNotes" TEXT,
     "guestName" TEXT,
@@ -74,51 +81,52 @@ CREATE TABLE "Registration" (
     "guestActivityType" TEXT,
     "guestGender" TEXT,
     "guestGoal" TEXT,
-    CONSTRAINT "Registration_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Registration_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+
+    CONSTRAINT "Registration_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Attendance" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "sessionId" TEXT NOT NULL,
     "attended" BOOLEAN NOT NULL DEFAULT false,
-    "checkInTime" DATETIME,
+    "checkInTime" TIMESTAMP(3),
     "qrVerified" BOOLEAN NOT NULL DEFAULT false,
-    CONSTRAINT "Attendance_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "Attendance_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+
+    CONSTRAINT "Attendance_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Companion" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "registrationId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "company" TEXT,
     "title" TEXT,
     "phone" TEXT,
     "email" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "inviteSent" BOOLEAN NOT NULL DEFAULT false,
-    "inviteSentAt" DATETIME,
+    "inviteSentAt" TIMESTAMP(3),
     "inviteToken" TEXT,
     "convertedToUserId" TEXT,
-    CONSTRAINT "Companion_registrationId_fkey" FOREIGN KEY ("registrationId") REFERENCES "Registration" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "Companion_convertedToUserId_fkey" FOREIGN KEY ("convertedToUserId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+
+    CONSTRAINT "Companion_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Invite" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "sessionId" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "token" TEXT NOT NULL,
     "used" BOOLEAN NOT NULL DEFAULT false,
-    "expiresAt" DATETIME NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "sentAt" DATETIME,
-    CONSTRAINT "Invite_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "sentAt" TIMESTAMP(3),
+
+    CONSTRAINT "Invite_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -147,3 +155,24 @@ CREATE UNIQUE INDEX "Invite_token_key" ON "Invite"("token");
 
 -- CreateIndex
 CREATE INDEX "Invite_sessionId_idx" ON "Invite"("sessionId");
+
+-- AddForeignKey
+ALTER TABLE "Registration" ADD CONSTRAINT "Registration_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Registration" ADD CONSTRAINT "Registration_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Attendance" ADD CONSTRAINT "Attendance_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Attendance" ADD CONSTRAINT "Attendance_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Companion" ADD CONSTRAINT "Companion_registrationId_fkey" FOREIGN KEY ("registrationId") REFERENCES "Registration"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Companion" ADD CONSTRAINT "Companion_convertedToUserId_fkey" FOREIGN KEY ("convertedToUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invite" ADD CONSTRAINT "Invite_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

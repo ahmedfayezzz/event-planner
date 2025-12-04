@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CountdownTimer } from "@/components/countdown-timer";
@@ -53,11 +53,11 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
   if (isLoading) {
     return (
       <div className="min-h-screen bg-muted/30">
-        <div className="h-96 bg-primary animate-pulse"></div>
-        <div className="container -mt-32 pb-12">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <Skeleton className="h-64 w-full" />
-            <Skeleton className="h-48 w-full" />
+        <div className="h-40 md:h-56 bg-primary animate-pulse"></div>
+        <div className="container -mt-20 md:-mt-32 px-4 pb-8 md:pb-12">
+          <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
+            <Skeleton className="h-48 md:h-64 w-full rounded-xl" />
+            <Skeleton className="h-32 md:h-48 w-full rounded-xl" />
           </div>
         </div>
       </div>
@@ -99,85 +99,168 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Hero Section */}
-      <div className="relative h-56 md:h-72 bg-primary overflow-hidden">
+      <div className="relative h-40 md:h-56 lg:h-72 bg-primary overflow-hidden">
         <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10"></div>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30"></div>
 
         {/* Badges */}
-        <div className="absolute top-6 left-6 flex gap-3">
-          <Badge variant="secondary" className={`${statusColors[session.status]} backdrop-blur-md shadow-lg text-base px-4 py-1.5`}>
+        <div className="absolute top-4 left-4 md:top-6 md:left-6 flex flex-wrap gap-2 md:gap-3">
+          <Badge variant="secondary" className={`${statusColors[session.status]} backdrop-blur-md shadow-lg text-xs md:text-base px-2.5 py-1 md:px-4 md:py-1.5`}>
             {statusLabels[session.status]}
           </Badge>
-          <Badge variant="outline" className="bg-black/30 text-white border-white/30 backdrop-blur-md text-base px-4 py-1.5">
+          <Badge variant="outline" className="bg-black/30 text-white border-white/30 backdrop-blur-md text-xs md:text-base px-2.5 py-1 md:px-4 md:py-1.5">
             لقاء #{session.sessionNumber}
           </Badge>
         </div>
       </div>
 
       {/* Content */}
-      <div className="container -mt-32 pb-12 relative z-10">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Main Info Card */}
-          <Card className="border-none shadow-xl bg-white/95 backdrop-blur-md">
-            <CardContent className="p-8 md:p-10">
+      <div className="container -mt-20 md:-mt-32 pb-8 md:pb-12 relative z-10 px-4">
+        <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
+          {/* Main Info Card - Frosted Glass */}
+          <Card className="bg-white/80 backdrop-blur-xl border border-white/50 rounded-xl md:rounded-2xl shadow-2xl relative">
+            <CardContent className="p-4 pt-14 sm:p-6 sm:pt-6 md:p-8 md:pt-8 lg:p-10 lg:pt-10">
               {/* Date Badge */}
-              <div className="absolute -top-12 right-8 bg-white rounded-2xl shadow-xl p-4 text-center min-w-[100px] border-4 border-white">
-                <div className="text-4xl font-bold text-primary">{day}</div>
-                <div className="text-sm font-medium text-muted-foreground">{month}</div>
+              <div className="absolute -top-8 md:-top-12 right-4 md:right-8 bg-white rounded-xl md:rounded-2xl shadow-xl p-2.5 md:p-4 text-center min-w-[70px] md:min-w-[100px] border-2 md:border-4 border-white">
+                <div className="text-2xl md:text-4xl font-bold text-primary">{day}</div>
+                <div className="text-xs md:text-sm font-medium text-muted-foreground">{month}</div>
               </div>
 
-              <div className="space-y-6 pt-4">
+              <div className="space-y-4 md:space-y-6">
                 {/* Title */}
                 <div>
-                  <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight mb-2">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary leading-tight">
                     {session.title}
                   </h1>
                 </div>
 
-                {/* Quick Info Icons */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                      <Calendar className="w-5 h-5" />
+                {/* Registration CTA + Countdown - Combined */}
+                <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg md:rounded-xl p-4 md:p-6 border border-primary/10">
+                  <div className="flex flex-col lg:flex-row items-center gap-4 md:gap-6">
+                    {/* Countdown Section */}
+                    {isUpcoming && session.showCountdown && (
+                      <div className="w-full lg:w-auto lg:shrink-0">
+                        <CountdownTimer targetDate={sessionDate} compact />
+                      </div>
+                    )}
+
+                    {/* Divider - vertical on desktop, horizontal on mobile */}
+                    {isUpcoming && session.showCountdown && (
+                      <div className="hidden lg:block w-px h-20 bg-border" />
+                    )}
+                    {isUpcoming && session.showCountdown && (
+                      <div className="lg:hidden w-full h-px bg-border" />
+                    )}
+
+                    {/* CTA Section */}
+                    <div className="w-full lg:flex-1">
+                      {registration?.registered && registration.registration ? (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4">
+                          <div className="flex items-center gap-2 md:gap-3">
+                            <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 text-emerald-600 shrink-0" />
+                            <div>
+                              <p className="font-bold text-base md:text-lg text-foreground">تم التسجيل بنجاح</p>
+                              <Badge
+                                variant={registration.registration.isApproved ? "default" : "secondary"}
+                                className="mt-1 text-xs md:text-sm"
+                              >
+                                {registration.registration.isApproved ? "✓ مؤكد" : "⏳ في انتظار الموافقة"}
+                              </Badge>
+                            </div>
+                          </div>
+                          {registration.registration.isApproved && (
+                            <Button variant="outline" asChild className="shadow w-full sm:w-auto" size="sm">
+                              <Link href="/user/dashboard">
+                                عرض تفاصيل التسجيل
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                              </Link>
+                            </Button>
+                          )}
+                        </div>
+                      ) : session.canRegister ? (
+                        <div className="flex flex-col items-center lg:items-start gap-3 md:gap-4">
+                          {session.requiresApproval && (
+                            <p className="text-xs md:text-sm text-amber-700 text-center lg:text-right">
+                              ⓘ هذه الجلسة تتطلب موافقة على التسجيل
+                            </p>
+                          )}
+                          <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full sm:w-auto">
+                            <Button
+                              onClick={handleRegister}
+                              disabled={isRegistering}
+                              size="default"
+                              className="shadow-lg hover:shadow-xl transition-all w-full sm:w-auto md:text-base"
+                            >
+                              {authStatus !== "authenticated"
+                                ? "سجل دخول للتسجيل"
+                                : isRegistering
+                                  ? "جارٍ التسجيل..."
+                                  : "سجل الآن"}
+                            </Button>
+                            {authStatus !== "authenticated" && (
+                              <Button variant="outline" asChild size="default" className="w-full sm:w-auto">
+                                <Link href={`/session/${id}/guest-register`}>
+                                  سجل كزائر
+                                </Link>
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-3 py-2">
+                          <p className="text-muted-foreground font-medium text-sm md:text-base text-center">
+                            {session.isFull ? "🔒 الجلسة مكتملة العدد" : "التسجيل مغلق لهذه الجلسة"}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">التاريخ</p>
-                      <p className="font-medium">{formatArabicDate(sessionDate)}</p>
+                  </div>
+                </div>
+
+                {/* Quick Info Icons */}
+                <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-4">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                      <Calendar className="w-4 h-4 md:w-5 md:h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] md:text-xs text-muted-foreground">التاريخ</p>
+                      <p className="font-medium text-foreground text-sm md:text-base truncate">{formatArabicDate(sessionDate)}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                      <Clock className="w-5 h-5" />
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                      <Clock className="w-4 h-4 md:w-5 md:h-5" />
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">الوقت</p>
-                      <p className="font-medium">{formatArabicTime(sessionDate)}</p>
+                    <div className="min-w-0">
+                      <p className="text-[10px] md:text-xs text-muted-foreground">الوقت</p>
+                      <p className="font-medium text-foreground text-sm md:text-base">{formatArabicTime(sessionDate)}</p>
                     </div>
                   </div>
 
                   {session.location && (
-                    <div className="flex items-center gap-3 text-gray-700 md:col-span-2">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                        <MapPin className="w-5 h-5" />
+                    <div className="flex items-center gap-2 md:gap-3 col-span-2">
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <MapPin className="w-4 h-4 md:w-5 md:h-5" />
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">المكان</p>
-                        <p className="font-medium">{session.location}</p>
+                      <div className="min-w-0">
+                        <p className="text-[10px] md:text-xs text-muted-foreground">المكان</p>
+                        <p className="font-medium text-foreground text-sm md:text-base">{session.location}</p>
                       </div>
                     </div>
                   )}
 
                   {session.guestName && (
-                    <div className="flex items-center gap-3 text-gray-700 md:col-span-2">
-                      <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
-                        <User className="w-5 h-5" />
+                    <div className="flex items-center gap-2 md:gap-3 col-span-2">
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent-foreground shrink-0">
+                        <User className="w-4 h-4 md:w-5 md:h-5" />
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">ضيف الجلسة</p>
-                        <p className="font-medium text-lg">{session.guestName}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] md:text-xs text-muted-foreground">ضيف الجلسة</p>
+                        <p className="font-medium text-base md:text-lg text-foreground">{session.guestName}</p>
                         {session.guestProfile && (
-                          <p className="text-sm text-muted-foreground mt-1">{session.guestProfile}</p>
+                          <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1 line-clamp-2">{session.guestProfile}</p>
                         )}
                       </div>
                     </div>
@@ -186,33 +269,33 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
 
                 {/* Description */}
                 {session.description && (
-                  <div className="pt-6 border-t">
-                    <h3 className="font-semibold text-lg mb-3 text-gray-900">نبذة عن الجلسة</h3>
-                    <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{session.description}</p>
+                  <div className="pt-4 md:pt-6 border-t border-border">
+                    <h3 className="font-semibold text-base md:text-lg mb-2 md:mb-3 text-primary">نبذة عن الجلسة</h3>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap text-sm md:text-base">{session.description}</p>
                   </div>
                 )}
 
                 {/* Registration Progress */}
                 {session.registrationCount !== null && (
-                  <div className="pt-6 border-t">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-5 h-5 text-primary" />
-                        <span className="font-medium text-gray-900">المسجلين</span>
+                  <div className="pt-4 md:pt-6 border-t border-border">
+                    <div className="flex items-center justify-between mb-2 md:mb-3">
+                      <div className="flex items-center gap-1.5 md:gap-2">
+                        <Users className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                        <span className="font-medium text-foreground text-sm md:text-base">المسجلين</span>
                       </div>
-                      <span className="font-bold text-lg text-primary">
+                      <span className="font-bold text-base md:text-lg text-primary">
                         {session.registrationCount} / {session.maxParticipants}
                       </span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-1.5 md:h-2 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-secondary to-primary rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-accent to-primary rounded-full transition-all duration-500"
                         style={{
                           width: `${Math.min((session.registrationCount / session.maxParticipants) * 100, 100)}%`,
                         }}
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
+                    <p className="text-[10px] md:text-xs text-muted-foreground mt-1.5 md:mt-2">
                       {Math.round((session.registrationCount / session.maxParticipants) * 100)}% من المقاعد محجوزة
                     </p>
                   </div>
@@ -221,92 +304,6 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
             </CardContent>
           </Card>
 
-          {/* Countdown */}
-          {isUpcoming && session.showCountdown && (
-            <Card className="border-none shadow-lg">
-              <CardContent className="py-8">
-                <CountdownTimer targetDate={sessionDate} />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Registration Card */}
-          <Card className="border-none shadow-lg bg-gradient-to-br from-primary/5 to-secondary/5">
-            <CardHeader>
-              <CardTitle className="text-2xl flex items-center gap-2">
-                {registration?.registered ? (
-                  <>
-                    <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-                    تم التسجيل بنجاح
-                  </>
-                ) : (
-                  "التسجيل في الجلسة"
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {registration?.registered && registration.registration ? (
-                <div className="space-y-4">
-                  <div className="bg-white rounded-lg p-4 border border-emerald-200">
-                    <p className="text-gray-700 mb-3">أنت مسجل في هذه الجلسة</p>
-                    <Badge
-                      variant={registration.registration.isApproved ? "default" : "secondary"}
-                      className="text-base px-4 py-1.5"
-                    >
-                      {registration.registration.isApproved ? "✓ مؤكد" : "⏳ في انتظار الموافقة"}
-                    </Badge>
-                  </div>
-                  {registration.registration.isApproved && (
-                    <Button variant="outline" size="lg" asChild className="w-full shadow">
-                      <Link href="/user/dashboard">
-                        عرض تفاصيل التسجيل
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              ) : session.canRegister ? (
-                <div className="space-y-4">
-                  {session.requiresApproval && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                      <p className="text-sm text-amber-800">
-                        ⓘ هذه الجلسة تتطلب موافقة على التسجيل
-                      </p>
-                    </div>
-                  )}
-                  <Button
-                    onClick={handleRegister}
-                    disabled={isRegistering}
-                    size="lg"
-                    className="w-full shadow-lg hover:shadow-xl transition-all text-lg h-14"
-                  >
-                    {authStatus !== "authenticated"
-                      ? "سجل دخول للتسجيل"
-                      : isRegistering
-                        ? "جارٍ التسجيل..."
-                        : "سجل الآن في الجلسة"}
-                  </Button>
-                  {authStatus !== "authenticated" && (
-                    <p className="text-center text-sm text-muted-foreground">
-                      أو{" "}
-                      <Link
-                        href={`/session/${id}/guest-register`}
-                        className="text-primary hover:underline font-medium"
-                      >
-                        سجل كزائر
-                      </Link>
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-                  <p className="text-gray-600 font-medium">
-                    {session.isFull ? "🔒 الجلسة مكتملة العدد" : "التسجيل مغلق لهذه الجلسة"}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

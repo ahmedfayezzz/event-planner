@@ -22,19 +22,31 @@ interface SessionCardProps {
   showRegisterButton?: boolean;
 }
 
-export function SessionCard({ session, showRegisterButton = true }: SessionCardProps) {
+export function SessionCard({
+  session,
+  showRegisterButton = true,
+}: SessionCardProps) {
   const sessionDate = new Date(session.date);
 
-  const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
-    open: { bg: "bg-emerald-100", text: "text-emerald-700", label: "متاح للتسجيل" },
+  const statusConfig: Record<
+    string,
+    { bg: string; text: string; label: string }
+  > = {
+    open: {
+      bg: "bg-emerald-100",
+      text: "text-emerald-700",
+      label: "متاح للتسجيل",
+    },
     closed: { bg: "bg-red-100", text: "text-red-700", label: "التسجيل مغلق" },
     completed: { bg: "bg-gray-100", text: "text-gray-600", label: "منعقدة" },
   };
 
   const status = statusConfig[session.status] || statusConfig.closed;
-  const registrationPercent = session.registrationCount !== null && session.registrationCount !== undefined
-    ? Math.round((session.registrationCount / session.maxParticipants) * 100)
-    : null;
+  const registrationPercent =
+    session.registrationCount !== null &&
+    session.registrationCount !== undefined
+      ? Math.round((session.registrationCount / session.maxParticipants) * 100)
+      : null;
 
   return (
     <Card className="group border border-border/50 shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300">
@@ -42,14 +54,13 @@ export function SessionCard({ session, showRegisterButton = true }: SessionCardP
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>اللقاء #{session.sessionNumber}</span>
-            </div>
-            <h3 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors">
+            <h3 className="text-xl md:text-2xl font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
               {session.title}
             </h3>
           </div>
-          <Badge className={`${status.bg} ${status.text} border-0 shrink-0 px-3 py-1`}>
+          <Badge
+            className={`${status.bg} ${status.text} border-0 shrink-0 px-3 py-1`}
+          >
             {status.label}
           </Badge>
         </div>
@@ -62,7 +73,9 @@ export function SessionCard({ session, showRegisterButton = true }: SessionCardP
             </div>
             <div>
               <p className="text-xs text-muted-foreground">التاريخ</p>
-              <p className="font-medium text-gray-900">{formatArabicDate(sessionDate)}</p>
+              <p className="font-medium text-foreground">
+                {formatArabicDate(sessionDate)}
+              </p>
             </div>
           </div>
 
@@ -72,7 +85,9 @@ export function SessionCard({ session, showRegisterButton = true }: SessionCardP
             </div>
             <div>
               <p className="text-xs text-muted-foreground">الوقت</p>
-              <p className="font-medium text-gray-900">{formatArabicTime(sessionDate)}</p>
+              <p className="font-medium text-foreground">
+                {formatArabicTime(sessionDate)}
+              </p>
             </div>
           </div>
 
@@ -83,19 +98,19 @@ export function SessionCard({ session, showRegisterButton = true }: SessionCardP
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">المكان</p>
-                <p className="font-medium text-gray-900">{session.location}</p>
+                <p className="font-medium text-foreground">{session.location}</p>
               </div>
             </div>
           )}
 
           {session.guestName && (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-accent-foreground shrink-0">
                 <User className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">ضيف الجلسة</p>
-                <p className="font-medium text-gray-900">{session.guestName}</p>
+                <p className="font-medium text-foreground">{session.guestName}</p>
               </div>
             </div>
           )}
@@ -113,9 +128,9 @@ export function SessionCard({ session, showRegisterButton = true }: SessionCardP
                 {session.registrationCount} / {session.maxParticipants}
               </span>
             </div>
-            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500"
+                className="h-full bg-gradient-to-r from-accent to-primary rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(registrationPercent, 100)}%` }}
               />
             </div>
@@ -136,7 +151,11 @@ export function SessionCard({ session, showRegisterButton = true }: SessionCardP
             }`}
           >
             <Link href={`/session/${session.id}`}>
-              {session.isFull ? "الجلسة مكتملة" : session.canRegister ? "سجل الآن" : "عرض التفاصيل"}
+              {session.isFull
+                ? "الجلسة مكتملة"
+                : session.canRegister
+                ? "سجل الآن"
+                : "عرض التفاصيل"}
               <ArrowLeft className="w-4 h-4" />
             </Link>
           </Button>

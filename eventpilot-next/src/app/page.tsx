@@ -59,18 +59,18 @@ export default function HomePage() {
               </div>
             </div>
           ) : nextSession ? (
-            <Card className="bg-white/5 backdrop-blur-md border-white/10 max-w-3xl mx-auto animate-slide-up shadow-2xl">
+            <Card className="bg-white/10 backdrop-blur-md border border-white/20 max-w-3xl mx-auto animate-slide-up rounded-2xl">
               <CardContent className="py-10">
                 <p className="text-secondary mb-6 text-lg font-medium">الجلسة القادمة: {nextSession.title}</p>
                 <CountdownTimer
                   targetDate={new Date(nextSession.date)}
-                  className="text-white"
+                  variant="dark"
                 />
                 {nextSession.canRegister && (
                   <div className="mt-8 flex justify-center">
                     <Link
                       href={`/session/${nextSession.id}`}
-                      className="group inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all text-white text-sm font-medium shadow-lg"
+                      className="group inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-white text-sm font-medium"
                     >
                       <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
                       احفظ مكانك
@@ -201,7 +201,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid gap-8 md:grid-cols-3">
-            <Card className="card-hover text-center border-none shadow-lg bg-white/50 backdrop-blur-sm hover:bg-white transition-colors group animate-slide-up" style={{ animationDelay: "0.1s" }}>
+            <Card className="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all text-center rounded-2xl group animate-slide-up" style={{ animationDelay: "0.1s" }}>
               <CardContent className="pt-10 pb-8 space-y-6">
                 <div className="feature-icon mx-auto bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors w-20 h-20 rounded-3xl">
                   <Users className="h-10 w-10" />
@@ -215,7 +215,7 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card className="card-hover text-center border-none shadow-lg bg-white/50 backdrop-blur-sm hover:bg-white transition-colors group animate-slide-up" style={{ animationDelay: "0.2s" }}>
+            <Card className="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all text-center rounded-2xl group animate-slide-up" style={{ animationDelay: "0.2s" }}>
               <CardContent className="pt-10 pb-8 space-y-6">
                 <div className="feature-icon mx-auto bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors w-20 h-20 rounded-3xl">
                   <Lightbulb className="h-10 w-10" />
@@ -229,7 +229,7 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card className="card-hover text-center border-none shadow-lg bg-white/50 backdrop-blur-sm hover:bg-white transition-colors group animate-slide-up" style={{ animationDelay: "0.3s" }}>
+            <Card className="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all text-center rounded-2xl group animate-slide-up" style={{ animationDelay: "0.3s" }}>
               <CardContent className="pt-10 pb-8 space-y-6">
                 <div className="feature-icon mx-auto bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors w-20 h-20 rounded-3xl">
                   <Zap className="h-10 w-10" />

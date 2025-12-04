@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface CountdownTimerProps {
   targetDate: Date;
@@ -9,6 +9,7 @@ interface CountdownTimerProps {
   onExpire?: () => void;
   className?: string;
   compact?: boolean;
+  variant?: "dark" | "light"; // dark = white text (for dark bg), light = themed text (for light bg)
 }
 
 interface TimeLeft {
@@ -18,7 +19,7 @@ interface TimeLeft {
   seconds: number;
 }
 
-export function CountdownTimer({ targetDate, title, onExpire, compact }: CountdownTimerProps) {
+export function CountdownTimer({ targetDate, title, onExpire, compact, variant = "light", className }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
   const [expired, setExpired] = useState(false);
 
@@ -58,8 +59,8 @@ export function CountdownTimer({ targetDate, title, onExpire, compact }: Countdo
 
   if (expired) {
     return (
-      <div className={compact ? "text-center py-2" : "text-center py-8"}>
-        <p className={compact ? "text-lg font-bold text-primary" : "text-2xl font-bold text-primary"}>
+      <div className={compact ? "text-center py-2" : "text-center py-4 md:py-8"}>
+        <p className={compact ? "text-base md:text-lg font-bold text-primary" : "text-xl md:text-2xl font-bold text-primary"}>
           بدأت الجلسة!
         </p>
       </div>
@@ -68,9 +69,9 @@ export function CountdownTimer({ targetDate, title, onExpire, compact }: Countdo
 
   if (!timeLeft) {
     return (
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-2 md:gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className={compact ? "h-12 w-12 animate-pulse rounded-lg bg-muted" : "h-24 w-20 animate-pulse rounded-lg bg-muted"} />
+          <div key={i} className={compact ? "h-10 w-10 md:h-12 md:w-12 animate-pulse rounded-lg bg-muted" : "h-16 w-14 md:h-24 md:w-20 animate-pulse rounded-lg bg-muted"} />
         ))}
       </div>
     );
@@ -83,21 +84,31 @@ export function CountdownTimer({ targetDate, title, onExpire, compact }: Countdo
     { value: timeLeft.days, label: "يوم" },
   ];
 
+  // Style variants
+  const isDark = variant === "dark";
+
+  const boxStyles = isDark
+    ? "bg-white/10 backdrop-blur-md border border-white/20 shadow-lg"
+    : "bg-primary/5 border border-primary/20 shadow-sm";
+
+  const numberStyles = isDark ? "text-white" : "text-primary";
+  const labelStyles = isDark ? "text-white/70" : "text-muted-foreground";
+
   if (compact) {
     return (
-      <div className="space-y-2">
+      <div className={cn("space-y-2", className)}>
         {title && (
-          <h3 className="text-center text-sm font-semibold text-muted-foreground">
+          <h3 className={cn("text-center text-xs md:text-sm font-semibold", labelStyles)}>
             {title}
           </h3>
         )}
-        <div className="flex justify-center gap-2">
+        <div className="flex justify-center gap-1.5 md:gap-2">
           {timeUnits.map((unit, index) => (
-            <div key={index} className="min-w-[50px] bg-white/10 backdrop-blur-md border border-white/20 rounded-lg p-2 text-center shadow-lg">
-              <div className="text-lg font-bold text-white">
+            <div key={index} className={cn("min-w-[42px] md:min-w-[50px] rounded-lg p-1.5 md:p-2 text-center", boxStyles)}>
+              <div className={cn("text-base md:text-lg font-bold", numberStyles)}>
                 {unit.value.toString().padStart(2, "0")}
               </div>
-              <div className="text-[10px] text-white/70">
+              <div className={cn("text-[8px] md:text-[10px]", labelStyles)}>
                 {unit.label}
               </div>
             </div>
@@ -108,19 +119,26 @@ export function CountdownTimer({ targetDate, title, onExpire, compact }: Countdo
   }
 
   return (
-    <div className="space-y-4">
+    <div className={cn("space-y-3 md:space-y-4", className)}>
       {title && (
-        <h3 className="text-center text-lg font-semibold text-muted-foreground">
+        <h3 className={cn("text-center text-base md:text-lg font-semibold", labelStyles)}>
           {title}
         </h3>
       )}
-      <div className="flex justify-center gap-3 md:gap-4">
+      <div className="flex justify-center gap-2 md:gap-3 lg:gap-4">
         {timeUnits.map((unit, index) => (
-          <div key={index} className="min-w-[70px] md:min-w-[80px] bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-3 md:p-4 text-center shadow-[0_8px_32px_rgba(0,0,0,0.1)] hover:bg-white/15 transition-all">
-            <div className="text-2xl md:text-4xl font-bold text-white">
+          <div
+            key={index}
+            className={cn(
+              "min-w-[55px] md:min-w-[70px] lg:min-w-[80px] rounded-xl md:rounded-2xl p-2 md:p-3 lg:p-4 text-center transition-all",
+              boxStyles,
+              isDark && "hover:bg-white/15"
+            )}
+          >
+            <div className={cn("text-xl md:text-2xl lg:text-4xl font-bold", numberStyles)}>
               {unit.value.toString().padStart(2, "0")}
             </div>
-            <div className="text-xs md:text-sm text-white/80 mt-1">
+            <div className={cn("text-[10px] md:text-xs lg:text-sm mt-0.5 md:mt-1", labelStyles)}>
               {unit.label}
             </div>
           </div>
