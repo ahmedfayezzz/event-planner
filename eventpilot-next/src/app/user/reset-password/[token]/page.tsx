@@ -127,7 +127,7 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
               />
             </div>
           </CardContent>
-          <CardFooter className="px-4 md:px-6 pb-5 md:pb-6">
+          <CardFooter className="pt-2 px-4 md:px-6 pb-5 md:pb-6">
             <Button
               type="submit"
               className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg transition-all hover:shadow-xl h-10 md:h-11"

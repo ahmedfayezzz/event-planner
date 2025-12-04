@@ -92,13 +92,13 @@ function LoginForm() {
             />
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col gap-3 md:gap-4 px-4 md:px-6 pb-5 md:pb-6">
+        <CardFooter className="flex flex-col gap-3 md:gap-4 pt-2 px-4 md:px-6 pb-5 md:pb-6">
           <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg transition-all hover:shadow-xl h-10 md:h-11" disabled={isLoading}>
             {isLoading ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
           </Button>
-          <div className="text-center text-xs md:text-sm">
+          <div className="text-center text-xs md:text-sm text-foreground/70">
             ليس لديك حساب؟{" "}
-            <Link href="/register" className="font-semibold text-secondary hover:text-secondary/80 hover:underline">
+            <Link href="/register" className="font-semibold text-primary hover:text-primary/80 hover:underline">
               إنشاء حساب جديد
             </Link>
           </div>

@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col gap-3 md:gap-4 px-4 md:px-6 pb-5 md:pb-6">
+          <CardFooter className="flex flex-col gap-3 md:gap-4 pt-2 px-4 md:px-6 pb-5 md:pb-6">
             <Button
               type="submit"
               className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg transition-all hover:shadow-xl h-10 md:h-11"
@@ -88,7 +88,7 @@ export default function ForgotPasswordPage() {
             </Button>
             <Link
               href="/user/login"
-              className="text-xs md:text-sm text-muted-foreground hover:text-primary"
+              className="text-xs md:text-sm text-foreground/70 hover:text-primary font-medium"
             >
               العودة لتسجيل الدخول
             </Link>

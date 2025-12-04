@@ -374,11 +374,11 @@ export default function RegisterPage() {
               >
                 {isLoading ? "جارٍ إنشاء الحساب..." : "إنشاء الحساب"}
               </Button>
-              <div className="text-center text-xs md:text-sm">
+              <div className="text-center text-xs md:text-sm text-foreground/70">
                 لديك حساب بالفعل؟{" "}
                 <Link
                   href="/user/login"
-                  className="font-semibold text-secondary hover:text-secondary/80 hover:underline"
+                  className="font-semibold text-primary hover:text-primary/80 hover:underline"
                 >
                   تسجيل الدخول
                 </Link>
