@@ -66,6 +66,17 @@ export default function HomePage() {
                   targetDate={new Date(nextSession.date)}
                   className="text-white"
                 />
+                {nextSession.canRegister && (
+                  <div className="mt-8 flex justify-center">
+                    <Link
+                      href={`/session/${nextSession.id}`}
+                      className="group inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all text-white text-sm font-medium shadow-lg"
+                    >
+                      <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                      احفظ مكانك
+                    </Link>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ) : (
@@ -74,19 +85,27 @@ export default function HomePage() {
             </p>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-6 justify-center animate-slide-up pt-8">
-            <Button size="lg" variant="secondary" className="btn-lift text-lg px-8 py-6 h-auto font-bold shadow-lg hover:shadow-xl" asChild>
-              <Link href="/sessions">
-                <Calendar className="ml-2 h-6 w-6" />
-                تصفح الجلسات
+          <div className="flex flex-col items-center gap-6 animate-slide-up pt-8">
+            {/* Primary CTA */}
+            <Button
+              size="lg"
+              className="bg-gradient-to-r from-secondary/90 to-secondary text-primary hover:from-secondary hover:to-secondary/90 text-xl px-12 py-8 h-auto font-bold shadow-[0_8px_32px_rgba(212,175,55,0.4)] hover:shadow-[0_12px_48px_rgba(212,175,55,0.5)] transition-all hover:scale-[1.02] border-0 rounded-2xl backdrop-blur-sm group"
+              asChild
+            >
+              <Link href="/sessions" className="flex items-center gap-3">
+                <Calendar className="h-6 w-6 group-hover:rotate-12 transition-transform" />
+                تصفح جميع الجلسات
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="btn-lift bg-transparent border-white/30 text-white hover:bg-white/10 text-lg px-8 py-6 h-auto" asChild>
-              <Link href="/register">
-                عضوية جديدة
-                <ArrowLeft className="mr-2 h-6 w-6" />
-              </Link>
-            </Button>
+
+            {/* Secondary CTA - Glass Link */}
+            <Link
+              href="/register"
+              className="group flex items-center gap-2 px-6 py-3 rounded-full bg-white/5 backdrop-blur-md border border-white/20 hover:bg-white/10 hover:border-white/30 transition-all text-white/90 hover:text-white text-base font-medium shadow-lg"
+            >
+              عضوية جديدة
+              <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+            </Link>
           </div>
         </div>
 

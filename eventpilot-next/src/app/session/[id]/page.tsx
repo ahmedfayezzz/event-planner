@@ -4,7 +4,6 @@ import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import Image from "next/image";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -100,23 +99,9 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Hero Section */}
-      <div className="relative h-72 md:h-96 bg-primary overflow-hidden">
-        {session.image ? (
-          <Image
-            src={session.image}
-            alt={session.title}
-            fill
-            className="object-cover"
-          />
-        ) : (
-          <>
-            <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10"></div>
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/40"></div>
-          </>
-        )}
-
-        {/* Overlay Content */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+      <div className="relative h-56 md:h-72 bg-primary overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30"></div>
 
         {/* Badges */}
         <div className="absolute top-6 left-6 flex gap-3">
