@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
-import { MapPin, User, Clock, ArrowLeft, Users, Calendar } from "lucide-react";
+import { MapPin, User, ArrowLeft, Users, Calendar } from "lucide-react";
 
 interface SessionCardProps {
   session: {
@@ -49,105 +49,81 @@ export function SessionCard({
       : null;
 
   return (
-    <Card className="group border border-border/50 shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300">
-      <CardContent className="p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div className="space-y-1">
-            <h3 className="text-xl md:text-2xl font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
-              {session.title}
-            </h3>
-          </div>
+    <Card className="group bg-gradient-to-br from-white to-primary/5 backdrop-blur-xl border border-primary/10 shadow-lg hover:shadow-xl hover:border-primary/20 transition-all duration-300 rounded-2xl overflow-hidden">
+      <CardContent className="px-5">
+        {/* Header - Primary focus */}
+        <div className="space-y-1.5 mb-4">
           <Badge
-            className={`${status.bg} ${status.text} border-0 shrink-0 px-3 py-1`}
+            className={`${status.bg} ${status.text} border-0 px-2.5 py-0.5 text-xs font-medium`}
           >
             {status.label}
           </Badge>
+          <h3 className="text-xl font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
+            {session.title}
+          </h3>
         </div>
 
-        {/* Info Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <Calendar className="w-5 h-5" />
+        {/* Info Grid - Secondary info */}
+        <div className="space-y-2.5 text-sm mb-4 pb-4 border-b border-border/30">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+              <Calendar className="w-3.5 h-3.5 text-primary" />
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">التاريخ</p>
-              <p className="font-medium text-foreground">
-                {formatArabicDate(sessionDate)}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <Clock className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">الوقت</p>
-              <p className="font-medium text-foreground">
-                {formatArabicTime(sessionDate)}
-              </p>
-            </div>
+            <span className="font-medium text-foreground">
+              {formatArabicDate(sessionDate)} • {formatArabicTime(sessionDate)}
+            </span>
           </div>
 
           {session.location && (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                <MapPin className="w-5 h-5" />
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                <MapPin className="w-3.5 h-3.5 text-primary" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">المكان</p>
-                <p className="font-medium text-foreground">{session.location}</p>
-              </div>
+              <span className="text-muted-foreground">{session.location}</span>
             </div>
           )}
 
           {session.guestName && (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-accent-foreground shrink-0">
-                <User className="w-5 h-5" />
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                <User className="w-3.5 h-3.5 text-primary" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">ضيف الجلسة</p>
-                <p className="font-medium text-foreground">{session.guestName}</p>
-              </div>
+              <span className="text-foreground font-medium">
+                {session.guestName}
+              </span>
             </div>
           )}
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Bar - Tertiary info */}
         {registrationPercent !== null && (
-          <div className="mb-6 p-4 bg-muted/30 rounded-xl">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="w-4 h-4" />
-                <span>المسجلين</span>
-              </div>
-              <span className="text-sm font-semibold text-primary">
+          <div className="space-y-1.5 mb-4">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" />
+                المسجلين
+              </span>
+              <span className="font-semibold text-primary">
                 {session.registrationCount} / {session.maxParticipants}
               </span>
             </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-1.5 bg-muted/50 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-accent to-primary rounded-full transition-all duration-500"
+                className="h-full bg-gradient-to-l from-primary to-secondary rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(registrationPercent, 100)}%` }}
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-2 text-left">
-              {registrationPercent}% من المقاعد محجوزة
-            </p>
           </div>
         )}
 
-        {/* CTA Button */}
+        {/* CTA Button - Action */}
         {showRegisterButton && (
           <Button
             asChild
-            className={`w-full h-12 text-base font-medium gap-2 ${
+            className={`w-full h-11 text-sm font-semibold gap-2 rounded-lg ${
               session.canRegister
                 ? "bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >
             <Link href={`/session/${session.id}`}>
@@ -168,37 +144,35 @@ export function SessionCard({
 // Skeleton for loading state
 export function SessionCardSkeleton() {
   return (
-    <Card className="border border-border/50">
-      <CardContent className="p-6 space-y-4">
-        <div className="flex justify-between gap-4">
-          <div className="space-y-2 flex-1">
-            <div className="h-4 bg-gray-100 rounded animate-pulse w-24" />
-            <div className="h-7 bg-gray-200 rounded animate-pulse w-3/4" />
-          </div>
-          <div className="h-6 w-24 bg-gray-100 rounded-full animate-pulse" />
+    <Card className="bg-gradient-to-br from-white to-primary/5 backdrop-blur-xl border border-primary/10 shadow-lg rounded-2xl overflow-hidden">
+      <CardContent className="p-5">
+        {/* Header */}
+        <div className="space-y-1.5 mb-4">
+          <div className="h-5 w-20 bg-muted rounded-full animate-pulse" />
+          <div className="h-6 bg-muted rounded animate-pulse w-3/4" />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-100 rounded-xl animate-pulse" />
-              <div className="space-y-1.5 flex-1">
-                <div className="h-3 bg-gray-100 rounded animate-pulse w-12" />
-                <div className="h-4 bg-gray-200 rounded animate-pulse w-20" />
-              </div>
+        {/* Info Grid */}
+        <div className="space-y-2.5 mb-4 pb-4 border-b border-border/30">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-muted rounded-md animate-pulse shrink-0" />
+              <div className="h-4 bg-muted rounded animate-pulse w-28" />
             </div>
           ))}
         </div>
 
-        <div className="p-4 bg-gray-50 rounded-xl space-y-2">
+        {/* Progress */}
+        <div className="space-y-1.5 mb-4">
           <div className="flex justify-between">
-            <div className="h-4 bg-gray-100 rounded animate-pulse w-16" />
-            <div className="h-4 bg-gray-100 rounded animate-pulse w-12" />
+            <div className="h-3 bg-muted rounded animate-pulse w-14" />
+            <div className="h-3 bg-muted rounded animate-pulse w-10" />
           </div>
-          <div className="h-2 bg-gray-200 rounded-full animate-pulse" />
+          <div className="h-1.5 bg-muted rounded-full animate-pulse" />
         </div>
 
-        <div className="h-12 bg-gray-200 rounded-lg animate-pulse" />
+        {/* Button */}
+        <div className="h-11 bg-muted rounded-lg animate-pulse" />
       </CardContent>
     </Card>
   );

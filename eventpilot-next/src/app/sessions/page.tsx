@@ -25,6 +25,7 @@ export default function SessionsPage() {
   });
 
   return (
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-transparent to-transparent">
     <div className="container py-12 md:py-16">
       <div className="text-center mb-12 space-y-4">
         <h1 className="text-4xl font-bold tracking-tight text-primary">الجلسات</h1>
@@ -87,6 +88,7 @@ export default function SessionsPage() {
           )}
         </TabsContent>
       </Tabs>
+    </div>
     </div>
   );
 }

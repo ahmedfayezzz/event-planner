@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="12" viewBox="0 0 120 12">
+  <!-- Elegant border pattern - interconnected diamonds -->
+  <g fill="none" stroke="#B8860B" stroke-width="1">
+    <path d="M0,6 L6,0 L12,6 L6,12 Z"/>
+    <path d="M24,6 L30,0 L36,6 L30,12 Z"/>
+    <path d="M48,6 L54,0 L60,6 L54,12 Z"/>
+    <path d="M72,6 L78,0 L84,6 L78,12 Z"/>
+    <path d="M96,6 L102,0 L108,6 L102,12 Z"/>
+    <!-- Connecting lines -->
+    <line x1="12" y1="6" x2="24" y2="6"/>
+    <line x1="36" y1="6" x2="48" y2="6"/>
+    <line x1="60" y1="6" x2="72" y2="6"/>
+    <line x1="84" y1="6" x2="96" y2="6"/>
+    <line x1="108" y1="6" x2="120" y2="6"/>
+  </g>
+</svg>

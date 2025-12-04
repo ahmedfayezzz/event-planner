@@ -78,7 +78,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-muted/30 to-accent/5 py-8 md:py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5"></div>
+      <div className="absolute inset-0 bg-pattern-dots opacity-[0.08]"></div>
       {/* Decorative glass orbs */}
       <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-40 right-10 w-80 h-80 bg-accent/10 rounded-full blur-3xl"></div>

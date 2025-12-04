@@ -26,9 +26,10 @@ interface SessionItem {
 }
 
 export default function HomePage() {
-  const { data: upcomingSessions, isLoading } = api.session.getUpcoming.useQuery({
-    limit: 3,
-  });
+  const { data: upcomingSessions, isLoading } =
+    api.session.getUpcoming.useQuery({
+      limit: 3,
+    });
 
   const nextSession = upcomingSessions?.[0];
 
@@ -54,14 +55,19 @@ export default function HomePage() {
               <Skeleton className="h-6 md:h-8 w-40 md:w-48 mx-auto mb-3 md:mb-4 bg-white/10 rounded" />
               <div className="flex justify-center gap-2 md:gap-4">
                 {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className="h-16 w-14 md:h-24 md:w-20 bg-white/10 rounded-lg" />
+                  <Skeleton
+                    key={i}
+                    className="h-16 w-14 md:h-24 md:w-20 bg-white/10 rounded-lg"
+                  />
                 ))}
               </div>
             </div>
           ) : nextSession ? (
             <Card className="bg-white/10 backdrop-blur-md border border-white/20 max-w-3xl mx-auto animate-slide-up rounded-xl md:rounded-2xl">
               <CardContent className="py-6 md:py-10 px-4 md:px-6">
-                <p className="text-secondary mb-4 md:mb-6 text-sm md:text-lg font-medium">{nextSession.title}</p>
+                <p className="text-secondary mb-4 md:mb-6 text-sm md:text-lg font-medium">
+                  {nextSession.title}
+                </p>
                 <CountdownTimer
                   targetDate={new Date(nextSession.date)}
                   variant="dark"
@@ -92,7 +98,10 @@ export default function HomePage() {
               className="bg-gradient-to-r from-secondary/90 to-secondary text-primary hover:from-secondary hover:to-secondary/90 text-base md:text-xl px-8 md:px-12 py-5 md:py-8 h-auto font-bold shadow-[0_8px_32px_rgba(212,175,55,0.4)] hover:shadow-[0_12px_48px_rgba(212,175,55,0.5)] transition-all hover:scale-[1.02] border-0 rounded-xl md:rounded-2xl backdrop-blur-sm group w-full sm:w-auto"
               asChild
             >
-              <Link href="/sessions" className="flex items-center justify-center gap-2 md:gap-3">
+              <Link
+                href="/sessions"
+                className="flex items-center justify-center gap-2 md:gap-3"
+              >
                 <Calendar className="h-5 w-5 md:h-6 md:w-6 group-hover:rotate-12 transition-transform" />
                 تصفح جميع الجلسات
               </Link>
@@ -118,34 +127,53 @@ export default function HomePage() {
 
       {/* Stats Section */}
       <section className="py-8 md:py-12 bg-primary text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5"></div>
+        <div className="absolute inset-0 bg-pattern-sadu opacity-[0.04]"></div>
         <div className="container relative z-10 px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 text-center animate-fade-in">
             <div className="space-y-1 md:space-y-2 py-4 md:py-0 hover:scale-105 transition-transform duration-300">
-              <div className="text-secondary text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">50+</div>
-              <div className="text-white/90 text-sm md:text-lg font-medium">جلسة منعقدة</div>
+              <div className="text-secondary text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">
+                50+
+              </div>
+              <div className="text-white/90 text-sm md:text-lg font-medium">
+                جلسة منعقدة
+              </div>
             </div>
             <div className="space-y-1 md:space-y-2 py-4 md:py-0 hover:scale-105 transition-transform duration-300">
-              <div className="text-secondary text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">500+</div>
-              <div className="text-white/90 text-sm md:text-lg font-medium">عضو مسجل</div>
+              <div className="text-secondary text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">
+                500+
+              </div>
+              <div className="text-white/90 text-sm md:text-lg font-medium">
+                عضو مسجل
+              </div>
             </div>
             <div className="space-y-1 md:space-y-2 py-4 md:py-0 hover:scale-105 transition-transform duration-300">
-              <div className="text-secondary text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">1000+</div>
-              <div className="text-white/90 text-sm md:text-lg font-medium">حضور</div>
+              <div className="text-secondary text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">
+                1000+
+              </div>
+              <div className="text-white/90 text-sm md:text-lg font-medium">
+                حضور
+              </div>
             </div>
             <div className="space-y-1 md:space-y-2 py-4 md:py-0 hover:scale-105 transition-transform duration-300">
-              <div className="text-secondary text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">100+</div>
-              <div className="text-white/90 text-sm md:text-lg font-medium">شراكة ناجحة</div>
+              <div className="text-secondary text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">
+                100+
+              </div>
+              <div className="text-white/90 text-sm md:text-lg font-medium">
+                شراكة ناجحة
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Upcoming Sessions */}
-      <section className="py-10 md:py-16 lg:py-24">
-        <div className="container px-4">
+      <section className="py-10 md:py-16 lg:py-24 bg-gradient-to-b from-primary/5 via-transparent to-transparent relative overflow-hidden">
+        <div className="absolute inset-0 bg-pattern-sadu opacity-[0.02]" />
+        <div className="container px-4 relative z-10">
           <div className="text-center mb-8 md:mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-4">الجلسات القادمة</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-4">
+              الجلسات القادمة
+            </h2>
             <p className="text-muted-foreground text-sm md:text-base">
               سجل الآن لحجز مقعدك في الجلسات القادمة
             </p>
@@ -174,7 +202,9 @@ export default function HomePage() {
             <Card className="py-8 md:py-12">
               <CardContent className="text-center">
                 <Calendar className="h-10 w-10 md:h-12 md:w-12 mx-auto text-muted-foreground/50 mb-3 md:mb-4" />
-                <p className="text-muted-foreground text-sm md:text-base">لا توجد جلسات قادمة حالياً</p>
+                <p className="text-muted-foreground text-sm md:text-base">
+                  لا توجد جلسات قادمة حالياً
+                </p>
               </CardContent>
             </Card>
           )}
@@ -194,50 +224,71 @@ export default function HomePage() {
       <section className="py-12 md:py-20 lg:py-32 bg-muted/30">
         <div className="container px-4">
           <div className="text-center mb-8 md:mb-16 space-y-2 md:space-y-4 animate-fade-in">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-primary">لماذا ثلوثية الأعمال؟</h2>
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-primary">
+              لماذا ثلوثية الأعمال؟
+            </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-sm md:text-base lg:text-lg px-2">
-              نوفر لك بيئة مثالية للتواصل المهني وتطوير أعمالك من خلال لقاءات دورية تجمع النخبة
+              نوفر لك بيئة مثالية للتواصل المهني وتطوير أعمالك من خلال لقاءات
+              دورية تجمع النخبة
             </p>
           </div>
 
           <div className="grid gap-4 md:gap-8 sm:grid-cols-2 md:grid-cols-3">
-            <Card className="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all text-center rounded-xl md:rounded-2xl group animate-slide-up" style={{ animationDelay: "0.1s" }}>
+            <Card
+              className="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all text-center rounded-xl md:rounded-2xl group animate-slide-up"
+              style={{ animationDelay: "0.1s" }}
+            >
               <CardContent className="pt-6 pb-5 md:pt-10 md:pb-8 space-y-4 md:space-y-6 px-4 md:px-6">
                 <div className="feature-icon mx-auto bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors w-14 h-14 md:w-20 md:h-20 rounded-2xl md:rounded-3xl">
                   <Users className="h-7 w-7 md:h-10 md:w-10" />
                 </div>
                 <div className="space-y-1.5 md:space-y-2">
-                  <h3 className="text-lg md:text-xl font-bold text-primary">تواصل مهني</h3>
+                  <h3 className="text-lg md:text-xl font-bold text-primary">
+                    تواصل مهني
+                  </h3>
                   <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                    التقِ بأفضل رواد الأعمال والمهنيين في مجالك لبناء شبكة علاقات قوية ومستدامة
+                    التقِ بأفضل رواد الأعمال والمهنيين في مجالك لبناء شبكة
+                    علاقات قوية ومستدامة
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all text-center rounded-xl md:rounded-2xl group animate-slide-up" style={{ animationDelay: "0.2s" }}>
+            <Card
+              className="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all text-center rounded-xl md:rounded-2xl group animate-slide-up"
+              style={{ animationDelay: "0.2s" }}
+            >
               <CardContent className="pt-6 pb-5 md:pt-10 md:pb-8 space-y-4 md:space-y-6 px-4 md:px-6">
                 <div className="feature-icon mx-auto bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors w-14 h-14 md:w-20 md:h-20 rounded-2xl md:rounded-3xl">
                   <Lightbulb className="h-7 w-7 md:h-10 md:w-10" />
                 </div>
                 <div className="space-y-1.5 md:space-y-2">
-                  <h3 className="text-lg md:text-xl font-bold text-primary">تبادل الخبرات</h3>
+                  <h3 className="text-lg md:text-xl font-bold text-primary">
+                    تبادل الخبرات
+                  </h3>
                   <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                    استفد من تجارب الآخرين وشارك معرفتك في بيئة تفاعلية تشجع على التعلم والنمو
+                    استفد من تجارب الآخرين وشارك معرفتك في بيئة تفاعلية تشجع على
+                    التعلم والنمو
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all text-center rounded-xl md:rounded-2xl group animate-slide-up sm:col-span-2 md:col-span-1" style={{ animationDelay: "0.3s" }}>
+            <Card
+              className="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all text-center rounded-xl md:rounded-2xl group animate-slide-up sm:col-span-2 md:col-span-1"
+              style={{ animationDelay: "0.3s" }}
+            >
               <CardContent className="pt-6 pb-5 md:pt-10 md:pb-8 space-y-4 md:space-y-6 px-4 md:px-6">
                 <div className="feature-icon mx-auto bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors w-14 h-14 md:w-20 md:h-20 rounded-2xl md:rounded-3xl">
                   <Zap className="h-7 w-7 md:h-10 md:w-10" />
                 </div>
                 <div className="space-y-1.5 md:space-y-2">
-                  <h3 className="text-lg md:text-xl font-bold text-primary">فرص واعدة</h3>
+                  <h3 className="text-lg md:text-xl font-bold text-primary">
+                    فرص واعدة
+                  </h3>
                   <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                    اكتشف فرصاً استثمارية وشراكات استراتيجية قد تغير مسار مشروعك للأفضل
+                    اكتشف فرصاً استثمارية وشراكات استراتيجية قد تغير مسار مشروعك
+                    للأفضل
                   </p>
                 </div>
               </CardContent>
@@ -246,18 +297,32 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Pattern Divider */}
+      {/* <div className="pattern-border opacity-30"></div> */}
+
       {/* CTA Section */}
-      <section className="py-10 md:py-16 lg:py-24 bg-gradient-primary text-white">
-        <div className="container text-center space-y-4 md:space-y-6 px-4">
+      <section className="py-10 md:py-16 lg:py-24 bg-gradient-primary text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-pattern-sadu-chain opacity-[0.03]"></div>
+        <div className="container text-center space-y-4 md:space-y-6 px-4 relative z-10">
           <h2 className="text-2xl md:text-3xl font-bold">انضم إلينا اليوم</h2>
           <p className="text-white/90 max-w-xl mx-auto text-sm md:text-base">
             سجل الآن وكن جزءاً من مجتمع ثلوثية الأعمال
           </p>
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
-            <Button size="default" variant="secondary" className="btn-lift w-full sm:w-auto" asChild>
+            <Button
+              size="default"
+              variant="secondary"
+              className="btn-lift w-full sm:w-auto"
+              asChild
+            >
               <Link href="/register">إنشاء حساب مجاني</Link>
             </Button>
-            <Button size="default" variant="outline" className="btn-lift bg-transparent border-white text-white hover:bg-white/10 w-full sm:w-auto" asChild>
+            <Button
+              size="default"
+              variant="outline"
+              className="btn-lift bg-transparent border-white text-white hover:bg-white/10 w-full sm:w-auto"
+              asChild
+            >
               <Link href="/user/login">تسجيل الدخول</Link>
             </Button>
           </div>

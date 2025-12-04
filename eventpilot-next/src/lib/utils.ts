@@ -57,15 +57,17 @@ export function formatArabicDate(date: Date | null | undefined): string {
 }
 
 /**
- * Format time in Arabic (24-hour format)
+ * Format time in Arabic (12-hour format)
  */
 export function formatArabicTime(date: Date | null | undefined): string {
   if (!date) return "";
 
-  const hours = date.getHours().toString().padStart(2, "0");
+  const hours24 = date.getHours();
+  const hours12 = hours24 % 12 || 12;
   const minutes = date.getMinutes().toString().padStart(2, "0");
+  const period = hours24 < 12 ? "ص" : "م";
 
-  return `${hours}:${minutes}`;
+  return `${hours12}:${minutes} ${period}`;
 }
 
 /**

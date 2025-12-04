@@ -48,7 +48,7 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-muted/30 to-accent/5 py-8 md:py-12 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5"></div>
+        <div className="absolute inset-0 bg-pattern-dots opacity-[0.08]"></div>
         <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/10 rounded-full blur-3xl"></div>
         <Card className="w-full max-w-md border border-white/50 shadow-2xl bg-white/70 backdrop-blur-xl rounded-xl md:rounded-2xl relative z-10">
@@ -68,7 +68,7 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
   if (!validation?.valid) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-muted/30 to-accent/5 py-8 md:py-12 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5"></div>
+        <div className="absolute inset-0 bg-pattern-dots opacity-[0.08]"></div>
         <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/10 rounded-full blur-3xl"></div>
         <Card className="w-full max-w-md border border-white/50 shadow-2xl bg-white/70 backdrop-blur-xl rounded-xl md:rounded-2xl relative z-10">
@@ -90,7 +90,7 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-muted/30 to-accent/5 py-8 md:py-12 px-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5"></div>
+      <div className="absolute inset-0 bg-pattern-dots opacity-[0.08]"></div>
       <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/10 rounded-full blur-3xl"></div>
       <Card className="w-full max-w-md border border-white/50 shadow-2xl bg-white/70 backdrop-blur-xl rounded-xl md:rounded-2xl relative z-10">

@@ -2,8 +2,12 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="border-t border-accent/20 bg-primary text-white">
-      <div className="container py-12 md:py-16">
+    <footer className="bg-primary text-white relative overflow-hidden">
+      {/* Pattern border at top */}
+      {/* <div className="pattern-border-lg opacity-40"></div> */}
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 bg-pattern-dots opacity-[0.02]"></div>
+      <div className="container py-12 md:py-16 relative z-10">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
           {/* Brand */}
           <div className="space-y-6">
@@ -14,7 +18,8 @@ export function Footer() {
               <h3 className="text-2xl font-bold text-white">ثلوثية الأعمال</h3>
             </div>
             <p className="text-white/80 leading-relaxed max-w-xs">
-              منصة إدارة فعاليات التواصل المهني الأسبوعية. نجمع النخبة لنصنع المستقبل.
+              منصة إدارة فعاليات التواصل المهني الأسبوعية. نجمع النخبة لنصنع
+              المستقبل.
             </p>
           </div>
 
@@ -62,14 +67,18 @@ export function Footer() {
               {/* Social placeholders */}
               <div className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer flex items-center justify-center border border-white/10">
                 <span className="sr-only">Twitter</span>
-                <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
               </div>
             </div>
           </div>
         </div>
 
         <div className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-white/60">
-          <p>© {new Date().getFullYear()} ثلوثية الأعمال. جميع الحقوق محفوظة.</p>
+          <p>
+            © {new Date().getFullYear()} ثلوثية الأعمال. جميع الحقوق محفوظة.
+          </p>
         </div>
       </div>
     </footer>

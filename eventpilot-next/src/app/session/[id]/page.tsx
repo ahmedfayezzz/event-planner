@@ -100,7 +100,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
     <div className="min-h-screen bg-muted/30">
       {/* Hero Section */}
       <div className="relative h-40 md:h-56 lg:h-72 bg-primary overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10"></div>
+        <div className="absolute inset-0 bg-pattern-sadu-chain opacity-[0.06]"></div>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30"></div>
 
         {/* Badges */}
