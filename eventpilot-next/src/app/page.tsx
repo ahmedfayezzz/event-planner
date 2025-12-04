@@ -103,20 +103,20 @@ export default function HomePage() {
         <div className="container relative z-10">
           <div className="grid gap-8 md:grid-cols-4 text-center divide-y md:divide-y-0 md:divide-x md:divide-x-reverse divide-white/10 animate-fade-in">
             <div className="space-y-2 pt-8 md:pt-0 hover:scale-105 transition-transform duration-300">
-              <div className="stat-value text-secondary text-4xl md:text-5xl font-bold drop-shadow-sm">50+</div>
-              <div className="stat-label text-white/90 text-lg font-medium">جلسة منعقدة</div>
+              <div className="text-secondary text-4xl md:text-5xl font-bold drop-shadow-sm">50+</div>
+              <div className="text-white/90 text-lg font-medium">جلسة منعقدة</div>
             </div>
             <div className="space-y-2 pt-8 md:pt-0 hover:scale-105 transition-transform duration-300">
-              <div className="stat-value text-secondary text-4xl md:text-5xl font-bold drop-shadow-sm">500+</div>
-              <div className="stat-label text-white/90 text-lg font-medium">عضو مسجل</div>
+              <div className="text-secondary text-4xl md:text-5xl font-bold drop-shadow-sm">500+</div>
+              <div className="text-white/90 text-lg font-medium">عضو مسجل</div>
             </div>
             <div className="space-y-2 pt-8 md:pt-0 hover:scale-105 transition-transform duration-300">
-              <div className="stat-value text-secondary text-4xl md:text-5xl font-bold drop-shadow-sm">1000+</div>
-              <div className="stat-label text-white/90 text-lg font-medium">حضور</div>
+              <div className="text-secondary text-4xl md:text-5xl font-bold drop-shadow-sm">1000+</div>
+              <div className="text-white/90 text-lg font-medium">حضور</div>
             </div>
             <div className="space-y-2 pt-8 md:pt-0 hover:scale-105 transition-transform duration-300">
-              <div className="stat-value text-secondary text-4xl md:text-5xl font-bold drop-shadow-sm">100+</div>
-              <div className="stat-label text-white/90 text-lg font-medium">شراكة ناجحة</div>
+              <div className="text-secondary text-4xl md:text-5xl font-bold drop-shadow-sm">100+</div>
+              <div className="text-white/90 text-lg font-medium">شراكة ناجحة</div>
             </div>
           </div>
         </div>
