@@ -139,7 +139,7 @@ export default function SessionCompanionsPage({ params }: { params: Promise<{ id
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={handleExportCSV} disabled={!companions?.length}>
-            <Download className="ml-2 h-4 w-4" />
+            <Download className="me-2 h-4 w-4" />
             تصدير CSV
           </Button>
         </div>
@@ -175,12 +175,12 @@ export default function SessionCompanionsPage({ params }: { params: Promise<{ id
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="بحث بالاسم أو الشركة أو البريد..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pr-10"
+          className="pe-10"
         />
       </div>
 
@@ -235,7 +235,7 @@ export default function SessionCompanionsPage({ params }: { params: Promise<{ id
                               : "bg-gray-500/10 text-gray-600 border-gray-200"
                           }
                         >
-                          <Mail className="ml-1 h-3 w-3" />
+                          <Mail className="me-1 h-3 w-3" />
                           {companion.inviteSent ? "مرسلة" : "غير مرسلة"}
                         </Badge>
                       ) : (

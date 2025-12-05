@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { TRPCProvider } from "@/components/providers/trpc-provider";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { Navbar } from "@/components/layout/navbar";
-import { Footer } from "@/components/layout/footer";
+import {
+  ConditionalNavbar,
+  ConditionalFooter,
+  ConditionalMain,
+} from "@/components/layout/conditional-layout";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -30,9 +33,9 @@ export default function RootLayout({
       <body className="font-cairo antialiased min-h-screen flex flex-col">
         <SessionProvider>
           <TRPCProvider>
-            <Navbar />
-            <main className="flex-1 pt-20">{children}</main>
-            <Footer />
+            <ConditionalNavbar />
+            <ConditionalMain>{children}</ConditionalMain>
+            <ConditionalFooter />
             <Toaster position="top-center" />
           </TRPCProvider>
         </SessionProvider>

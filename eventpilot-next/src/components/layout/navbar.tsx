@@ -73,6 +73,8 @@ export function Navbar() {
             {session?.user?.role === "ADMIN" && (
               <Link
                 href="/admin"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:text-primary px-3 py-2 rounded-full hover:bg-primary/5"
               >
                 لوحة التحكم
@@ -115,7 +117,9 @@ export function Navbar() {
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
-                        <Link href="/admin">إدارة الموقع</Link>
+                        <Link href="/admin" target="_blank" rel="noopener noreferrer">
+                          إدارة الموقع
+                        </Link>
                       </DropdownMenuItem>
                     </>
                   )}
@@ -183,6 +187,8 @@ export function Navbar() {
                   {session?.user?.role === "ADMIN" && (
                     <Link
                       href="/admin"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-primary/5 hover:text-primary transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >

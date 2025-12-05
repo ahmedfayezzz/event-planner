@@ -85,7 +85,7 @@ export default function AdminSessionsPage() {
         </div>
         <Button asChild>
           <Link href="/admin/sessions/new">
-            <Plus className="ml-2 h-4 w-4" />
+            <Plus className="me-2 h-4 w-4" />
             جلسة جديدة
           </Link>
         </Button>

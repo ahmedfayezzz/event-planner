@@ -148,12 +148,12 @@ export default function SessionAttendeesPage({ params }: { params: Promise<{ id:
               onClick={() => approveAllMutation.mutate({ sessionId: id })}
               disabled={approveAllMutation.isPending}
             >
-              <CheckCheck className="ml-2 h-4 w-4" />
+              <CheckCheck className="me-2 h-4 w-4" />
               تأكيد الكل ({stats.pending})
             </Button>
           )}
           <Button variant="outline" onClick={handleExport}>
-            <Download className="ml-2 h-4 w-4" />
+            <Download className="me-2 h-4 w-4" />
             تصدير CSV
           </Button>
         </div>
@@ -195,12 +195,12 @@ export default function SessionAttendeesPage({ params }: { params: Promise<{ id:
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="بحث بالاسم أو البريد أو الهاتف..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pr-10"
+          className="pe-10"
         />
       </div>
 

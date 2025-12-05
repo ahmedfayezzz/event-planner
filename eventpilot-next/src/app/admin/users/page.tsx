@@ -116,7 +116,7 @@ export default function AdminUsersPage() {
           </p>
         </div>
         <Button variant="outline" onClick={handleExport}>
-          <Download className="ml-2 h-4 w-4" />
+          <Download className="me-2 h-4 w-4" />
           تصدير CSV
         </Button>
       </div>
@@ -126,12 +126,12 @@ export default function AdminUsersPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="بحث بالاسم أو البريد أو الهاتف..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pr-10"
+                className="pe-10"
               />
             </div>
             <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -236,7 +236,7 @@ export default function AdminUsersPage() {
                               })
                             }
                           >
-                            <Shield className="ml-2 h-4 w-4" />
+                            <Shield className="me-2 h-4 w-4" />
                             {user.role === "ADMIN" ? "إزالة صلاحية المدير" : "ترقية لمدير"}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -248,12 +248,12 @@ export default function AdminUsersPage() {
                           >
                             {user.isActive ? (
                               <>
-                                <UserX className="ml-2 h-4 w-4" />
+                                <UserX className="me-2 h-4 w-4" />
                                 تعطيل الحساب
                               </>
                             ) : (
                               <>
-                                <UserCheck className="ml-2 h-4 w-4" />
+                                <UserCheck className="me-2 h-4 w-4" />
                                 تفعيل الحساب
                               </>
                             )}

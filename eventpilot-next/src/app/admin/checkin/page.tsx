@@ -72,7 +72,7 @@ export default function CheckInSelectPage() {
                 </p>
                 <Button asChild className="w-full">
                   <Link href={`/admin/checkin/${session.id}`}>
-                    <QrCode className="ml-2 h-4 w-4" />
+                    <QrCode className="me-2 h-4 w-4" />
                     بدء تسجيل الحضور
                   </Link>
                 </Button>
