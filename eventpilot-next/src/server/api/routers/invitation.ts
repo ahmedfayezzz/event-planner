@@ -51,12 +51,6 @@ export const invitationRouter = createTRPCRouter({
         isActive: true,
       };
 
-      // Filter for users with phone numbers (for WhatsApp tab)
-      if (input.hasPhone) {
-        where.phone = { not: "" };
-        where.NOT = { phone: null };
-      }
-
       if (input.search) {
         where.OR = [
           { name: { contains: input.search } },
@@ -65,6 +59,9 @@ export const invitationRouter = createTRPCRouter({
           { companyName: { contains: input.search } },
         ];
       }
+
+      // Fetch more users if filtering by phone (to account for nulls/empty)
+      const fetchLimit = input.hasPhone ? input.limit * 3 : input.limit;
 
       const users = await db.user.findMany({
         where,
@@ -76,12 +73,18 @@ export const invitationRouter = createTRPCRouter({
           companyName: true,
           position: true,
         },
-        take: input.limit,
+        take: fetchLimit,
         orderBy: { name: "asc" },
       });
 
-      // Add status flags to each user
-      return users.map((user) => ({
+      // Filter for users with phone numbers (for WhatsApp tab) - done in JS
+      let filteredUsers = users;
+      if (input.hasPhone) {
+        filteredUsers = users.filter((u) => u.phone && u.phone.trim() !== "");
+      }
+
+      // Add status flags to each user and limit results
+      return filteredUsers.slice(0, input.limit).map((user) => ({
         ...user,
         isRegistered: registeredUserIds.has(user.id),
         isInvited: invitedEmails.has(user.email.toLowerCase()),
