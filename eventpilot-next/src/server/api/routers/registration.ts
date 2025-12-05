@@ -214,6 +214,9 @@ export const registrationRouter = createTRPCRouter({
         password: z.string().min(6).optional(),
         // Invitation token for invite-only sessions
         inviteToken: z.string().optional(),
+        // Hosting preferences
+        wantsToHost: z.boolean().default(false),
+        hostingTypes: z.array(z.string()).default([]),
         // Companions
         companions: z
           .array(
@@ -383,6 +386,8 @@ export const registrationRouter = createTRPCRouter({
             activityType: input.activityType || null,
             gender: input.gender || null,
             goal: input.goal || null,
+            wantsToHost: input.wantsToHost,
+            hostingTypes: input.wantsToHost ? input.hostingTypes : [],
           },
         });
 
@@ -412,6 +417,8 @@ export const registrationRouter = createTRPCRouter({
           guestActivityType: userId ? null : input.activityType || null,
           guestGender: userId ? null : input.gender || null,
           guestGoal: userId ? null : input.goal || null,
+          guestWantsToHost: userId ? false : input.wantsToHost,
+          guestHostingTypes: userId ? [] : (input.wantsToHost ? input.hostingTypes : []),
           companions: {
             create: input.companions.map((c) => ({
               name: c.name,

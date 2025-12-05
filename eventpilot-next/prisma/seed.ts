@@ -41,6 +41,8 @@ async function main() {
       gender: "male",
       goal: "تطوير تطبيقات ذكية للشركات السعودية وتوسيع شبكة العلاقات التجارية",
       aiDescription: "رائد أعمال متخصص في مجال التقنية مع خبرة تتجاوز 10 سنوات في تطوير الحلول الرقمية للمؤسسات الكبرى.",
+      wantsToHost: true,
+      hostingTypes: ["dinner", "drinks"],
     },
     {
       name: "فاطمة عبدالله النور",
@@ -55,6 +57,8 @@ async function main() {
       gender: "female",
       goal: "مساعدة الشركات الناشئة على النمو وتحقيق أهدافها التجارية",
       aiDescription: "مستشارة إدارية متميزة تساعد الشركات الناشئة في بناء استراتيجيات نمو فعالة.",
+      wantsToHost: true,
+      hostingTypes: ["dessert", "coffee"],
     },
     {
       name: "خالد عبدالعزيز الرشيد",
@@ -229,6 +233,8 @@ async function main() {
       gender: "male",
       goal: "توسيع سلسلة المطاعم في المملكة والخليج",
       aiDescription: "رائد أعمال في قطاع الضيافة مع سلسلة مطاعم ناجحة.",
+      wantsToHost: true,
+      hostingTypes: ["dinner", "snacks", "drinks"],
     },
     {
       name: "دانة خالد النصار",
@@ -560,6 +566,8 @@ async function main() {
       guestActivityType: "التجارة",
       guestGender: "male",
       guestGoal: "توسيع شبكة العلاقات التجارية",
+      guestWantsToHost: true,
+      guestHostingTypes: ["coffee", "snacks"],
     },
     {
       guestName: "غادة فهد النصار",
@@ -571,6 +579,8 @@ async function main() {
       guestActivityType: "ريادة الأعمال",
       guestGender: "female",
       guestGoal: "التعرف على مستثمرين محتملين",
+      guestWantsToHost: true,
+      guestHostingTypes: ["dessert"],
     },
     {
       guestName: "سلطان مشاري الدخيل",

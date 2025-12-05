@@ -41,6 +41,7 @@ import {
   ChevronRight,
   ChevronLeft,
   BarChart3,
+  UtensilsCrossed,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/admin/breadcrumbs";
 
@@ -59,6 +60,11 @@ const sidebarLinks = [
     href: "/admin/users",
     label: "المستخدمين",
     icon: Users,
+  },
+  {
+    href: "/admin/hosts",
+    label: "المضيفين",
+    icon: UtensilsCrossed,
   },
   {
     href: "/admin/analytics",

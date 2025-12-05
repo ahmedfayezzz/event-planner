@@ -29,6 +29,8 @@ export const authRouter = createTRPCRouter({
         activityType: z.string().optional(),
         gender: z.enum(["male", "female"]).optional(),
         goal: z.string().optional(),
+        wantsToHost: z.boolean().default(false),
+        hostingTypes: z.array(z.string()).default([]),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -87,6 +89,8 @@ export const authRouter = createTRPCRouter({
           activityType: input.activityType || null,
           gender: input.gender || null,
           goal: input.goal || null,
+          wantsToHost: input.wantsToHost,
+          hostingTypes: input.wantsToHost ? input.hostingTypes : [],
         },
       });
 

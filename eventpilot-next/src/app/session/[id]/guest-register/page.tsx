@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { CountdownTimer } from "@/components/countdown-timer";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
+import { HOSTING_TYPES } from "@/lib/constants";
 import { toast } from "sonner";
 
 interface Companion {
@@ -50,6 +51,8 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
     activityType: "",
     gender: "" as "male" | "female" | "",
     goal: "",
+    wantsToHost: false,
+    hostingTypes: [] as string[],
   });
 
   const { data: session, isLoading } = api.session.getById.useQuery({ id });
@@ -134,6 +137,8 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
         activityType: formData.activityType || undefined,
         gender: formData.gender || undefined,
         goal: formData.goal || undefined,
+        wantsToHost: formData.wantsToHost,
+        hostingTypes: formData.hostingTypes,
         inviteToken,
         companions: validCompanions,
       });
@@ -481,6 +486,63 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                   <Separator />
                 </>
               )}
+
+              {/* Hosting Section */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">تقديم الضيافة (اختياري)</h3>
+                <div className="flex items-start space-x-3 space-x-reverse">
+                  <Checkbox
+                    id="wantsToHost"
+                    checked={formData.wantsToHost}
+                    onCheckedChange={(checked) =>
+                      setFormData({
+                        ...formData,
+                        wantsToHost: checked === true,
+                        hostingTypes: checked ? formData.hostingTypes : [],
+                      })
+                    }
+                    className="mt-1"
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="wantsToHost" className="cursor-pointer font-medium">
+                      هل تريد تقديم الضيافة؟
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      تطوع لتقديم الضيافة في إحدى الجلسات القادمة
+                    </p>
+                  </div>
+                </div>
+
+                {formData.wantsToHost && (
+                  <div className="pe-7 space-y-2">
+                    <Label>نوع الضيافة</Label>
+                    <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
+                      {HOSTING_TYPES.map((type) => (
+                        <div key={type.value} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`hosting-${type.value}`}
+                            checked={formData.hostingTypes.includes(type.value)}
+                            onCheckedChange={(checked) => {
+                              const types = checked
+                                ? [...formData.hostingTypes, type.value]
+                                : formData.hostingTypes.filter((t) => t !== type.value);
+                              setFormData({ ...formData, hostingTypes: types });
+                            }}
+                          />
+                          <Label
+                            htmlFor={`hosting-${type.value}`}
+                            className="cursor-pointer text-sm"
+                          >
+                            {type.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
 
               {/* Create Account Option */}
               <div className="space-y-4">

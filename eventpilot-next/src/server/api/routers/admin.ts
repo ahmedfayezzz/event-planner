@@ -6,6 +6,7 @@ import {
 } from "../trpc";
 import { generateQRCode } from "@/lib/qr";
 import { exportToCSV } from "@/lib/utils";
+import { getHostingTypeLabel } from "@/lib/constants";
 
 export const adminRouter = createTRPCRouter({
   /**
@@ -610,4 +611,145 @@ export const adminRouter = createTRPCRouter({
         })),
       };
     }),
+
+  /**
+   * Get all users who want to host (admin only)
+   */
+  getHosts: adminProcedure
+    .input(
+      z.object({
+        hostingType: z.string().optional(),
+        limit: z.number().min(1).max(100).default(50),
+        cursor: z.string().optional(),
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: Record<string, any> = {
+        wantsToHost: true,
+        isActive: true,
+      };
+
+      if (input?.hostingType) {
+        where.hostingTypes = { has: input.hostingType };
+      }
+
+      const users = await db.user.findMany({
+        where,
+        take: (input?.limit ?? 50) + 1,
+        cursor: input?.cursor ? { id: input.cursor } : undefined,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          companyName: true,
+          hostingTypes: true,
+          createdAt: true,
+        },
+      });
+
+      let nextCursor: string | undefined;
+      if (users.length > (input?.limit ?? 50)) {
+        const nextItem = users.pop();
+        nextCursor = nextItem?.id;
+      }
+
+      // Also get guest hosts from registrations
+      const guestHosts = await db.registration.findMany({
+        where: {
+          userId: null,
+          guestWantsToHost: true,
+          ...(input?.hostingType && { guestHostingTypes: { has: input.hostingType } }),
+        },
+        select: {
+          id: true,
+          guestName: true,
+          guestEmail: true,
+          guestPhone: true,
+          guestCompanyName: true,
+          guestHostingTypes: true,
+          registeredAt: true,
+        },
+        orderBy: { registeredAt: "desc" },
+      });
+
+      return {
+        users: users.map((u) => ({
+          ...u,
+          isGuest: false,
+        })),
+        guestHosts: guestHosts.map((g) => ({
+          id: g.id,
+          name: g.guestName,
+          email: g.guestEmail,
+          phone: g.guestPhone,
+          companyName: g.guestCompanyName,
+          hostingTypes: g.guestHostingTypes,
+          createdAt: g.registeredAt,
+          isGuest: true,
+        })),
+        nextCursor,
+      };
+    }),
+
+  /**
+   * Export hosts to CSV (admin only)
+   */
+  exportHosts: adminProcedure.query(async ({ ctx }) => {
+    const { db } = ctx;
+
+    const users = await db.user.findMany({
+      where: { wantsToHost: true, isActive: true },
+      select: {
+        name: true,
+        email: true,
+        phone: true,
+        companyName: true,
+        hostingTypes: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Also get guest hosts
+    const guestHosts = await db.registration.findMany({
+      where: {
+        userId: null,
+        guestWantsToHost: true,
+      },
+      select: {
+        guestName: true,
+        guestEmail: true,
+        guestPhone: true,
+        guestCompanyName: true,
+        guestHostingTypes: true,
+      },
+      orderBy: { registeredAt: "desc" },
+    });
+
+    const data = [
+      ...users.map((u) => ({
+        الاسم: u.name,
+        البريد: u.email,
+        الهاتف: u.phone,
+        الشركة: u.companyName || "",
+        "أنواع الضيافة": u.hostingTypes.map(getHostingTypeLabel).join(", "),
+        النوع: "عضو",
+      })),
+      ...guestHosts.map((g) => ({
+        الاسم: g.guestName || "",
+        البريد: g.guestEmail || "",
+        الهاتف: g.guestPhone || "",
+        الشركة: g.guestCompanyName || "",
+        "أنواع الضيافة": g.guestHostingTypes.map(getHostingTypeLabel).join(", "),
+        النوع: "زائر",
+      })),
+    ];
+
+    const csv = exportToCSV(data);
+    return { csv, count: data.length };
+  }),
 });

@@ -15,6 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { HOSTING_TYPES } from "@/lib/constants";
 import {
   Card,
   CardContent,
@@ -47,6 +49,8 @@ export default function RegisterPage() {
     activityType: "",
     gender: "" as "male" | "female" | "",
     goal: "",
+    wantsToHost: false,
+    hostingTypes: [] as string[],
   });
 
   const registerMutation = api.auth.register.useMutation({
@@ -88,6 +92,8 @@ export default function RegisterPage() {
         activityType: formData.activityType || undefined,
         gender: formData.gender || undefined,
         goal: formData.goal || undefined,
+        wantsToHost: formData.wantsToHost,
+        hostingTypes: formData.hostingTypes,
       });
     } finally {
       setIsLoading(false);
@@ -396,6 +402,66 @@ export default function RegisterPage() {
                   rows={3}
                   className="bg-white/60 backdrop-blur-sm border border-primary/10 focus:border-primary/50 focus:bg-white/80 text-sm md:text-base transition-all shadow-none"
                 />
+              </div>
+
+              {/* Hosting Section */}
+              <div className="space-y-3 md:space-y-4">
+                <h3 className="font-semibold text-primary border-b border-primary/10 pb-2 flex items-center gap-2 text-sm md:text-base">
+                  <span className="w-1.5 md:w-2 h-5 md:h-6 bg-secondary rounded-full inline-block"></span>
+                  تقديم الضيافة (اختياري)
+                </h3>
+                <div className="flex items-start space-x-3 space-x-reverse">
+                  <Checkbox
+                    id="wantsToHost"
+                    checked={formData.wantsToHost}
+                    onCheckedChange={(checked) =>
+                      setFormData({
+                        ...formData,
+                        wantsToHost: checked === true,
+                        hostingTypes: checked ? formData.hostingTypes : [],
+                      })
+                    }
+                    disabled={isLoading}
+                    className="mt-1"
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="wantsToHost" className="cursor-pointer text-sm font-medium">
+                      هل تريد تقديم الضيافة؟
+                    </Label>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      تطوع لتقديم الضيافة في إحدى الجلسات القادمة
+                    </p>
+                  </div>
+                </div>
+
+                {formData.wantsToHost && (
+                  <div className="pe-7 space-y-2">
+                    <Label className="text-sm">نوع الضيافة</Label>
+                    <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
+                      {HOSTING_TYPES.map((type) => (
+                        <div key={type.value} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`hosting-${type.value}`}
+                            checked={formData.hostingTypes.includes(type.value)}
+                            onCheckedChange={(checked) => {
+                              const types = checked
+                                ? [...formData.hostingTypes, type.value]
+                                : formData.hostingTypes.filter((t) => t !== type.value);
+                              setFormData({ ...formData, hostingTypes: types });
+                            }}
+                            disabled={isLoading}
+                          />
+                          <Label
+                            htmlFor={`hosting-${type.value}`}
+                            className="cursor-pointer text-sm"
+                          >
+                            {type.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-3 md:gap-4 pt-4 md:pt-6 px-4 md:px-6 pb-5 md:pb-6">
