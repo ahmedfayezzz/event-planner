@@ -10,7 +10,8 @@
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

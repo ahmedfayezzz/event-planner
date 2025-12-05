@@ -511,6 +511,7 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                       placeholder="كلمة المرور (6 أحرف على الأقل)"
                       required={createAccount}
                       minLength={6}
+                      autoComplete="off"
                     />
                   </div>
                 )}

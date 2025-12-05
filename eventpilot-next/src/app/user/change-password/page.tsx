@@ -80,6 +80,7 @@ export default function ChangePasswordPage() {
                   required
                   disabled={changePasswordMutation.isPending}
                   dir="ltr"
+                  autoComplete="off"
                   className="bg-white/60 backdrop-blur-sm border border-primary/10 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all shadow-none pr-10"
                 />
                 <button
@@ -103,6 +104,7 @@ export default function ChangePasswordPage() {
                   required
                   disabled={changePasswordMutation.isPending}
                   dir="ltr"
+                  autoComplete="off"
                   className="bg-white/60 backdrop-blur-sm border border-primary/10 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all shadow-none pr-10"
                 />
                 <button
@@ -126,6 +128,7 @@ export default function ChangePasswordPage() {
                   required
                   disabled={changePasswordMutation.isPending}
                   dir="ltr"
+                  autoComplete="off"
                   className="bg-white/60 backdrop-blur-sm border border-primary/10 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all shadow-none pr-10"
                 />
                 <button
