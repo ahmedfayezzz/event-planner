@@ -165,12 +165,26 @@ export const sessionRouter = createTRPCRouter({
     }),
 
   /**
+   * Get next session number (admin only)
+   */
+  getNextSessionNumber: adminProcedure.query(async ({ ctx }) => {
+    const { db } = ctx;
+
+    const lastSession = await db.session.findFirst({
+      orderBy: { sessionNumber: "desc" },
+      select: { sessionNumber: true },
+    });
+
+    return { nextSessionNumber: (lastSession?.sessionNumber ?? 0) + 1 };
+  }),
+
+  /**
    * Create new session (admin only)
+   * Session number is auto-generated based on the highest existing number + 1
    */
   create: adminProcedure
     .input(
       z.object({
-        sessionNumber: z.number().int().positive(),
         title: z.string().min(1),
         description: z.string().optional(),
         date: z.date(),
@@ -196,16 +210,12 @@ export const sessionRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      // Check if session number already exists
-      const existing = await db.session.findUnique({
-        where: { sessionNumber: input.sessionNumber },
+      // Auto-generate session number (highest + 1)
+      const lastSession = await db.session.findFirst({
+        orderBy: { sessionNumber: "desc" },
+        select: { sessionNumber: true },
       });
-      if (existing) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "رقم الجلسة موجود مسبقاً",
-        });
-      }
+      const sessionNumber = (lastSession?.sessionNumber ?? 0) + 1;
 
       // Generate slug if not provided
       const slug = input.slug || generateSlug(input.title);
@@ -226,6 +236,7 @@ export const sessionRouter = createTRPCRouter({
       const session = await db.session.create({
         data: {
           ...input,
+          sessionNumber,
           slug: slug || null,
         },
       });
