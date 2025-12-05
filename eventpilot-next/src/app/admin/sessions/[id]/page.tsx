@@ -43,12 +43,10 @@ import {
   UserPlus,
   CheckCircle,
   MailCheck,
-  TrendingUp,
   Loader2,
   Trash2,
   ExternalLink,
 } from "lucide-react";
-import { InvitationModal } from "@/components/admin/invitation-modal";
 
 export default function SessionDetailPage({
   params,
@@ -57,10 +55,8 @@ export default function SessionDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const utils = api.useUtils();
   const { data: session, isLoading } = api.session.getAdminDetails.useQuery({ id });
 
   const deleteMutation = api.session.delete.useMutation({
@@ -305,9 +301,11 @@ export default function SessionDetailPage({
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            <Button onClick={() => setInviteModalOpen(true)}>
-              <Mail className="ml-2 h-4 w-4" />
-              دعوة مستخدمين
+            <Button asChild>
+              <Link href={`/admin/sessions/${id}/invitations`}>
+                <Mail className="ml-2 h-4 w-4" />
+                دعوة مستخدمين
+              </Link>
             </Button>
             <Button variant="outline" asChild>
               <Link href={`/admin/sessions/${id}/attendees`}>
@@ -398,14 +396,6 @@ export default function SessionDetailPage({
           )}
         </CardContent>
       </Card>
-
-      {/* Invitation Modal */}
-      <InvitationModal
-        sessionId={id}
-        sessionTitle={session.title}
-        open={inviteModalOpen}
-        onOpenChange={setInviteModalOpen}
-      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

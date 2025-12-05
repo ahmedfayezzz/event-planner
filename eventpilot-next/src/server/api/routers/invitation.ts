@@ -11,6 +11,7 @@ import { sendInvitationEmail } from "@/lib/email";
 export const invitationRouter = createTRPCRouter({
   /**
    * Get users available for invitation (admin only)
+   * Returns all users with their status (registered/invited)
    */
   getUsersForInvite: adminProcedure
     .input(
@@ -18,26 +19,43 @@ export const invitationRouter = createTRPCRouter({
         sessionId: z.string(),
         search: z.string().optional(),
         limit: z.number().min(1).max(100).default(50),
+        hasPhone: z.boolean().optional(), // Filter for WhatsApp tab
       })
     )
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      // Get users who are not already registered for this session
-      const registeredUserIds = await db.registration.findMany({
+      // Get registered user IDs for this session
+      const registrations = await db.registration.findMany({
         where: { sessionId: input.sessionId },
         select: { userId: true },
       });
+      const registeredUserIds = new Set(
+        registrations.map((r) => r.userId).filter((id): id is string => id !== null)
+      );
 
-      const registeredIds = registeredUserIds
-        .map((r) => r.userId)
-        .filter((id): id is string => id !== null);
+      // Get invited user emails for this session (valid, non-invalidated invites)
+      const invites = await db.invite.findMany({
+        where: {
+          sessionId: input.sessionId,
+          used: false,
+          invalidated: false,
+          expiresAt: { gt: new Date() },
+        },
+        select: { email: true },
+      });
+      const invitedEmails = new Set(invites.map((i) => i.email.toLowerCase()));
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const where: Record<string, any> = {
-        id: { notIn: registeredIds },
         isActive: true,
       };
+
+      // Filter for users with phone numbers (for WhatsApp tab)
+      if (input.hasPhone) {
+        where.phone = { not: "" };
+        where.NOT = { phone: null };
+      }
 
       if (input.search) {
         where.OR = [
@@ -62,7 +80,12 @@ export const invitationRouter = createTRPCRouter({
         orderBy: { name: "asc" },
       });
 
-      return users;
+      // Add status flags to each user
+      return users.map((user) => ({
+        ...user,
+        isRegistered: registeredUserIds.has(user.id),
+        isInvited: invitedEmails.has(user.email.toLowerCase()),
+      }));
     }),
 
   /**
@@ -72,7 +95,7 @@ export const invitationRouter = createTRPCRouter({
     .input(
       z.object({
         sessionId: z.string(),
-        emails: z.array(z.string().email()),
+        emails: z.array(z.string().email()).max(100),
         customMessage: z.string().optional(),
       })
     )
@@ -90,16 +113,20 @@ export const invitationRouter = createTRPCRouter({
         });
       }
 
+      // Use session's registration deadline or 7 days if not set
+      const expiresAt = session.registrationDeadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
       const results: { email: string; success: boolean; error?: string }[] = [];
 
       for (const email of input.emails) {
         try {
-          // Check if invite already exists
+          // Check if valid invite already exists
           const existingInvite = await db.invite.findFirst({
             where: {
               sessionId: input.sessionId,
               email: email.toLowerCase(),
               used: false,
+              invalidated: false,
               expiresAt: { gt: new Date() },
             },
           });
@@ -115,8 +142,6 @@ export const invitationRouter = createTRPCRouter({
 
           // Create invite
           const token = generateInviteToken();
-          const expiresAt = new Date();
-          expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
 
           await db.invite.create({
             data: {
@@ -170,10 +195,10 @@ export const invitationRouter = createTRPCRouter({
     .input(
       z.object({
         sessionId: z.string(),
-        phones: z.array(z.string()),
+        phones: z.array(z.string()).max(100),
       })
     )
-    .query(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
       const session = await db.session.findUnique({
@@ -189,12 +214,13 @@ export const invitationRouter = createTRPCRouter({
 
       const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 
+      // Use session's registration deadline or 7 days if not set
+      const expiresAt = session.registrationDeadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
       const links = await Promise.all(
         input.phones.map(async (phone) => {
           // Create invite token for each phone
           const token = generateInviteToken();
-          const expiresAt = new Date();
-          expiresAt.setDate(expiresAt.getDate() + 7);
 
           await db.invite.create({
             data: {
@@ -227,23 +253,69 @@ export const invitationRouter = createTRPCRouter({
     }),
 
   /**
-   * Get all invites for session (admin only)
+   * Get all invites for session with stats (admin only)
    */
   getSessionInvites: adminProcedure
-    .input(z.object({ sessionId: z.string() }))
+    .input(
+      z.object({
+        sessionId: z.string(),
+        status: z.enum(["all", "valid", "expired", "used", "invalidated"]).optional(),
+        search: z.string().optional(),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
+      const now = new Date();
+
+      // Build where clause based on status filter
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: Record<string, any> = { sessionId: input.sessionId };
+
+      if (input.status === "valid") {
+        where.used = false;
+        where.invalidated = false;
+        where.expiresAt = { gt: now };
+      } else if (input.status === "expired") {
+        where.used = false;
+        where.invalidated = false;
+        where.expiresAt = { lte: now };
+      } else if (input.status === "used") {
+        where.used = true;
+      } else if (input.status === "invalidated") {
+        where.invalidated = true;
+      }
+
+      if (input.search) {
+        where.email = { contains: input.search };
+      }
 
       const invites = await db.invite.findMany({
-        where: { sessionId: input.sessionId },
+        where,
         orderBy: { createdAt: "desc" },
       });
 
-      return invites.map((i) => ({
-        ...i,
-        isExpired: i.expiresAt < new Date(),
-        isValid: !i.used && i.expiresAt > new Date(),
-      }));
+      // Get stats for all invites in this session
+      const allInvites = await db.invite.findMany({
+        where: { sessionId: input.sessionId },
+        select: { used: true, invalidated: true, expiresAt: true },
+      });
+
+      const stats = {
+        total: allInvites.length,
+        valid: allInvites.filter((i) => !i.used && !i.invalidated && i.expiresAt > now).length,
+        expired: allInvites.filter((i) => !i.used && !i.invalidated && i.expiresAt <= now).length,
+        used: allInvites.filter((i) => i.used).length,
+        invalidated: allInvites.filter((i) => i.invalidated).length,
+      };
+
+      return {
+        invites: invites.map((i) => ({
+          ...i,
+          isExpired: !i.invalidated && !i.used && i.expiresAt < now,
+          isValid: !i.used && !i.invalidated && i.expiresAt > now,
+        })),
+        stats,
+      };
     }),
 
   /**
@@ -258,6 +330,7 @@ export const invitationRouter = createTRPCRouter({
         where: {
           token: input.token,
           used: false,
+          invalidated: false,
           expiresAt: { gt: new Date() },
         },
         include: {
@@ -320,12 +393,18 @@ export const invitationRouter = createTRPCRouter({
         });
       }
 
+      if (invite.invalidated) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "الدعوة ملغاة",
+        });
+      }
+
       // Extend expiry if expired
       let newToken = invite.token;
       if (invite.expiresAt < new Date()) {
         newToken = generateInviteToken();
-        const newExpiresAt = new Date();
-        newExpiresAt.setDate(newExpiresAt.getDate() + 7);
+        const newExpiresAt = invite.session.registrationDeadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
         await db.invite.update({
           where: { id: invite.id },
@@ -362,7 +441,125 @@ export const invitationRouter = createTRPCRouter({
     }),
 
   /**
-   * Delete invitation (admin only)
+   * Bulk resend invitations (admin only)
+   */
+  bulkResend: adminProcedure
+    .input(z.object({ inviteIds: z.array(z.string()).max(100) }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const invites = await db.invite.findMany({
+        where: {
+          id: { in: input.inviteIds },
+          used: false,
+          invalidated: false,
+          email: { not: { contains: "@placeholder.local" } },
+        },
+        include: { session: true },
+      });
+
+      const results: { id: string; success: boolean; error?: string }[] = [];
+
+      for (const invite of invites) {
+        try {
+          let newToken = invite.token;
+          if (invite.expiresAt < new Date()) {
+            newToken = generateInviteToken();
+            const newExpiresAt = invite.session.registrationDeadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+            await db.invite.update({
+              where: { id: invite.id },
+              data: { token: newToken, expiresAt: newExpiresAt },
+            });
+          }
+
+          const sent = await sendInvitationEmail(invite.email, invite.session, newToken);
+
+          if (sent) {
+            await db.invite.update({
+              where: { id: invite.id },
+              data: { sentAt: new Date() },
+            });
+          }
+
+          results.push({ id: invite.id, success: sent, error: sent ? undefined : "فشل الإرسال" });
+        } catch {
+          results.push({ id: invite.id, success: false, error: "خطأ غير متوقع" });
+        }
+      }
+
+      return {
+        results,
+        summary: {
+          total: input.inviteIds.length,
+          success: results.filter((r) => r.success).length,
+          failed: results.filter((r) => !r.success).length,
+        },
+      };
+    }),
+
+  /**
+   * Invalidate invitation (admin only)
+   * Replaces delete - user can't register with invalidated invite
+   */
+  invalidateInvite: adminProcedure
+    .input(z.object({ inviteId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const invite = await db.invite.findUnique({
+        where: { id: input.inviteId },
+      });
+
+      if (!invite) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الدعوة غير موجودة",
+        });
+      }
+
+      if (invite.used) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "لا يمكن إلغاء دعوة مستخدمة",
+        });
+      }
+
+      await db.invite.update({
+        where: { id: input.inviteId },
+        data: {
+          invalidated: true,
+          invalidatedAt: new Date(),
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Bulk invalidate invitations (admin only)
+   */
+  bulkInvalidate: adminProcedure
+    .input(z.object({ inviteIds: z.array(z.string()).max(100) }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const result = await db.invite.updateMany({
+        where: {
+          id: { in: input.inviteIds },
+          used: false,
+        },
+        data: {
+          invalidated: true,
+          invalidatedAt: new Date(),
+        },
+      });
+
+      return { success: true, count: result.count };
+    }),
+
+  /**
+   * Delete invitation (admin only) - kept for backwards compatibility
    */
   deleteInvite: adminProcedure
     .input(z.object({ inviteId: z.string() }))

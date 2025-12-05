@@ -17,6 +17,7 @@ const pathLabels: Record<string, string> = {
   attendees: "المسجلين",
   companions: "المرافقين",
   edit: "تعديل",
+  invitations: "الدعوات",
 };
 
 export function Breadcrumbs() {

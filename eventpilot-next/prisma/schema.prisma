@@ -176,14 +176,16 @@ model Companion {
 }
 
 model Invite {
-  id          String   @id @default(cuid())
-  sessionId   String
-  email       String
-  token       String   @unique
-  used        Boolean  @default(false)
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
-  sentAt      DateTime?
+  id            String    @id @default(cuid())
+  sessionId     String
+  email         String
+  token         String    @unique
+  used          Boolean   @default(false)
+  invalidated   Boolean   @default(false)
+  invalidatedAt DateTime?
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+  sentAt        DateTime?
 
   // Relations
   session     Session  @relation(fields: [sessionId], references: [id])
