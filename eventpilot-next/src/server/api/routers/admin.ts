@@ -428,4 +428,186 @@ export const adminRouter = createTRPCRouter({
         role: updated.role,
       };
     }),
+
+  /**
+   * Get analytics data (admin only)
+   */
+  getAnalytics: adminProcedure
+    .input(
+      z.object({
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const dateFilter = {
+        ...(input?.startDate && { gte: input.startDate }),
+        ...(input?.endDate && { lte: input.endDate }),
+      };
+
+      // Overview stats
+      const [totalUsers, totalSessions, totalRegistrations] = await Promise.all([
+        db.user.count({ where: { isActive: true } }),
+        db.session.count(),
+        db.registration.count({ where: { isApproved: true } }),
+      ]);
+
+      // Get all completed sessions for attendance rate
+      const completedSessions = await db.session.findMany({
+        where: { status: "completed" },
+        include: {
+          _count: {
+            select: {
+              registrations: { where: { isApproved: true } },
+              attendances: { where: { attended: true } },
+            },
+          },
+        },
+      });
+
+      const totalAttendees = completedSessions.reduce(
+        (sum, s) => sum + s._count.attendances,
+        0
+      );
+      const totalExpected = completedSessions.reduce(
+        (sum, s) => sum + s._count.registrations,
+        0
+      );
+      const avgAttendanceRate =
+        totalExpected > 0 ? Math.round((totalAttendees / totalExpected) * 100) : 0;
+
+      // Users by activity type
+      const usersByActivity = await db.user.groupBy({
+        by: ["activityType"],
+        where: { isActive: true, activityType: { not: null } },
+        _count: true,
+      });
+
+      // Users by gender
+      const usersByGender = await db.user.groupBy({
+        by: ["gender"],
+        where: { isActive: true, gender: { not: null } },
+        _count: true,
+      });
+
+      // Registration trends (last 12 months)
+      const twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+      const registrations = await db.registration.findMany({
+        where: {
+          registeredAt: { gte: twelveMonthsAgo },
+          isApproved: true,
+        },
+        select: { registeredAt: true },
+      });
+
+      // Group by month
+      const monthlyRegistrations: Record<string, number> = {};
+      registrations.forEach((r) => {
+        const key = `${r.registeredAt.getFullYear()}-${String(r.registeredAt.getMonth() + 1).padStart(2, "0")}`;
+        monthlyRegistrations[key] = (monthlyRegistrations[key] || 0) + 1;
+      });
+
+      const registrationTrends = Object.entries(monthlyRegistrations)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([month, count]) => ({ month, count }));
+
+      // Session performance (all sessions)
+      const sessions = await db.session.findMany({
+        orderBy: { date: "desc" },
+        take: 20,
+        include: {
+          _count: {
+            select: {
+              registrations: { where: { isApproved: true } },
+              attendances: { where: { attended: true } },
+            },
+          },
+        },
+      });
+
+      const sessionPerformance = sessions.map((s) => ({
+        id: s.id,
+        title: s.title,
+        date: s.date,
+        registrations: s._count.registrations,
+        attendees: s._count.attendances,
+        attendanceRate:
+          s._count.registrations > 0
+            ? Math.round((s._count.attendances / s._count.registrations) * 100)
+            : 0,
+        fillRate:
+          s.maxParticipants > 0
+            ? Math.round((s._count.registrations / s.maxParticipants) * 100)
+            : 0,
+      }));
+
+      // Top attendees
+      const topAttendees = await db.user.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          companyName: true,
+          _count: {
+            select: {
+              registrations: { where: { isApproved: true } },
+              attendances: { where: { attended: true } },
+            },
+          },
+        },
+        orderBy: {
+          attendances: { _count: "desc" },
+        },
+        take: 10,
+      });
+
+      // Top companies
+      const companies = await db.user.groupBy({
+        by: ["companyName"],
+        where: { isActive: true, companyName: { not: null } },
+        _count: true,
+        orderBy: { _count: { companyName: "desc" } },
+        take: 10,
+      });
+
+      return {
+        overview: {
+          totalUsers,
+          totalSessions,
+          totalRegistrations,
+          avgAttendanceRate,
+        },
+        usersByActivity: usersByActivity.map((u) => ({
+          name: u.activityType || "غير محدد",
+          value: u._count,
+        })),
+        usersByGender: usersByGender.map((u) => ({
+          name: u.gender === "male" ? "ذكر" : u.gender === "female" ? "أنثى" : "غير محدد",
+          value: u._count,
+        })),
+        registrationTrends,
+        sessionPerformance,
+        topAttendees: topAttendees.map((u) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          company: u.companyName,
+          sessionsAttended: u._count.attendances,
+          totalRegistrations: u._count.registrations,
+          attendanceRate:
+            u._count.registrations > 0
+              ? Math.round((u._count.attendances / u._count.registrations) * 100)
+              : 0,
+        })),
+        topCompanies: companies.map((c) => ({
+          name: c.companyName || "غير محدد",
+          count: c._count,
+        })),
+      };
+    }),
 });

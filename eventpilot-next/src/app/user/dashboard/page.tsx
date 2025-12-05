@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
+import { Mail, Phone, Building2, Briefcase, Instagram, Twitter, Edit } from "lucide-react";
 
 interface RegistrationItem {
   id: string;
@@ -104,6 +105,101 @@ export default function UserDashboardPage() {
             </CardHeader>
           </Card>
         </div>
+
+        {/* Profile Card */}
+        <Card className="border-none shadow-lg bg-white/80 backdrop-blur-md">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-xl">معلومات الحساب</CardTitle>
+              <CardDescription>معلوماتك الشخصية والمهنية</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/user/profile">
+                <Edit className="ml-2 h-4 w-4" />
+                تعديل
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Mail className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">البريد الإلكتروني</p>
+                  <p className="font-medium">{dashboard?.user.email}</p>
+                </div>
+              </div>
+              {dashboard?.user.phone && (
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Phone className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">رقم الهاتف</p>
+                    <p className="font-medium" dir="ltr">{dashboard.user.phone}</p>
+                  </div>
+                </div>
+              )}
+              {dashboard?.user.companyName && (
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">الشركة</p>
+                    <p className="font-medium">{dashboard.user.companyName}</p>
+                  </div>
+                </div>
+              )}
+              {dashboard?.user.position && (
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Briefcase className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">المنصب</p>
+                    <p className="font-medium">{dashboard.user.position}</p>
+                  </div>
+                </div>
+              )}
+              {dashboard?.user.activityType && (
+                <div className="flex items-center gap-3 sm:col-span-2">
+                  <Badge variant="secondary" className="px-3 py-1">
+                    {dashboard.user.activityType}
+                  </Badge>
+                </div>
+              )}
+              {(dashboard?.user.instagram || dashboard?.user.twitter) && (
+                <div className="flex items-center gap-4 sm:col-span-2 pt-2 border-t">
+                  {dashboard?.user.instagram && (
+                    <a
+                      href={`https://instagram.com/${dashboard.user.instagram}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Instagram className="w-4 h-4" />
+                      <span className="text-sm">@{dashboard.user.instagram}</span>
+                    </a>
+                  )}
+                  {dashboard?.user.twitter && (
+                    <a
+                      href={`https://twitter.com/${dashboard.user.twitter}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Twitter className="w-4 h-4" />
+                      <span className="text-sm">@{dashboard.user.twitter}</span>
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Registrations */}
         <div className="bg-white rounded-3xl shadow-xl border border-border/50 overflow-hidden">

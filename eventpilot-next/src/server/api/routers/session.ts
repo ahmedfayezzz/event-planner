@@ -464,4 +464,43 @@ export const sessionRouter = createTRPCRouter({
         },
       };
     }),
+
+  /**
+   * Delete session (admin only)
+   */
+  delete: adminProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const session = await db.session.findUnique({
+        where: { id: input.id },
+        include: {
+          _count: {
+            select: { registrations: true },
+          },
+        },
+      });
+
+      if (!session) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الجلسة غير موجودة",
+        });
+      }
+
+      // Soft delete - mark as deleted instead of hard delete
+      // Or you can cascade delete registrations, attendances, invites
+      await db.$transaction([
+        db.attendance.deleteMany({ where: { sessionId: input.id } }),
+        db.invite.deleteMany({ where: { sessionId: input.id } }),
+        db.companion.deleteMany({
+          where: { registration: { sessionId: input.id } },
+        }),
+        db.registration.deleteMany({ where: { sessionId: input.id } }),
+        db.session.delete({ where: { id: input.id } }),
+      ]);
+
+      return { success: true };
+    }),
 });

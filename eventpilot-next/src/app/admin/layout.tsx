@@ -40,6 +40,7 @@ import {
   Home,
   ChevronRight,
   ChevronLeft,
+  BarChart3,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/admin/breadcrumbs";
 
@@ -58,6 +59,11 @@ const sidebarLinks = [
     href: "/admin/users",
     label: "المستخدمين",
     icon: Users,
+  },
+  {
+    href: "/admin/analytics",
+    label: "الإحصائيات",
+    icon: BarChart3,
   },
   {
     href: "/admin/checkin",

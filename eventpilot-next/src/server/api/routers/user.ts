@@ -193,6 +193,13 @@ export const userRouter = createTRPCRouter({
         name: true,
         username: true,
         email: true,
+        phone: true,
+        companyName: true,
+        position: true,
+        activityType: true,
+        instagram: true,
+        twitter: true,
+        snapchat: true,
         registrations: {
           include: {
             session: true,
@@ -231,6 +238,13 @@ export const userRouter = createTRPCRouter({
         name: user.name,
         username: user.username,
         email: user.email,
+        phone: user.phone,
+        companyName: user.companyName,
+        position: user.position,
+        activityType: user.activityType,
+        instagram: user.instagram,
+        twitter: user.twitter,
+        snapchat: user.snapchat,
       },
       stats: {
         totalRegistrations: user.registrations.length,

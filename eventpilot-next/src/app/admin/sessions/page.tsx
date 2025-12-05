@@ -15,9 +15,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatArabicDate } from "@/lib/utils";
-import { Plus, Eye, Edit, Users, Calendar, Loader2 } from "lucide-react";
+import { Plus, Eye, Edit, Users, Calendar, Loader2, MoreHorizontal, QrCode, FileDown, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface SessionItem {
   id: string;
@@ -31,7 +49,10 @@ interface SessionItem {
 
 export default function AdminSessionsPage() {
   const [tab, setTab] = useState<"all" | "upcoming" | "completed">("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<SessionItem | null>(null);
 
+  const utils = api.useUtils();
   const { data, isLoading, isFetching } = api.session.list.useQuery(
     tab === "upcoming"
       ? { upcoming: true }
@@ -39,6 +60,29 @@ export default function AdminSessionsPage() {
         ? { status: "completed" }
         : undefined
   );
+
+  const deleteMutation = api.session.delete.useMutation({
+    onSuccess: () => {
+      toast.success("تم حذف الجلسة بنجاح");
+      utils.session.list.invalidate();
+      setDeleteDialogOpen(false);
+      setSessionToDelete(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || "فشل حذف الجلسة");
+    },
+  });
+
+  const handleDeleteClick = (session: SessionItem) => {
+    setSessionToDelete(session);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (sessionToDelete) {
+      deleteMutation.mutate({ id: sessionToDelete.id });
+    }
+  };
 
   const statusColors: Record<string, string> = {
     open: "bg-green-500/10 text-green-600 border-green-200",
@@ -157,25 +201,47 @@ export default function AdminSessionsPage() {
                             </span>
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Button variant="ghost" size="icon" asChild>
-                                <Link href={`/session/${session.id}`}>
-                                  <Eye className="h-4 w-4" />
-                                </Link>
-                              </Button>
-                              <Button variant="ghost" size="icon" asChild>
-                                <Link href={`/admin/sessions/${session.id}`}>
-                                  <Edit className="h-4 w-4" />
-                                </Link>
-                              </Button>
-                              <Button variant="ghost" size="icon" asChild>
-                                <Link
-                                  href={`/admin/sessions/${session.id}/attendees`}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start">
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/session/${session.id}`}>
+                                    <Eye className="ml-2 h-4 w-4" />
+                                    عرض
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/sessions/${session.id}`}>
+                                    <Edit className="ml-2 h-4 w-4" />
+                                    تعديل
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/sessions/${session.id}/attendees`}>
+                                    <Users className="ml-2 h-4 w-4" />
+                                    المسجلين
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/checkin/${session.id}`}>
+                                    <QrCode className="ml-2 h-4 w-4" />
+                                    تسجيل الحضور
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteClick(session)}
+                                  className="text-destructive focus:text-destructive"
                                 >
-                                  <Users className="h-4 w-4" />
-                                </Link>
-                              </Button>
-                            </div>
+                                  <Trash2 className="ml-2 h-4 w-4" />
+                                  حذف الجلسة
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -187,6 +253,36 @@ export default function AdminSessionsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد من حذف الجلسة؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف الجلسة &quot;{sessionToDelete?.title}&quot; وجميع التسجيلات المرتبطة بها.
+              هذا الإجراء لا يمكن التراجع عنه.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  جاري الحذف...
+                </>
+              ) : (
+                "حذف"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

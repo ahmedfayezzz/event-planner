@@ -14,8 +14,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { formatArabicDate } from "@/lib/utils";
-import { Users, Calendar, CheckCircle, Clock, Plus } from "lucide-react";
+import { Users, Calendar, CheckCircle, Clock, Plus, Check, Loader2, Download, FileDown } from "lucide-react";
+import { toast } from "sonner";
 
 interface UpcomingSession {
   id: string;
@@ -43,7 +50,43 @@ interface AttendanceStat {
 }
 
 export default function AdminDashboardPage() {
+  const utils = api.useUtils();
   const { data: dashboard, isLoading } = api.admin.getDashboard.useQuery();
+
+  const approveMutation = api.registration.approve.useMutation({
+    onSuccess: () => {
+      toast.success("تمت الموافقة على التسجيل");
+      utils.admin.getDashboard.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء الموافقة");
+    },
+  });
+
+  const exportUsersQuery = api.admin.exportUsers.useQuery(undefined, {
+    enabled: false,
+  });
+
+  const handleExportUsers = async () => {
+    toast.loading("جاري تصدير المستخدمين...", { id: "export-users" });
+    try {
+      const result = await exportUsersQuery.refetch();
+      if (result.data?.csv) {
+        const blob = new Blob(["\uFEFF" + result.data.csv], { type: "text/csv;charset=utf-8" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `users_${new Date().toISOString().split("T")[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        toast.success(`تم تصدير ${result.data.count} مستخدم`, { id: "export-users" });
+      }
+    } catch {
+      toast.error("فشل تصدير المستخدمين", { id: "export-users" });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -126,12 +169,28 @@ export default function AdminDashboardPage() {
             نظرة عامة على منصة ثلوثية الأعمال
           </p>
         </div>
-        <Button asChild>
-          <Link href="/admin/sessions/new">
-            <Plus className="ml-2 h-4 w-4" />
-            جلسة جديدة
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="ml-2 h-4 w-4" />
+                تصدير
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={handleExportUsers}>
+                <FileDown className="ml-2 h-4 w-4" />
+                تصدير المستخدمين (CSV)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button asChild>
+            <Link href="/admin/sessions/new">
+              <Plus className="ml-2 h-4 w-4" />
+              جلسة جديدة
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -215,9 +274,29 @@ export default function AdminDashboardPage() {
                         {reg.sessionTitle}
                       </p>
                     </div>
-                    <Badge variant={reg.isApproved ? "default" : "secondary"}>
-                      {reg.isApproved ? "مؤكد" : "معلق"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {!reg.isApproved && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => approveMutation.mutate({ registrationId: reg.id })}
+                          disabled={approveMutation.isPending}
+                        >
+                          {approveMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <>
+                              <Check className="h-3 w-3 ml-1" />
+                              موافقة
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      <Badge variant={reg.isApproved ? "default" : "secondary"}>
+                        {reg.isApproved ? "مؤكد" : "معلق"}
+                      </Badge>
+                    </div>
                   </div>
                 ))}
               </div>

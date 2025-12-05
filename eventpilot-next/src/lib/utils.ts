@@ -158,3 +158,51 @@ export function exportToCSV<T extends Record<string, unknown>>(
 
   return rows.join("\n");
 }
+
+/**
+ * Copy text to clipboard
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+    // Fallback for older browsers
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textArea);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Share on X (Twitter)
+ */
+export function shareOnTwitter(url: string, text: string): void {
+  const twitterUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+  window.open(twitterUrl, "_blank", "width=550,height=420");
+}
+
+/**
+ * Share on WhatsApp
+ */
+export function shareOnWhatsApp(url: string, text: string): void {
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`;
+  window.open(whatsappUrl, "_blank");
+}
+
+/**
+ * Get current page URL (for sharing)
+ */
+export function getCurrentUrl(): string {
+  if (typeof window === "undefined") return "";
+  return window.location.href;
+}

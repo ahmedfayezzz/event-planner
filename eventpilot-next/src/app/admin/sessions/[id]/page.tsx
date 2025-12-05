@@ -7,12 +7,13 @@ import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { ArrowRight, Users, QrCode } from "lucide-react";
+import { ArrowRight, Users, QrCode, Mail } from "lucide-react";
 import {
   SessionForm,
   SessionFormData,
   defaultFormData,
 } from "@/components/admin/session-form";
+import { InvitationModal } from "@/components/admin/invitation-modal";
 
 export default function SessionDetailPage({
   params,
@@ -26,6 +27,7 @@ export default function SessionDetailPage({
 
   const [initialFormData, setInitialFormData] =
     useState<SessionFormData | null>(null);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   useEffect(() => {
     if (session) {
@@ -143,6 +145,10 @@ export default function SessionDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setInviteModalOpen(true)}>
+            <Mail className="ml-2 h-4 w-4" />
+            دعوة مستخدمين
+          </Button>
           <Button variant="outline" asChild>
             <Link href={`/admin/sessions/${id}/attendees`}>
               <Users className="ml-2 h-4 w-4" />
@@ -167,6 +173,13 @@ export default function SessionDetailPage({
           onCancel={() => router.push("/admin/sessions")}
         />
       )}
+
+      <InvitationModal
+        sessionId={id}
+        sessionTitle={session.title}
+        open={inviteModalOpen}
+        onOpenChange={setInviteModalOpen}
+      />
     </div>
   );
 }
