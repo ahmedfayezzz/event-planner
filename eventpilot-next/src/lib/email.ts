@@ -68,6 +68,167 @@ export async function sendEmail({
   }
 }
 
+// =============================================================================
+// EMAIL TEMPLATE
+// =============================================================================
+
+interface EmailTemplateOptions {
+  content: string;
+  buttonText?: string;
+  buttonUrl?: string;
+  extraContent?: string; // For QR codes or additional content after button
+}
+
+/**
+ * Create a unified branded email template
+ * Uses table-based layout for maximum email client compatibility
+ */
+function createEmailTemplate({
+  content,
+  buttonText,
+  buttonUrl,
+  extraContent,
+}: EmailTemplateOptions): string {
+  const buttonHtml = buttonText && buttonUrl
+    ? `
+    <tr>
+      <td align="center" style="padding: 24px 0 8px 0;">
+        <table border="0" cellpadding="0" cellspacing="0" role="presentation">
+          <tr>
+            <td align="center" style="background-color: #8B5CF6; border-radius: 8px;">
+              <a href="${buttonUrl}" target="_blank" style="display: inline-block; padding: 14px 32px; font-size: 16px; font-weight: bold; color: #ffffff; text-decoration: none;">
+                ${buttonText}
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    `
+    : "";
+
+  const extraContentHtml = extraContent
+    ? `<tr><td style="padding: 16px 0 0 0;">${extraContent}</td></tr>`
+    : "";
+
+  return `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ثلوثية الأعمال</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #F9FAFB; font-family: Arial, Helvetica, sans-serif;">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F9FAFB;">
+    <tr>
+      <td align="center" style="padding: 32px 16px;">
+        <!-- Main Container -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; width: 100%;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background-color: #8B5CF6; padding: 28px 24px; border-radius: 12px 12px 0 0;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">
+                ثلوثية الأعمال
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="background-color: #ffffff; padding: 32px 28px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="color: #1F2937; font-size: 16px; line-height: 1.7; text-align: right;">
+                    ${content}
+                  </td>
+                </tr>
+                ${buttonHtml}
+                ${extraContentHtml}
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #F3F4F6; padding: 24px 28px; border-radius: 0 0 12px 12px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <!-- Contact Info -->
+                <tr>
+                  <td align="center" style="padding-bottom: 16px;">
+                    <p style="margin: 0 0 8px 0; color: #6B7280; font-size: 14px;">
+                      للتواصل والاستفسارات
+                    </p>
+                    <p style="margin: 0 0 4px 0; color: #4B5563; font-size: 14px;">
+                      thlothyah@tda.sa
+                    </p>
+                    <p style="margin: 0; color: #4B5563; font-size: 14px; direction: ltr;">
+                      +966 50 000 0000
+                    </p>
+                  </td>
+                </tr>
+                <!-- Social Links -->
+                <tr>
+                  <td align="center" style="padding-top: 12px; border-top: 1px solid #E5E7EB;">
+                    <p style="margin: 12px 0 0 0; color: #6B7280; font-size: 13px;">
+                      تابعونا:
+                      <a href="https://instagram.com/thlothyah" style="color: #8B5CF6; text-decoration: none;">Instagram</a>
+                      &nbsp;|&nbsp;
+                      <a href="https://twitter.com/thlothyah" style="color: #8B5CF6; text-decoration: none;">X</a>
+                      &nbsp;|&nbsp;
+                      <a href="https://snapchat.com/add/thlothyah" style="color: #8B5CF6; text-decoration: none;">Snapchat</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+/**
+ * Create plain text version of email (strips HTML formatting)
+ */
+function createPlainText(content: string, buttonText?: string, buttonUrl?: string): string {
+  // Remove HTML tags and decode entities
+  const plainContent = content
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<li>/gi, "• ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+
+  const buttonSection = buttonText && buttonUrl
+    ? `\n\n${buttonText}:\n${buttonUrl}`
+    : "";
+
+  const footer = `
+
+---
+للتواصل والاستفسارات:
+thlothyah@tda.sa
++966 50 000 0000
+
+تابعونا على: Instagram | X | Snapchat - @thlothyah
+`;
+
+  return plainContent + buttonSection + footer;
+}
+
+// =============================================================================
+// SESSION INFO
+// =============================================================================
+
 interface SessionInfo {
   title: string;
   sessionNumber: number;
@@ -78,41 +239,54 @@ interface SessionInfo {
   sendQrInEmail?: boolean;
 }
 
-/**
- * Send confirmation email to participant
- */
-export async function sendConfirmationEmail(
-  emailAddress: string,
-  name: string,
-  session: SessionInfo
-): Promise<boolean> {
-  const dateStr = session.date.toLocaleDateString("ar-SA", {
+function formatSessionDate(date: Date): string {
+  return date.toLocaleDateString("ar-SA", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
   });
+}
 
-  const body = `
-مرحباً ${name},
+// =============================================================================
+// EMAIL FUNCTIONS
+// =============================================================================
 
-تم تأكيد تسجيلك في:
-${session.title}
-التجمع رقم ${session.sessionNumber}
+/**
+ * Send confirmation email to participant (simple, no approval needed)
+ */
+export async function sendConfirmationEmail(
+  emailAddress: string,
+  name: string,
+  session: SessionInfo
+): Promise<boolean> {
+  const dateStr = formatSessionDate(session.date);
 
-التاريخ: ${dateStr}
-المكان: ${session.location || "سيتم الإعلان عنه لاحقاً"}
+  const content = `
+    <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 16px 0;">تم تأكيد تسجيلك في:</p>
+    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px;">${session.title}</strong></p>
+    <p style="margin: 0 0 16px 0; color: #6B7280;">التجمع رقم ${session.sessionNumber}</p>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: #F9FAFB; border-radius: 8px; width: 100%;">
+      <tr>
+        <td style="padding: 16px;">
+          <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
+          <p style="margin: 0;"><strong>المكان:</strong> ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
+        </td>
+      </tr>
+    </table>
+    <p style="margin: 16px 0 0 0;">نتطلع لرؤيتك معنا!</p>
+  `;
 
-نتطلع لرؤيتك معنا!
-
-فريق ثلوثية الأعمال
-  `.trim();
+  const html = createEmailTemplate({ content });
+  const text = createPlainText(content);
 
   return sendEmail({
     to: emailAddress,
     subject: `تأكيد التسجيل - ${session.title}`,
-    text: body,
+    html,
+    text,
   });
 }
 
@@ -124,33 +298,34 @@ export async function sendPendingEmail(
   name: string,
   session: SessionInfo
 ): Promise<boolean> {
-  const dateStr = session.date.toLocaleDateString("ar-SA", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const dateStr = formatSessionDate(session.date);
 
-  const body = `
-مرحباً ${name},
+  const content = `
+    <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 16px 0;">شكراً لتسجيلك في:</p>
+    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px;">${session.title}</strong></p>
+    <p style="margin: 0 0 16px 0; color: #6B7280;">التجمع رقم ${session.sessionNumber}</p>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: #F9FAFB; border-radius: 8px; width: 100%;">
+      <tr>
+        <td style="padding: 16px;">
+          <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
+          <p style="margin: 0;"><strong>المكان:</strong> ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
+        </td>
+      </tr>
+    </table>
+    <p style="margin: 16px 0 0 0; padding: 12px 16px; background-color: #FEF3C7; border-radius: 8px; color: #92400E;">
+      تسجيلك قيد المراجعة وسيتم إخطارك بالموافقة قريباً.
+    </p>
+  `;
 
-شكراً لتسجيلك في:
-${session.title}
-التجمع رقم ${session.sessionNumber}
-
-التاريخ: ${dateStr}
-المكان: ${session.location || "سيتم الإعلان عنه لاحقاً"}
-
-تسجيلك قيد المراجعة وسيتم إخطارك بالموافقة قريباً.
-
-فريق ثلوثية الأعمال
-  `.trim();
+  const html = createEmailTemplate({ content });
+  const text = createPlainText(content);
 
   return sendEmail({
     to: emailAddress,
     subject: `استلام التسجيل - ${session.title}`,
-    text: body,
+    html,
+    text,
   });
 }
 
@@ -163,60 +338,41 @@ export async function sendConfirmedEmail(
   session: SessionInfo,
   qrData?: string
 ): Promise<boolean> {
-  const dateStr = session.date.toLocaleDateString("ar-SA", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const dateStr = formatSessionDate(session.date);
 
   let qrSection = "";
   if (qrData && session.sendQrInEmail) {
     qrSection = `
-<br><br>
-<p style="text-align: center;"><strong>رمز الحضور الخاص بك:</strong></p>
-<p style="text-align: center;"><img src="cid:qrcode" alt="QR Code" style="max-width: 200px;"></p>
-<p style="text-align: center; font-size: 12px;">أظهر هذا الرمز عند الحضور</p>
-`;
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px auto; text-align: center;" align="center">
+        <tr>
+          <td align="center" style="padding: 20px; background-color: #F9FAFB; border-radius: 12px;">
+            <p style="margin: 0 0 12px 0; font-weight: bold; color: #1F2937;">رمز الحضور الخاص بك:</p>
+            <img src="cid:qrcode" alt="QR Code" style="max-width: 180px; height: auto; display: block; margin: 0 auto;">
+            <p style="margin: 12px 0 0 0; font-size: 13px; color: #6B7280;">أظهر هذا الرمز عند الحضور</p>
+          </td>
+        </tr>
+      </table>
+    `;
   }
 
-  const htmlBody = `
-<html>
-<head>
-<meta charset="utf-8">
-</head>
-<body dir="rtl" style="font-family: Arial, sans-serif; text-align: right;">
-<p>مرحباً ${name},</p>
+  const content = `
+    <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 16px 0;">تم تأكيد تسجيلك في:</p>
+    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px;">${session.title}</strong></p>
+    <p style="margin: 0 0 16px 0; color: #6B7280;">التجمع رقم ${session.sessionNumber}</p>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: #F9FAFB; border-radius: 8px; width: 100%;">
+      <tr>
+        <td style="padding: 16px;">
+          <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
+          <p style="margin: 0;"><strong>المكان:</strong> ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
+        </td>
+      </tr>
+    </table>
+    <p style="margin: 16px 0 0 0;">نتطلع لرؤيتك معنا!</p>
+  `;
 
-<p>تم تأكيد تسجيلك في:</p>
-<p><strong>${session.title}</strong><br>
-التجمع رقم ${session.sessionNumber}</p>
-
-<p>التاريخ: ${dateStr}<br>
-المكان: ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
-${qrSection}
-<p>نتطلع لرؤيتك معنا!</p>
-
-<p>فريق ثلوثية الأعمال</p>
-</body>
-</html>
-  `.trim();
-
-  const plainBody = `
-مرحباً ${name},
-
-تم تأكيد تسجيلك في:
-${session.title}
-التجمع رقم ${session.sessionNumber}
-
-التاريخ: ${dateStr}
-المكان: ${session.location || "سيتم الإعلان عنه لاحقاً"}
-
-نتطلع لرؤيتك معنا!
-
-فريق ثلوثية الأعمال
-  `.trim();
+  const html = createEmailTemplate({ content, extraContent: qrSection });
+  const text = createPlainText(content);
 
   // Build attachments if QR code provided
   let attachments: EmailAttachment[] | undefined;
@@ -236,8 +392,8 @@ ${session.title}
   return sendEmail({
     to: emailAddress,
     subject: `تأكيد التسجيل - ${session.title}`,
-    html: htmlBody,
-    text: plainBody,
+    html,
+    text,
     attachments,
   });
 }
@@ -253,67 +409,52 @@ export async function sendCompanionEmail(
   isApproved = false,
   qrData?: string
 ): Promise<boolean> {
-  const dateStr = session.date.toLocaleDateString("ar-SA", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const dateStr = formatSessionDate(session.date);
 
   let statusMessage: string;
   let qrSection = "";
 
   if (isApproved) {
-    statusMessage = "نتطلع لرؤيتك معنا!";
+    statusMessage = `<p style="margin: 16px 0 0 0;">نتطلع لرؤيتك معنا!</p>`;
     if (qrData && session.sendQrInEmail) {
       qrSection = `
-<br><br>
-<p style="text-align: center;"><strong>رمز الحضور الخاص بك:</strong></p>
-<p style="text-align: center;"><img src="cid:qrcode" alt="QR Code" style="max-width: 200px;"></p>
-<p style="text-align: center; font-size: 12px;">أظهر هذا الرمز عند الحضور</p>
-`;
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px auto; text-align: center;" align="center">
+          <tr>
+            <td align="center" style="padding: 20px; background-color: #F9FAFB; border-radius: 12px;">
+              <p style="margin: 0 0 12px 0; font-weight: bold; color: #1F2937;">رمز الحضور الخاص بك:</p>
+              <img src="cid:qrcode" alt="QR Code" style="max-width: 180px; height: auto; display: block; margin: 0 auto;">
+              <p style="margin: 12px 0 0 0; font-size: 13px; color: #6B7280;">أظهر هذا الرمز عند الحضور</p>
+            </td>
+          </tr>
+        </table>
+      `;
     }
   } else {
-    statusMessage = "تسجيلك قيد المراجعة وسيتم إخطارك بالموافقة قريباً.";
+    statusMessage = `
+      <p style="margin: 16px 0 0 0; padding: 12px 16px; background-color: #FEF3C7; border-radius: 8px; color: #92400E;">
+        تسجيلك قيد المراجعة وسيتم إخطارك بالموافقة قريباً.
+      </p>
+    `;
   }
 
-  const htmlBody = `
-<html>
-<head>
-<meta charset="utf-8">
-</head>
-<body dir="rtl" style="font-family: Arial, sans-serif; text-align: right;">
-<p>مرحباً ${companionName},</p>
+  const content = `
+    <p style="margin: 0 0 16px 0;">مرحباً <strong>${companionName}</strong>,</p>
+    <p style="margin: 0 0 16px 0;">تم تسجيلك كمرافق للأستاذ/ة <strong>${registrantName}</strong> في:</p>
+    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px;">${session.title}</strong></p>
+    <p style="margin: 0 0 16px 0; color: #6B7280;">التجمع رقم ${session.sessionNumber}</p>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: #F9FAFB; border-radius: 8px; width: 100%;">
+      <tr>
+        <td style="padding: 16px;">
+          <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
+          <p style="margin: 0;"><strong>المكان:</strong> ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
+        </td>
+      </tr>
+    </table>
+    ${statusMessage}
+  `;
 
-<p>تم تسجيلك كمرافق للأستاذ/ة ${registrantName} في:</p>
-<p><strong>${session.title}</strong><br>
-التجمع رقم ${session.sessionNumber}</p>
-
-<p>التاريخ: ${dateStr}<br>
-المكان: ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
-${qrSection}
-<p>${statusMessage}</p>
-
-<p>فريق ثلوثية الأعمال</p>
-</body>
-</html>
-  `.trim();
-
-  const plainBody = `
-مرحباً ${companionName},
-
-تم تسجيلك كمرافق للأستاذ/ة ${registrantName} في:
-${session.title}
-التجمع رقم ${session.sessionNumber}
-
-التاريخ: ${dateStr}
-المكان: ${session.location || "سيتم الإعلان عنه لاحقاً"}
-
-${statusMessage}
-
-فريق ثلوثية الأعمال
-  `.trim();
+  const html = createEmailTemplate({ content, extraContent: qrSection });
+  const text = createPlainText(content);
 
   // Build attachments if QR code provided
   let attachments: EmailAttachment[] | undefined;
@@ -333,8 +474,8 @@ ${statusMessage}
   return sendEmail({
     to: emailAddress,
     subject: `تم تسجيلك كمرافق - ${session.title}`,
-    html: htmlBody,
-    text: plainBody,
+    html,
+    text,
     attachments,
   });
 }
@@ -349,56 +490,30 @@ export async function sendWelcomeEmail(
   const baseUrl = process.env.BASE_URL || "http://localhost:3000";
   const loginUrl = `${baseUrl}/user/login`;
 
-  const htmlBody = `
-<html>
-<head>
-<meta charset="utf-8">
-</head>
-<body dir="rtl" style="font-family: Arial, sans-serif; text-align: right;">
-<p>مرحباً ${name},</p>
+  const content = `
+    <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 16px 0;">أهلاً بك في <strong>ثلوثية الأعمال</strong>!</p>
+    <p style="margin: 0 0 12px 0;">تم إنشاء حسابك بنجاح. يمكنك الآن:</p>
+    <ul style="margin: 0 0 16px 0; padding-right: 20px; color: #4B5563;">
+      <li style="margin-bottom: 8px;">التسجيل في الجلسات القادمة</li>
+      <li style="margin-bottom: 8px;">متابعة حالة تسجيلاتك</li>
+      <li>استعراض سجل حضورك</li>
+    </ul>
+    <p style="margin: 16px 0 0 0;">نتطلع لرؤيتك في جلساتنا القادمة!</p>
+  `;
 
-<p>أهلاً بك في <strong>ثلوثية الأعمال</strong>!</p>
-
-<p>تم إنشاء حسابك بنجاح. يمكنك الآن:</p>
-<ul style="text-align: right;">
-<li>التسجيل في الجلسات القادمة</li>
-<li>متابعة حالة تسجيلاتك</li>
-<li>استعراض سجل حضورك</li>
-</ul>
-
-<p>للدخول إلى حسابك:</p>
-<p><a href="${loginUrl}" style="display: inline-block; background-color: #8B5CF6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">تسجيل الدخول</a></p>
-
-<p>نتطلع لرؤيتك في جلساتنا القادمة!</p>
-
-<p>فريق ثلوثية الأعمال</p>
-</body>
-</html>
-  `.trim();
-
-  const plainBody = `
-مرحباً ${name},
-
-أهلاً بك في ثلوثية الأعمال!
-
-تم إنشاء حسابك بنجاح. يمكنك الآن:
-- التسجيل في الجلسات القادمة
-- متابعة حالة تسجيلاتك
-- استعراض سجل حضورك
-
-للدخول إلى حسابك:
-${loginUrl}
-
-نتطلع لرؤيتك في جلساتنا القادمة!
-
-فريق ثلوثية الأعمال
-  `.trim();
+  const html = createEmailTemplate({
+    content,
+    buttonText: "تسجيل الدخول",
+    buttonUrl: loginUrl,
+  });
+  const text = createPlainText(content, "تسجيل الدخول", loginUrl);
 
   return sendEmail({
     to: emailAddress,
     subject: "مرحباً بك في ثلوثية الأعمال",
-    html: htmlBody,
-    text: plainBody,
+    html,
+    text,
   });
 }
 
@@ -410,25 +525,30 @@ export async function sendPasswordResetEmail(
   name: string,
   resetUrl: string
 ): Promise<boolean> {
-  const body = `
-مرحباً ${name},
+  const content = `
+    <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 16px 0;">لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.</p>
+    <p style="margin: 0 0 16px 0;">اضغط على الزر أدناه لإعادة تعيين كلمة المرور:</p>
+    <p style="margin: 24px 0; padding: 12px 16px; background-color: #FEF3C7; border-radius: 8px; color: #92400E; font-size: 14px;">
+      هذا الرابط صالح لمدة ساعة واحدة فقط.
+    </p>
+    <p style="margin: 16px 0 0 0; color: #6B7280; font-size: 14px;">
+      إذا لم تطلب إعادة تعيين كلمة المرور، يمكنك تجاهل هذه الرسالة.
+    </p>
+  `;
 
-لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.
-
-اضغط على الرابط التالي لإعادة تعيين كلمة المرور:
-${resetUrl}
-
-هذا الرابط صالح لمدة ساعة واحدة فقط.
-
-إذا لم تطلب إعادة تعيين كلمة المرور، يمكنك تجاهل هذه الرسالة.
-
-فريق ثلوثية الأعمال
-  `.trim();
+  const html = createEmailTemplate({
+    content,
+    buttonText: "إعادة تعيين كلمة المرور",
+    buttonUrl: resetUrl,
+  });
+  const text = createPlainText(content, "إعادة تعيين كلمة المرور", resetUrl);
 
   return sendEmail({
     to: emailAddress,
     subject: "إعادة تعيين كلمة المرور - ثلوثية الأعمال",
-    text: body,
+    html,
+    text,
   });
 }
 
@@ -454,32 +574,46 @@ export async function sendInvitationEmail(
     minute: "2-digit",
   });
 
-  let body: string;
   if (customMessage) {
-    body = customMessage.replace("[رابط التسجيل]", registrationLink);
-  } else {
-    body = `
-مرحباً،
-
-نود دعوتك لحضور جلسة "${session.title}" في ثلوثية الأعمال.
-
-تفاصيل الجلسة:
-📅 التاريخ: ${dateStr}
-🕐 الوقت: ${timeStr}
-📍 المكان: ${session.location || "سيتم الإعلان عنه لاحقاً"}
-
-هذه دعوة خاصة. استخدم الرابط أدناه للتسجيل:
-${registrationLink}
-
-نتطلع لرؤيتك معنا!
-
-فريق ثلوثية الأعمال
-    `.trim();
+    // For custom messages, use simple format with link replacement
+    const body = customMessage.replace("[رابط التسجيل]", registrationLink);
+    return sendEmail({
+      to: emailAddress,
+      subject: `دعوة خاصة - ${session.title}`,
+      text: body,
+    });
   }
+
+  const content = `
+    <p style="margin: 0 0 16px 0;">مرحباً،</p>
+    <p style="margin: 0 0 16px 0;">نود دعوتك لحضور جلسة <strong>"${session.title}"</strong> في ثلوثية الأعمال.</p>
+    <p style="margin: 0 0 12px 0; font-weight: bold;">تفاصيل الجلسة:</p>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 0 16px 0; background-color: #F9FAFB; border-radius: 8px; width: 100%;">
+      <tr>
+        <td style="padding: 16px;">
+          <p style="margin: 0 0 8px 0;">📅 <strong>التاريخ:</strong> ${dateStr}</p>
+          <p style="margin: 0 0 8px 0;">🕐 <strong>الوقت:</strong> ${timeStr}</p>
+          <p style="margin: 0;">📍 <strong>المكان:</strong> ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
+        </td>
+      </tr>
+    </table>
+    <p style="margin: 0 0 16px 0; padding: 12px 16px; background-color: #EDE9FE; border-radius: 8px; color: #5B21B6;">
+      هذه دعوة خاصة. استخدم الزر أدناه للتسجيل.
+    </p>
+    <p style="margin: 16px 0 0 0;">نتطلع لرؤيتك معنا!</p>
+  `;
+
+  const html = createEmailTemplate({
+    content,
+    buttonText: "التسجيل الآن",
+    buttonUrl: registrationLink,
+  });
+  const text = createPlainText(content, "التسجيل الآن", registrationLink);
 
   return sendEmail({
     to: emailAddress,
     subject: `دعوة خاصة - ${session.title}`,
-    text: body,
+    html,
+    text,
   });
 }

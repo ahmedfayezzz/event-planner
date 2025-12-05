@@ -90,7 +90,7 @@ export default function AdminSessionsPage() {
                     : "الجلسات المنتهية"}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0" dir="rtl">
               {isLoading ? (
                 <div className="p-6 space-y-4">
                   {[...Array(5)].map((_, i) => (
