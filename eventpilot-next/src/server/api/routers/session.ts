@@ -17,6 +17,7 @@ export const sessionRouter = createTRPCRouter({
       z.object({
         status: z.enum(["open", "closed", "completed"]).optional(),
         upcoming: z.boolean().optional(),
+        dateRange: z.enum(["today", "week", "month", "all"]).optional(),
         limit: z.number().min(1).max(100).optional().default(50),
         cursor: z.string().optional(),
       }).optional()
@@ -34,6 +35,37 @@ export const sessionRouter = createTRPCRouter({
       if (input?.upcoming) {
         where.date = { gt: new Date() };
         where.status = "open";
+      }
+
+      // Date range filtering for checkin page
+      if (input?.dateRange && input.dateRange !== "all") {
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfDay = new Date(startOfDay);
+        endOfDay.setDate(endOfDay.getDate() + 1);
+
+        if (input.dateRange === "today") {
+          where.date = {
+            gte: startOfDay,
+            lt: endOfDay,
+          };
+        } else if (input.dateRange === "week") {
+          const startOfWeek = new Date(startOfDay);
+          startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(endOfWeek.getDate() + 7);
+          where.date = {
+            gte: startOfWeek,
+            lt: endOfWeek,
+          };
+        } else if (input.dateRange === "month") {
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+          where.date = {
+            gte: startOfMonth,
+            lt: endOfMonth,
+          };
+        }
       }
 
       const sessions = await db.session.findMany({

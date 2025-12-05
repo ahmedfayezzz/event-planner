@@ -1,13 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatArabicDate } from "@/lib/utils";
-import { QrCode, Calendar } from "lucide-react";
+import { QrCode, Calendar, CalendarDays, CalendarRange } from "lucide-react";
+
+type DateRange = "today" | "week" | "month" | "all";
 
 interface SessionItem {
   id: string;
@@ -15,44 +25,81 @@ interface SessionItem {
   sessionNumber: number;
   date: Date;
   registrationCount: number;
+  status: string;
 }
 
-export default function CheckInSelectPage() {
-  const { data, isLoading } = api.session.list.useQuery({ upcoming: true });
+const dateRangeTabs: { value: DateRange; label: string; icon: React.ReactNode }[] = [
+  { value: "today", label: "اليوم", icon: <Calendar className="h-4 w-4" /> },
+  { value: "week", label: "هذا الأسبوع", icon: <CalendarDays className="h-4 w-4" /> },
+  { value: "month", label: "هذا الشهر", icon: <CalendarRange className="h-4 w-4" /> },
+  { value: "all", label: "الكل", icon: null },
+];
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-10 w-48" />
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-40" />
-          ))}
-        </div>
-      </div>
-    );
-  }
+export default function CheckInSelectPage() {
+  const [dateRange, setDateRange] = useState<DateRange>("today");
+
+  const { data, isLoading } = api.session.list.useQuery({ dateRange });
+
+  const getEmptyMessage = () => {
+    switch (dateRange) {
+      case "today":
+        return "لا توجد جلسات اليوم";
+      case "week":
+        return "لا توجد جلسات هذا الأسبوع";
+      case "month":
+        return "لا توجد جلسات هذا الشهر";
+      default:
+        return "لا توجد جلسات";
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">تسجيل الحضور</h1>
-        <p className="text-muted-foreground">
-          اختر جلسة لبدء تسجيل الحضور
-        </p>
+        <p className="text-muted-foreground">اختر جلسة لبدء تسجيل الحضور</p>
       </div>
 
-      {!data || data.sessions.length === 0 ? (
+      {/* Date Range Tabs */}
+      <Tabs
+        value={dateRange}
+        onValueChange={(value) => setDateRange(value as DateRange)}
+      >
+        <TabsList className="grid w-full grid-cols-4">
+          {dateRangeTabs.map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="flex items-center gap-2"
+            >
+              {tab.icon}
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      {/* Sessions Grid */}
+      {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-40" />
+          ))}
+        </div>
+      ) : !data || data.sessions.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <Calendar className="mx-auto h-12 w-12 mb-4 opacity-50" />
-            <p>لا توجد جلسات قادمة</p>
+            <p>{getEmptyMessage()}</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {data.sessions.map((session: SessionItem) => (
-            <Card key={session.id} className="hover:border-primary transition-colors">
+            <Card
+              key={session.id}
+              className="hover:border-primary transition-colors"
+            >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
@@ -61,9 +108,12 @@ export default function CheckInSelectPage() {
                       التجمع رقم {session.sessionNumber}
                     </CardDescription>
                   </div>
-                  <Badge variant="outline">
-                    {session.registrationCount} مسجل
-                  </Badge>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge variant="outline">{session.registrationCount} مسجل</Badge>
+                    {session.status === "completed" && (
+                      <Badge variant="secondary">مكتملة</Badge>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
