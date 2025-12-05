@@ -209,13 +209,13 @@ export default function AdminSessionsPage() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="start">
                                 <DropdownMenuItem asChild>
-                                  <Link href={`/session/${session.id}`}>
+                                  <Link href={`/admin/sessions/${session.id}`}>
                                     <Eye className="ml-2 h-4 w-4" />
-                                    عرض
+                                    عرض التفاصيل
                                   </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
-                                  <Link href={`/admin/sessions/${session.id}`}>
+                                  <Link href={`/admin/sessions/${session.id}/edit`}>
                                     <Edit className="ml-2 h-4 w-4" />
                                     تعديل
                                   </Link>

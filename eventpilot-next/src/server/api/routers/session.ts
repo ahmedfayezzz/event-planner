@@ -131,6 +131,83 @@ export const sessionRouter = createTRPCRouter({
     }),
 
   /**
+   * Get detailed session info for admin
+   */
+  getAdminDetails: adminProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const session = await db.session.findUnique({
+        where: { id: input.id },
+        include: {
+          _count: {
+            select: {
+              registrations: true,
+              attendances: { where: { attended: true } },
+              invites: true,
+            },
+          },
+          registrations: {
+            take: 10,
+            orderBy: { registeredAt: "desc" },
+            include: {
+              user: { select: { id: true, name: true, email: true, phone: true } },
+              companions: true,
+            },
+          },
+        },
+      });
+
+      if (!session) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الجلسة غير موجودة",
+        });
+      }
+
+      // Get registration stats
+      const [approvedCount, pendingCount, guestCount] = await Promise.all([
+        db.registration.count({
+          where: { sessionId: input.id, isApproved: true },
+        }),
+        db.registration.count({
+          where: { sessionId: input.id, isApproved: false },
+        }),
+        db.registration.count({
+          where: { sessionId: input.id, userId: null },
+        }),
+      ]);
+
+      return {
+        ...session,
+        stats: {
+          totalRegistrations: session._count.registrations,
+          approvedRegistrations: approvedCount,
+          pendingRegistrations: pendingCount,
+          guestRegistrations: guestCount,
+          attendance: session._count.attendances,
+          invitesSent: session._count.invites,
+          availableSpots: session.maxParticipants - approvedCount,
+          fillRate: Math.round((approvedCount / session.maxParticipants) * 100),
+          attendanceRate: approvedCount > 0
+            ? Math.round((session._count.attendances / approvedCount) * 100)
+            : 0,
+        },
+        recentRegistrations: session.registrations.map((r) => ({
+          id: r.id,
+          name: r.user?.name || r.guestName,
+          email: r.user?.email || r.guestEmail,
+          phone: r.user?.phone || r.guestPhone,
+          isGuest: !r.user,
+          isApproved: r.isApproved,
+          registeredAt: r.registeredAt,
+          companionCount: r.companions.length,
+        })),
+      };
+    }),
+
+  /**
    * Get session by slug
    */
   getBySlug: publicProcedure

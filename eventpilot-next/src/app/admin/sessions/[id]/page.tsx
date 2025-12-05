@@ -1,18 +1,53 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { use, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
-import { ArrowRight, Users, QrCode, Mail } from "lucide-react";
 import {
-  SessionForm,
-  SessionFormData,
-  defaultFormData,
-} from "@/components/admin/session-form";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { formatArabicDate } from "@/lib/utils";
+import { toast } from "sonner";
+import {
+  ArrowRight,
+  Edit,
+  Users,
+  QrCode,
+  Mail,
+  Eye,
+  Calendar,
+  MapPin,
+  Clock,
+  UserCheck,
+  UserX,
+  UserPlus,
+  CheckCircle,
+  MailCheck,
+  TrendingUp,
+  Loader2,
+  Trash2,
+  ExternalLink,
+} from "lucide-react";
 import { InvitationModal } from "@/components/admin/invitation-modal";
 
 export default function SessionDetailPage({
@@ -22,86 +57,32 @@ export default function SessionDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-
-  const { data: session, isLoading } = api.session.getById.useQuery({ id });
-
-  const [initialFormData, setInitialFormData] =
-    useState<SessionFormData | null>(null);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  useEffect(() => {
-    if (session) {
-      const date = new Date(session.date);
-      setInitialFormData({
-        sessionNumber: session.sessionNumber.toString(),
-        title: session.title,
-        description: session.description || "",
-        date: date.toISOString().split("T")[0],
-        time: date.toTimeString().slice(0, 5),
-        location: session.location || "",
-        guestName: session.guestName || "",
-        guestProfile: session.guestProfile || "",
-        maxParticipants: session.maxParticipants.toString(),
-        maxCompanions: session.maxCompanions.toString(),
-        status: session.status as "open" | "closed" | "completed",
-        requiresApproval: session.requiresApproval,
-        showParticipantCount: session.showParticipantCount,
-        showCountdown: session.showCountdown,
-        showGuestProfile: session.showGuestProfile,
-        inviteOnly: session.inviteOnly,
-        inviteMessage: session.inviteMessage || "",
-        embedEnabled: session.embedEnabled,
-        enableMiniView: session.enableMiniView,
-        sendQrInEmail: session.sendQrInEmail,
-        slug: session.slug || "",
-        registrationDeadline: session.registrationDeadline
-          ? new Date(session.registrationDeadline).toISOString().slice(0, 16)
-          : "",
-        customConfirmationMessage: session.customConfirmationMessage || "",
-      });
-    }
-  }, [session]);
+  const utils = api.useUtils();
+  const { data: session, isLoading } = api.session.getAdminDetails.useQuery({ id });
 
-  const updateMutation = api.session.update.useMutation({
+  const deleteMutation = api.session.delete.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث الجلسة بنجاح");
+      toast.success("تم حذف الجلسة بنجاح");
+      router.push("/admin/sessions");
     },
     onError: (error) => {
-      toast.error(error.message || "حدث خطأ أثناء تحديث الجلسة");
+      toast.error(error.message || "فشل حذف الجلسة");
     },
   });
 
-  const handleSubmit = async (formData: SessionFormData) => {
-    const dateTime = new Date(`${formData.date}T${formData.time}`);
+  const statusColors: Record<string, string> = {
+    open: "bg-green-500/10 text-green-600 border-green-200",
+    closed: "bg-red-500/10 text-red-600 border-red-200",
+    completed: "bg-gray-500/10 text-gray-600 border-gray-200",
+  };
 
-    await updateMutation.mutateAsync({
-      id,
-      sessionNumber: parseInt(formData.sessionNumber),
-      title: formData.title,
-      description: formData.description || undefined,
-      date: dateTime,
-      location: formData.location || undefined,
-      guestName: formData.guestName || undefined,
-      guestProfile: formData.guestProfile || undefined,
-      maxParticipants: parseInt(formData.maxParticipants),
-      maxCompanions: parseInt(formData.maxCompanions),
-      status: formData.status,
-      requiresApproval: formData.requiresApproval,
-      showParticipantCount: formData.showParticipantCount,
-      showCountdown: formData.showCountdown,
-      showGuestProfile: formData.showGuestProfile,
-      inviteOnly: formData.inviteOnly,
-      inviteMessage: formData.inviteMessage || undefined,
-      embedEnabled: formData.embedEnabled,
-      enableMiniView: formData.enableMiniView,
-      sendQrInEmail: formData.sendQrInEmail,
-      slug: formData.slug || undefined,
-      registrationDeadline: formData.registrationDeadline
-        ? new Date(formData.registrationDeadline)
-        : null,
-      customConfirmationMessage:
-        formData.customConfirmationMessage || undefined,
-    });
+  const statusLabels: Record<string, string> = {
+    open: "مفتوح",
+    closed: "مغلق",
+    completed: "منتهي",
   };
 
   if (isLoading) {
@@ -109,7 +90,12 @@ export default function SessionDetailPage({
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Skeleton className="h-10 w-10" />
-          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-64" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
         </div>
         <Skeleton className="h-96 w-full" />
       </div>
@@ -127,6 +113,8 @@ export default function SessionDetailPage({
     );
   }
 
+  const stats = session.stats;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -138,48 +126,316 @@ export default function SessionDetailPage({
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">{session.title}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold">{session.title}</h1>
+              <Badge variant="outline" className={statusColors[session.status]}>
+                {statusLabels[session.status]}
+              </Badge>
+            </div>
             <p className="text-muted-foreground">
               التجمع رقم {session.sessionNumber}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setInviteModalOpen(true)}>
-            <Mail className="ml-2 h-4 w-4" />
-            دعوة مستخدمين
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href={`/admin/sessions/${id}/attendees`}>
-              <Users className="ml-2 h-4 w-4" />
-              المسجلين
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/session/${session.id}`} target="_blank">
+              <Eye className="ml-2 h-4 w-4" />
+              معاينة
+              <ExternalLink className="mr-2 h-3 w-3" />
             </Link>
           </Button>
-          <Button variant="outline" asChild>
-            <Link href={`/admin/checkin/${id}`}>
-              <QrCode className="ml-2 h-4 w-4" />
-              تسجيل الحضور
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/admin/sessions/${id}/edit`}>
+              <Edit className="ml-2 h-4 w-4" />
+              تعديل
             </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            <Trash2 className="ml-2 h-4 w-4" />
+            حذف
           </Button>
         </div>
       </div>
 
-      {initialFormData && (
-        <SessionForm
-          mode="edit"
-          initialData={initialFormData}
-          onSubmit={handleSubmit}
-          isPending={updateMutation.isPending}
-          onCancel={() => router.push("/admin/sessions")}
-        />
-      )}
+      {/* Session Info Card */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">معلومات الجلسة</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <Calendar className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">التاريخ</p>
+                <p className="font-medium">
+                  {formatArabicDate(new Date(session.date))}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-500/10">
+                <Clock className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">الوقت</p>
+                <p className="font-medium">
+                  {new Date(session.date).toLocaleTimeString("ar-SA", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            </div>
+            {session.location && (
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-500/10">
+                  <MapPin className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">المكان</p>
+                  <p className="font-medium">{session.location}</p>
+                </div>
+              </div>
+            )}
+            {session.guestName && (
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-orange-500/10">
+                  <Users className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">الضيف</p>
+                  <p className="font-medium">{session.guestName}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          {session.description && (
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-sm text-muted-foreground mb-1">الوصف</p>
+              <p className="text-sm">{session.description}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              المسجلين الموافق عليهم
+            </CardTitle>
+            <UserCheck className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.approvedRegistrations}</div>
+            <p className="text-xs text-muted-foreground">
+              من أصل {session.maxParticipants} مقعد
+            </p>
+            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-green-500"
+                style={{ width: `${stats.fillRate}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              بانتظار الموافقة
+            </CardTitle>
+            <UserX className="h-4 w-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.pendingRegistrations}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.guestRegistrations} ضيوف
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">الحضور الفعلي</CardTitle>
+            <CheckCircle className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.attendance}</div>
+            <p className="text-xs text-muted-foreground">
+              نسبة الحضور {stats.attendanceRate}%
+            </p>
+            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-blue-500"
+                style={{ width: `${stats.attendanceRate}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">الدعوات المرسلة</CardTitle>
+            <MailCheck className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.invitesSent}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.availableSpots} مقعد متاح
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">إجراءات سريعة</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={() => setInviteModalOpen(true)}>
+              <Mail className="ml-2 h-4 w-4" />
+              دعوة مستخدمين
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href={`/admin/sessions/${id}/attendees`}>
+                <Users className="ml-2 h-4 w-4" />
+                إدارة المسجلين
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href={`/admin/checkin/${id}`}>
+                <QrCode className="ml-2 h-4 w-4" />
+                تسجيل الحضور
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Registrations */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>أحدث التسجيلات</CardTitle>
+              <CardDescription>آخر 10 تسجيلات في الجلسة</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/admin/sessions/${id}/attendees`}>
+                عرض الكل
+              </Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {session.recentRegistrations.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>الاسم</TableHead>
+                  <TableHead>البريد / الهاتف</TableHead>
+                  <TableHead>النوع</TableHead>
+                  <TableHead>الحالة</TableHead>
+                  <TableHead>المرافقين</TableHead>
+                  <TableHead>التاريخ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {session.recentRegistrations.map((reg) => (
+                  <TableRow key={reg.id}>
+                    <TableCell className="font-medium">{reg.name}</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {reg.email && <div>{reg.email}</div>}
+                        {reg.phone && (
+                          <div className="text-muted-foreground">{reg.phone}</div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={reg.isGuest ? "bg-orange-500/10 text-orange-600" : ""}>
+                        {reg.isGuest ? "ضيف" : "عضو"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          reg.isApproved
+                            ? "bg-green-500/10 text-green-600"
+                            : "bg-yellow-500/10 text-yellow-600"
+                        }
+                      >
+                        {reg.isApproved ? "موافق عليه" : "بانتظار الموافقة"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{reg.companionCount}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatArabicDate(new Date(reg.registeredAt))}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="py-8 text-center text-muted-foreground">
+              <UserPlus className="mx-auto h-12 w-12 mb-4 opacity-50" />
+              <p>لا توجد تسجيلات بعد</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Invitation Modal */}
       <InvitationModal
         sessionId={id}
         sessionTitle={session.title}
         open={inviteModalOpen}
         onOpenChange={setInviteModalOpen}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد من حذف الجلسة؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف الجلسة &quot;{session.title}&quot; وجميع التسجيلات المرتبطة بها.
+              هذا الإجراء لا يمكن التراجع عنه.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate({ id })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  جاري الحذف...
+                </>
+              ) : (
+                "حذف"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
