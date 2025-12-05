@@ -13,6 +13,7 @@ import {
   sendPendingEmail,
   sendConfirmedEmail,
   sendCompanionEmail,
+  sendWelcomeEmail,
 } from "@/lib/email";
 import bcrypt from "bcryptjs";
 
@@ -386,6 +387,9 @@ export const registrationRouter = createTRPCRouter({
         });
 
         userId = newUser.id;
+
+        // Send welcome email for new account
+        await sendWelcomeEmail(email, input.name);
       }
 
       // Determine approval status

@@ -16,12 +16,13 @@ export default auth((req) => {
     "/sessions",
     "/user/login",
     "/user/forgot-password",
+    "/user/reset-password",
   ];
 
-  // Check if current path starts with any public path
+  // Check if current path matches or starts with any public path
   const isPublicPath = publicPaths.some(
-    (path) => nextUrl.pathname === path || nextUrl.pathname.startsWith("/session/")
-  );
+    (path) => nextUrl.pathname === path || nextUrl.pathname.startsWith(`${path}/`)
+  ) || nextUrl.pathname.startsWith("/session/");
 
   // Auth pages - redirect to dashboard if already logged in
   const authPaths = ["/user/login", "/user/forgot-password"];

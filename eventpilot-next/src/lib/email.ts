@@ -340,6 +340,69 @@ ${statusMessage}
 }
 
 /**
+ * Send welcome email to newly registered user
+ */
+export async function sendWelcomeEmail(
+  emailAddress: string,
+  name: string
+): Promise<boolean> {
+  const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+  const loginUrl = `${baseUrl}/user/login`;
+
+  const htmlBody = `
+<html>
+<head>
+<meta charset="utf-8">
+</head>
+<body dir="rtl" style="font-family: Arial, sans-serif; text-align: right;">
+<p>مرحباً ${name},</p>
+
+<p>أهلاً بك في <strong>ثلوثية الأعمال</strong>!</p>
+
+<p>تم إنشاء حسابك بنجاح. يمكنك الآن:</p>
+<ul style="text-align: right;">
+<li>التسجيل في الجلسات القادمة</li>
+<li>متابعة حالة تسجيلاتك</li>
+<li>استعراض سجل حضورك</li>
+</ul>
+
+<p>للدخول إلى حسابك:</p>
+<p><a href="${loginUrl}" style="display: inline-block; background-color: #8B5CF6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">تسجيل الدخول</a></p>
+
+<p>نتطلع لرؤيتك في جلساتنا القادمة!</p>
+
+<p>فريق ثلوثية الأعمال</p>
+</body>
+</html>
+  `.trim();
+
+  const plainBody = `
+مرحباً ${name},
+
+أهلاً بك في ثلوثية الأعمال!
+
+تم إنشاء حسابك بنجاح. يمكنك الآن:
+- التسجيل في الجلسات القادمة
+- متابعة حالة تسجيلاتك
+- استعراض سجل حضورك
+
+للدخول إلى حسابك:
+${loginUrl}
+
+نتطلع لرؤيتك في جلساتنا القادمة!
+
+فريق ثلوثية الأعمال
+  `.trim();
+
+  return sendEmail({
+    to: emailAddress,
+    subject: "مرحباً بك في ثلوثية الأعمال",
+    html: htmlBody,
+    text: plainBody,
+  });
+}
+
+/**
  * Send password reset email to user
  */
 export async function sendPasswordResetEmail(

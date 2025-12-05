@@ -7,7 +7,7 @@ import {
   protectedProcedure,
 } from "../trpc";
 import { generateUsername, formatPhoneNumber, validateSaudiPhone } from "@/lib/validation";
-import { sendPasswordResetEmail } from "@/lib/email";
+import { sendPasswordResetEmail, sendWelcomeEmail } from "@/lib/email";
 import { generateInviteToken } from "@/lib/utils";
 
 export const authRouter = createTRPCRouter({
@@ -103,6 +103,9 @@ export const authRouter = createTRPCRouter({
           userId: user.id,
         },
       });
+
+      // Send welcome email
+      await sendWelcomeEmail(user.email, user.name);
 
       return {
         success: true,
