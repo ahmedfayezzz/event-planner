@@ -64,10 +64,8 @@ export default function AdminHostsPage() {
     }
   );
 
-  const allHosts: HostItem[] = data?.pages.flatMap((page) => [
-    ...page.users,
-    ...page.guestHosts,
-  ]) ?? [];
+  const allHosts: HostItem[] =
+    data?.pages.flatMap((page) => [...page.users, ...page.guestHosts]) ?? [];
 
   const { refetch: fetchCsv } = api.admin.exportHosts.useQuery(undefined, {
     enabled: false,
@@ -76,7 +74,9 @@ export default function AdminHostsPage() {
   const handleExport = async () => {
     const result = await fetchCsv();
     if (result.data) {
-      const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob([result.data.csv], {
+        type: "text/csv;charset=utf-8;",
+      });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = `hosts-${new Date().toISOString().split("T")[0]}.csv`;
@@ -172,12 +172,28 @@ export default function AdminHostsPage() {
                       <TableCell>
                         <p className="font-medium">{host.name || "-"}</p>
                       </TableCell>
-                      <TableCell>
+                      <TableCell dir="ltr">
                         <div>
-                          <p className="text-sm">{host.email || "-"}</p>
-                          <p className="text-xs text-muted-foreground" dir="ltr">
-                            {host.phone || "-"}
-                          </p>
+                          {host.email ? (
+                            <a
+                              href={`mailto:${host.email}`}
+                              className="text-sm hover:underline underline"
+                            >
+                              {host.email}
+                            </a>
+                          ) : (
+                            <p className="text-sm">-</p>
+                          )}
+                          {host.phone ? (
+                            <a
+                              href={`tel:${host.phone}`}
+                              className="text-xs text-muted-foreground hover:underline underline block"
+                            >
+                              {host.phone}
+                            </a>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">-</p>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>{host.companyName || "-"}</TableCell>
