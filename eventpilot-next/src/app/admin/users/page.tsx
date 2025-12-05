@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { api } from "@/trpc/react";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -31,7 +32,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { formatArabicDate } from "@/lib/utils";
-import { Search, Users, MoreVertical, Shield, UserX, UserCheck, Download } from "lucide-react";
+import {
+  Search,
+  Users,
+  MoreVertical,
+  Shield,
+  UserX,
+  UserCheck,
+  Download,
+  Loader2,
+  ChevronDown,
+} from "lucide-react";
 
 interface UserItem {
   id: string;
@@ -48,16 +59,36 @@ interface UserItem {
   attendanceCount: number;
 }
 
+const PAGE_SIZE = 20;
+
 export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const { data, isLoading, refetch } = api.admin.getUsers.useQuery({
-    search: search || undefined,
-    role: roleFilter !== "all" ? (roleFilter as "USER" | "ADMIN") : undefined,
-    isActive: statusFilter !== "all" ? statusFilter === "active" : undefined,
-  });
+  const debouncedSearch = useDebounce(search, 300);
+
+  const {
+    data,
+    isLoading,
+    isFetching,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = api.admin.getUsers.useInfiniteQuery(
+    {
+      search: debouncedSearch || undefined,
+      role: roleFilter !== "all" ? (roleFilter as "USER" | "ADMIN") : undefined,
+      isActive: statusFilter !== "all" ? statusFilter === "active" : undefined,
+      limit: PAGE_SIZE,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    }
+  );
+
+  const allUsers = data?.pages.flatMap((page) => page.users) ?? [];
 
   const toggleActiveMutation = api.admin.toggleUserActive.useMutation({
     onSuccess: (data) => {
@@ -96,14 +127,10 @@ export default function AdminUsersPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-96 w-full" />
-      </div>
-    );
-  }
+  // Show skeleton only on initial load
+  const showTableSkeleton = isLoading && allUsers.length === 0;
+  // Show inline loading indicator when filtering/searching
+  const showInlineLoading = isFetching && !isLoading;
 
   return (
     <div className="space-y-6">
@@ -111,9 +138,7 @@ export default function AdminUsersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">المستخدمين</h1>
-          <p className="text-muted-foreground">
-            إدارة حسابات المستخدمين
-          </p>
+          <p className="text-muted-foreground">إدارة حسابات المستخدمين</p>
         </div>
         <Button variant="outline" onClick={handleExport}>
           <Download className="me-2 h-4 w-4" />
@@ -161,110 +186,162 @@ export default function AdminUsersPage() {
       {/* Users Table */}
       <Card>
         <CardContent className="p-0">
-          {!data || data.users.length === 0 ? (
+          {showTableSkeleton ? (
+            <div className="p-6 space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : allUsers.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
               <Users className="mx-auto h-12 w-12 mb-4 opacity-50" />
               <p>لا يوجد مستخدمين</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>المستخدم</TableHead>
-                  <TableHead>الشركة</TableHead>
-                  <TableHead>الصلاحية</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>التسجيلات</TableHead>
-                  <TableHead>الحضور</TableHead>
-                  <TableHead>تاريخ الانضمام</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.users.map((user: UserItem) => (
-                  <TableRow key={user.id} className={!user.isActive ? "opacity-60" : ""}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                        <p className="text-xs text-muted-foreground" dir="ltr">
-                          {user.phone}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p>{user.companyName || "-"}</p>
-                        <p className="text-sm text-muted-foreground">{user.position || ""}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>
-                        {user.role === "ADMIN" ? "مدير" : "مستخدم"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={
-                          user.isActive
-                            ? "bg-green-500/10 text-green-600 border-green-200"
-                            : "bg-red-500/10 text-red-600 border-red-200"
-                        }
-                      >
-                        {user.isActive ? "نشط" : "معطل"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{user.registrationCount}</TableCell>
-                    <TableCell>{user.attendanceCount}</TableCell>
-                    <TableCell>
-                      {formatArabicDate(new Date(user.createdAt))}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              updateRoleMutation.mutate({
-                                userId: user.id,
-                                role: user.role === "ADMIN" ? "USER" : "ADMIN",
-                              })
-                            }
-                          >
-                            <Shield className="me-2 h-4 w-4" />
-                            {user.role === "ADMIN" ? "إزالة صلاحية المدير" : "ترقية لمدير"}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() =>
-                              toggleActiveMutation.mutate({ userId: user.id })
-                            }
-                            className={user.isActive ? "text-red-600" : "text-green-600"}
-                          >
-                            {user.isActive ? (
-                              <>
-                                <UserX className="me-2 h-4 w-4" />
-                                تعطيل الحساب
-                              </>
-                            ) : (
-                              <>
-                                <UserCheck className="me-2 h-4 w-4" />
-                                تفعيل الحساب
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+            <>
+              {/* Inline loading indicator */}
+              {showInlineLoading && (
+                <div className="flex items-center justify-center gap-2 py-2 bg-muted/50 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  جاري التحميل...
+                </div>
+              )}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>المستخدم</TableHead>
+                    <TableHead>الشركة</TableHead>
+                    <TableHead>الصلاحية</TableHead>
+                    <TableHead>الحالة</TableHead>
+                    <TableHead>التسجيلات</TableHead>
+                    <TableHead>الحضور</TableHead>
+                    <TableHead>تاريخ الانضمام</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {allUsers.map((user: UserItem) => (
+                    <TableRow
+                      key={user.id}
+                      className={!user.isActive ? "opacity-60" : ""}
+                    >
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{user.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {user.email}
+                          </p>
+                          <p
+                            className="text-xs text-muted-foreground"
+                            dir="ltr"
+                          >
+                            {user.phone}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p>{user.companyName || "-"}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {user.position || ""}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            user.role === "ADMIN" ? "default" : "secondary"
+                          }
+                        >
+                          {user.role === "ADMIN" ? "مدير" : "مستخدم"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            user.isActive
+                              ? "bg-green-500/10 text-green-600 border-green-200"
+                              : "bg-red-500/10 text-red-600 border-red-200"
+                          }
+                        >
+                          {user.isActive ? "نشط" : "معطل"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{user.registrationCount}</TableCell>
+                      <TableCell>{user.attendanceCount}</TableCell>
+                      <TableCell>
+                        {formatArabicDate(new Date(user.createdAt))}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() =>
+                                updateRoleMutation.mutate({
+                                  userId: user.id,
+                                  role:
+                                    user.role === "ADMIN" ? "USER" : "ADMIN",
+                                })
+                              }
+                            >
+                              <Shield className="me-2 h-4 w-4" />
+                              {user.role === "ADMIN"
+                                ? "إزالة صلاحية المدير"
+                                : "ترقية لمدير"}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() =>
+                                toggleActiveMutation.mutate({ userId: user.id })
+                              }
+                              className={
+                                user.isActive ? "text-red-600" : "text-green-600"
+                              }
+                            >
+                              {user.isActive ? (
+                                <>
+                                  <UserX className="me-2 h-4 w-4" />
+                                  تعطيل الحساب
+                                </>
+                              ) : (
+                                <>
+                                  <UserCheck className="me-2 h-4 w-4" />
+                                  تفعيل الحساب
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Load More Button */}
+              {hasNextPage && (
+                <div className="p-4 text-center border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                  >
+                    {isFetchingNextPage ? (
+                      <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <ChevronDown className="me-2 h-4 w-4" />
+                    )}
+                    تحميل المزيد
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

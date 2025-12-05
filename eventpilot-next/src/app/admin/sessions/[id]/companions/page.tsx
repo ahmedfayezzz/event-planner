@@ -3,6 +3,7 @@
 import { use, useState, useMemo } from "react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { formatArabicDate } from "@/lib/utils";
-import { ArrowRight, Search, Users, Mail, Download } from "lucide-react";
+import { ArrowRight, Search, Users, Mail, Download, Loader2 } from "lucide-react";
 
 interface CompanionItem {
   id: string;
@@ -32,30 +33,41 @@ interface CompanionItem {
   registrantEmail?: string | null;
 }
 
-export default function SessionCompanionsPage({ params }: { params: Promise<{ id: string }> }) {
+export default function SessionCompanionsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
 
-  const { data: session, isLoading: sessionLoading } = api.session.getById.useQuery({ id });
-  const { data: companions, isLoading: companionsLoading, refetch } = api.companion.getSessionCompanions.useQuery(
+  const { data: session, isLoading: sessionLoading } =
+    api.session.getById.useQuery({ id });
+  const {
+    data: companions,
+    isLoading: companionsLoading,
+    isFetching,
+  } = api.companion.getSessionCompanions.useQuery(
     { sessionId: id },
     { enabled: !!id }
   );
 
-  // Filter companions by search
+  // Filter companions by search (client-side)
   const filteredCompanions = useMemo(() => {
     if (!companions) return [];
-    if (!search.trim()) return companions;
+    if (!debouncedSearch.trim()) return companions;
 
-    const searchLower = search.toLowerCase();
-    return companions.filter((c: CompanionItem) =>
-      c.name?.toLowerCase().includes(searchLower) ||
-      c.email?.toLowerCase().includes(searchLower) ||
-      c.phone?.includes(search) ||
-      c.company?.toLowerCase().includes(searchLower) ||
-      c.registrantName?.toLowerCase().includes(searchLower)
+    const searchLower = debouncedSearch.toLowerCase();
+    return companions.filter(
+      (c: CompanionItem) =>
+        c.name?.toLowerCase().includes(searchLower) ||
+        c.email?.toLowerCase().includes(searchLower) ||
+        c.phone?.includes(debouncedSearch) ||
+        c.company?.toLowerCase().includes(searchLower) ||
+        c.registrantName?.toLowerCase().includes(searchLower)
     );
-  }, [companions, search]);
+  }, [companions, debouncedSearch]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -73,7 +85,15 @@ export default function SessionCompanionsPage({ params }: { params: Promise<{ id
       return;
     }
 
-    const headers = ["الاسم", "الشركة", "المنصب", "الهاتف", "البريد", "المسجل", "حالة الدعوة"];
+    const headers = [
+      "الاسم",
+      "الشركة",
+      "المنصب",
+      "الهاتف",
+      "البريد",
+      "المسجل",
+      "حالة الدعوة",
+    ];
     const rows = companions.map((c: CompanionItem) => [
       c.name,
       c.company || "",
@@ -86,16 +106,23 @@ export default function SessionCompanionsPage({ params }: { params: Promise<{ id
 
     const csvContent = [
       headers.join(","),
-      ...rows.map((row: string[]) => row.map((cell: string) => `"${cell}"`).join(",")),
+      ...rows.map((row: string[]) =>
+        row.map((cell: string) => `"${cell}"`).join(",")
+      ),
     ].join("\n");
 
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `companions-session-${session?.sessionNumber || id}.csv`;
     link.click();
     toast.success("تم تصدير البيانات");
   };
+
+  // Show inline loading when refetching
+  const showInlineLoading = isFetching && !companionsLoading;
 
   if (sessionLoading) {
     return (
@@ -104,7 +131,13 @@ export default function SessionCompanionsPage({ params }: { params: Promise<{ id
           <Skeleton className="h-10 w-10" />
           <Skeleton className="h-10 w-48" />
         </div>
-        <Skeleton className="h-96 w-full" />
+        <div className="grid gap-4 md:grid-cols-3">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
@@ -138,7 +171,11 @@ export default function SessionCompanionsPage({ params }: { params: Promise<{ id
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExportCSV} disabled={!companions?.length}>
+          <Button
+            variant="outline"
+            onClick={handleExportCSV}
+            disabled={!companions?.length}
+          >
             <Download className="me-2 h-4 w-4" />
             تصدير CSV
           </Button>
@@ -149,7 +186,9 @@ export default function SessionCompanionsPage({ params }: { params: Promise<{ id
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المرافقين</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              إجمالي المرافقين
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -157,18 +196,26 @@ export default function SessionCompanionsPage({ params }: { params: Promise<{ id
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">لديهم بريد إلكتروني</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              لديهم بريد إلكتروني
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.withEmail}</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {stats.withEmail}
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">تم إرسال الدعوة</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              تم إرسال الدعوة
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.invitesSent}</div>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.invitesSent}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -188,8 +235,10 @@ export default function SessionCompanionsPage({ params }: { params: Promise<{ id
       <Card>
         <CardContent className="p-0">
           {companionsLoading ? (
-            <div className="p-6">
-              <Skeleton className="h-48 w-full" />
+            <div className="p-6 space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
             </div>
           ) : filteredCompanions.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
@@ -197,57 +246,73 @@ export default function SessionCompanionsPage({ params }: { params: Promise<{ id
               <p>{search ? "لا توجد نتائج مطابقة" : "لا يوجد مرافقين"}</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>الاسم</TableHead>
-                  <TableHead>الشركة</TableHead>
-                  <TableHead>المنصب</TableHead>
-                  <TableHead>الهاتف</TableHead>
-                  <TableHead>البريد</TableHead>
-                  <TableHead>المسجل</TableHead>
-                  <TableHead>حالة الدعوة</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCompanions.map((companion: CompanionItem) => (
-                  <TableRow key={companion.id}>
-                    <TableCell className="font-medium">{companion.name}</TableCell>
-                    <TableCell>{companion.company || "-"}</TableCell>
-                    <TableCell>{companion.title || "-"}</TableCell>
-                    <TableCell dir="ltr">{companion.phone || "-"}</TableCell>
-                    <TableCell>{companion.email || "-"}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="font-medium">{companion.registrantName}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {companion.registrantEmail}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {companion.email ? (
-                        <Badge
-                          variant="outline"
-                          className={
-                            companion.inviteSent
-                              ? "bg-green-500/10 text-green-600 border-green-200"
-                              : "bg-gray-500/10 text-gray-600 border-gray-200"
-                          }
-                        >
-                          <Mail className="me-1 h-3 w-3" />
-                          {companion.inviteSent ? "مرسلة" : "غير مرسلة"}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-gray-500/10 text-gray-600 border-gray-200">
-                          لا يوجد بريد
-                        </Badge>
-                      )}
-                    </TableCell>
+            <>
+              {/* Inline loading indicator */}
+              {showInlineLoading && (
+                <div className="flex items-center justify-center gap-2 py-2 bg-muted/50 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  جاري التحميل...
+                </div>
+              )}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>الاسم</TableHead>
+                    <TableHead>الشركة</TableHead>
+                    <TableHead>المنصب</TableHead>
+                    <TableHead>الهاتف</TableHead>
+                    <TableHead>البريد</TableHead>
+                    <TableHead>المسجل</TableHead>
+                    <TableHead>حالة الدعوة</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredCompanions.map((companion: CompanionItem) => (
+                    <TableRow key={companion.id}>
+                      <TableCell className="font-medium">
+                        {companion.name}
+                      </TableCell>
+                      <TableCell>{companion.company || "-"}</TableCell>
+                      <TableCell>{companion.title || "-"}</TableCell>
+                      <TableCell dir="ltr">{companion.phone || "-"}</TableCell>
+                      <TableCell>{companion.email || "-"}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">
+                            {companion.registrantName}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {companion.registrantEmail}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {companion.email ? (
+                          <Badge
+                            variant="outline"
+                            className={
+                              companion.inviteSent
+                                ? "bg-green-500/10 text-green-600 border-green-200"
+                                : "bg-gray-500/10 text-gray-600 border-gray-200"
+                            }
+                          >
+                            <Mail className="me-1 h-3 w-3" />
+                            {companion.inviteSent ? "مرسلة" : "غير مرسلة"}
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="bg-gray-500/10 text-gray-600 border-gray-200"
+                          >
+                            لا يوجد بريد
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
           )}
         </CardContent>
       </Card>
@@ -255,14 +320,10 @@ export default function SessionCompanionsPage({ params }: { params: Promise<{ id
       {/* Navigation Links */}
       <div className="flex justify-between">
         <Button variant="outline" asChild>
-          <Link href={`/admin/sessions/${id}/attendees`}>
-            عرض المسجلين
-          </Link>
+          <Link href={`/admin/sessions/${id}/attendees`}>عرض المسجلين</Link>
         </Button>
         <Button variant="outline" asChild>
-          <Link href={`/admin/checkin/${id}`}>
-            تسجيل الحضور
-          </Link>
+          <Link href={`/admin/checkin/${id}`}>تسجيل الحضور</Link>
         </Button>
       </div>
     </div>

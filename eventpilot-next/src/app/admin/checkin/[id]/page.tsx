@@ -1,13 +1,20 @@
 "use client";
 
-import { use, useState, useCallback } from "react";
+import { use, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { api } from "@/trpc/react";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -17,16 +24,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { formatArabicDate, formatArabicTime } from "@/lib/utils";
-import { ArrowRight, QrCode, Check, X, Search, Users, Camera, CameraOff } from "lucide-react";
+import { formatArabicDate } from "@/lib/utils";
+import {
+  ArrowRight,
+  QrCode,
+  Check,
+  X,
+  Search,
+  Users,
+  Camera,
+  CameraOff,
+} from "lucide-react";
 
 // Attendee type for the attendance list
 interface AttendeeItem {
@@ -45,12 +54,22 @@ interface AttendeeItem {
 // Dynamically import QR scanner to avoid SSR issues
 const Scanner = dynamic(
   () => import("@yudiel/react-qr-scanner").then((mod) => mod.Scanner),
-  { ssr: false, loading: () => <div className="h-64 bg-muted animate-pulse rounded-lg" /> }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 bg-muted animate-pulse rounded-lg" />
+    ),
+  }
 );
 
-export default function CheckInPage({ params }: { params: Promise<{ id: string }> }) {
+export default function CheckInPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const [scannerEnabled, setScannerEnabled] = useState(true);
   const [lastScanned, setLastScanned] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<{
@@ -60,7 +79,11 @@ export default function CheckInPage({ params }: { params: Promise<{ id: string }
     error?: string;
   } | null>(null);
 
-  const { data: attendance, isLoading, refetch } = api.attendance.getSessionAttendance.useQuery(
+  const {
+    data: attendance,
+    isLoading,
+    refetch,
+  } = api.attendance.getSessionAttendance.useQuery(
     { sessionId: id },
     { refetchInterval: 10000 } // Refresh every 10s
   );
@@ -94,27 +117,37 @@ export default function CheckInPage({ params }: { params: Promise<{ id: string }
     },
   });
 
-  const handleScan = useCallback((result: { rawValue: string }[]) => {
-    if (result.length > 0) {
-      const qrData = result[0].rawValue;
+  const handleScan = useCallback(
+    (result: { rawValue: string }[]) => {
+      if (result.length > 0) {
+        const qrData = result[0].rawValue;
 
-      // Prevent duplicate scans
-      if (qrData === lastScanned) return;
-      setLastScanned(qrData);
+        // Prevent duplicate scans
+        if (qrData === lastScanned) return;
+        setLastScanned(qrData);
 
-      // Reset after 3 seconds to allow rescan
-      setTimeout(() => setLastScanned(null), 3000);
+        // Reset after 3 seconds to allow rescan
+        setTimeout(() => setLastScanned(null), 3000);
 
-      markQRMutation.mutate({ qrData });
-    }
-  }, [lastScanned, markQRMutation]);
-
-  const filteredAttendees: AttendeeItem[] = (attendance?.attendanceList || []).filter((a: AttendeeItem) =>
-    !search.trim() ||
-    a.name?.toLowerCase().includes(search.toLowerCase()) ||
-    a.email?.toLowerCase().includes(search.toLowerCase()) ||
-    a.phone?.includes(search)
+        markQRMutation.mutate({ qrData });
+      }
+    },
+    [lastScanned, markQRMutation]
   );
+
+  // Filter attendees by debounced search (client-side)
+  const filteredAttendees: AttendeeItem[] = useMemo(() => {
+    const list = attendance?.attendanceList || [];
+    if (!debouncedSearch.trim()) return list;
+
+    const searchLower = debouncedSearch.toLowerCase();
+    return list.filter(
+      (a: AttendeeItem) =>
+        a.name?.toLowerCase().includes(searchLower) ||
+        a.email?.toLowerCase().includes(searchLower) ||
+        a.phone?.includes(debouncedSearch)
+    );
+  }, [attendance?.attendanceList, debouncedSearch]);
 
   if (isLoading) {
     return (
@@ -122,6 +155,12 @@ export default function CheckInPage({ params }: { params: Promise<{ id: string }
         <div className="flex items-center gap-4">
           <Skeleton className="h-10 w-10" />
           <Skeleton className="h-10 w-48" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
           <Skeleton className="h-96" />
@@ -155,7 +194,8 @@ export default function CheckInPage({ params }: { params: Promise<{ id: string }
           <div>
             <h1 className="text-2xl font-bold">تسجيل الحضور</h1>
             <p className="text-muted-foreground">
-              {attendance.session.title} - {formatArabicDate(new Date(attendance.session.date))}
+              {attendance.session.title} -{" "}
+              {formatArabicDate(new Date(attendance.session.date))}
             </p>
           </div>
         </div>
@@ -198,8 +238,11 @@ export default function CheckInPage({ params }: { params: Promise<{ id: string }
           <CardContent>
             <div className="text-2xl font-bold">
               {attendance.stats.total > 0
-                ? Math.round((attendance.stats.attended / attendance.stats.total) * 100)
-                : 0}%
+                ? Math.round(
+                    (attendance.stats.attended / attendance.stats.total) * 100
+                  )
+                : 0}
+              %
             </div>
           </CardContent>
         </Card>

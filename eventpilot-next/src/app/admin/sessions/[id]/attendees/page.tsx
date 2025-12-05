@@ -3,6 +3,7 @@
 import { use, useState, useMemo } from "react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,15 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { formatArabicDate } from "@/lib/utils";
-import { ArrowRight, Search, Check, Download, Users, CheckCheck } from "lucide-react";
+import {
+  ArrowRight,
+  Search,
+  Check,
+  Download,
+  Users,
+  CheckCheck,
+  Loader2,
+} from "lucide-react";
 
 interface RegistrationItem {
   id: string;
@@ -31,12 +40,23 @@ interface RegistrationItem {
   companions?: { id: string }[];
 }
 
-export default function SessionAttendeesPage({ params }: { params: Promise<{ id: string }> }) {
+export default function SessionAttendeesPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
 
-  const { data: session, isLoading: sessionLoading } = api.session.getById.useQuery({ id });
-  const { data: registrations, isLoading: registrationsLoading, refetch } = api.registration.getSessionRegistrations.useQuery(
+  const { data: session, isLoading: sessionLoading } =
+    api.session.getById.useQuery({ id });
+  const {
+    data: registrations,
+    isLoading: registrationsLoading,
+    isFetching,
+    refetch,
+  } = api.registration.getSessionRegistrations.useQuery(
     { sessionId: id },
     { enabled: !!id }
   );
@@ -69,7 +89,9 @@ export default function SessionAttendeesPage({ params }: { params: Promise<{ id:
   const handleExport = async () => {
     const result = await fetchCsv();
     if (result.data) {
-      const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob([result.data.csv], {
+        type: "text/csv;charset=utf-8;",
+      });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = `attendees-${session?.sessionNumber || id}.csv`;
@@ -78,28 +100,34 @@ export default function SessionAttendeesPage({ params }: { params: Promise<{ id:
     }
   };
 
-  // Filter registrations by search
+  // Filter registrations by search (client-side)
   const filteredRegistrations = useMemo(() => {
     if (!registrations) return [];
-    if (!search.trim()) return registrations;
+    if (!debouncedSearch.trim()) return registrations;
 
-    const searchLower = search.toLowerCase();
-    return registrations.filter((reg: RegistrationItem) =>
-      reg.name?.toLowerCase().includes(searchLower) ||
-      reg.email?.toLowerCase().includes(searchLower) ||
-      reg.phone?.includes(search)
+    const searchLower = debouncedSearch.toLowerCase();
+    return registrations.filter(
+      (reg: RegistrationItem) =>
+        reg.name?.toLowerCase().includes(searchLower) ||
+        reg.email?.toLowerCase().includes(searchLower) ||
+        reg.phone?.includes(debouncedSearch)
     );
-  }, [registrations, search]);
+  }, [registrations, debouncedSearch]);
 
   // Calculate stats
   const stats = useMemo(() => {
     if (!registrations) return { total: 0, approved: 0, pending: 0 };
     return {
       total: registrations.length,
-      approved: registrations.filter((r: RegistrationItem) => r.isApproved).length,
-      pending: registrations.filter((r: RegistrationItem) => !r.isApproved).length,
+      approved: registrations.filter((r: RegistrationItem) => r.isApproved)
+        .length,
+      pending: registrations.filter((r: RegistrationItem) => !r.isApproved)
+        .length,
     };
   }, [registrations]);
+
+  // Show inline loading when refetching
+  const showInlineLoading = isFetching && !registrationsLoading;
 
   if (sessionLoading) {
     return (
@@ -108,7 +136,13 @@ export default function SessionAttendeesPage({ params }: { params: Promise<{ id:
           <Skeleton className="h-10 w-10" />
           <Skeleton className="h-10 w-48" />
         </div>
-        <Skeleton className="h-96 w-full" />
+        <div className="grid gap-4 md:grid-cols-3">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
@@ -163,7 +197,9 @@ export default function SessionAttendeesPage({ params }: { params: Promise<{ id:
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المسجلين</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              إجمالي المسجلين
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -208,8 +244,10 @@ export default function SessionAttendeesPage({ params }: { params: Promise<{ id:
       <Card>
         <CardContent className="p-0">
           {registrationsLoading ? (
-            <div className="p-6">
-              <Skeleton className="h-48 w-full" />
+            <div className="p-6 space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
             </div>
           ) : filteredRegistrations.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
@@ -217,67 +255,76 @@ export default function SessionAttendeesPage({ params }: { params: Promise<{ id:
               <p>{search ? "لا توجد نتائج مطابقة" : "لا يوجد مسجلين"}</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>الاسم</TableHead>
-                  <TableHead>البريد</TableHead>
-                  <TableHead>الهاتف</TableHead>
-                  <TableHead>النوع</TableHead>
-                  <TableHead>المرافقين</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>تاريخ التسجيل</TableHead>
-                  <TableHead>الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRegistrations.map((reg: RegistrationItem) => (
-                  <TableRow key={reg.id}>
-                    <TableCell className="font-medium">{reg.name}</TableCell>
-                    <TableCell>{reg.email}</TableCell>
-                    <TableCell dir="ltr">{reg.phone}</TableCell>
-                    <TableCell>
-                      <Badge variant={reg.isGuest ? "secondary" : "default"}>
-                        {reg.isGuest ? "زائر" : "عضو"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{reg.companions?.length || 0}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={reg.isApproved ? "default" : "outline"}
-                        className={
-                          reg.isApproved
-                            ? "bg-green-500/10 text-green-600 border-green-200"
-                            : "bg-orange-500/10 text-orange-600 border-orange-200"
-                        }
-                      >
-                        {reg.isApproved ? "مؤكد" : "معلق"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {formatArabicDate(new Date(reg.registeredAt))}
-                    </TableCell>
-                    <TableCell>
-                      {!reg.isApproved && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            approveMutation.mutate({
-                              registrationId: reg.id,
-                            })
-                          }
-                          disabled={approveMutation.isPending}
-                          title="تأكيد التسجيل"
-                        >
-                          <Check className="h-4 w-4 text-green-600" />
-                        </Button>
-                      )}
-                    </TableCell>
+            <>
+              {/* Inline loading indicator */}
+              {showInlineLoading && (
+                <div className="flex items-center justify-center gap-2 py-2 bg-muted/50 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  جاري التحميل...
+                </div>
+              )}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>الاسم</TableHead>
+                    <TableHead>البريد</TableHead>
+                    <TableHead>الهاتف</TableHead>
+                    <TableHead>النوع</TableHead>
+                    <TableHead>المرافقين</TableHead>
+                    <TableHead>الحالة</TableHead>
+                    <TableHead>تاريخ التسجيل</TableHead>
+                    <TableHead>الإجراءات</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredRegistrations.map((reg: RegistrationItem) => (
+                    <TableRow key={reg.id}>
+                      <TableCell className="font-medium">{reg.name}</TableCell>
+                      <TableCell>{reg.email}</TableCell>
+                      <TableCell dir="ltr">{reg.phone}</TableCell>
+                      <TableCell>
+                        <Badge variant={reg.isGuest ? "secondary" : "default"}>
+                          {reg.isGuest ? "زائر" : "عضو"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{reg.companions?.length || 0}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={reg.isApproved ? "default" : "outline"}
+                          className={
+                            reg.isApproved
+                              ? "bg-green-500/10 text-green-600 border-green-200"
+                              : "bg-orange-500/10 text-orange-600 border-orange-200"
+                          }
+                        >
+                          {reg.isApproved ? "مؤكد" : "معلق"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {formatArabicDate(new Date(reg.registeredAt))}
+                      </TableCell>
+                      <TableCell>
+                        {!reg.isApproved && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              approveMutation.mutate({
+                                registrationId: reg.id,
+                              })
+                            }
+                            disabled={approveMutation.isPending}
+                            title="تأكيد التسجيل"
+                          >
+                            <Check className="h-4 w-4 text-green-600" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
           )}
         </CardContent>
       </Card>
