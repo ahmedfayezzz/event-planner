@@ -391,3 +391,56 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-primary/50;
 }
+
+/* Phone Input Styles */
+.phone-input-container {
+  display: flex;
+  align-items: center;
+  direction: ltr;
+}
+
+.phone-input-container .PhoneInputCountry {
+  margin-right: 0.5rem;
+}
+
+.phone-input-container .PhoneInputCountryIcon {
+  width: 1.25rem;
+  height: 1rem;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.phone-input-container .PhoneInputCountrySelectArrow {
+  margin-left: 0.25rem;
+  opacity: 0.5;
+}
+
+.phone-input-container .PhoneInputInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.875rem;
+  direction: ltr;
+}
+
+.phone-input-container .PhoneInputInput::placeholder {
+  color: oklch(0.45 0.05 150);
+}
+
+.phone-input-container .PhoneInputInput:focus {
+  outline: none;
+}
+
+/* Country select dropdown styling */
+.PhoneInputCountrySelect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}

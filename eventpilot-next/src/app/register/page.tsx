@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -155,18 +157,16 @@ export default function RegisterPage() {
                     <Label htmlFor="phone" className="text-sm">
                       رقم الهاتف *
                     </Label>
-                    <Input
+                    <PhoneInput
                       id="phone"
-                      type="tel"
-                      placeholder="05xxxxxxxx"
+                      international
+                      defaultCountry="SA"
                       value={formData.phone}
-                      onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
+                      onChange={(value) =>
+                        setFormData({ ...formData, phone: value || "" })
                       }
-                      required
                       disabled={isLoading}
-                      dir="ltr"
-                      className="bg-white/60 backdrop-blur-sm border border-primary/10 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all shadow-none"
+                      className="phone-input-container bg-white/60 backdrop-blur-sm border border-primary/10 focus-within:border-primary/50 focus-within:bg-white/80 h-10 md:h-11 transition-all shadow-none rounded-md px-3"
                     />
                   </div>
                   <div className="space-y-1.5 md:space-y-2">
