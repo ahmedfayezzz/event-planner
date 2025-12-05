@@ -34,7 +34,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatArabicDate } from "@/lib/utils";
-import { Plus, Eye, Edit, Users, Calendar, Loader2, MoreHorizontal, QrCode, FileDown, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Eye,
+  Edit,
+  Users,
+  Calendar,
+  Loader2,
+  MoreHorizontal,
+  QrCode,
+  FileDown,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface SessionItem {
@@ -48,17 +59,19 @@ interface SessionItem {
 }
 
 export default function AdminSessionsPage() {
-  const [tab, setTab] = useState<"all" | "upcoming" | "completed">("all");
+  const [tab, setTab] = useState<"all" | "upcoming" | "completed">("upcoming");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [sessionToDelete, setSessionToDelete] = useState<SessionItem | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<SessionItem | null>(
+    null
+  );
 
   const utils = api.useUtils();
   const { data, isLoading, isFetching } = api.session.list.useQuery(
     tab === "upcoming"
       ? { upcoming: true }
       : tab === "completed"
-        ? { status: "completed" }
-        : undefined
+      ? { status: "completed" }
+      : undefined
   );
 
   const deleteMutation = api.session.delete.useMutation({
@@ -130,8 +143,8 @@ export default function AdminSessionsPage() {
                 {tab === "all"
                   ? "جميع الجلسات"
                   : tab === "upcoming"
-                    ? "الجلسات القادمة"
-                    : "الجلسات المنتهية"}
+                  ? "الجلسات القادمة"
+                  : "الجلسات المنتهية"}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0" dir="rtl">
@@ -215,13 +228,17 @@ export default function AdminSessionsPage() {
                                   </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
-                                  <Link href={`/admin/sessions/${session.id}/edit`}>
+                                  <Link
+                                    href={`/admin/sessions/${session.id}/edit`}
+                                  >
                                     <Edit className="ml-2 h-4 w-4" />
                                     تعديل
                                   </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
-                                  <Link href={`/admin/sessions/${session.id}/attendees`}>
+                                  <Link
+                                    href={`/admin/sessions/${session.id}/attendees`}
+                                  >
                                     <Users className="ml-2 h-4 w-4" />
                                     المسجلين
                                   </Link>
@@ -260,8 +277,8 @@ export default function AdminSessionsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>هل أنت متأكد من حذف الجلسة؟</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم حذف الجلسة &quot;{sessionToDelete?.title}&quot; وجميع التسجيلات المرتبطة بها.
-              هذا الإجراء لا يمكن التراجع عنه.
+              سيتم حذف الجلسة &quot;{sessionToDelete?.title}&quot; وجميع
+              التسجيلات المرتبطة بها. هذا الإجراء لا يمكن التراجع عنه.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
