@@ -325,6 +325,14 @@ function RegistrationCard({
           <Button variant="outline" size="sm" asChild className="hover:bg-primary hover:text-white transition-colors">
             <Link href={`/session/${registration.session.id}`}>عرض التفاصيل</Link>
           </Button>
+          {!isPast && (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/user/registrations/${registration.id}/edit`}>
+                <Edit className="w-4 h-4 ml-2" />
+                تعديل التسجيل
+              </Link>
+            </Button>
+          )}
           {registration.isApproved && !isPast && (
             <Button variant="default" size="sm" asChild className="bg-secondary hover:bg-secondary/90 text-primary font-bold">
               <Link href={`/user/qr/${registration.session.id}`}>بطاقة الدخول (QR)</Link>

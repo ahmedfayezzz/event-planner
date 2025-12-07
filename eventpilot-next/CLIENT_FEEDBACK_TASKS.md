@@ -38,10 +38,18 @@
   - `src/server/api/routers/registration.ts` - Added hosting preferences to registerForSession
   - `src/server/api/routers/user.ts` - Added wantsToHost field to getMyProfile
 
-#### 2.3 Allow Users to Edit Their Registration
-- **New Feature**: Add edit registration page/modal
-- **Files to create**: `src/app/user/registrations/[id]/edit/page.tsx`
-- **API**: Add `registration.update` mutation in `src/server/api/routers/registration.ts`
+#### 2.3 Allow Users to Edit Their Registration ✅ DONE
+- **Implementation**: Created edit registration page with companion management
+- **Files created**:
+  - `src/app/user/registrations/[id]/edit/page.tsx` - Edit registration page
+- **Files updated**:
+  - `src/server/api/routers/registration.ts` - Added `updateRegistration` mutation
+  - `src/app/user/dashboard/page.tsx` - Added edit button to registration cards
+- **Features**:
+  - Only allows editing for users with accounts (not guest registrations)
+  - Loads existing companions and allows add/remove/edit
+  - Validates ownership (users can only edit their own registrations)
+  - Shows registration status and session details
 
 ### 3. Companion Details - Make Mandatory (Except Email) ✅ DONE
 - **Implementation**: Made companion name and phone required; email optional
@@ -305,18 +313,18 @@
 
 | Priority        | Total | Completed | Remaining | Focus Area                            |
 |-----------------|-------|-----------|-----------|---------------------------------------|
-| 🔴 High         | 4     | 4 ✅      | 0         | Core functionality, registration flow |
+| 🔴 High         | 5     | 5 ✅      | 0         | Core functionality, registration flow |
 | 🟡 Medium       | 5     | 6 ✅      | -1        | Configurability, hosting features     |
 | 🟢 UI/UX        | 8     | 1 ✅      | 7         | Tables, display, mobile               |
 | 🔵 New Features | 7     | 1 ✅      | 6         | New capabilities                      |
 | 🎨 Design       | 3     | 0         | 3         | Branding, visual                      |
-| **TOTAL**       | **27**| **12 ✅** | **15**    | **Overall Progress: 44%**             |
+| **TOTAL**       | **28**| **13 ✅** | **15**    | **Overall Progress: 46%**             |
 
 ---
 
 ## 📊 Completion Summary
 
-### ✅ Completed Features (12 tasks)
+### ✅ Completed Features (13 tasks)
 1. **Session → Event Renaming** - All UI labels updated
 2. **Social Media Fields** - Configurable per session
 3. **Professional Info** - Made mandatory
@@ -328,8 +336,17 @@
 9. **Registration Button Clarity** - Renamed to "الانضمام كعضو" (Join as Member)
 10. **Member Registration Flow** - Simplified registration for authenticated users (companions + catering only)
 11. **Companion Details Mandatory** - Name and phone required, email optional
+12. **Edit Registration** - Users can edit their event registrations and manage companions
 
 ### 🔧 Recent Implementation
+
+**Edit Registration Feature** - Complete registration editing system:
+- Users can edit their event registrations from the dashboard
+- Manage companions: add, remove, or edit companion information
+- Ownership validation ensures users can only edit their own registrations
+- Only available for users with accounts (not guest registrations)
+- Edit button appears on all upcoming registrations in the dashboard
+- Clean UI with existing data pre-filled
 
 **Member Registration Flow** - Created simplified registration page for authenticated users:
 - Auto-fills user information from account
@@ -352,7 +369,7 @@
 2. ~~Get QR code design from client~~ ✅ CLARIFIED - Need branded template design from client
 3. Get actual contact info for footer/emails - **PENDING**
 4. ~~Decide WhatsApp link type preference~~ ✅ DONE - Give users choice between both
-5. ~~Registration Flow Improvements (Task 2.1, 2.2)~~ ✅ DONE
+5. ~~Registration Flow Improvements (Task 2.1, 2.2, 2.3)~~ ✅ DONE
 6. ~~Companion Details Mandatory (Task 3)~~ ✅ DONE
 7. **Next Priority**: UI/UX Improvements (Task 6.2, 6.3, 7, 8)
-8. **Next Priority**: New Features (Task 9-15)
+8. **Next Priority**: New Features (Task 10-15)

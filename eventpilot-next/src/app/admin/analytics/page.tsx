@@ -339,8 +339,8 @@ export default function AnalyticsPage() {
                     fill="#8884d8"
                     dataKey="count"
                     nameKey="label"
-                    label={({ label, percent }) =>
-                      `${label} (${((percent ?? 0) * 100).toFixed(0)}%)`
+                    label={({ name, percent }) =>
+                      `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`
                     }
                   >
                     {analytics.hosting.breakdown.map((_, index) => (

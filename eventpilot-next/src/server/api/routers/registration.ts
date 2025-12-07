@@ -771,6 +771,113 @@ export const registrationRouter = createTRPCRouter({
     }),
 
   /**
+   * Update registration (for logged-in users to edit their registration)
+   */
+  updateRegistration: protectedProcedure
+    .input(
+      z.object({
+        registrationId: z.string(),
+        companions: z
+          .array(
+            z.object({
+              id: z.string().optional(), // existing companion ID
+              name: z.string().min(2, "اسم المرافق مطلوب"),
+              phone: z.string().min(9, "رقم الهاتف مطلوب"),
+              company: z.string().optional(),
+              title: z.string().optional(),
+              email: z.string().email().optional(),
+            })
+          )
+          .optional()
+          .default([]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db, session: userSession } = ctx;
+
+      // Get registration and verify ownership
+      const registration = await db.registration.findUnique({
+        where: { id: input.registrationId },
+        include: {
+          session: true,
+          invitedRegistrations: true,
+        },
+      });
+
+      if (!registration) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "التسجيل غير موجود",
+        });
+      }
+
+      // Verify user owns this registration
+      if (registration.userId !== userSession.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "غير مصرح لك بتعديل هذا التسجيل",
+        });
+      }
+
+      // Check companion limit
+      if (input.companions.length > registration.session.maxCompanions) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `الحد الأقصى للمرافقين هو ${registration.session.maxCompanions}`,
+        });
+      }
+
+      // Get existing companion IDs
+      const existingCompanionIds = registration.invitedRegistrations.map((r) => r.id);
+      const updatedCompanionIds = input.companions.filter((c) => c.id).map((c) => c.id!);
+
+      // Delete companions that were removed
+      const companionsToDelete = existingCompanionIds.filter(
+        (id) => !updatedCompanionIds.includes(id)
+      );
+      if (companionsToDelete.length > 0) {
+        await db.registration.deleteMany({
+          where: {
+            id: { in: companionsToDelete },
+          },
+        });
+      }
+
+      // Update or create companions
+      for (const companion of input.companions) {
+        if (companion.id) {
+          // Update existing companion
+          await db.registration.update({
+            where: { id: companion.id },
+            data: {
+              guestName: companion.name,
+              guestPhone: formatPhoneNumber(companion.phone),
+              guestCompanyName: companion.company || null,
+              guestPosition: companion.title || null,
+              guestEmail: companion.email?.toLowerCase() || null,
+            },
+          });
+        } else {
+          // Create new companion
+          await db.registration.create({
+            data: {
+              sessionId: registration.sessionId,
+              invitedByRegistrationId: registration.id,
+              isApproved: registration.isApproved, // Same approval status as parent
+              guestName: companion.name,
+              guestPhone: formatPhoneNumber(companion.phone),
+              guestCompanyName: companion.company || null,
+              guestPosition: companion.title || null,
+              guestEmail: companion.email?.toLowerCase() || null,
+            },
+          });
+        }
+      }
+
+      return { success: true };
+    }),
+
+  /**
    * Get registration confirmation data
    */
   getConfirmation: publicProcedure

@@ -1,4 +1,4 @@
-import { PrismaClient, User, Session } from "@prisma/client";
+import { PrismaClient, User, Session, EventCatering } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -744,7 +744,7 @@ async function main() {
 
   // ============== EVENT CATERING ==============
   // Add sample catering assignments for some sessions
-  const cateringAssignments = [];
+  const cateringAssignments: EventCatering[] = [];
 
   // Find users who want to host
   const hostsWhoWantToHost = users.filter(u => u.wantsToHost);
