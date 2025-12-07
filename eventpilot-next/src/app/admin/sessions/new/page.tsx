@@ -40,8 +40,6 @@ export default function NewSessionPage() {
       showGuestProfile: formData.showGuestProfile,
       inviteOnly: formData.inviteOnly,
       inviteMessage: formData.inviteMessage || undefined,
-      embedEnabled: formData.embedEnabled,
-      enableMiniView: formData.enableMiniView,
       sendQrInEmail: formData.sendQrInEmail,
       slug: formData.slug || undefined,
       registrationDeadline: formData.registrationDeadline

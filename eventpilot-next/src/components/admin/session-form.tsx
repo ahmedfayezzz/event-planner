@@ -51,8 +51,6 @@ import {
   QrCode,
   Timer,
   UserCheck,
-  LayoutGrid,
-  Code,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -297,7 +295,7 @@ function SessionPreview({ formData, hasGuest }: { formData: SessionFormData; has
 
         {/* Active Features */}
         <Separator />
-        <div className="grid grid-cols-3 gap-2 text-xs">
+        <div className="grid grid-cols-2 gap-2 text-xs">
           <div className={cn("text-center p-2 rounded-lg", formData.showCountdown ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground")}>
             <Timer className="h-4 w-4 mx-auto mb-1" />
             العد التنازلي
@@ -305,10 +303,6 @@ function SessionPreview({ formData, hasGuest }: { formData: SessionFormData; has
           <div className={cn("text-center p-2 rounded-lg", formData.sendQrInEmail ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground")}>
             <QrCode className="h-4 w-4 mx-auto mb-1" />
             QR بالبريد
-          </div>
-          <div className={cn("text-center p-2 rounded-lg", formData.embedEnabled ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground")}>
-            <Code className="h-4 w-4 mx-auto mb-1" />
-            التضمين
           </div>
         </div>
       </CardContent>
@@ -757,36 +751,6 @@ export function SessionForm({
                       label="ملف الضيف"
                       description="عرض معلومات الضيف"
                       icon={User}
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={isPending}
-                    />
-                  )}
-                />
-                <Controller
-                  name="embedEnabled"
-                  control={control}
-                  render={({ field }) => (
-                    <ToggleCard
-                      id="embedEnabled"
-                      label="تفعيل التضمين"
-                      description="السماح بتضمين الجلسة في مواقع أخرى"
-                      icon={Code}
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={isPending}
-                    />
-                  )}
-                />
-                <Controller
-                  name="enableMiniView"
-                  control={control}
-                  render={({ field }) => (
-                    <ToggleCard
-                      id="enableMiniView"
-                      label="العرض المصغر"
-                      description="تفعيل عرض مصغر للجلسة"
-                      icon={LayoutGrid}
                       checked={field.value}
                       onCheckedChange={field.onChange}
                       disabled={isPending}
@@ -1417,34 +1381,6 @@ export function SessionForm({
                         id="showGuestProfile-edit"
                         label="ملف الضيف"
                         icon={User}
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={isPending}
-                      />
-                    )}
-                  />
-                  <Controller
-                    name="embedEnabled"
-                    control={control}
-                    render={({ field }) => (
-                      <ToggleCard
-                        id="embedEnabled-edit"
-                        label="تفعيل التضمين"
-                        icon={Code}
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={isPending}
-                      />
-                    )}
-                  />
-                  <Controller
-                    name="enableMiniView"
-                    control={control}
-                    render={({ field }) => (
-                      <ToggleCard
-                        id="enableMiniView-edit"
-                        label="العرض المصغر"
-                        icon={LayoutGrid}
                         checked={field.value}
                         onCheckedChange={field.onChange}
                         disabled={isPending}

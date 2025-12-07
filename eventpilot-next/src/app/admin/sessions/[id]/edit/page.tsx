@@ -47,8 +47,6 @@ export default function SessionEditPage({
         showGuestProfile: session.showGuestProfile,
         inviteOnly: session.inviteOnly,
         inviteMessage: session.inviteMessage || "",
-        embedEnabled: session.embedEnabled,
-        enableMiniView: session.enableMiniView,
         sendQrInEmail: session.sendQrInEmail,
         slug: session.slug || "",
         registrationDeadline: session.registrationDeadline
@@ -90,8 +88,6 @@ export default function SessionEditPage({
       showGuestProfile: formData.showGuestProfile,
       inviteOnly: formData.inviteOnly,
       inviteMessage: formData.inviteMessage || undefined,
-      embedEnabled: formData.embedEnabled,
-      enableMiniView: formData.enableMiniView,
       sendQrInEmail: formData.sendQrInEmail,
       slug: formData.slug || undefined,
       registrationDeadline: formData.registrationDeadline
