@@ -1,7 +1,13 @@
 "use client";
 
 import { api } from "@/trpc/react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -12,7 +18,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatArabicDate } from "@/lib/utils";
-import { Users, Calendar, CheckCircle, TrendingUp } from "lucide-react";
+import {
+  Users,
+  Calendar,
+  CheckCircle,
+  TrendingUp,
+  UserPlus,
+  Clock,
+  UtensilsCrossed,
+  UsersRound,
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -29,7 +44,16 @@ import {
   Bar,
 } from "recharts";
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d", "#ffc658", "#ff7300"];
+const COLORS = [
+  "#166534",
+  "#D4A853",
+  "#0088FE",
+  "#00C49F",
+  "#FFBB28",
+  "#FF8042",
+  "#8884d8",
+  "#82ca9d",
+];
 
 export default function AnalyticsPage() {
   const { data: analytics, isLoading } = api.admin.getAnalytics.useQuery();
@@ -88,9 +112,7 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">الإحصائيات والتحليلات</h1>
-        <p className="text-muted-foreground">
-          نظرة شاملة على أداء المنصة
-        </p>
+        <p className="text-muted-foreground">نظرة شاملة على أداء المنصة</p>
       </div>
 
       {/* Overview Stats */}
@@ -98,9 +120,7 @@ export default function AnalyticsPage() {
         {stats.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {stat.title}
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
               <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </CardHeader>
             <CardContent>
@@ -108,6 +128,80 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* NEW: Secondary Stats Row */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">نسبة الاحتفاظ</CardTitle>
+            <UserPlus className="h-4 w-4 text-emerald-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {analytics.retention?.retentionRate ?? 0}%
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {analytics.retention?.returningUsers ?? 0} عضو عائد من{" "}
+              {analytics.retention?.totalActiveUsers ?? 0}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">إجمالي المضيفين</CardTitle>
+            <UtensilsCrossed className="h-4 w-4 text-amber-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {analytics.hosting?.totalHosts ?? 0}
+            </div>
+            <p className="text-xs text-muted-foreground">متطوع للضيافة</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">إجمالي المرافقين</CardTitle>
+            <UsersRound className="h-4 w-4 text-indigo-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {analytics.companions?.totalCompanions ?? 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              معدل {analytics.companions?.avgPerRegistration ?? 0} لكل تسجيل
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">التسجيل المبكر</CardTitle>
+            <Clock className="h-4 w-4 text-cyan-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {analytics.registrationTiming
+                ? Math.round(
+                    ((analytics.registrationTiming.find(
+                      (t) => t.label === "أكثر من أسبوع"
+                    )?.value ?? 0) /
+                      analytics.registrationTiming.reduce(
+                        (sum, t) => sum + t.value,
+                        0
+                      )) *
+                      100
+                  ) || 0
+                : 0}
+              %
+            </div>
+            <p className="text-xs text-muted-foreground">
+              يسجلون قبل أسبوع أو أكثر
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Charts Row 1 */}
@@ -133,9 +227,9 @@ export default function AnalyticsPage() {
                   <Line
                     type="monotone"
                     dataKey="count"
-                    stroke="#8884d8"
+                    stroke="#166534"
                     strokeWidth={2}
-                    dot={{ fill: "#8884d8" }}
+                    dot={{ fill: "#166534" }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -147,6 +241,129 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
+        {/* NEW: Registration Timing */}
+        <Card>
+          <CardHeader>
+            <CardTitle>توقيت التسجيل</CardTitle>
+            <CardDescription>متى يسجل الأعضاء قبل الجلسة</CardDescription>
+          </CardHeader>
+          <CardContent className="h-80">
+            {analytics.registrationTiming &&
+            analytics.registrationTiming.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analytics.registrationTiming}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" fontSize={11} />
+                  <YAxis fontSize={12} />
+                  <Tooltip
+                    contentStyle={{ direction: "rtl" }}
+                    formatter={(value) => [`${value} تسجيل`, "العدد"]}
+                  />
+                  <Bar dataKey="value" fill="#D4A853" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                لا توجد بيانات كافية
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 2: New vs Returning & Hosting */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* NEW: New vs Returning Members */}
+        <Card>
+          <CardHeader>
+            <CardTitle>الأعضاء الجدد مقابل العائدين</CardTitle>
+            <CardDescription>
+              توزيع الحضور في آخر 10 جلسات
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-80">
+            {analytics.retention?.newVsReturning &&
+            analytics.retention.newVsReturning.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analytics.retention.newVsReturning}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="sessionTitle"
+                    fontSize={10}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis fontSize={12} />
+                  <Tooltip contentStyle={{ direction: "rtl" }} />
+                  <Legend />
+                  <Bar
+                    dataKey="newMembers"
+                    name="جدد"
+                    fill="#166534"
+                    stackId="a"
+                  />
+                  <Bar
+                    dataKey="returning"
+                    name="عائدون"
+                    fill="#D4A853"
+                    stackId="a"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                لا توجد بيانات كافية
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* NEW: Hosting Breakdown */}
+        <Card>
+          <CardHeader>
+            <CardTitle>أنواع الضيافة المتطوع لها</CardTitle>
+            <CardDescription>توزيع المضيفين حسب نوع الضيافة</CardDescription>
+          </CardHeader>
+          <CardContent className="h-80">
+            {analytics.hosting?.breakdown &&
+            analytics.hosting.breakdown.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={analytics.hosting.breakdown}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="count"
+                    nameKey="label"
+                    label={({ label, percent }) =>
+                      `${label} (${((percent ?? 0) * 100).toFixed(0)}%)`
+                    }
+                  >
+                    {analytics.hosting.breakdown.map((_, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value} مضيف`, "العدد"]} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                لا يوجد مضيفين بعد
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 3 */}
+      <div className="grid gap-6 md:grid-cols-2">
         {/* Users by Activity Type */}
         <Card>
           <CardHeader>
@@ -186,9 +403,51 @@ export default function AnalyticsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* NEW: User Growth */}
+        <Card>
+          <CardHeader>
+            <CardTitle>نمو المستخدمين</CardTitle>
+            <CardDescription>الأعضاء الجدد شهرياً (آخر 6 أشهر)</CardDescription>
+          </CardHeader>
+          <CardContent className="h-80">
+            {analytics.growthMetrics && analytics.growthMetrics.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={analytics.growthMetrics}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip
+                    contentStyle={{ direction: "rtl" }}
+                    labelFormatter={(label) => `الشهر: ${label}`}
+                    formatter={(value, name) => [
+                      name === "newUsers"
+                        ? `${value} عضو جديد`
+                        : `${value}% نمو`,
+                      name === "newUsers" ? "الأعضاء الجدد" : "نسبة النمو",
+                    ]}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="newUsers"
+                    name="أعضاء جدد"
+                    stroke="#166534"
+                    strokeWidth={2}
+                    dot={{ fill: "#166534" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                لا توجد بيانات كافية
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Charts Row 2 */}
+      {/* Charts Row 4 */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Users by Gender */}
         <Card>
@@ -213,7 +472,7 @@ export default function AnalyticsPage() {
                     {analytics.usersByGender.map((_, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={index === 0 ? "#0088FE" : "#FF69B4"}
+                        fill={index === 0 ? "#166534" : "#D4A853"}
                       />
                     ))}
                   </Pie>
@@ -233,17 +492,22 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>أكثر الشركات مشاركة</CardTitle>
-            <CardDescription>أعلى 10 شركات من حيث عدد المستخدمين</CardDescription>
+            <CardDescription>
+              أعلى 5 شركات من حيث عدد المستخدمين
+            </CardDescription>
           </CardHeader>
           <CardContent className="h-64">
             {analytics.topCompanies.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analytics.topCompanies.slice(0, 5)} layout="vertical">
+                <BarChart
+                  data={analytics.topCompanies.slice(0, 5)}
+                  layout="vertical"
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" fontSize={12} />
                   <YAxis dataKey="name" type="category" width={100} fontSize={11} />
                   <Tooltip formatter={(value) => [`${value} مستخدم`, "العدد"]} />
-                  <Bar dataKey="count" fill="#8884d8" />
+                  <Bar dataKey="count" fill="#166534" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -259,7 +523,9 @@ export default function AnalyticsPage() {
       <Card>
         <CardHeader>
           <CardTitle>أداء الجلسات</CardTitle>
-          <CardDescription>إحصائيات التسجيل والحضور لكل جلسة</CardDescription>
+          <CardDescription>
+            إحصائيات التسجيل والحضور لكل جلسة
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {analytics.sessionPerformance.length > 0 ? (
@@ -278,7 +544,9 @@ export default function AnalyticsPage() {
                 {analytics.sessionPerformance.map((session) => (
                   <TableRow key={session.id}>
                     <TableCell className="font-medium">{session.title}</TableCell>
-                    <TableCell>{formatArabicDate(new Date(session.date))}</TableCell>
+                    <TableCell>
+                      {formatArabicDate(new Date(session.date))}
+                    </TableCell>
                     <TableCell>{session.registrations}</TableCell>
                     <TableCell>{session.attendees}</TableCell>
                     <TableCell>

@@ -585,6 +585,202 @@ export const adminRouter = createTRPCRouter({
         take: 10,
       });
 
+      // =====================================================
+      // NEW ANALYTICS: Retention (New vs Returning Members)
+      // =====================================================
+      const usersWithAttendance = await db.user.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          createdAt: true,
+          registrations: {
+            where: {
+              isApproved: true,
+              attendance: { attended: true }
+            },
+            select: {
+              sessionId: true,
+              session: { select: { date: true } }
+            },
+            orderBy: { session: { date: "asc" } },
+          },
+        },
+      });
+
+      // Calculate retention: users who attended more than one session
+      const usersWithMultipleSessions = usersWithAttendance.filter(
+        (u) => u.registrations.length > 1
+      );
+      const retentionRate = usersWithAttendance.length > 0
+        ? Math.round((usersWithMultipleSessions.length / usersWithAttendance.length) * 100)
+        : 0;
+
+      // New vs returning per recent sessions
+      const newVsReturning: { sessionTitle: string; newMembers: number; returning: number }[] = [];
+      for (const session of sessions.slice(0, 10)) {
+        const sessionAttendees = await db.attendance.findMany({
+          where: { sessionId: session.id, attended: true },
+          include: {
+            registration: {
+              include: { user: true }
+            }
+          }
+        });
+
+        let newCount = 0;
+        let returningCount = 0;
+
+        for (const att of sessionAttendees) {
+          if (!att.registration?.userId) {
+            newCount++; // Guest is always "new"
+            continue;
+          }
+
+          // Check if user had any prior attendance
+          const priorAttendance = await db.attendance.count({
+            where: {
+              attended: true,
+              registration: {
+                userId: att.registration.userId,
+                session: { date: { lt: session.date } }
+              }
+            }
+          });
+
+          if (priorAttendance > 0) {
+            returningCount++;
+          } else {
+            newCount++;
+          }
+        }
+
+        newVsReturning.push({
+          sessionTitle: session.title,
+          newMembers: newCount,
+          returning: returningCount,
+        });
+      }
+
+      // =====================================================
+      // NEW ANALYTICS: Registration Timing
+      // =====================================================
+      const registrationsWithTiming = await db.registration.findMany({
+        where: { isApproved: true },
+        select: {
+          registeredAt: true,
+          session: { select: { date: true } },
+        },
+      });
+
+      const timingBuckets = {
+        sameDay: 0,
+        oneDay: 0,
+        twoDays: 0,
+        threeDays: 0,
+        fourToSeven: 0,
+        moreThanWeek: 0,
+      };
+
+      registrationsWithTiming.forEach((r) => {
+        const daysBefore = Math.floor(
+          (r.session.date.getTime() - r.registeredAt.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        if (daysBefore <= 0) timingBuckets.sameDay++;
+        else if (daysBefore === 1) timingBuckets.oneDay++;
+        else if (daysBefore === 2) timingBuckets.twoDays++;
+        else if (daysBefore === 3) timingBuckets.threeDays++;
+        else if (daysBefore <= 7) timingBuckets.fourToSeven++;
+        else timingBuckets.moreThanWeek++;
+      });
+
+      const registrationTiming = [
+        { label: "نفس اليوم", value: timingBuckets.sameDay },
+        { label: "قبل يوم", value: timingBuckets.oneDay },
+        { label: "قبل يومين", value: timingBuckets.twoDays },
+        { label: "قبل 3 أيام", value: timingBuckets.threeDays },
+        { label: "4-7 أيام", value: timingBuckets.fourToSeven },
+        { label: "أكثر من أسبوع", value: timingBuckets.moreThanWeek },
+      ];
+
+      // =====================================================
+      // NEW ANALYTICS: Hosting Breakdown
+      // =====================================================
+      const hostingUsers = await db.user.findMany({
+        where: { wantsToHost: true, isActive: true },
+        select: { hostingTypes: true },
+      });
+
+      const guestHosting = await db.registration.findMany({
+        where: { guestWantsToHost: true },
+        select: { guestHostingTypes: true },
+      });
+
+      const hostingTypeCounts: Record<string, number> = {};
+      hostingUsers.forEach((u) => {
+        u.hostingTypes.forEach((type) => {
+          hostingTypeCounts[type] = (hostingTypeCounts[type] || 0) + 1;
+        });
+      });
+      guestHosting.forEach((g) => {
+        g.guestHostingTypes.forEach((type) => {
+          hostingTypeCounts[type] = (hostingTypeCounts[type] || 0) + 1;
+        });
+      });
+
+      const hostingBreakdown = Object.entries(hostingTypeCounts).map(([type, count]) => ({
+        type,
+        label: getHostingTypeLabel(type),
+        count,
+      }));
+
+      const totalHosts = hostingUsers.length + guestHosting.length;
+
+      // =====================================================
+      // NEW ANALYTICS: Companion Stats
+      // =====================================================
+      const registrationsWithCompanions = await db.registration.findMany({
+        where: { isApproved: true },
+        include: {
+          _count: { select: { invitedRegistrations: true } },
+        },
+      });
+
+      const totalCompanions = registrationsWithCompanions.reduce(
+        (sum, r) => sum + r._count.invitedRegistrations,
+        0
+      );
+      const registrationsWithAtLeastOne = registrationsWithCompanions.filter(
+        (r) => r._count.invitedRegistrations > 0
+      ).length;
+      const avgCompanionsPerReg = registrationsWithCompanions.length > 0
+        ? (totalCompanions / registrationsWithCompanions.length).toFixed(2)
+        : "0";
+
+      // =====================================================
+      // NEW ANALYTICS: Growth Metrics (Month over Month)
+      // =====================================================
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+      const newUsersPerMonth = await db.user.findMany({
+        where: { createdAt: { gte: sixMonthsAgo } },
+        select: { createdAt: true },
+      });
+
+      const userGrowthByMonth: Record<string, number> = {};
+      newUsersPerMonth.forEach((u) => {
+        const key = `${u.createdAt.getFullYear()}-${String(u.createdAt.getMonth() + 1).padStart(2, "0")}`;
+        userGrowthByMonth[key] = (userGrowthByMonth[key] || 0) + 1;
+      });
+
+      const growthMetrics = Object.entries(userGrowthByMonth)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([month, count], index, arr) => {
+          const prevCount = index > 0 ? arr[index - 1][1] : count;
+          const growthRate = prevCount > 0 ? Math.round(((count - prevCount) / prevCount) * 100) : 0;
+          return { month, newUsers: count, growthRate };
+        });
+
       return {
         overview: {
           totalUsers,
@@ -618,6 +814,24 @@ export const adminRouter = createTRPCRouter({
           name: c.companyName || "غير محدد",
           count: c._count,
         })),
+        // New analytics
+        retention: {
+          totalActiveUsers: usersWithAttendance.length,
+          returningUsers: usersWithMultipleSessions.length,
+          retentionRate,
+          newVsReturning,
+        },
+        registrationTiming,
+        hosting: {
+          totalHosts,
+          breakdown: hostingBreakdown,
+        },
+        companions: {
+          totalCompanions,
+          registrationsWithCompanions: registrationsWithAtLeastOne,
+          avgPerRegistration: parseFloat(avgCompanionsPerReg),
+        },
+        growthMetrics,
       };
     }),
 
