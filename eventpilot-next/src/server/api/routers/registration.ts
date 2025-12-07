@@ -28,15 +28,18 @@ export const registrationRouter = createTRPCRouter({
         companions: z
           .array(
             z.object({
-              name: z.string().min(2),
+              name: z.string().min(2, "اسم المرافق مطلوب"),
+              phone: z.string().min(9, "رقم الهاتف مطلوب"),
               company: z.string().optional(),
               title: z.string().optional(),
-              phone: z.string().optional(),
               email: z.string().email().optional(),
             })
           )
           .optional()
           .default([]),
+        // Hosting preferences (only if user is not already a host)
+        wantsToHost: z.boolean().optional(),
+        hostingTypes: z.array(z.string()).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -113,6 +116,17 @@ export const registrationRouter = createTRPCRouter({
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "المستخدم غير موجود",
+        });
+      }
+
+      // Update hosting preferences if user is not already a host
+      if (input.wantsToHost && !user.wantsToHost) {
+        await db.user.update({
+          where: { id: user.id },
+          data: {
+            wantsToHost: true,
+            hostingTypes: input.hostingTypes || [],
+          },
         });
       }
 
@@ -225,10 +239,10 @@ export const registrationRouter = createTRPCRouter({
         companions: z
           .array(
             z.object({
-              name: z.string().min(2),
+              name: z.string().min(2, "اسم المرافق مطلوب"),
+              phone: z.string().min(9, "رقم الهاتف مطلوب"),
               company: z.string().optional(),
               title: z.string().optional(),
-              phone: z.string().optional(),
               email: z.string().email().optional(),
             })
           )

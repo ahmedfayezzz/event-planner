@@ -1,7 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
-import { useRouter } from "next/navigation";
+import { use } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
@@ -23,39 +22,12 @@ import { copyToClipboard, shareOnTwitter, shareOnWhatsApp } from "@/lib/utils";
 
 export default function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
   const { data: authSession, status: authStatus } = useSession();
-  const [isRegistering, setIsRegistering] = useState(false);
-
   const { data: session, isLoading } = api.session.getById.useQuery({ id });
   const { data: registration } = api.session.checkRegistration.useQuery(
     { sessionId: id },
     { enabled: authStatus === "authenticated" }
   );
-
-  const registerMutation = api.registration.registerForSession.useMutation({
-    onSuccess: () => {
-      toast.success("تم التسجيل بنجاح!");
-      router.refresh();
-    },
-    onError: (error) => {
-      toast.error(error.message || "حدث خطأ أثناء التسجيل");
-    },
-  });
-
-  const handleRegister = async () => {
-    if (authStatus !== "authenticated") {
-      router.push(`/user/login?callbackUrl=/session/${id}`);
-      return;
-    }
-
-    setIsRegistering(true);
-    try {
-      await registerMutation.mutateAsync({ sessionId: id });
-    } finally {
-      setIsRegistering(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -244,16 +216,13 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                           )}
                           <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full sm:w-auto">
                             <Button
-                              onClick={handleRegister}
-                              disabled={isRegistering}
+                              asChild
                               size="default"
                               className="shadow-lg hover:shadow-xl transition-all w-full sm:w-auto md:text-base"
                             >
-                              {authStatus !== "authenticated"
-                                ? "الانضمام كعضو"
-                                : isRegistering
-                                  ? "جارٍ التسجيل..."
-                                  : "الانضمام كعضو"}
+                              <Link href={authStatus === "authenticated" ? `/session/${id}/member-register` : `/user/login?callbackUrl=/session/${id}/member-register`}>
+                                الانضمام كعضو
+                              </Link>
                             </Button>
                             {authStatus !== "authenticated" && (
                               <Button variant="outline" asChild size="default" className="w-full sm:w-auto">

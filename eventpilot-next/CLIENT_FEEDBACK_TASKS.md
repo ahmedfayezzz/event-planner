@@ -18,31 +18,37 @@
 
 ### 2. Registration Flow Improvements
 
-#### 2.1 "Register as Member" vs "Guest" Clarity
-- **Current**: Guest registration at `/session/[id]/guest-register/page.tsx`
-- **Change**: Rename "التسجيل" button and label to "الانضمام كعضو" (Join as Member)
-- **Files**:
-  - `src/app/session/[id]/page.tsx`
-  - `src/app/register/page.tsx`
+#### 2.1 "Register as Member" vs "Guest" Clarity ✅ DONE
+- **Implementation**: Renamed "التسجيل" button to "الانضمام كعضو" (Join as Member)
+- **Files updated**:
+  - `src/app/session/[id]/page.tsx` - Updated button text
+  - `src/app/register/page.tsx` - Updated page title
 
-#### 2.2 Existing Users → Navigate to Registration Form
-- **Issue**: Existing logged-in users should be redirected to session registration, not account creation
-- **Files**:
-  - `src/app/session/[id]/page.tsx` - Add check for authenticated user
-  - `src/app/register/page.tsx` - Redirect if already logged in
+#### 2.2 Existing Users → Navigate to Registration Form ✅ DONE
+- **Implementation**: Created simplified member registration page for authenticated users
+- **Features**:
+  - Shows user info (read-only, pulled from account)
+  - Companions input (optional)
+  - Hosting preferences (optional, only shown if user is not already a host)
+  - Redirects authenticated users from session page to member registration
+- **Files created**:
+  - `src/app/session/[id]/member-register/page.tsx` - New member registration page
+- **Files updated**:
+  - `src/app/session/[id]/page.tsx` - Button links to member registration
+  - `src/server/api/routers/registration.ts` - Added hosting preferences to registerForSession
+  - `src/server/api/routers/user.ts` - Added wantsToHost field to getMyProfile
 
 #### 2.3 Allow Users to Edit Their Registration
 - **New Feature**: Add edit registration page/modal
 - **Files to create**: `src/app/user/registrations/[id]/edit/page.tsx`
 - **API**: Add `registration.update` mutation in `src/server/api/routers/registration.ts`
 
-### 3. Companion Details - Make Mandatory (Except Email)
-- **Current**: `src/app/session/[id]/guest-register/page.tsx` - companion fields
-- **Change**: Make name, phone required; email optional
-- **Files**:
-  - `src/server/api/routers/registration.ts` - Update Zod schema
-  - `src/server/api/routers/companion.ts` - Update validation
-  - Registration form components
+### 3. Companion Details - Make Mandatory (Except Email) ✅ DONE
+- **Implementation**: Made companion name and phone required; email optional
+- **Files updated**:
+  - `src/server/api/routers/registration.ts` - Updated Zod schema with required validation for name and phone
+  - `src/app/session/[id]/guest-register/page.tsx` - Added asterisk to phone label, updated validation
+  - `src/app/session/[id]/member-register/page.tsx` - Added asterisk to phone label, updated validation
 
 ---
 
@@ -299,18 +305,18 @@
 
 | Priority        | Total | Completed | Remaining | Focus Area                            |
 |-----------------|-------|-----------|-----------|---------------------------------------|
-| 🔴 High         | 3     | 1 ✅      | 2         | Core functionality, registration flow |
+| 🔴 High         | 4     | 4 ✅      | 0         | Core functionality, registration flow |
 | 🟡 Medium       | 5     | 6 ✅      | -1        | Configurability, hosting features     |
 | 🟢 UI/UX        | 8     | 1 ✅      | 7         | Tables, display, mobile               |
 | 🔵 New Features | 7     | 1 ✅      | 6         | New capabilities                      |
 | 🎨 Design       | 3     | 0         | 3         | Branding, visual                      |
-| **TOTAL**       | **26**| **9 ✅**  | **17**    | **Overall Progress: 35%**             |
+| **TOTAL**       | **27**| **12 ✅** | **15**    | **Overall Progress: 44%**             |
 
 ---
 
 ## 📊 Completion Summary
 
-### ✅ Completed Features (9 tasks)
+### ✅ Completed Features (12 tasks)
 1. **Session → Event Renaming** - All UI labels updated
 2. **Social Media Fields** - Configurable per session
 3. **Professional Info** - Made mandatory
@@ -319,14 +325,24 @@
 6. **Sessions Ordering** - ASC for public, DESC for admin
 7. **Location Links** - Google Maps integration
 8. **Registration Form Field Visibility** - Three configurable flags with global defaults and per-session overrides
+9. **Registration Button Clarity** - Renamed to "الانضمام كعضو" (Join as Member)
+10. **Member Registration Flow** - Simplified registration for authenticated users (companions + catering only)
+11. **Companion Details Mandatory** - Name and phone required, email optional
 
 ### 🔧 Recent Implementation
-- **Registration Form Field Visibility Flags** - Three toggles control field display:
-  - `showSocialMediaFields` - Show/hide social media inputs (X, LinkedIn, Instagram)
-  - `showRegistrationPurpose` - Show/hide registration purpose question
-  - `showCateringInterest` - Show/hide hosting interest checkbox
-  - Global defaults in admin settings, per-session overrides in session form
-  - Session form automatically loads global defaults when creating new sessions
+
+**Member Registration Flow** - Created simplified registration page for authenticated users:
+- Auto-fills user information from account
+- Only asks for companions (optional) and hosting preferences (if not already a host)
+- No need to re-enter personal details
+- Clean, focused user experience
+
+**Companion Details Validation** - Made companion information more complete:
+- **Name**: Required (minimum 2 characters)
+- **Phone**: Required (minimum 9 characters)
+- **Email**: Optional
+- **Company & Title**: Optional
+- Validation enforced in both API schema and UI forms
 
 ---
 
@@ -336,5 +352,7 @@
 2. ~~Get QR code design from client~~ ✅ CLARIFIED - Need branded template design from client
 3. Get actual contact info for footer/emails - **PENDING**
 4. ~~Decide WhatsApp link type preference~~ ✅ DONE - Give users choice between both
-5. **Next Priority**: Registration Flow Improvements (Task 2.1, 2.2, 2.3)
-6. **Next Priority**: Companion Details Mandatory (Task 3)
+5. ~~Registration Flow Improvements (Task 2.1, 2.2)~~ ✅ DONE
+6. ~~Companion Details Mandatory (Task 3)~~ ✅ DONE
+7. **Next Priority**: UI/UX Improvements (Task 6.2, 6.3, 7, 8)
+8. **Next Priority**: New Features (Task 9-15)

@@ -86,6 +86,8 @@ export const userRouter = createTRPCRouter({
         isApproved: true,
         isActive: true,
         role: true,
+        wantsToHost: true,
+        hostingTypes: true,
         createdAt: true,
       },
     });

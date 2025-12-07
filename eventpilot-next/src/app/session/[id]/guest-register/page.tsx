@@ -117,8 +117,8 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
       return;
     }
 
-    // Validate companions have names
-    const validCompanions = companions.filter((c) => c.name.trim());
+    // Validate companions have required fields (name and phone)
+    const validCompanions = companions.filter((c) => c.name.trim() && c.phone.trim().length >= 9);
 
     setIsSubmitting(true);
     try {
@@ -461,11 +461,12 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>رقم الهاتف</Label>
+                              <Label>رقم الهاتف *</Label>
                               <Input
                                 value={companion.phone}
                                 onChange={(e) => handleCompanionChange(index, "phone", e.target.value)}
                                 placeholder="05XXXXXXXX"
+                                required
                               />
                             </div>
                             <div className="space-y-2 md:col-span-2">
