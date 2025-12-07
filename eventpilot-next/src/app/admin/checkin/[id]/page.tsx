@@ -35,6 +35,7 @@ import {
   Users,
   Camera,
   CameraOff,
+  UserPlus,
 } from "lucide-react";
 
 // Attendee type for the attendance list
@@ -45,6 +46,8 @@ interface AttendeeItem {
   email: string | null;
   phone: string | null;
   isGuest: boolean;
+  isInvited?: boolean;
+  invitedByName?: string | null;
   attended: boolean;
   checkInTime: Date | null;
   qrVerified: boolean;
@@ -145,7 +148,8 @@ export default function CheckInPage({
       (a: AttendeeItem) =>
         a.name?.toLowerCase().includes(searchLower) ||
         a.email?.toLowerCase().includes(searchLower) ||
-        a.phone?.includes(debouncedSearch)
+        a.phone?.includes(debouncedSearch) ||
+        a.invitedByName?.toLowerCase().includes(searchLower)
     );
   }, [attendance?.attendanceList, debouncedSearch]);
 
@@ -209,6 +213,9 @@ export default function CheckInPage({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{attendance.stats.total}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {attendance.stats.totalDirect} مباشر + {attendance.stats.totalInvited} مرافق
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -307,6 +314,11 @@ export default function CheckInPage({
                   <div className="flex items-center gap-2">
                     <Check className="h-5 w-5" />
                     <span>تم تسجيل حضور: {scanResult.name}</span>
+                    {scanResult.type === "companion" && (
+                      <Badge variant="outline" className="ms-2 bg-purple-500/10 text-purple-600 border-purple-200">
+                        مرافق
+                      </Badge>
+                    )}
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
@@ -362,10 +374,23 @@ export default function CheckInPage({
                       <TableRow key={attendee.registrationId}>
                         <TableCell>
                           <div>
-                            <p className="font-medium">{attendee.name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{attendee.name}</p>
+                              {attendee.isInvited && (
+                                <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200 text-xs">
+                                  <UserPlus className="me-1 h-3 w-3" />
+                                  مرافق
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-xs text-muted-foreground">
                               {attendee.email}
                             </p>
+                            {attendee.isInvited && attendee.invitedByName && (
+                              <p className="text-xs text-muted-foreground">
+                                مدعو من: {attendee.invitedByName}
+                              </p>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -381,14 +406,13 @@ export default function CheckInPage({
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {!attendee.attended && attendee.userId && (
+                          {!attendee.attended && (
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() =>
                                 markManualMutation.mutate({
-                                  userId: attendee.userId!,
-                                  sessionId: id,
+                                  registrationId: attendee.registrationId,
                                   attended: true,
                                 })
                               }

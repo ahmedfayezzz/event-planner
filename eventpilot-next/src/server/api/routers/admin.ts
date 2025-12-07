@@ -158,8 +158,11 @@ export const adminRouter = createTRPCRouter({
           _count: {
             select: {
               registrations: { where: { isApproved: true } },
-              attendances: { where: { attended: true } },
             },
+          },
+          registrations: {
+            where: { attendance: { attended: true } },
+            select: { id: true },
           },
         },
         orderBy: { createdAt: "desc" },
@@ -178,7 +181,7 @@ export const adminRouter = createTRPCRouter({
         سناب: u.snapchat || "",
         تويتر: u.twitter || "",
         "عدد التسجيلات": u._count.registrations,
-        "عدد الحضور": u._count.attendances,
+        "عدد الحضور": u.registrations.length,
         "تاريخ الانضمام": u.createdAt.toLocaleDateString("ar-SA"),
       }));
 
@@ -210,7 +213,7 @@ export const adminRouter = createTRPCRouter({
         where: { sessionId: input.sessionId },
         include: {
           user: true,
-          companions: true,
+          invitedRegistrations: true,
         },
         orderBy: { registeredAt: "desc" },
       });
@@ -223,8 +226,8 @@ export const adminRouter = createTRPCRouter({
         المنصب: r.user?.position || r.guestPosition || "",
         "نوع التسجيل": r.user ? "عضو" : "زائر",
         "الحالة": r.isApproved ? "مؤكد" : "معلق",
-        "عدد المرافقين": r.companions.length,
-        "أسماء المرافقين": r.companions.map((c) => c.name).join(", "),
+        "عدد المرافقين": r.invitedRegistrations.length,
+        "أسماء المرافقين": r.invitedRegistrations.map((c) => c.guestName).join(", "),
         "تاريخ التسجيل": r.registeredAt.toLocaleDateString("ar-SA"),
       }));
 
@@ -327,8 +330,11 @@ export const adminRouter = createTRPCRouter({
           _count: {
             select: {
               registrations: { where: { isApproved: true } },
-              attendances: { where: { attended: true } },
             },
+          },
+          registrations: {
+            where: { attendance: { attended: true } },
+            select: { id: true },
           },
         },
       });
@@ -343,7 +349,7 @@ export const adminRouter = createTRPCRouter({
         users: users.map((u) => ({
           ...u,
           registrationCount: u._count.registrations,
-          attendanceCount: u._count.attendances,
+          attendanceCount: u.registrations.length,
         })),
         nextCursor,
       };
@@ -557,12 +563,15 @@ export const adminRouter = createTRPCRouter({
           _count: {
             select: {
               registrations: { where: { isApproved: true } },
-              attendances: { where: { attended: true } },
             },
+          },
+          registrations: {
+            where: { attendance: { attended: true } },
+            select: { id: true },
           },
         },
         orderBy: {
-          attendances: { _count: "desc" },
+          registrations: { _count: "desc" },
         },
         take: 10,
       });
@@ -598,11 +607,11 @@ export const adminRouter = createTRPCRouter({
           name: u.name,
           email: u.email,
           company: u.companyName,
-          sessionsAttended: u._count.attendances,
+          sessionsAttended: u.registrations.length,
           totalRegistrations: u._count.registrations,
           attendanceRate:
             u._count.registrations > 0
-              ? Math.round((u._count.attendances / u._count.registrations) * 100)
+              ? Math.round((u.registrations.length / u._count.registrations) * 100)
               : 0,
         })),
         topCompanies: companies.map((c) => ({

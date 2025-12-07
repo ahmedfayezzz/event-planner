@@ -33,9 +33,16 @@ export const userRouter = createTRPCRouter({
           _count: {
             select: {
               registrations: { where: { isApproved: true } },
-              attendances: { where: { attended: true } },
             },
           },
+        },
+      });
+
+      // Count attended events via registrations with attendance
+      const attendedCount = await db.attendance.count({
+        where: {
+          registration: { userId: input.username },
+          attended: true,
         },
       });
 
@@ -49,7 +56,7 @@ export const userRouter = createTRPCRouter({
       return {
         ...user,
         registrationCount: user._count.registrations,
-        attendanceCount: user._count.attendances,
+        attendanceCount: attendedCount,
       };
     }),
 
@@ -201,17 +208,18 @@ export const userRouter = createTRPCRouter({
         twitter: true,
         snapchat: true,
         registrations: {
+          where: { invitedByRegistrationId: null }, // Only direct registrations
           include: {
             session: true,
-            companions: true,
+            invitedRegistrations: {
+              select: {
+                id: true,
+                guestName: true,
+              },
+            },
+            attendance: true,
           },
           orderBy: { registeredAt: "desc" },
-        },
-        attendances: {
-          include: {
-            session: true,
-          },
-          orderBy: { checkInTime: "desc" },
         },
       },
     });
@@ -225,12 +233,27 @@ export const userRouter = createTRPCRouter({
 
     // Separate upcoming and past registrations
     const now = new Date();
-    const upcomingRegistrations = user.registrations.filter(
-      (r) => new Date(r.session.date) >= now
-    );
-    const pastRegistrations = user.registrations.filter(
-      (r) => new Date(r.session.date) < now
-    );
+    const upcomingRegistrations = user.registrations
+      .filter((r) => new Date(r.session.date) >= now)
+      .map((r) => ({
+        ...r,
+        companions: r.invitedRegistrations.map((inv) => ({
+          id: inv.id,
+          name: inv.guestName || "",
+        })),
+      }));
+    const pastRegistrations = user.registrations
+      .filter((r) => new Date(r.session.date) < now)
+      .map((r) => ({
+        ...r,
+        companions: r.invitedRegistrations.map((inv) => ({
+          id: inv.id,
+          name: inv.guestName || "",
+        })),
+      }));
+
+    // Count attended events
+    const attendedCount = user.registrations.filter((r) => r.attendance?.attended).length;
 
     return {
       user: {
@@ -249,11 +272,10 @@ export const userRouter = createTRPCRouter({
       stats: {
         totalRegistrations: user.registrations.length,
         upcomingEvents: upcomingRegistrations.length,
-        attendedEvents: user.attendances.filter((a) => a.attended).length,
+        attendedEvents: attendedCount,
       },
       upcomingRegistrations,
       pastRegistrations,
-      recentAttendances: user.attendances.slice(0, 5),
     };
   }),
 

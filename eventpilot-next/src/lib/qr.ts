@@ -43,13 +43,12 @@ export async function generateQRCodeBuffer(data: string): Promise<Buffer | null>
 
 /**
  * QR data format for attendance check-in
+ * Each registration (direct or invited) gets its own QR code
  */
 export interface QRCheckInData {
   type: "attendance";
   registrationId: string;
   sessionId: string;
-  userId?: string;
-  companionId?: string;
 }
 
 /**

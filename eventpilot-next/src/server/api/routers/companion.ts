@@ -11,7 +11,7 @@ import { sendCompanionEmail } from "@/lib/email";
 
 export const companionRouter = createTRPCRouter({
   /**
-   * Add companion to registration
+   * Add companion (invited registration) to a parent registration
    */
   add: protectedProcedure
     .input(
@@ -27,16 +27,16 @@ export const companionRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
 
-      // Get registration
-      const registration = await db.registration.findUnique({
+      // Get parent registration
+      const parentRegistration = await db.registration.findUnique({
         where: { id: input.registrationId },
         include: {
           session: true,
-          companions: true,
+          invitedRegistrations: true,
         },
       });
 
-      if (!registration) {
+      if (!parentRegistration) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "التسجيل غير موجود",
@@ -44,7 +44,7 @@ export const companionRouter = createTRPCRouter({
       }
 
       // Verify ownership
-      if (registration.userId !== session.user.id) {
+      if (parentRegistration.userId !== session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "غير مصرح لك بإضافة مرافقين لهذا التسجيل",
@@ -52,65 +52,66 @@ export const companionRouter = createTRPCRouter({
       }
 
       // Check companion limit
-      if (registration.companions.length >= registration.session.maxCompanions) {
+      if (parentRegistration.invitedRegistrations.length >= parentRegistration.session.maxCompanions) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `الحد الأقصى للمرافقين هو ${registration.session.maxCompanions}`,
+          message: `الحد الأقصى للمرافقين هو ${parentRegistration.session.maxCompanions}`,
         });
       }
 
-      // Create companion
-      const companion = await db.companion.create({
+      // Create invited registration (companion)
+      const invitedRegistration = await db.registration.create({
         data: {
-          registrationId: input.registrationId,
-          name: input.name,
-          company: input.company || null,
-          title: input.title || null,
-          phone: input.phone ? formatPhoneNumber(input.phone) : null,
-          email: input.email?.toLowerCase() || null,
+          sessionId: parentRegistration.sessionId,
+          invitedByRegistrationId: parentRegistration.id,
+          isApproved: parentRegistration.session.requiresApproval ? false : true,
+          guestName: input.name,
+          guestCompanyName: input.company || null,
+          guestPosition: input.title || null,
+          guestPhone: input.phone ? formatPhoneNumber(input.phone) : null,
+          guestEmail: input.email?.toLowerCase() || null,
         },
       });
 
-      // Send invite email if email provided and registration is approved
-      if (companion.email && registration.isApproved) {
+      // Send invite email if email provided and parent registration is approved
+      if (invitedRegistration.guestEmail && parentRegistration.isApproved) {
         const user = await db.user.findUnique({
           where: { id: session.user.id },
         });
 
         const qrData = createQRCheckInData({
           type: "attendance",
-          registrationId: registration.id,
-          sessionId: registration.session.id,
-          companionId: companion.id,
+          registrationId: invitedRegistration.id,
+          sessionId: parentRegistration.session.id,
         });
         const qrCode = await generateQRCode(qrData);
 
         await sendCompanionEmail(
-          companion.email,
-          companion.name,
+          invitedRegistration.guestEmail,
+          invitedRegistration.guestName || "المرافق",
           user?.name || "المسجل",
-          registration.session,
+          parentRegistration.session,
           true,
           qrCode || undefined
         );
       }
 
-      return companion;
+      return invitedRegistration;
     }),
 
   /**
-   * List companions for a registration
+   * List companions (invited registrations) for a parent registration
    */
   list: protectedProcedure
     .input(z.object({ registrationId: z.string() }))
     .query(async ({ ctx, input }) => {
       const { db, session } = ctx;
 
-      // Get registration
+      // Get parent registration with invited registrations
       const registration = await db.registration.findUnique({
         where: { id: input.registrationId },
         include: {
-          companions: true,
+          invitedRegistrations: true,
         },
       });
 
@@ -129,25 +130,36 @@ export const companionRouter = createTRPCRouter({
         });
       }
 
-      return registration.companions;
+      // Map to companion-like structure for backward compatibility
+      return registration.invitedRegistrations.map((r) => ({
+        id: r.id,
+        registrationId: registration.id,
+        name: r.guestName || "",
+        company: r.guestCompanyName,
+        title: r.guestPosition,
+        phone: r.guestPhone,
+        email: r.guestEmail,
+        createdAt: r.registeredAt,
+        isApproved: r.isApproved,
+      }));
     }),
 
   /**
-   * Get all companions for session (admin only)
+   * Get all companions (invited registrations) for session (admin only)
    */
   getSessionCompanions: adminProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      const companions = await db.companion.findMany({
+      // Get all invited registrations for this session
+      const invitedRegistrations = await db.registration.findMany({
         where: {
-          registration: {
-            sessionId: input.sessionId,
-          },
+          sessionId: input.sessionId,
+          invitedByRegistrationId: { not: null },
         },
         include: {
-          registration: {
+          invitedByRegistration: {
             include: {
               user: {
                 select: {
@@ -159,60 +171,69 @@ export const companionRouter = createTRPCRouter({
             },
           },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { registeredAt: "desc" },
       });
 
-      return companions.map((c) => ({
-        ...c,
-        registrantName: c.registration.user?.name || c.registration.guestName,
-        registrantEmail: c.registration.user?.email || c.registration.guestEmail,
-        registrationApproved: c.registration.isApproved,
+      return invitedRegistrations.map((r) => ({
+        id: r.id,
+        registrationId: r.invitedByRegistrationId,
+        name: r.guestName || "",
+        company: r.guestCompanyName,
+        title: r.guestPosition,
+        phone: r.guestPhone,
+        email: r.guestEmail,
+        createdAt: r.registeredAt,
+        isApproved: r.isApproved,
+        registrantName: r.invitedByRegistration?.user?.name || r.invitedByRegistration?.guestName,
+        registrantEmail: r.invitedByRegistration?.user?.email || r.invitedByRegistration?.guestEmail,
+        registrationApproved: r.invitedByRegistration?.isApproved,
       }));
     }),
 
   /**
-   * Send invite email to companion
+   * Send invite email to companion (invited registration)
    */
   sendInvite: protectedProcedure
     .input(z.object({ companionId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
 
-      const companion = await db.companion.findUnique({
+      // Get the invited registration
+      const invitedRegistration = await db.registration.findUnique({
         where: { id: input.companionId },
         include: {
-          registration: {
+          session: true,
+          invitedByRegistration: {
             include: {
-              session: true,
               user: true,
             },
           },
         },
       });
 
-      if (!companion) {
+      if (!invitedRegistration || !invitedRegistration.invitedByRegistrationId) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "المرافق غير موجود",
         });
       }
 
-      // Verify ownership
-      if (companion.registration.userId !== session.user.id) {
+      // Verify ownership (user owns the parent registration)
+      if (invitedRegistration.invitedByRegistration?.userId !== session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "غير مصرح لك بإرسال دعوة لهذا المرافق",
         });
       }
 
-      if (!companion.email) {
+      if (!invitedRegistration.guestEmail) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "المرافق ليس لديه بريد إلكتروني",
         });
       }
 
-      if (!companion.registration.isApproved) {
+      if (!invitedRegistration.isApproved) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "التسجيل غير مؤكد بعد",
@@ -222,64 +243,55 @@ export const companionRouter = createTRPCRouter({
       // Generate QR and send email
       const qrData = createQRCheckInData({
         type: "attendance",
-        registrationId: companion.registration.id,
-        sessionId: companion.registration.session.id,
-        companionId: companion.id,
+        registrationId: invitedRegistration.id,
+        sessionId: invitedRegistration.session.id,
       });
       const qrCode = await generateQRCode(qrData);
 
       await sendCompanionEmail(
-        companion.email,
-        companion.name,
-        companion.registration.user?.name || "المسجل",
-        companion.registration.session,
+        invitedRegistration.guestEmail,
+        invitedRegistration.guestName || "المرافق",
+        invitedRegistration.invitedByRegistration?.user?.name || "المسجل",
+        invitedRegistration.session,
         true,
         qrCode || undefined
       );
-
-      // Update invite sent status
-      await db.companion.update({
-        where: { id: companion.id },
-        data: {
-          inviteSent: true,
-          inviteSentAt: new Date(),
-        },
-      });
 
       return { success: true };
     }),
 
   /**
-   * Remove companion from registration
+   * Remove companion (delete invited registration)
    */
   remove: protectedProcedure
     .input(z.object({ companionId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
 
-      const companion = await db.companion.findUnique({
+      // Get the invited registration
+      const invitedRegistration = await db.registration.findUnique({
         where: { id: input.companionId },
         include: {
-          registration: true,
+          invitedByRegistration: true,
         },
       });
 
-      if (!companion) {
+      if (!invitedRegistration || !invitedRegistration.invitedByRegistrationId) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "المرافق غير موجود",
         });
       }
 
-      // Verify ownership
-      if (companion.registration.userId !== session.user.id) {
+      // Verify ownership (user owns the parent registration)
+      if (invitedRegistration.invitedByRegistration?.userId !== session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "غير مصرح لك بحذف هذا المرافق",
         });
       }
 
-      await db.companion.delete({
+      await db.registration.delete({
         where: { id: input.companionId },
       });
 

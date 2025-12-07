@@ -185,7 +185,7 @@ export const sessionRouter = createTRPCRouter({
             orderBy: { registeredAt: "desc" },
             include: {
               user: { select: { id: true, name: true, email: true, phone: true } },
-              companions: true,
+              invitedRegistrations: true,
             },
           },
         },
@@ -234,7 +234,7 @@ export const sessionRouter = createTRPCRouter({
           isGuest: !r.user,
           isApproved: r.isApproved,
           registeredAt: r.registeredAt,
-          companionCount: r.companions.length,
+          companionCount: r.invitedRegistrations.length,
         })),
       };
     }),
@@ -555,7 +555,7 @@ export const sessionRouter = createTRPCRouter({
           userId: session.user.id,
         },
         include: {
-          companions: true,
+          invitedRegistrations: true,
         },
       });
 
@@ -569,7 +569,7 @@ export const sessionRouter = createTRPCRouter({
           id: registration.id,
           isApproved: registration.isApproved,
           registeredAt: registration.registeredAt,
-          companionCount: registration.companions.length,
+          companionCount: registration.invitedRegistrations.length,
         },
       };
     }),
@@ -603,9 +603,6 @@ export const sessionRouter = createTRPCRouter({
       await db.$transaction([
         db.attendance.deleteMany({ where: { sessionId: input.id } }),
         db.invite.deleteMany({ where: { sessionId: input.id } }),
-        db.companion.deleteMany({
-          where: { registration: { sessionId: input.id } },
-        }),
         db.registration.deleteMany({ where: { sessionId: input.id } }),
         db.session.delete({ where: { id: input.id } }),
       ]);

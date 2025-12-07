@@ -58,8 +58,6 @@ model User {
 
   // Relations
   registrations Registration[]
-  attendances   Attendance[]
-  companionsConverted Companion[] @relation("ConvertedUser")
 }
 
 model Session {
@@ -131,48 +129,32 @@ model Registration {
   guestWantsToHost    Boolean   @default(false)
   guestHostingTypes   String[]  @default([])
 
+  // Companion/Invited relationship (self-referential)
+  invitedByRegistrationId  String?
+  invitedByRegistration    Registration?  @relation("InvitedBy", fields: [invitedByRegistrationId], references: [id])
+  invitedRegistrations     Registration[] @relation("InvitedBy")
+
   // Relations
-  user        User?     @relation(fields: [userId], references: [id])
-  session     Session   @relation(fields: [sessionId], references: [id])
-  companions  Companion[]
+  user        User?       @relation(fields: [userId], references: [id])
+  session     Session     @relation(fields: [sessionId], references: [id])
+  attendance  Attendance?
 
   @@unique([userId, sessionId])
 }
 
 model Attendance {
-  id          String   @id @default(cuid())
-  userId      String
-  sessionId   String
-  attended    Boolean  @default(false)
-  checkInTime DateTime?
-  qrVerified  Boolean  @default(false)
+  id             String   @id @default(cuid())
+  registrationId String   @unique
+  sessionId      String
+  attended       Boolean  @default(false)
+  checkInTime    DateTime?
+  qrVerified     Boolean  @default(false)
 
   // Relations
-  user        User     @relation(fields: [userId], references: [id])
-  session     Session  @relation(fields: [sessionId], references: [id])
+  registration   Registration @relation(fields: [registrationId], references: [id])
+  session        Session      @relation(fields: [sessionId], references: [id])
 
-  @@unique([userId, sessionId])
-}
-
-model Companion {
-  id              String   @id @default(cuid())
-  registrationId  String
-  name            String
-  company         String?
-  title           String?
-  phone           String?
-  email           String?
-  createdAt       DateTime @default(now())
-
-  // Invitation tracking
-  inviteSent      Boolean  @default(false)
-  inviteSentAt    DateTime?
-  inviteToken     String?
-  convertedToUserId String?
-
-  // Relations
-  registration    Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-  convertedUser   User?        @relation("ConvertedUser", fields: [convertedToUserId], references: [id])
+  @@unique([registrationId, sessionId])
 }
 
 model Invite {

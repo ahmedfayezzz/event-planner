@@ -524,13 +524,16 @@ async function main() {
 
           for (let i = 0; i < numCompanions; i++) {
             const comp = shuffledCompanions[i];
-            await prisma.companion.create({
+            await prisma.registration.create({
               data: {
-                registrationId: registration.id,
-                name: comp.name,
-                company: comp.company,
-                title: comp.title,
-                phone: `+9665${Math.floor(10000000 + Math.random() * 90000000)}`,
+                sessionId: session.id,
+                invitedByRegistrationId: registration.id,
+                guestName: comp.name,
+                guestCompanyName: comp.company,
+                guestPosition: comp.title,
+                guestPhone: `+9665${Math.floor(10000000 + Math.random() * 90000000)}`,
+                isApproved: true,
+                registeredAt: registration.registeredAt,
               },
             });
             totalCompanions++;
@@ -542,7 +545,7 @@ async function main() {
           const attended = Math.random() < 0.85; // 85% attendance rate
           await prisma.attendance.create({
             data: {
-              userId: user.id,
+              registrationId: registration.id,
               sessionId: session.id,
               attended,
               checkInTime: attended ? new Date(session.date.getTime() + Math.random() * 30 * 60 * 1000) : null,
@@ -609,7 +612,7 @@ async function main() {
   }
 
   console.log(`✅ Created ${totalRegistrations} registrations`);
-  console.log(`✅ Created ${totalCompanions} companions`);
+  console.log(`✅ Created ${totalCompanions} invited registrations`);
   console.log(`✅ Created ${totalAttendances} attendance records`);
 
   // ============== SUMMARY ==============
@@ -620,7 +623,7 @@ async function main() {
   console.log(`👥 Regular users: ${users.length}`);
   console.log(`📅 Sessions: ${sessions.length} (${sessions.filter(s => s.status === "completed").length} completed, ${sessions.filter(s => s.status === "open").length} open)`);
   console.log(`📝 Registrations: ${totalRegistrations}`);
-  console.log(`👥 Companions: ${totalCompanions}`);
+  console.log(`👥 Invited registrations: ${totalCompanions}`);
   console.log(`✅ Attendance records: ${totalAttendances}`);
   console.log("=".repeat(50));
   console.log("\n📋 Login Credentials:");

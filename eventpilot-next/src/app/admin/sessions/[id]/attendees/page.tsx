@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -27,6 +28,7 @@ import {
   Users,
   CheckCheck,
   Loader2,
+  UserPlus,
 } from "lucide-react";
 
 interface RegistrationItem {
@@ -37,8 +39,12 @@ interface RegistrationItem {
   isGuest: boolean;
   isApproved: boolean;
   registeredAt: Date;
-  companions?: { id: string }[];
+  isInvited?: boolean;
+  invitedByName?: string | null;
+  companionCount?: number;
 }
+
+type FilterType = "all" | "direct" | "invited";
 
 export default function SessionAttendeesPage({
   params,
@@ -47,6 +53,7 @@ export default function SessionAttendeesPage({
 }) {
   const { id } = use(params);
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<FilterType>("all");
   const debouncedSearch = useDebounce(search, 300);
 
   const { data: session, isLoading: sessionLoading } =
@@ -57,7 +64,7 @@ export default function SessionAttendeesPage({
     isFetching,
     refetch,
   } = api.registration.getSessionRegistrations.useQuery(
-    { sessionId: id },
+    { sessionId: id, includeInvited: true },
     { enabled: !!id }
   );
 
@@ -100,25 +107,50 @@ export default function SessionAttendeesPage({
     }
   };
 
-  // Filter registrations by search (client-side)
+  // Filter registrations by search and type
   const filteredRegistrations = useMemo(() => {
     if (!registrations) return [];
-    if (!debouncedSearch.trim()) return registrations;
 
-    const searchLower = debouncedSearch.toLowerCase();
-    return registrations.filter(
-      (reg: RegistrationItem) =>
-        reg.name?.toLowerCase().includes(searchLower) ||
-        reg.email?.toLowerCase().includes(searchLower) ||
-        reg.phone?.includes(debouncedSearch)
-    );
-  }, [registrations, debouncedSearch]);
+    let filtered = registrations;
+
+    // Filter by type
+    if (filter === "direct") {
+      filtered = filtered.filter((reg: RegistrationItem) => !reg.isInvited);
+    } else if (filter === "invited") {
+      filtered = filtered.filter((reg: RegistrationItem) => reg.isInvited);
+    }
+
+    // Filter by search
+    if (debouncedSearch.trim()) {
+      const searchLower = debouncedSearch.toLowerCase();
+      filtered = filtered.filter(
+        (reg: RegistrationItem) =>
+          reg.name?.toLowerCase().includes(searchLower) ||
+          reg.email?.toLowerCase().includes(searchLower) ||
+          reg.phone?.includes(debouncedSearch) ||
+          reg.invitedByName?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return filtered;
+  }, [registrations, debouncedSearch, filter]);
 
   // Calculate stats
   const stats = useMemo(() => {
-    if (!registrations) return { total: 0, approved: 0, pending: 0 };
+    if (!registrations)
+      return { total: 0, direct: 0, invited: 0, approved: 0, pending: 0 };
+
+    const direct = registrations.filter(
+      (r: RegistrationItem) => !r.isInvited
+    ).length;
+    const invited = registrations.filter(
+      (r: RegistrationItem) => r.isInvited
+    ).length;
+
     return {
       total: registrations.length,
+      direct,
+      invited,
       approved: registrations.filter((r: RegistrationItem) => r.isApproved)
         .length,
       pending: registrations.filter((r: RegistrationItem) => !r.isApproved)
@@ -136,7 +168,8 @@ export default function SessionAttendeesPage({
           <Skeleton className="h-10 w-10" />
           <Skeleton className="h-10 w-48" />
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
+          <Skeleton className="h-24" />
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
@@ -194,7 +227,7 @@ export default function SessionAttendeesPage({
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
@@ -203,17 +236,30 @@ export default function SessionAttendeesPage({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats.total} / {session.maxParticipants}
+              {stats.total}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats.direct} مباشر + {stats.invited} مرافق
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">المسجلين مباشرة</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {stats.direct} / {session.maxParticipants}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">المؤكدين</CardTitle>
+            <CardTitle className="text-sm font-medium">المرافقين</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {stats.approved}
+            <div className="text-2xl font-bold text-purple-600">
+              {stats.invited}
             </div>
           </CardContent>
         </Card>
@@ -229,15 +275,30 @@ export default function SessionAttendeesPage({
         </Card>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="بحث بالاسم أو البريد أو الهاتف..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pe-10"
-        />
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterType)} className="w-fit">
+          <TabsList>
+            <TabsTrigger value="all">
+              الكل ({stats.total})
+            </TabsTrigger>
+            <TabsTrigger value="direct">
+              مباشر ({stats.direct})
+            </TabsTrigger>
+            <TabsTrigger value="invited">
+              مرافقين ({stats.invited})
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="relative flex-1">
+          <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="بحث بالاسم أو البريد أو الهاتف..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pe-10"
+          />
+        </div>
       </div>
 
       {/* Table */}
@@ -270,7 +331,8 @@ export default function SessionAttendeesPage({
                     <TableHead>البريد</TableHead>
                     <TableHead>الهاتف</TableHead>
                     <TableHead>النوع</TableHead>
-                    <TableHead>المرافقين</TableHead>
+                    {filter !== "invited" && <TableHead>المرافقين</TableHead>}
+                    {filter !== "direct" && <TableHead>مدعو من</TableHead>}
                     <TableHead>الحالة</TableHead>
                     <TableHead>تاريخ التسجيل</TableHead>
                     <TableHead>الإجراءات</TableHead>
@@ -283,11 +345,25 @@ export default function SessionAttendeesPage({
                       <TableCell>{reg.email}</TableCell>
                       <TableCell dir="ltr">{reg.phone}</TableCell>
                       <TableCell>
-                        <Badge variant={reg.isGuest ? "secondary" : "default"}>
-                          {reg.isGuest ? "زائر" : "عضو"}
-                        </Badge>
+                        {reg.isInvited ? (
+                          <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200">
+                            <UserPlus className="me-1 h-3 w-3" />
+                            مرافق
+                          </Badge>
+                        ) : (
+                          <Badge variant={reg.isGuest ? "secondary" : "default"}>
+                            {reg.isGuest ? "زائر" : "عضو"}
+                          </Badge>
+                        )}
                       </TableCell>
-                      <TableCell>{reg.companions?.length || 0}</TableCell>
+                      {filter !== "invited" && (
+                        <TableCell>{reg.companionCount || 0}</TableCell>
+                      )}
+                      {filter !== "direct" && (
+                        <TableCell className="text-muted-foreground">
+                          {reg.invitedByName || "-"}
+                        </TableCell>
+                      )}
                       <TableCell>
                         <Badge
                           variant={reg.isApproved ? "default" : "outline"}

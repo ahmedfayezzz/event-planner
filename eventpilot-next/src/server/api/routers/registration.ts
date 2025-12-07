@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import type { Registration } from "@prisma/client";
 import {
   createTRPCRouter,
   publicProcedure,
@@ -9,7 +10,6 @@ import {
 import { formatPhoneNumber, validateSaudiPhone, generateUsername } from "@/lib/validation";
 import { generateQRCode, createQRCheckInData } from "@/lib/qr";
 import {
-  sendConfirmationEmail,
   sendPendingEmail,
   sendConfirmedEmail,
   sendCompanionEmail,
@@ -47,7 +47,7 @@ export const registrationRouter = createTRPCRouter({
         where: { id: input.sessionId },
         include: {
           _count: {
-            select: { registrations: { where: { isApproved: true } } },
+            select: { registrations: { where: { isApproved: true, invitedByRegistrationId: null } } },
           },
         },
       });
@@ -119,26 +119,32 @@ export const registrationRouter = createTRPCRouter({
       // Determine approval status
       const isApproved = !session.requiresApproval;
 
-      // Create registration with companions
+      // Create registration
       const registration = await db.registration.create({
         data: {
           userId: userSession.user.id,
           sessionId: input.sessionId,
           isApproved,
-          companions: {
-            create: input.companions.map((c) => ({
-              name: c.name,
-              company: c.company || null,
-              title: c.title || null,
-              phone: c.phone ? formatPhoneNumber(c.phone) : null,
-              email: c.email?.toLowerCase() || null,
-            })),
-          },
-        },
-        include: {
-          companions: true,
         },
       });
+
+      // Create invited registrations (companions)
+      const invitedRegistrations: Registration[] = [];
+      for (const companion of input.companions) {
+        const invitedReg = await db.registration.create({
+          data: {
+            sessionId: input.sessionId,
+            invitedByRegistrationId: registration.id,
+            isApproved: session.requiresApproval ? false : true,
+            guestName: companion.name,
+            guestCompanyName: companion.company || null,
+            guestPosition: companion.title || null,
+            guestPhone: companion.phone ? formatPhoneNumber(companion.phone) : null,
+            guestEmail: companion.email?.toLowerCase() || null,
+          },
+        });
+        invitedRegistrations.push(invitedReg);
+      }
 
       // Generate QR code if approved
       let qrCode: string | null = null;
@@ -147,7 +153,6 @@ export const registrationRouter = createTRPCRouter({
           type: "attendance",
           registrationId: registration.id,
           sessionId: session.id,
-          userId: userSession.user.id,
         });
         qrCode = await generateQRCode(qrData);
       }
@@ -160,21 +165,20 @@ export const registrationRouter = createTRPCRouter({
       }
 
       // Send companion emails
-      for (const companion of registration.companions) {
-        if (companion.email) {
+      for (const invitedReg of invitedRegistrations) {
+        if (invitedReg.guestEmail) {
           let companionQr: string | null = null;
           if (isApproved) {
             const companionQrData = createQRCheckInData({
               type: "attendance",
-              registrationId: registration.id,
+              registrationId: invitedReg.id,
               sessionId: session.id,
-              companionId: companion.id,
             });
             companionQr = await generateQRCode(companionQrData);
           }
           await sendCompanionEmail(
-            companion.email,
-            companion.name,
+            invitedReg.guestEmail,
+            invitedReg.guestName || "المرافق",
             user.name,
             session,
             isApproved,
@@ -186,7 +190,7 @@ export const registrationRouter = createTRPCRouter({
       return {
         id: registration.id,
         isApproved,
-        companionCount: registration.companions.length,
+        companionCount: invitedRegistrations.length,
         qrCode: isApproved ? qrCode : null,
       };
     }),
@@ -240,7 +244,7 @@ export const registrationRouter = createTRPCRouter({
         where: { id: input.sessionId },
         include: {
           _count: {
-            select: { registrations: { where: { isApproved: true } } },
+            select: { registrations: { where: { isApproved: true, invitedByRegistrationId: null } } },
           },
         },
       });
@@ -419,20 +423,26 @@ export const registrationRouter = createTRPCRouter({
           guestGoal: userId ? null : input.goal || null,
           guestWantsToHost: userId ? false : input.wantsToHost,
           guestHostingTypes: userId ? [] : (input.wantsToHost ? input.hostingTypes : []),
-          companions: {
-            create: input.companions.map((c) => ({
-              name: c.name,
-              company: c.company || null,
-              title: c.title || null,
-              phone: c.phone ? formatPhoneNumber(c.phone) : null,
-              email: c.email?.toLowerCase() || null,
-            })),
-          },
-        },
-        include: {
-          companions: true,
         },
       });
+
+      // Create invited registrations (companions)
+      const invitedRegistrations: Registration[] = [];
+      for (const companion of input.companions) {
+        const invitedReg = await db.registration.create({
+          data: {
+            sessionId: input.sessionId,
+            invitedByRegistrationId: registration.id,
+            isApproved: session.requiresApproval ? false : true,
+            guestName: companion.name,
+            guestCompanyName: companion.company || null,
+            guestPosition: companion.title || null,
+            guestPhone: companion.phone ? formatPhoneNumber(companion.phone) : null,
+            guestEmail: companion.email?.toLowerCase() || null,
+          },
+        });
+        invitedRegistrations.push(invitedReg);
+      }
 
       // Generate QR code if approved
       let qrCode: string | null = null;
@@ -441,7 +451,6 @@ export const registrationRouter = createTRPCRouter({
           type: "attendance",
           registrationId: registration.id,
           sessionId: session.id,
-          userId: userId || undefined,
         });
         qrCode = await generateQRCode(qrData);
       }
@@ -454,21 +463,20 @@ export const registrationRouter = createTRPCRouter({
       }
 
       // Send companion emails
-      for (const companion of registration.companions) {
-        if (companion.email) {
+      for (const invitedReg of invitedRegistrations) {
+        if (invitedReg.guestEmail) {
           let companionQr: string | null = null;
           if (isApproved) {
             const companionQrData = createQRCheckInData({
               type: "attendance",
-              registrationId: registration.id,
+              registrationId: invitedReg.id,
               sessionId: session.id,
-              companionId: companion.id,
             });
             companionQr = await generateQRCode(companionQrData);
           }
           await sendCompanionEmail(
-            companion.email,
-            companion.name,
+            invitedReg.guestEmail,
+            invitedReg.guestName || "المرافق",
             input.name,
             session,
             isApproved,
@@ -481,7 +489,7 @@ export const registrationRouter = createTRPCRouter({
         id: registration.id,
         isApproved,
         hasAccount: !!userId,
-        companionCount: registration.companions.length,
+        companionCount: invitedRegistrations.length,
       };
     }),
 
@@ -495,7 +503,7 @@ export const registrationRouter = createTRPCRouter({
       where: { userId: session.user.id },
       include: {
         session: true,
-        companions: true,
+        invitedRegistrations: true,
       },
       orderBy: { registeredAt: "desc" },
     });
@@ -511,6 +519,7 @@ export const registrationRouter = createTRPCRouter({
       z.object({
         sessionId: z.string(),
         includeUnapproved: z.boolean().default(true),
+        includeInvited: z.boolean().default(false),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -520,6 +529,7 @@ export const registrationRouter = createTRPCRouter({
         where: {
           sessionId: input.sessionId,
           ...(input.includeUnapproved ? {} : { isApproved: true }),
+          ...(input.includeInvited ? {} : { invitedByRegistrationId: null }),
         },
         include: {
           user: {
@@ -532,7 +542,17 @@ export const registrationRouter = createTRPCRouter({
               position: true,
             },
           },
-          companions: true,
+          invitedRegistrations: true,
+          invitedByRegistration: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { registeredAt: "desc" },
       });
@@ -545,6 +565,9 @@ export const registrationRouter = createTRPCRouter({
         companyName: r.user?.companyName || r.guestCompanyName,
         position: r.user?.position || r.guestPosition,
         isGuest: !r.user,
+        isInvited: !!r.invitedByRegistrationId,
+        invitedByName: r.invitedByRegistration?.user?.name || r.invitedByRegistration?.guestName,
+        companionCount: r.invitedRegistrations.length,
       }));
     }),
 
@@ -566,7 +589,7 @@ export const registrationRouter = createTRPCRouter({
         include: {
           session: true,
           user: true,
-          companions: true,
+          invitedRegistrations: true,
         },
       });
 
@@ -601,27 +624,31 @@ export const registrationRouter = createTRPCRouter({
           type: "attendance",
           registrationId: registration.id,
           sessionId: registration.session.id,
-          userId: registration.userId || undefined,
         });
         const qrCode = await generateQRCode(qrData);
 
         await sendConfirmedEmail(email, name, registration.session, qrCode || undefined);
       }
 
-      // Send companion emails
-      for (const companion of registration.companions) {
-        if (companion.email) {
+      // Approve and send emails to invited registrations (companions)
+      for (const invitedReg of registration.invitedRegistrations) {
+        // Approve the invited registration
+        await db.registration.update({
+          where: { id: invitedReg.id },
+          data: { isApproved: true },
+        });
+
+        if (invitedReg.guestEmail) {
           const companionQrData = createQRCheckInData({
             type: "attendance",
-            registrationId: registration.id,
+            registrationId: invitedReg.id,
             sessionId: registration.session.id,
-            companionId: companion.id,
           });
           const companionQr = await generateQRCode(companionQrData);
 
           await sendCompanionEmail(
-            companion.email,
-            companion.name,
+            invitedReg.guestEmail,
+            invitedReg.guestName || "المرافق",
             name || "المسجل",
             registration.session,
             true,
@@ -652,22 +679,35 @@ export const registrationRouter = createTRPCRouter({
         });
       }
 
+      // Get pending parent registrations (not invited)
       const pendingRegistrations = await db.registration.findMany({
         where: {
           sessionId: input.sessionId,
           isApproved: false,
+          invitedByRegistrationId: null,
         },
         include: {
           user: true,
-          companions: true,
+          invitedRegistrations: true,
         },
       });
 
-      // Update all to approved
+      // Update all parent registrations to approved
       await db.registration.updateMany({
         where: {
           sessionId: input.sessionId,
           isApproved: false,
+          invitedByRegistrationId: null,
+        },
+        data: { isApproved: true },
+      });
+
+      // Also approve all invited registrations
+      await db.registration.updateMany({
+        where: {
+          sessionId: input.sessionId,
+          isApproved: false,
+          invitedByRegistrationId: { not: null },
         },
         data: { isApproved: true },
       });
@@ -682,7 +722,6 @@ export const registrationRouter = createTRPCRouter({
             type: "attendance",
             registrationId: registration.id,
             sessionId: session.id,
-            userId: registration.userId || undefined,
           });
           const qrCode = await generateQRCode(qrData);
 
@@ -690,19 +729,18 @@ export const registrationRouter = createTRPCRouter({
         }
 
         // Send companion emails
-        for (const companion of registration.companions) {
-          if (companion.email) {
+        for (const invitedReg of registration.invitedRegistrations) {
+          if (invitedReg.guestEmail) {
             const companionQrData = createQRCheckInData({
               type: "attendance",
-              registrationId: registration.id,
+              registrationId: invitedReg.id,
               sessionId: session.id,
-              companionId: companion.id,
             });
             const companionQr = await generateQRCode(companionQrData);
 
             await sendCompanionEmail(
-              companion.email,
-              companion.name,
+              invitedReg.guestEmail,
+              invitedReg.guestName || "المرافق",
               name || "المسجل",
               session,
               true,
@@ -737,7 +775,16 @@ export const registrationRouter = createTRPCRouter({
               email: true,
             },
           },
-          companions: true,
+          invitedRegistrations: true,
+          invitedByRegistration: {
+            include: {
+              user: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -747,6 +794,17 @@ export const registrationRouter = createTRPCRouter({
           message: "التسجيل غير موجود",
         });
       }
+
+      // Map invited registrations to companion-like structure
+      const companions = registration.invitedRegistrations.map((r) => ({
+        id: r.id,
+        name: r.guestName || "",
+        company: r.guestCompanyName,
+        title: r.guestPosition,
+        phone: r.guestPhone,
+        email: r.guestEmail,
+        isApproved: r.isApproved,
+      }));
 
       return {
         id: registration.id,
@@ -760,8 +818,10 @@ export const registrationRouter = createTRPCRouter({
           date: registration.session.date,
           location: registration.session.location,
         },
-        companions: registration.companions,
+        companions,
         hasAccount: !!registration.user,
+        isInvited: !!registration.invitedByRegistrationId,
+        invitedByName: registration.invitedByRegistration?.user?.name || registration.invitedByRegistration?.guestName,
       };
     }),
 });

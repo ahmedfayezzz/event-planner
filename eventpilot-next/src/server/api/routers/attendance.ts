@@ -9,69 +9,46 @@ import { parseQRData, generateQRCode, createQRCheckInData } from "@/lib/qr";
 
 export const attendanceRouter = createTRPCRouter({
   /**
-   * Mark user as attended (admin only)
+   * Mark registration as attended (admin only)
    */
   markAttendance: adminProcedure
     .input(
       z.object({
-        userId: z.string(),
-        sessionId: z.string(),
+        registrationId: z.string(),
         attended: z.boolean().default(true),
       })
     )
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      // Verify user and session exist
-      const user = await db.user.findUnique({
-        where: { id: input.userId },
-      });
-
-      if (!user) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "المستخدم غير موجود",
-        });
-      }
-
-      const session = await db.session.findUnique({
-        where: { id: input.sessionId },
-      });
-
-      if (!session) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
-        });
-      }
-
-      // Check if user has approved registration
-      const registration = await db.registration.findFirst({
-        where: {
-          userId: input.userId,
-          sessionId: input.sessionId,
-          isApproved: true,
-        },
+      // Get registration
+      const registration = await db.registration.findUnique({
+        where: { id: input.registrationId },
+        include: { session: true },
       });
 
       if (!registration) {
         throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "التسجيل غير موجود",
+        });
+      }
+
+      if (!registration.isApproved) {
+        throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "المستخدم غير مسجل في هذه الجلسة",
+          message: "التسجيل غير مؤكد",
         });
       }
 
       // Upsert attendance record
       const attendance = await db.attendance.upsert({
         where: {
-          userId_sessionId: {
-            userId: input.userId,
-            sessionId: input.sessionId,
-          },
+          registrationId: input.registrationId,
         },
         create: {
-          userId: input.userId,
-          sessionId: input.sessionId,
+          registrationId: input.registrationId,
+          sessionId: registration.sessionId,
           attended: input.attended,
           checkInTime: input.attended ? new Date() : null,
         },
@@ -107,7 +84,11 @@ export const attendanceRouter = createTRPCRouter({
         include: {
           session: true,
           user: true,
-          companions: true,
+          invitedByRegistration: {
+            include: {
+              user: true,
+            },
+          },
         },
       });
 
@@ -132,51 +113,13 @@ export const attendanceRouter = createTRPCRouter({
         });
       }
 
-      // Determine if this is a companion or main registrant
-      if (parsed.companionId) {
-        // Find companion
-        const companion = registration.companions.find(
-          (c) => c.id === parsed.companionId
-        );
-
-        if (!companion) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "المرافق غير موجود",
-          });
-        }
-
-        // For companions, we just return success (no separate attendance record)
-        return {
-          success: true,
-          type: "companion",
-          name: companion.name,
-          registrantName: registration.user?.name || registration.guestName,
-          sessionTitle: registration.session.title,
-        };
-      }
-
-      // Main registrant attendance
-      if (!registration.userId) {
-        // Guest registration - no attendance record, just return success
-        return {
-          success: true,
-          type: "guest",
-          name: registration.guestName,
-          sessionTitle: registration.session.title,
-        };
-      }
-
       // Create/update attendance record
       const attendance = await db.attendance.upsert({
         where: {
-          userId_sessionId: {
-            userId: registration.userId,
-            sessionId: registration.sessionId,
-          },
+          registrationId: registration.id,
         },
         create: {
-          userId: registration.userId,
+          registrationId: registration.id,
           sessionId: registration.sessionId,
           attended: true,
           checkInTime: new Date(),
@@ -189,10 +132,17 @@ export const attendanceRouter = createTRPCRouter({
         },
       });
 
+      // Determine display info based on registration type
+      const isInvited = !!registration.invitedByRegistrationId;
+      const name = registration.user?.name || registration.guestName;
+      const inviterName = registration.invitedByRegistration?.user?.name ||
+                          registration.invitedByRegistration?.guestName;
+
       return {
         success: true,
-        type: "user",
-        name: registration.user?.name,
+        type: isInvited ? "companion" : (registration.user ? "user" : "guest"),
+        name,
+        registrantName: isInvited ? inviterName : undefined,
         sessionTitle: registration.session.title,
         attendance,
       };
@@ -217,7 +167,7 @@ export const attendanceRouter = createTRPCRouter({
         });
       }
 
-      // Get all approved registrations
+      // Get all approved registrations (both direct and invited)
       const registrations = await db.registration.findMany({
         where: {
           sessionId: input.sessionId,
@@ -232,22 +182,23 @@ export const attendanceRouter = createTRPCRouter({
               phone: true,
             },
           },
-          companions: true,
+          attendance: true,
+          invitedByRegistration: {
+            include: {
+              user: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+          invitedRegistrations: true,
         },
       });
 
-      // Get attendance records
-      const attendances = await db.attendance.findMany({
-        where: { sessionId: input.sessionId },
-      });
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const attendanceMap = new Map<string, any>(attendances.map((a) => [a.userId, a]));
-
       // Combine data
       const attendanceList = registrations.map((r) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const attendance: any = r.userId ? attendanceMap.get(r.userId) : null;
+        const isInvited = !!r.invitedByRegistrationId;
 
         return {
           registrationId: r.id,
@@ -256,18 +207,27 @@ export const attendanceRouter = createTRPCRouter({
           email: r.user?.email || r.guestEmail,
           phone: r.user?.phone || r.guestPhone,
           isGuest: !r.user,
-          attended: attendance?.attended || false,
-          checkInTime: attendance?.checkInTime || null,
-          qrVerified: attendance?.qrVerified || false,
-          companionCount: r.companions.length,
+          isInvited,
+          invitedByName: r.invitedByRegistration?.user?.name || r.invitedByRegistration?.guestName,
+          attended: r.attendance?.attended || false,
+          checkInTime: r.attendance?.checkInTime || null,
+          qrVerified: r.attendance?.qrVerified || false,
+          companionCount: r.invitedRegistrations.length,
         };
       });
 
+      // Calculate stats
+      const directRegistrations = registrations.filter(r => !r.invitedByRegistrationId);
+      const invitedRegistrations = registrations.filter(r => !!r.invitedByRegistrationId);
+
       const stats = {
+        totalDirect: directRegistrations.length,
+        totalInvited: invitedRegistrations.length,
         total: registrations.length,
-        attended: attendanceList.filter((a) => a.attended).length,
-        pending: attendanceList.filter((a) => !a.attended).length,
-        totalCompanions: registrations.reduce((acc, r) => acc + r.companions.length, 0),
+        attendedDirect: directRegistrations.filter((r) => r.attendance?.attended).length,
+        attendedInvited: invitedRegistrations.filter((r) => r.attendance?.attended).length,
+        attended: registrations.filter((r) => r.attendance?.attended).length,
+        pending: registrations.filter((r) => !r.attendance?.attended).length,
       };
 
       return {
@@ -313,7 +273,6 @@ export const attendanceRouter = createTRPCRouter({
         type: "attendance",
         registrationId: registration.id,
         sessionId: registration.sessionId,
-        userId: session.user.id,
       });
 
       const qrCode = await generateQRCode(qrData);

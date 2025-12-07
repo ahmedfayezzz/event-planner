@@ -6,9 +6,6 @@ async function main() {
   console.log("🗑️  Clearing all database data...\n");
 
   // Delete in order of dependencies (children first)
-  const companion = await prisma.companion.deleteMany({});
-  console.log(`Deleted ${companion.count} companions`);
-
   const attendance = await prisma.attendance.deleteMany({});
   console.log(`Deleted ${attendance.count} attendance records`);
 
