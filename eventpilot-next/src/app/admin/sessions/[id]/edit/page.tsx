@@ -74,7 +74,7 @@ export default function SessionEditPage({
 
     await updateMutation.mutateAsync({
       id,
-      sessionNumber: parseInt(formData.sessionNumber),
+      sessionNumber: parseInt(formData.sessionNumber || "0"),
       title: formData.title,
       description: formData.description || undefined,
       date: dateTime,
