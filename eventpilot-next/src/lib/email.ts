@@ -79,9 +79,32 @@ interface EmailTemplateOptions {
   extraContent?: string; // For QR codes or additional content after button
 }
 
+// =============================================================================
+// BRAND COLORS (matching website theme)
+// =============================================================================
+const BRAND = {
+  // Primary: Deep Emerald Green
+  primary: "#166534",
+  primaryDark: "#14532d",
+  // Accent: Gold/Bronze
+  accent: "#D4A853",
+  accentLight: "#E8D5A8",
+  // Backgrounds
+  background: "#FAF8F5", // Cream
+  cardBg: "#ffffff",
+  footerBg: "#F5F3EF", // Light cream
+  // Text
+  textDark: "#1a2e1a", // Dark emerald-tinted
+  textMuted: "#4B5563",
+  textLight: "#6B7280",
+  // Borders
+  border: "#E8E4DC",
+} as const;
+
 /**
  * Create a unified branded email template
  * Uses table-based layout for maximum email client compatibility
+ * Colors match the website's Emerald Green + Gold theme
  */
 function createEmailTemplate({
   content,
@@ -95,7 +118,7 @@ function createEmailTemplate({
       <td align="center" style="padding: 24px 0 8px 0;">
         <table border="0" cellpadding="0" cellspacing="0" role="presentation">
           <tr>
-            <td align="center" style="background-color: #8B5CF6; border-radius: 8px;">
+            <td align="center" style="background-color: ${BRAND.primary}; border-radius: 8px;">
               <a href="${buttonUrl}" target="_blank" style="display: inline-block; padding: 14px 32px; font-size: 16px; font-weight: bold; color: #ffffff; text-decoration: none;">
                 ${buttonText}
               </a>
@@ -118,29 +141,37 @@ function createEmailTemplate({
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ثلوثية الأعمال</title>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td {font-family: Arial, Helvetica, sans-serif !important;}
+  </style>
+  <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; background-color: #F9FAFB; font-family: Arial, Helvetica, sans-serif;">
-  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F9FAFB;">
+<body style="margin: 0; padding: 0; background-color: ${BRAND.background}; font-family: 'Cairo', Arial, Helvetica, sans-serif;">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${BRAND.background};">
     <tr>
       <td align="center" style="padding: 32px 16px;">
         <!-- Main Container -->
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; width: 100%;">
 
-          <!-- Header -->
+          <!-- Header with Emerald Green -->
           <tr>
-            <td align="center" style="background-color: #8B5CF6; padding: 28px 24px; border-radius: 12px 12px 0 0;">
+            <td align="center" style="background: linear-gradient(135deg, ${BRAND.primary} 0%, ${BRAND.primaryDark} 100%); padding: 28px 24px; border-radius: 12px 12px 0 0;">
+              <!-- Gold decorative line -->
+              <div style="width: 60px; height: 3px; background-color: ${BRAND.accent}; margin: 0 auto 16px auto; border-radius: 2px;"></div>
               <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">
                 ثلوثية الأعمال
               </h1>
+              <div style="width: 60px; height: 3px; background-color: ${BRAND.accent}; margin: 16px auto 0 auto; border-radius: 2px;"></div>
             </td>
           </tr>
 
           <!-- Content -->
           <tr>
-            <td style="background-color: #ffffff; padding: 32px 28px;">
+            <td style="background-color: ${BRAND.cardBg}; padding: 32px 28px; border-left: 1px solid ${BRAND.border}; border-right: 1px solid ${BRAND.border};">
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <td style="color: #1F2937; font-size: 16px; line-height: 1.7; text-align: right;">
+                  <td style="color: ${BRAND.textDark}; font-size: 16px; line-height: 1.7; text-align: right;">
                     ${content}
                   </td>
                 </tr>
@@ -152,32 +183,32 @@ function createEmailTemplate({
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #F3F4F6; padding: 24px 28px; border-radius: 0 0 12px 12px;">
+            <td style="background-color: ${BRAND.footerBg}; padding: 24px 28px; border-radius: 0 0 12px 12px; border: 1px solid ${BRAND.border}; border-top: none;">
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <!-- Contact Info -->
                 <tr>
                   <td align="center" style="padding-bottom: 16px;">
-                    <p style="margin: 0 0 8px 0; color: #6B7280; font-size: 14px;">
+                    <p style="margin: 0 0 8px 0; color: ${BRAND.textLight}; font-size: 14px;">
                       للتواصل والاستفسارات
                     </p>
-                    <p style="margin: 0 0 4px 0; color: #4B5563; font-size: 14px;">
+                    <p style="margin: 0 0 4px 0; color: ${BRAND.textMuted}; font-size: 14px;">
                       thlothyah@tda.sa
                     </p>
-                    <p style="margin: 0; color: #4B5563; font-size: 14px; direction: ltr;">
+                    <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px; direction: ltr;">
                       +966 50 000 0000
                     </p>
                   </td>
                 </tr>
                 <!-- Social Links -->
                 <tr>
-                  <td align="center" style="padding-top: 12px; border-top: 1px solid #E5E7EB;">
-                    <p style="margin: 12px 0 0 0; color: #6B7280; font-size: 13px;">
+                  <td align="center" style="padding-top: 12px; border-top: 1px solid ${BRAND.border};">
+                    <p style="margin: 12px 0 0 0; color: ${BRAND.textLight}; font-size: 13px;">
                       تابعونا:
-                      <a href="https://instagram.com/thlothyah" style="color: #8B5CF6; text-decoration: none;">Instagram</a>
+                      <a href="https://instagram.com/thlothyah" style="color: ${BRAND.primary}; text-decoration: none; font-weight: 500;">Instagram</a>
                       &nbsp;|&nbsp;
-                      <a href="https://twitter.com/thlothyah" style="color: #8B5CF6; text-decoration: none;">X</a>
+                      <a href="https://twitter.com/thlothyah" style="color: ${BRAND.primary}; text-decoration: none; font-weight: 500;">X</a>
                       &nbsp;|&nbsp;
-                      <a href="https://snapchat.com/add/thlothyah" style="color: #8B5CF6; text-decoration: none;">Snapchat</a>
+                      <a href="https://snapchat.com/add/thlothyah" style="color: ${BRAND.primary}; text-decoration: none; font-weight: 500;">Snapchat</a>
                     </p>
                   </td>
                 </tr>
@@ -266,9 +297,9 @@ export async function sendConfirmationEmail(
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
     <p style="margin: 0 0 16px 0;">تم تأكيد تسجيلك في:</p>
-    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px;">${session.title}</strong></p>
-    <p style="margin: 0 0 16px 0; color: #6B7280;">التجمع رقم ${session.sessionNumber}</p>
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: #F9FAFB; border-radius: 8px; width: 100%;">
+    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${session.title}</strong></p>
+    <p style="margin: 0 0 16px 0; color: ${BRAND.textLight};">التجمع رقم ${session.sessionNumber}</p>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: ${BRAND.footerBg}; border-radius: 8px; width: 100%; border: 1px solid ${BRAND.border};">
       <tr>
         <td style="padding: 16px;">
           <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
@@ -303,9 +334,9 @@ export async function sendPendingEmail(
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
     <p style="margin: 0 0 16px 0;">شكراً لتسجيلك في:</p>
-    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px;">${session.title}</strong></p>
-    <p style="margin: 0 0 16px 0; color: #6B7280;">التجمع رقم ${session.sessionNumber}</p>
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: #F9FAFB; border-radius: 8px; width: 100%;">
+    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${session.title}</strong></p>
+    <p style="margin: 0 0 16px 0; color: ${BRAND.textLight};">التجمع رقم ${session.sessionNumber}</p>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: ${BRAND.footerBg}; border-radius: 8px; width: 100%; border: 1px solid ${BRAND.border};">
       <tr>
         <td style="padding: 16px;">
           <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
@@ -313,7 +344,7 @@ export async function sendPendingEmail(
         </td>
       </tr>
     </table>
-    <p style="margin: 16px 0 0 0; padding: 12px 16px; background-color: #FEF3C7; border-radius: 8px; color: #92400E;">
+    <p style="margin: 16px 0 0 0; padding: 12px 16px; background-color: ${BRAND.accentLight}; border-radius: 8px; color: #78621f; border: 1px solid ${BRAND.accent};">
       تسجيلك قيد المراجعة وسيتم إخطارك بالموافقة قريباً.
     </p>
   `;
@@ -345,10 +376,10 @@ export async function sendConfirmedEmail(
     qrSection = `
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px auto; text-align: center;" align="center">
         <tr>
-          <td align="center" style="padding: 20px; background-color: #F9FAFB; border-radius: 12px;">
-            <p style="margin: 0 0 12px 0; font-weight: bold; color: #1F2937;">رمز الحضور الخاص بك:</p>
+          <td align="center" style="padding: 20px; background-color: ${BRAND.footerBg}; border-radius: 12px; border: 1px solid ${BRAND.border};">
+            <p style="margin: 0 0 12px 0; font-weight: bold; color: ${BRAND.textDark};">رمز الحضور الخاص بك:</p>
             <img src="cid:qrcode" alt="QR Code" style="max-width: 180px; height: auto; display: block; margin: 0 auto;">
-            <p style="margin: 12px 0 0 0; font-size: 13px; color: #6B7280;">أظهر هذا الرمز عند الحضور</p>
+            <p style="margin: 12px 0 0 0; font-size: 13px; color: ${BRAND.textLight};">أظهر هذا الرمز عند الحضور</p>
           </td>
         </tr>
       </table>
@@ -358,9 +389,9 @@ export async function sendConfirmedEmail(
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
     <p style="margin: 0 0 16px 0;">تم تأكيد تسجيلك في:</p>
-    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px;">${session.title}</strong></p>
-    <p style="margin: 0 0 16px 0; color: #6B7280;">التجمع رقم ${session.sessionNumber}</p>
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: #F9FAFB; border-radius: 8px; width: 100%;">
+    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${session.title}</strong></p>
+    <p style="margin: 0 0 16px 0; color: ${BRAND.textLight};">التجمع رقم ${session.sessionNumber}</p>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: ${BRAND.footerBg}; border-radius: 8px; width: 100%; border: 1px solid ${BRAND.border};">
       <tr>
         <td style="padding: 16px;">
           <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
@@ -420,10 +451,10 @@ export async function sendCompanionEmail(
       qrSection = `
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px auto; text-align: center;" align="center">
           <tr>
-            <td align="center" style="padding: 20px; background-color: #F9FAFB; border-radius: 12px;">
-              <p style="margin: 0 0 12px 0; font-weight: bold; color: #1F2937;">رمز الحضور الخاص بك:</p>
+            <td align="center" style="padding: 20px; background-color: ${BRAND.footerBg}; border-radius: 12px; border: 1px solid ${BRAND.border};">
+              <p style="margin: 0 0 12px 0; font-weight: bold; color: ${BRAND.textDark};">رمز الحضور الخاص بك:</p>
               <img src="cid:qrcode" alt="QR Code" style="max-width: 180px; height: auto; display: block; margin: 0 auto;">
-              <p style="margin: 12px 0 0 0; font-size: 13px; color: #6B7280;">أظهر هذا الرمز عند الحضور</p>
+              <p style="margin: 12px 0 0 0; font-size: 13px; color: ${BRAND.textLight};">أظهر هذا الرمز عند الحضور</p>
             </td>
           </tr>
         </table>
@@ -431,7 +462,7 @@ export async function sendCompanionEmail(
     }
   } else {
     statusMessage = `
-      <p style="margin: 16px 0 0 0; padding: 12px 16px; background-color: #FEF3C7; border-radius: 8px; color: #92400E;">
+      <p style="margin: 16px 0 0 0; padding: 12px 16px; background-color: ${BRAND.accentLight}; border-radius: 8px; color: #78621f; border: 1px solid ${BRAND.accent};">
         تسجيلك قيد المراجعة وسيتم إخطارك بالموافقة قريباً.
       </p>
     `;
@@ -440,9 +471,9 @@ export async function sendCompanionEmail(
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${companionName}</strong>,</p>
     <p style="margin: 0 0 16px 0;">تم تسجيلك كمرافق للأستاذ/ة <strong>${registrantName}</strong> في:</p>
-    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px;">${session.title}</strong></p>
-    <p style="margin: 0 0 16px 0; color: #6B7280;">التجمع رقم ${session.sessionNumber}</p>
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: #F9FAFB; border-radius: 8px; width: 100%;">
+    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${session.title}</strong></p>
+    <p style="margin: 0 0 16px 0; color: ${BRAND.textLight};">التجمع رقم ${session.sessionNumber}</p>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: ${BRAND.footerBg}; border-radius: 8px; width: 100%; border: 1px solid ${BRAND.border};">
       <tr>
         <td style="padding: 16px;">
           <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
@@ -492,9 +523,9 @@ export async function sendWelcomeEmail(
 
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
-    <p style="margin: 0 0 16px 0;">أهلاً بك في <strong>ثلوثية الأعمال</strong>!</p>
+    <p style="margin: 0 0 16px 0;">أهلاً بك في <strong style="color: ${BRAND.primary};">ثلوثية الأعمال</strong>!</p>
     <p style="margin: 0 0 12px 0;">تم إنشاء حسابك بنجاح. يمكنك الآن:</p>
-    <ul style="margin: 0 0 16px 0; padding-right: 20px; color: #4B5563;">
+    <ul style="margin: 0 0 16px 0; padding-right: 20px; color: ${BRAND.textMuted};">
       <li style="margin-bottom: 8px;">التسجيل في الجلسات القادمة</li>
       <li style="margin-bottom: 8px;">متابعة حالة تسجيلاتك</li>
       <li>استعراض سجل حضورك</li>
@@ -529,10 +560,10 @@ export async function sendPasswordResetEmail(
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
     <p style="margin: 0 0 16px 0;">لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.</p>
     <p style="margin: 0 0 16px 0;">اضغط على الزر أدناه لإعادة تعيين كلمة المرور:</p>
-    <p style="margin: 24px 0; padding: 12px 16px; background-color: #FEF3C7; border-radius: 8px; color: #92400E; font-size: 14px;">
+    <p style="margin: 24px 0; padding: 12px 16px; background-color: ${BRAND.accentLight}; border-radius: 8px; color: #78621f; font-size: 14px; border: 1px solid ${BRAND.accent};">
       هذا الرابط صالح لمدة ساعة واحدة فقط.
     </p>
-    <p style="margin: 16px 0 0 0; color: #6B7280; font-size: 14px;">
+    <p style="margin: 16px 0 0 0; color: ${BRAND.textLight}; font-size: 14px;">
       إذا لم تطلب إعادة تعيين كلمة المرور، يمكنك تجاهل هذه الرسالة.
     </p>
   `;
@@ -586,18 +617,18 @@ export async function sendInvitationEmail(
 
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً،</p>
-    <p style="margin: 0 0 16px 0;">نود دعوتك لحضور جلسة <strong>"${session.title}"</strong> في ثلوثية الأعمال.</p>
+    <p style="margin: 0 0 16px 0;">نود دعوتك لحضور جلسة <strong style="color: ${BRAND.primary};">"${session.title}"</strong> في ثلوثية الأعمال.</p>
     <p style="margin: 0 0 12px 0; font-weight: bold;">تفاصيل الجلسة:</p>
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 0 16px 0; background-color: #F9FAFB; border-radius: 8px; width: 100%;">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 0 16px 0; background-color: ${BRAND.footerBg}; border-radius: 8px; width: 100%; border: 1px solid ${BRAND.border};">
       <tr>
         <td style="padding: 16px;">
-          <p style="margin: 0 0 8px 0;">📅 <strong>التاريخ:</strong> ${dateStr}</p>
-          <p style="margin: 0 0 8px 0;">🕐 <strong>الوقت:</strong> ${timeStr}</p>
-          <p style="margin: 0;">📍 <strong>المكان:</strong> ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
+          <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
+          <p style="margin: 0 0 8px 0;"><strong>الوقت:</strong> ${timeStr}</p>
+          <p style="margin: 0;"><strong>المكان:</strong> ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
         </td>
       </tr>
     </table>
-    <p style="margin: 0 0 16px 0; padding: 12px 16px; background-color: #EDE9FE; border-radius: 8px; color: #5B21B6;">
+    <p style="margin: 0 0 16px 0; padding: 12px 16px; background-color: #e8f5e9; border-radius: 8px; color: ${BRAND.primaryDark}; border: 1px solid ${BRAND.primary};">
       هذه دعوة خاصة. استخدم الزر أدناه للتسجيل.
     </p>
     <p style="margin: 16px 0 0 0;">نتطلع لرؤيتك معنا!</p>
