@@ -369,6 +369,7 @@
   --tw-space-x-reverse: 1;
 }
 
+
 /* Focus styles for accessibility */
 .focus-visible-ring:focus-visible {
   @apply outline-none ring-2 ring-primary ring-offset-2;
