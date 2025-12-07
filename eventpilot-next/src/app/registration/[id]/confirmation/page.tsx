@@ -44,7 +44,7 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
           لم نتمكن من العثور على هذا التسجيل
         </p>
         <Button asChild>
-          <Link href="/sessions">استعرض الجلسات</Link>
+          <Link href="/sessions">استعرض الأحداث</Link>
         </Button>
       </div>
     );
@@ -111,7 +111,7 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
             {registration.isApproved && (
               <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-center">
                 <p className="text-sm text-green-800">
-                  تم إرسال رمز QR إلى بريدك الإلكتروني، أحضره معك يوم الجلسة
+                  تم إرسال رمز QR إلى بريدك الإلكتروني، أحضره معك يوم الحدث
                 </p>
               </div>
             )}
@@ -121,11 +121,11 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
         {/* Session Details */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">تفاصيل الجلسة</CardTitle>
+            <CardTitle className="text-lg">تفاصيل الحدث</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="text-sm text-muted-foreground">اسم الجلسة</p>
+              <p className="text-sm text-muted-foreground">اسم الحدث</p>
               <p className="font-medium">{registration.session.title}</p>
             </div>
             <Separator />
@@ -183,7 +183,7 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
         {/* Actions */}
         <div className="flex flex-col gap-3">
           <Button asChild>
-            <Link href={`/session/${registration.session.id}`}>عرض تفاصيل الجلسة</Link>
+            <Link href={`/session/${registration.session.id}`}>عرض تفاصيل الحدث</Link>
           </Button>
           {registration.hasAccount ? (
             <Button variant="outline" asChild>
@@ -195,7 +195,7 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
             </Button>
           )}
           <Button variant="ghost" asChild>
-            <Link href="/sessions">استعرض جلسات أخرى</Link>
+            <Link href="/sessions">استعرض أحداث أخرى</Link>
           </Button>
         </div>
 

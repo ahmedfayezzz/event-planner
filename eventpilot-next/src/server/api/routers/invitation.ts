@@ -112,7 +112,7 @@ export const invitationRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 
@@ -211,7 +211,7 @@ export const invitationRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 
@@ -238,7 +238,7 @@ export const invitationRouter = createTRPCRouter({
 
           const message = session.inviteMessage
             ? session.inviteMessage.replace("[رابط التسجيل]", registrationUrl)
-            : `مرحباً،\n\nندعوك للتسجيل في جلسة "${session.title}" في ثلوثية الأعمال.\n\n📅 التاريخ: ${session.date.toLocaleDateString("ar-SA")}\n\nسجل الآن:\n${registrationUrl}`;
+            : `مرحباً،\n\nندعوك للتسجيل في حدث "${session.title}" في ثلوثية الأعمال.\n\n📅 التاريخ: ${session.date.toLocaleDateString("ar-SA")}\n\nسجل الآن:\n${registrationUrl}`;
 
           // Format phone for WhatsApp (remove + and spaces)
           const cleanPhone = phone.replace(/\D/g, "");
@@ -359,7 +359,7 @@ export const invitationRouter = createTRPCRouter({
       if (invite.session.status !== "open") {
         return {
           valid: false,
-          error: "التسجيل مغلق لهذه الجلسة",
+          error: "التسجيل مغلق لهذا الحدث",
         };
       }
 

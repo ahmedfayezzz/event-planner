@@ -59,11 +59,11 @@ export default function SessionEditPage({
 
   const updateMutation = api.session.update.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث الجلسة بنجاح");
+      toast.success("تم تحديث الحدث بنجاح");
       router.push(`/admin/sessions/${id}`);
     },
     onError: (error) => {
-      toast.error(error.message || "حدث خطأ أثناء تحديث الجلسة");
+      toast.error(error.message || "حدث خطأ أثناء تحديث الحدث");
     },
   });
 
@@ -113,9 +113,9 @@ export default function SessionEditPage({
   if (!session) {
     return (
       <div className="text-center py-8">
-        <h2 className="text-xl font-bold mb-4">الجلسة غير موجودة</h2>
+        <h2 className="text-xl font-bold mb-4">الحدث غير موجود</h2>
         <Button asChild>
-          <Link href="/admin/sessions">العودة للجلسات</Link>
+          <Link href="/admin/sessions">العودة للأحداث</Link>
         </Button>
       </div>
     );
@@ -131,7 +131,7 @@ export default function SessionEditPage({
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">تعديل الجلسة</h1>
+          <h1 className="text-2xl font-bold">تعديل الحدث</h1>
           <p className="text-muted-foreground">
             {session.title} - التجمع رقم {session.sessionNumber}
           </p>

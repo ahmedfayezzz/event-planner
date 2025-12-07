@@ -7,7 +7,7 @@ import { api } from "@/trpc/react";
 
 const pathLabels: Record<string, string> = {
   admin: "لوحة التحكم",
-  sessions: "الجلسات",
+  sessions: "الأحداث",
   users: "المستخدمين",
   hosts: "المضيفين",
   checkin: "تسجيل الحضور",
@@ -18,6 +18,7 @@ const pathLabels: Record<string, string> = {
   companions: "المرافقين",
   edit: "تعديل",
   invitations: "الدعوات",
+  catering: "الضيافة",
 };
 
 export function Breadcrumbs() {

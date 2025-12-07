@@ -58,6 +58,7 @@ model User {
 
   // Relations
   registrations Registration[]
+  eventCaterings EventCatering[]
 }
 
 model Session {
@@ -94,14 +95,17 @@ model Session {
   inviteOnly            Boolean  @default(false)
   inviteMessage         String?
   sendQrInEmail         Boolean  @default(true)
+  showSocialMediaFields Boolean  @default(true)
+  locationUrl           String?
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  registrations Registration[]
-  attendances   Attendance[]
-  invites       Invite[]
+  registrations  Registration[]
+  attendances    Attendance[]
+  invites        Invite[]
+  eventCaterings EventCatering[]
 }
 
 model Registration {
@@ -171,6 +175,23 @@ model Invite {
 
   // Relations
   session     Session  @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId])
+}
+
+model EventCatering {
+  id             String   @id @default(cuid())
+  sessionId      String
+  hostId         String?
+  hostingType    String   // dinner, beverage, dessert, other
+  isSelfCatering Boolean  @default(false)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  host    User?   @relation(fields: [hostId], references: [id])
 
   @@index([sessionId])
 }

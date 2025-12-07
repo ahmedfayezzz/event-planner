@@ -19,25 +19,28 @@ interface SessionItem {
 }
 
 export default function SessionsPage() {
-  const { data: allSessions, isLoading: loadingAll } = api.session.list.useQuery({});
+  const { data: allSessions, isLoading: loadingAll } = api.session.list.useQuery({
+    sortOrder: "asc",
+  });
   const { data: upcomingSessions, isLoading: loadingUpcoming } = api.session.list.useQuery({
     upcoming: true,
+    sortOrder: "asc",
   });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/5 via-transparent to-transparent">
     <div className="container py-12 md:py-16">
       <div className="text-center mb-12 space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight text-primary">الجلسات</h1>
+        <h1 className="text-4xl font-bold tracking-tight text-primary">الأحداث</h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          استعرض جميع جلسات ثلوثية الأعمال وسجل في الجلسات القادمة لتكون جزءاً من مجتمعنا
+          استعرض جميع أحداث ثلوثية الأعمال وسجل في الأحداث القادمة لتكون جزءاً من مجتمعنا
         </p>
       </div>
 
       <Tabs defaultValue="upcoming" className="w-full">
         <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
           <TabsTrigger value="upcoming">القادمة</TabsTrigger>
-          <TabsTrigger value="all">جميع الجلسات</TabsTrigger>
+          <TabsTrigger value="all">جميع الأحداث</TabsTrigger>
         </TabsList>
 
         <TabsContent value="upcoming">
@@ -59,7 +62,7 @@ export default function SessionsPage() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">لا توجد جلسات قادمة حالياً</p>
+              <p className="text-muted-foreground">لا توجد أحداث قادمة حالياً</p>
             </div>
           )}
         </TabsContent>
@@ -83,7 +86,7 @@ export default function SessionsPage() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">لا توجد جلسات</p>
+              <p className="text-muted-foreground">لا توجد أحداث</p>
             </div>
           )}
         </TabsContent>

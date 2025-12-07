@@ -126,7 +126,7 @@ export default function AdminSettingsPage() {
               <Badge variant="outline">JWT</Badge>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">مدة الجلسة</span>
+              <span className="text-muted-foreground">مدة الجلسة (Session)</span>
               <Badge variant="outline">30 يوم</Badge>
             </div>
           </CardContent>

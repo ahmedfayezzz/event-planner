@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const sessionFormSchema = z.object({
   sessionNumber: z.string().optional(),
-  title: z.string().min(1, "عنوان الجلسة مطلوب"),
+  title: z.string().min(1, "عنوان الحدث مطلوب"),
   description: z.string().optional(),
   date: z.string().min(1, "التاريخ مطلوب"),
   time: z.string().min(1, "الوقت مطلوب"),
@@ -25,9 +25,14 @@ export const sessionFormSchema = z.object({
   inviteOnly: z.boolean(),
   inviteMessage: z.string().optional(),
   sendQrInEmail: z.boolean(),
+  showSocialMediaFields: z.boolean(),
   slug: z.string().optional(),
   registrationDeadline: z.string().optional(),
   customConfirmationMessage: z.string().optional(),
+  locationUrl: z.string().optional(),
+  selfCatering: z.boolean().optional(),
+  cateringType: z.string().optional(),
+  cateringNotes: z.string().optional(),
 });
 
 export type SessionFormData = z.infer<typeof sessionFormSchema>;
@@ -51,7 +56,12 @@ export const defaultSessionFormData: SessionFormData = {
   inviteOnly: false,
   inviteMessage: "",
   sendQrInEmail: true,
+  showSocialMediaFields: true,
   slug: "",
   registrationDeadline: "",
   customConfirmationMessage: "",
+  locationUrl: "",
+  selfCatering: false,
+  cateringType: "",
+  cateringNotes: "",
 };

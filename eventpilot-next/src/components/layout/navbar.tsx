@@ -68,7 +68,7 @@ export function Navbar() {
               href="/sessions"
               className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:text-primary px-3 py-2 rounded-full hover:bg-primary/5"
             >
-              الجلسات
+              الأحداث
             </Link>
             {session?.user?.role === "ADMIN" && (
               <Link
@@ -181,7 +181,7 @@ export function Navbar() {
                     className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-primary/5 hover:text-primary transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    الجلسات
+                    الأحداث
                   </Link>
 
                   {session?.user?.role === "ADMIN" && (

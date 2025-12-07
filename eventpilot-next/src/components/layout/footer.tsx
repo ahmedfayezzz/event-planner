@@ -33,7 +33,7 @@ export function Footer() {
                   className="text-white/80 hover:text-secondary transition-colors flex items-center gap-2"
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-secondary/50"></span>
-                  الجلسات
+                  الأحداث
                 </Link>
               </li>
               <li>

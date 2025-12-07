@@ -42,7 +42,7 @@ async function main() {
       goal: "تطوير تطبيقات ذكية للشركات السعودية وتوسيع شبكة العلاقات التجارية",
       aiDescription: "رائد أعمال متخصص في مجال التقنية مع خبرة تتجاوز 10 سنوات في تطوير الحلول الرقمية للمؤسسات الكبرى.",
       wantsToHost: true,
-      hostingTypes: ["dinner", "drinks"],
+      hostingTypes: ["dinner", "beverage"],
     },
     {
       name: "فاطمة عبدالله النور",
@@ -58,7 +58,7 @@ async function main() {
       goal: "مساعدة الشركات الناشئة على النمو وتحقيق أهدافها التجارية",
       aiDescription: "مستشارة إدارية متميزة تساعد الشركات الناشئة في بناء استراتيجيات نمو فعالة.",
       wantsToHost: true,
-      hostingTypes: ["dessert", "coffee"],
+      hostingTypes: ["dessert", "beverage"],
     },
     {
       name: "خالد عبدالعزيز الرشيد",
@@ -234,7 +234,7 @@ async function main() {
       goal: "توسيع سلسلة المطاعم في المملكة والخليج",
       aiDescription: "رائد أعمال في قطاع الضيافة مع سلسلة مطاعم ناجحة.",
       wantsToHost: true,
-      hostingTypes: ["dinner", "snacks", "drinks"],
+      hostingTypes: ["dinner", "beverage", "dessert"],
     },
     {
       name: "دانة خالد النصار",
@@ -334,6 +334,7 @@ async function main() {
       guestName: "المهندس عبدالعزيز الراجحي",
       guestProfile: "رائد أعمال ومؤسس عدة شركات ناجحة في مجال التقنية",
       location: "فندق الفور سيزونز - الرياض",
+      locationUrl: "https://maps.google.com/?q=Four+Seasons+Hotel+Riyadh",
       status: "completed",
       maxParticipants: 40,
       maxCompanions: 3,
@@ -346,6 +347,7 @@ async function main() {
       guestName: "المهندسة نورا الغامدي",
       guestProfile: "رئيسة تنفيذية لشركة تقنية ناشئة حققت نمواً بنسبة 300%",
       location: "مركز الملك عبدالعزيز للحوار الوطني",
+      locationUrl: "https://maps.google.com/?q=King+Abdulaziz+Center+for+National+Dialogue+Riyadh",
       status: "completed",
       maxParticipants: 50,
       maxCompanions: 5,
@@ -407,6 +409,7 @@ async function main() {
       guestName: "الدكتور سامي العتيبي",
       guestProfile: "خبير في الذكاء الاصطناعي ومؤسس شركة AI Solutions",
       location: "فندق الفيصلية - الرياض",
+      locationUrl: "https://maps.google.com/?q=Al+Faisaliah+Hotel+Riyadh",
       status: "open",
       maxParticipants: 50,
       maxCompanions: 3,
@@ -420,6 +423,7 @@ async function main() {
       guestName: "الأستاذة منى الدوسري",
       guestProfile: "مؤسسة منصة التسوق 'سوق الخليج'",
       location: "مركز الملك عبدالله المالي",
+      locationUrl: "https://maps.google.com/?q=King+Abdullah+Financial+District+Riyadh",
       status: "open",
       maxParticipants: 45,
       maxCompanions: 4,
@@ -601,7 +605,7 @@ async function main() {
       guestGender: "male",
       guestGoal: "توسيع شبكة العلاقات التجارية",
       guestWantsToHost: true,
-      guestHostingTypes: ["coffee", "snacks"],
+      guestHostingTypes: ["beverage", "other"],
       isApproved: true,
       withCompanions: true,
     },
@@ -661,7 +665,7 @@ async function main() {
       guestGender: "male",
       guestGoal: "استكشاف فرص استثمارية جديدة",
       guestWantsToHost: true,
-      guestHostingTypes: ["dinner", "drinks", "dessert"],
+      guestHostingTypes: ["dinner", "beverage", "dessert"],
       isApproved: true,
       withCompanions: true,
     },
@@ -738,6 +742,62 @@ async function main() {
   console.log(`✅ Created ${totalInvitedAttendances} attendance records (invited/companions)`);
   console.log(`✅ Created ${totalInvites} session invites`);
 
+  // ============== EVENT CATERING ==============
+  // Add sample catering assignments for some sessions
+  const cateringAssignments = [];
+
+  // Find users who want to host
+  const hostsWhoWantToHost = users.filter(u => u.wantsToHost);
+
+  // Assign hosts to some completed sessions
+  const completedSessions = sessions.filter(s => s.status === "completed");
+  for (let i = 0; i < Math.min(3, completedSessions.length); i++) {
+    const session = completedSessions[i];
+    const host = hostsWhoWantToHost[i % hostsWhoWantToHost.length];
+
+    // Each session can have multiple catering items
+    const cateringTypes = ["dinner", "beverage", "dessert"];
+    const numCatering = Math.floor(Math.random() * 2) + 1; // 1-2 catering items per session
+
+    for (let j = 0; j < numCatering; j++) {
+      const hostingType = cateringTypes[j % cateringTypes.length];
+      const useHost = Math.random() < 0.7; // 70% with host, 30% self-catering
+
+      const catering = await prisma.eventCatering.create({
+        data: {
+          sessionId: session.id,
+          hostId: useHost ? host.id : null,
+          hostingType,
+          isSelfCatering: !useHost,
+          notes: useHost
+            ? `تم التنسيق مع ${host.name} لتقديم ${hostingType === "dinner" ? "العشاء" : hostingType === "beverage" ? "المشروبات" : "الحلويات"}`
+            : "سيتم التوفير من قبل الإدارة",
+        },
+      });
+      cateringAssignments.push(catering);
+    }
+  }
+
+  // Add some catering for upcoming sessions
+  const upcomingSessions = sessions.filter(s => s.status === "open");
+  for (let i = 0; i < Math.min(2, upcomingSessions.length); i++) {
+    const session = upcomingSessions[i];
+    const host = hostsWhoWantToHost[(i + 3) % hostsWhoWantToHost.length];
+
+    const catering = await prisma.eventCatering.create({
+      data: {
+        sessionId: session.id,
+        hostId: host.id,
+        hostingType: i === 0 ? "dinner" : "beverage",
+        isSelfCatering: false,
+        notes: `تم التأكيد مع ${host.name}`,
+      },
+    });
+    cateringAssignments.push(catering);
+  }
+
+  console.log(`✅ Created ${cateringAssignments.length} catering assignments`);
+
   // ============== SUMMARY ==============
   console.log("\n" + "=".repeat(50));
   console.log("📊 Database Seeding Summary:");
@@ -749,6 +809,7 @@ async function main() {
   console.log(`👥 Invited registrations (companions): ${totalCompanions}`);
   console.log(`✅ Attendance records: ${totalAttendances + totalInvitedAttendances} (${totalAttendances} direct, ${totalInvitedAttendances} companions)`);
   console.log(`📧 Session invites: ${totalInvites}`);
+  console.log(`🍽️  Event catering assignments: ${cateringAssignments.length}`);
   console.log("=".repeat(50));
   console.log("\n📋 Login Credentials:");
   console.log("─".repeat(50));

@@ -87,7 +87,7 @@ export default function HomePage() {
             </Card>
           ) : (
             <p className="text-white/80 py-4 md:py-8 text-sm md:text-lg">
-              لا توجد جلسات قادمة حالياً
+              لا توجد أحداث قادمة حالياً
             </p>
           )}
 
@@ -103,7 +103,7 @@ export default function HomePage() {
                 className="flex items-center justify-center gap-2 md:gap-3"
               >
                 <Calendar className="h-5 w-5 md:h-6 md:w-6 group-hover:rotate-12 transition-transform" />
-                تصفح جميع الجلسات
+                تصفح جميع الأحداث
               </Link>
             </Button>
 
@@ -135,7 +135,7 @@ export default function HomePage() {
                 50+
               </div>
               <div className="text-white/90 text-sm md:text-lg font-medium">
-                جلسة منعقدة
+                حدث منعقد
               </div>
             </div>
             <div className="space-y-1 md:space-y-2 py-4 md:py-0 hover:scale-105 transition-transform duration-300">
@@ -172,10 +172,10 @@ export default function HomePage() {
         <div className="container px-4 relative z-10">
           <div className="text-center mb-8 md:mb-12">
             <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-4">
-              الجلسات القادمة
+              الأحداث القادمة
             </h2>
             <p className="text-muted-foreground text-sm md:text-base">
-              سجل الآن لحجز مقعدك في الجلسات القادمة
+              سجل الآن لحجز مقعدك في الأحداث القادمة
             </p>
           </div>
 
@@ -203,7 +203,7 @@ export default function HomePage() {
               <CardContent className="text-center">
                 <Calendar className="h-10 w-10 md:h-12 md:w-12 mx-auto text-muted-foreground/50 mb-3 md:mb-4" />
                 <p className="text-muted-foreground text-sm md:text-base">
-                  لا توجد جلسات قادمة حالياً
+                  لا توجد أحداث قادمة حالياً
                 </p>
               </CardContent>
             </Card>
@@ -212,7 +212,7 @@ export default function HomePage() {
           <div className="text-center mt-6 md:mt-8">
             <Button variant="outline" className="btn-lift" asChild>
               <Link href="/sessions">
-                عرض جميع الجلسات
+                عرض جميع الأحداث
                 <ArrowLeft className="mr-2 h-4 w-4" />
               </Link>
             </Button>

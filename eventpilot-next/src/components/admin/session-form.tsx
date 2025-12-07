@@ -51,6 +51,10 @@ import {
   QrCode,
   Timer,
   UserCheck,
+  Zap,
+  Crown,
+  Globe,
+  UtensilsCrossed,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -58,6 +62,7 @@ import {
   type SessionFormData,
   defaultSessionFormData,
 } from "@/lib/schemas/session";
+import { HOSTING_TYPES } from "@/lib/constants";
 
 // Re-export for backward compatibility
 export type { SessionFormData };
@@ -77,8 +82,9 @@ function generateSlug(text: string): string {
 // Templates for quick setup
 const sessionTemplates = {
   standard: {
-    name: "جلسة عادية",
+    name: "حدث عادي",
     description: "إعدادات افتراضية متوازنة",
+    icon: Zap,
     data: {
       maxParticipants: "50",
       maxCompanions: "5",
@@ -90,8 +96,9 @@ const sessionTemplates = {
     },
   },
   vip: {
-    name: "جلسة VIP",
+    name: "حدث VIP",
     description: "للمدعوين فقط مع موافقة مسبقة",
+    icon: Crown,
     data: {
       maxParticipants: "30",
       maxCompanions: "2",
@@ -103,8 +110,9 @@ const sessionTemplates = {
     },
   },
   open: {
-    name: "جلسة مفتوحة",
+    name: "حدث مفتوح",
     description: "بدون قيود أو موافقات",
+    icon: Globe,
     data: {
       maxParticipants: "100",
       maxCompanions: "10",
@@ -232,10 +240,10 @@ function SessionPreview({ formData, hasGuest }: { formData: SessionFormData; has
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
           <Eye className="h-3 w-3" />
-          معاينة الجلسة
+          معاينة الحدث
         </div>
         <CardTitle className="text-lg">
-          {formData.title || "عنوان الجلسة"}
+          {formData.title || "عنوان الحدث"}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -356,6 +364,21 @@ export function SessionForm({
     return !!(initialData?.guestName || initialData?.guestProfile);
   };
 
+  const getInitialSelectedTemplate = (): string | null => {
+    if (mode === "create" && typeof window !== "undefined") {
+      const savedDraft = localStorage.getItem(DRAFT_KEY);
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          return parsed.selectedTemplate ?? null;
+        } catch {
+          // Invalid draft, ignore
+        }
+      }
+    }
+    return null;
+  };
+
   // React Hook Form setup
   const form = useForm<SessionFormData>({
     resolver: zodResolver(sessionFormSchema),
@@ -370,7 +393,7 @@ export function SessionForm({
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!initialData?.slug);
   const [currentStep, setCurrentStep] = useState(0);
   const [draftSaved, setDraftSaved] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(getInitialSelectedTemplate);
 
   // Auto-save draft every 30 seconds (create mode only)
   useEffect(() => {
@@ -379,14 +402,14 @@ export function SessionForm({
     const saveInterval = setInterval(() => {
       localStorage.setItem(
         DRAFT_KEY,
-        JSON.stringify({ formData: formValues, hasGuest, savedAt: new Date().toISOString() })
+        JSON.stringify({ formData: formValues, hasGuest, selectedTemplate, savedAt: new Date().toISOString() })
       );
       setDraftSaved(true);
       setTimeout(() => setDraftSaved(false), 2000);
     }, 30000);
 
     return () => clearInterval(saveInterval);
-  }, [mode, formValues, hasGuest]);
+  }, [mode, formValues, hasGuest, selectedTemplate]);
 
   // Clear draft on successful submit
   const clearDraft = useCallback(() => {
@@ -476,8 +499,14 @@ export function SessionForm({
                         : "border-border hover:border-primary/50 hover:bg-muted/50"
                     )}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="font-medium text-sm">{template.name}</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={cn(
+                        "p-2 rounded-lg",
+                        selectedTemplate === key ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                      )}>
+                        <template.icon className="h-4 w-4" />
+                      </div>
+                      <p className="font-medium text-sm flex-1">{template.name}</p>
                       {selectedTemplate === key && (
                         <Check className="h-4 w-4 text-primary" />
                       )}
@@ -493,7 +522,7 @@ export function SessionForm({
             {/* Basic Fields */}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="title">عنوان الجلسة *</Label>
+                <Label htmlFor="title">عنوان الحدث *</Label>
                 <Input
                   id="title"
                   {...register("title")}
@@ -526,12 +555,23 @@ export function SessionForm({
                 <FieldError message={errors.time?.message} />
               </div>
 
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2">
                 <Label htmlFor="location">المكان</Label>
                 <Input
                   id="location"
                   {...register("location")}
                   placeholder="مثال: فندق الريتز كارلتون - الرياض"
+                  disabled={isPending}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="locationUrl">رابط الموقع</Label>
+                <Input
+                  id="locationUrl"
+                  {...register("locationUrl")}
+                  placeholder="رابط خرائط Google"
+                  dir="ltr"
                   disabled={isPending}
                 />
               </div>
@@ -542,7 +582,7 @@ export function SessionForm({
                   id="description"
                   rows={4}
                   {...register("description")}
-                  placeholder="اكتب وصفاً جذاباً للجلسة..."
+                  placeholder="اكتب وصفاً جذاباً للحدث..."
                   disabled={isPending}
                 />
               </div>
@@ -556,10 +596,10 @@ export function SessionForm({
             <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/50">
               <div className="space-y-0.5">
                 <Label htmlFor="hasGuest" className="text-sm font-medium">
-                  إضافة ضيف للجلسة
+                  إضافة ضيف للحدث
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  تفعيل هذا الخيار لإضافة معلومات ضيف الجلسة
+                  تفعيل هذا الخيار لإضافة معلومات ضيف الحدث
                 </p>
               </div>
               <Switch
@@ -603,7 +643,7 @@ export function SessionForm({
               <div className="space-y-2">
                 <Label htmlFor="maxParticipants">
                   الحد الأقصى للمشاركين
-                  <HelpTooltip text="أقصى عدد يمكن تسجيله في الجلسة" />
+                  <HelpTooltip text="أقصى عدد يمكن تسجيله في الحدث" />
                 </Label>
                 <Input
                   id="maxParticipants"
@@ -719,7 +759,7 @@ export function SessionForm({
                     <ToggleCard
                       id="showCountdown"
                       label="العد التنازلي"
-                      description="عرض عداد تنازلي للجلسة"
+                      description="عرض عداد تنازلي للحدث"
                       icon={Timer}
                       checked={field.value}
                       onCheckedChange={field.onChange}
@@ -757,7 +797,87 @@ export function SessionForm({
                     />
                   )}
                 />
+                <Controller
+                  name="showSocialMediaFields"
+                  control={control}
+                  render={({ field }) => (
+                    <ToggleCard
+                      id="showSocialMediaFields"
+                      label="وسائل التواصل"
+                      description="إظهار حقول التواصل الاجتماعي"
+                      icon={MessageSquare}
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={isPending}
+                    />
+                  )}
+                />
               </div>
+            </div>
+
+            <Separator />
+
+            {/* Self-Catering Option */}
+            <div className="space-y-3">
+              <Label>الضيافة الذاتية</Label>
+              <Controller
+                name="selfCatering"
+                control={control}
+                render={({ field }) => (
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/50">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="selfCatering" className="text-sm font-medium">
+                        تفعيل الضيافة الذاتية
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        تقوم الإدارة بتوفير الضيافة للحدث
+                      </p>
+                    </div>
+                    <Switch
+                      id="selfCatering"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={isPending}
+                    />
+                  </div>
+                )}
+              />
+
+              {formValues.selfCatering && (
+                <div className="space-y-3 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                  <div className="space-y-2">
+                    <Label htmlFor="cateringType">نوع الضيافة *</Label>
+                    <Controller
+                      name="cateringType"
+                      control={control}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange} disabled={isPending}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر نوع الضيافة" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {HOSTING_TYPES.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cateringNotes">ملاحظات الضيافة</Label>
+                    <Textarea
+                      id="cateringNotes"
+                      rows={2}
+                      {...register("cateringNotes")}
+                      placeholder="أي تفاصيل إضافية عن الضيافة..."
+                      disabled={isPending}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <Separator />
@@ -781,7 +901,7 @@ export function SessionForm({
             <div className="space-y-2">
               <Label htmlFor="slug">
                 الرابط المخصص
-                <HelpTooltip text="رابط مخصص للجلسة يُولّد تلقائياً من العنوان" />
+                <HelpTooltip text="رابط مخصص للحدث يُولّد تلقائياً من العنوان" />
               </Label>
               <div className="flex gap-2">
                 <Input
@@ -823,14 +943,14 @@ export function SessionForm({
               </div>
               <h3 className="text-lg font-semibold">جاهز للإنشاء!</h3>
               <p className="text-muted-foreground text-sm mt-1">
-                راجع المعاينة على اليسار ثم اضغط &quot;إنشاء الجلسة&quot;
+                راجع المعاينة على اليسار ثم اضغط &quot;إنشاء الحدث&quot;
               </p>
             </div>
 
             {/* Summary */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">ملخص الجلسة</CardTitle>
+                <CardTitle className="text-base">ملخص الحدث</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div className="flex justify-between">
@@ -983,7 +1103,7 @@ export function SessionForm({
                       جارٍ الإنشاء...
                     </>
                   ) : (
-                    "إنشاء الجلسة"
+                    "إنشاء الحدث"
                   )}
                 </Button>
               )}
@@ -1024,7 +1144,7 @@ export function SessionForm({
                   <div className="text-right">
                     <h3 className="font-semibold text-base">المعلومات الأساسية</h3>
                     <p className="text-xs text-muted-foreground font-normal">
-                      البيانات الأساسية للجلسة
+                      البيانات الأساسية للحدث
                     </p>
                   </div>
                 </div>
@@ -1032,7 +1152,7 @@ export function SessionForm({
               <AccordionContent className="px-6 pb-6">
                 <div className="grid gap-4 md:grid-cols-2 pt-2">
                   <div className="space-y-2">
-                    <Label htmlFor="sessionNumber">رقم الجلسة</Label>
+                    <Label htmlFor="sessionNumber">رقم الحدث</Label>
                     <Input
                       id="sessionNumber"
                       type="number"
@@ -1042,7 +1162,7 @@ export function SessionForm({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="title">عنوان الجلسة *</Label>
+                    <Label htmlFor="title">عنوان الحدث *</Label>
                     <Input
                       id="title"
                       {...register("title")}
@@ -1101,6 +1221,16 @@ export function SessionForm({
                       disabled={isPending}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="locationUrl">رابط الموقع</Label>
+                    <Input
+                      id="locationUrl"
+                      {...register("locationUrl")}
+                      placeholder="رابط خرائط Google"
+                      dir="ltr"
+                      disabled={isPending}
+                    />
+                  </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="description">الوصف</Label>
                     <Textarea
@@ -1155,9 +1285,9 @@ export function SessionForm({
                     <User className="h-5 w-5 text-primary" />
                   </div>
                   <div className="text-right">
-                    <h3 className="font-semibold text-base">ضيف الجلسة</h3>
+                    <h3 className="font-semibold text-base">ضيف الحدث</h3>
                     <p className="text-xs text-muted-foreground font-normal">
-                      معلومات ضيف الجلسة (اختياري)
+                      معلومات ضيف الحدث (اختياري)
                     </p>
                   </div>
                 </div>
@@ -1167,10 +1297,10 @@ export function SessionForm({
                   <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/50">
                     <div className="space-y-0.5">
                       <Label htmlFor="hasGuest" className="text-sm font-medium">
-                        إضافة ضيف للجلسة
+                        إضافة ضيف للحدث
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        تفعيل هذا الخيار لإضافة معلومات ضيف الجلسة
+                        تفعيل هذا الخيار لإضافة معلومات ضيف الحدث
                       </p>
                     </div>
                     <Switch
@@ -1387,6 +1517,20 @@ export function SessionForm({
                       />
                     )}
                   />
+                  <Controller
+                    name="showSocialMediaFields"
+                    control={control}
+                    render={({ field }) => (
+                      <ToggleCard
+                        id="showSocialMediaFields-edit"
+                        label="وسائل التواصل"
+                        icon={MessageSquare}
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={isPending}
+                      />
+                    )}
+                  />
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -1418,6 +1562,88 @@ export function SessionForm({
                     placeholder="اتركه فارغاً لاستخدام الرسالة الافتراضية"
                     disabled={isPending}
                   />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Self-Catering Section */}
+            <AccordionItem
+              value="catering"
+              className="bg-white/70 backdrop-blur-xl border border-white/50 shadow-lg rounded-xl overflow-hidden"
+            >
+              <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-white/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <UtensilsCrossed className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="text-right">
+                    <h3 className="font-semibold text-base">الضيافة الذاتية</h3>
+                    <p className="text-xs text-muted-foreground font-normal">
+                      إدارة الضيافة المقدمة من الإدارة
+                    </p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                <div className="space-y-4 pt-2">
+                  <Controller
+                    name="selfCatering"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/50">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="selfCatering-edit" className="text-sm font-medium">
+                            تفعيل الضيافة الذاتية
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            تقوم الإدارة بتوفير الضيافة للحدث
+                          </p>
+                        </div>
+                        <Switch
+                          id="selfCatering-edit"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={isPending}
+                        />
+                      </div>
+                    )}
+                  />
+
+                  {formValues.selfCatering && (
+                    <div className="space-y-4 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                      <div className="space-y-2">
+                        <Label htmlFor="cateringType-edit">نوع الضيافة *</Label>
+                        <Controller
+                          name="cateringType"
+                          control={control}
+                          render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange} disabled={isPending}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="اختر نوع الضيافة" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {HOSTING_TYPES.map((type) => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cateringNotes-edit">ملاحظات الضيافة</Label>
+                        <Textarea
+                          id="cateringNotes-edit"
+                          rows={2}
+                          {...register("cateringNotes")}
+                          placeholder="أي تفاصيل إضافية عن الضيافة..."
+                          disabled={isPending}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </AccordionContent>
             </AccordionItem>

@@ -3,10 +3,8 @@
  */
 export const HOSTING_TYPES = [
   { value: "dinner", label: "عشاء" },
+  { value: "beverage", label: "مشروبات" },
   { value: "dessert", label: "حلا" },
-  { value: "drinks", label: "مشروبات" },
-  { value: "coffee", label: "قهوة وشاي" },
-  { value: "snacks", label: "مقبلات" },
   { value: "other", label: "أخرى" },
 ] as const;
 

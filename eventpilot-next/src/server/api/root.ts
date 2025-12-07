@@ -7,6 +7,7 @@ import { companionRouter } from "./routers/companion";
 import { attendanceRouter } from "./routers/attendance";
 import { invitationRouter } from "./routers/invitation";
 import { adminRouter } from "./routers/admin";
+import { cateringRouter } from "./routers/catering";
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -17,6 +18,7 @@ export const appRouter = createTRPCRouter({
   attendance: attendanceRouter,
   invitation: invitationRouter,
   admin: adminRouter,
+  catering: cateringRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -18,6 +18,7 @@ export const sessionRouter = createTRPCRouter({
         status: z.enum(["open", "closed", "completed"]).optional(),
         upcoming: z.boolean().optional(),
         dateRange: z.enum(["today", "week", "month", "all"]).optional(),
+        sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
         limit: z.number().min(1).max(100).optional().default(50),
         cursor: z.string().optional(),
       }).optional()
@@ -68,9 +69,12 @@ export const sessionRouter = createTRPCRouter({
         }
       }
 
+      // Use ASC for upcoming sessions (public), DESC for admin views
+      const sortOrder = input?.sortOrder ?? "desc";
+
       const sessions = await db.session.findMany({
         where,
-        orderBy: { date: "desc" },
+        orderBy: { date: sortOrder },
         take: (input?.limit ?? 50) + 1,
         cursor: input?.cursor ? { id: input.cursor } : undefined,
         include: {
@@ -148,7 +152,7 @@ export const sessionRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 
@@ -194,7 +198,7 @@ export const sessionRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 
@@ -259,7 +263,7 @@ export const sessionRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 
@@ -314,10 +318,18 @@ export const sessionRouter = createTRPCRouter({
         inviteOnly: z.boolean().default(false),
         inviteMessage: z.string().optional(),
         sendQrInEmail: z.boolean().default(true),
+        showSocialMediaFields: z.boolean().default(true),
+        locationUrl: z.string().optional(),
+        selfCatering: z.boolean().optional(),
+        cateringType: z.string().optional(),
+        cateringNotes: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
+
+      // Extract catering fields
+      const { selfCatering, cateringType, cateringNotes, ...sessionData } = input;
 
       // Auto-generate session number (highest + 1)
       const lastSession = await db.session.findFirst({
@@ -337,18 +349,31 @@ export const sessionRouter = createTRPCRouter({
         if (slugExists) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: "رابط الجلسة موجود مسبقاً",
+            message: "رابط الحدث موجود مسبقاً",
           });
         }
       }
 
       const session = await db.session.create({
         data: {
-          ...input,
+          ...sessionData,
           sessionNumber,
           slug: slug || null,
         },
       });
+
+      // Create catering entry if self-catering is enabled
+      if (selfCatering && cateringType) {
+        await db.eventCatering.create({
+          data: {
+            sessionId: session.id,
+            hostId: null,
+            hostingType: cateringType,
+            isSelfCatering: true,
+            notes: cateringNotes || null,
+          },
+        });
+      }
 
       return session;
     }),
@@ -382,11 +407,16 @@ export const sessionRouter = createTRPCRouter({
         inviteOnly: z.boolean().optional(),
         inviteMessage: z.string().optional(),
         sendQrInEmail: z.boolean().optional(),
+        showSocialMediaFields: z.boolean().optional(),
+        locationUrl: z.string().optional(),
+        selfCatering: z.boolean().optional(),
+        cateringType: z.string().optional(),
+        cateringNotes: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
-      const { id, ...data } = input;
+      const { id, selfCatering, cateringType, cateringNotes, ...data } = input;
 
       // Check if session exists
       const existing = await db.session.findUnique({
@@ -395,7 +425,7 @@ export const sessionRouter = createTRPCRouter({
       if (!existing) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 
@@ -407,7 +437,7 @@ export const sessionRouter = createTRPCRouter({
         if (numberExists) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: "رقم الجلسة موجود مسبقاً",
+            message: "رقم الحدث موجود مسبقاً",
           });
         }
       }
@@ -420,7 +450,7 @@ export const sessionRouter = createTRPCRouter({
         if (slugExists) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: "رابط الجلسة موجود مسبقاً",
+            message: "رابط الحدث موجود مسبقاً",
           });
         }
       }
@@ -429,6 +459,45 @@ export const sessionRouter = createTRPCRouter({
         where: { id },
         data,
       });
+
+      // Handle self-catering
+      if (selfCatering !== undefined) {
+        // Find existing self-catering entry for this session
+        const existingCatering = await db.eventCatering.findFirst({
+          where: {
+            sessionId: id,
+            isSelfCatering: true,
+          },
+        });
+
+        if (selfCatering && cateringType) {
+          // Create or update self-catering entry
+          if (existingCatering) {
+            await db.eventCatering.update({
+              where: { id: existingCatering.id },
+              data: {
+                hostingType: cateringType,
+                notes: cateringNotes || null,
+              },
+            });
+          } else {
+            await db.eventCatering.create({
+              data: {
+                sessionId: id,
+                hostId: null,
+                hostingType: cateringType,
+                isSelfCatering: true,
+                notes: cateringNotes || null,
+              },
+            });
+          }
+        } else if (!selfCatering && existingCatering) {
+          // Remove self-catering entry if disabled
+          await db.eventCatering.delete({
+            where: { id: existingCatering.id },
+          });
+        }
+      }
 
       return session;
     }),
@@ -454,7 +523,7 @@ export const sessionRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 
@@ -511,14 +580,14 @@ export const sessionRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 
       if (!session.embedEnabled) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "التضمين غير مفعل لهذه الجلسة",
+          message: "التضمين غير مفعل لهذا الحدث",
         });
       }
 
@@ -594,7 +663,7 @@ export const sessionRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 

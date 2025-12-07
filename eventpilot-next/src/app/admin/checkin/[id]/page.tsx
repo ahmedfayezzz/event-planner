@@ -264,7 +264,7 @@ export default function CheckInPage({
   if (!attendance) {
     return (
       <div className="text-center py-8">
-        <h2 className="text-xl font-bold mb-4">الجلسة غير موجودة</h2>
+        <h2 className="text-xl font-bold mb-4">الحدث غير موجود</h2>
         <Button asChild>
           <Link href="/admin/checkin">العودة</Link>
         </Button>
@@ -366,7 +366,7 @@ export default function CheckInPage({
             قائمة المسجلين
           </CardTitle>
           <CardDescription>
-            جميع المسجلين في هذه الجلسة
+            جميع المسجلين في هذا الحدث
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

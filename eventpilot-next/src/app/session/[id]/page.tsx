@@ -74,11 +74,11 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
   if (!session) {
     return (
       <div className="container py-16 text-center">
-        <h1 className="text-3xl font-bold mb-4 text-primary">الجلسة غير موجودة</h1>
+        <h1 className="text-3xl font-bold mb-4 text-primary">الحدث غير موجود</h1>
         <Button asChild size="lg" className="shadow-lg">
           <Link href="/sessions">
             <ArrowLeft className="w-4 h-4 ml-2" />
-            العودة للجلسات
+            العودة للأحداث
           </Link>
         </Button>
       </div>
@@ -239,7 +239,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                         <div className="flex flex-col items-center lg:items-start gap-3 md:gap-4">
                           {session.requiresApproval && (
                             <p className="text-xs md:text-sm text-amber-700 text-center lg:text-right">
-                              ⓘ هذه الجلسة تتطلب موافقة على التسجيل
+                              ⓘ هذا الحدث يتطلب موافقة على التسجيل
                             </p>
                           )}
                           <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full sm:w-auto">
@@ -267,7 +267,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                       ) : (
                         <div className="flex items-center justify-center gap-3 py-2">
                           <p className="text-muted-foreground font-medium text-sm md:text-base text-center">
-                            {session.isFull ? "🔒 الجلسة مكتملة العدد" : "التسجيل مغلق لهذه الجلسة"}
+                            {session.isFull ? "🔒 الحدث مكتمل العدد" : "التسجيل مغلق لهذا الحدث"}
                           </p>
                         </div>
                       )}
@@ -304,7 +304,19 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                       </div>
                       <div className="min-w-0">
                         <p className="text-[10px] md:text-xs text-muted-foreground">المكان</p>
-                        <p className="font-medium text-foreground text-sm md:text-base">{session.location}</p>
+                        {session.locationUrl ? (
+                          <a
+                            href={session.locationUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-primary hover:underline text-sm md:text-base inline-flex items-center gap-1"
+                          >
+                            {session.location}
+                            <ArrowLeft className="w-3 h-3 rotate-[135deg]" />
+                          </a>
+                        ) : (
+                          <p className="font-medium text-foreground text-sm md:text-base">{session.location}</p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -315,7 +327,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                         <User className="w-4 h-4 md:w-5 md:h-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[10px] md:text-xs text-muted-foreground">ضيف الجلسة</p>
+                        <p className="text-[10px] md:text-xs text-muted-foreground">ضيف الحدث</p>
                         <p className="font-medium text-base md:text-lg text-foreground">{session.guestName}</p>
                         {session.guestProfile && (
                           <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1 line-clamp-2">{session.guestProfile}</p>
@@ -328,7 +340,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                 {/* Description */}
                 {session.description && (
                   <div className="pt-4 md:pt-6 border-t border-border">
-                    <h3 className="font-semibold text-base md:text-lg mb-2 md:mb-3 text-primary">نبذة عن الجلسة</h3>
+                    <h3 className="font-semibold text-base md:text-lg mb-2 md:mb-3 text-primary">الوصف</h3>
                     <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap text-sm md:text-base">{session.description}</p>
                   </div>
                 )}

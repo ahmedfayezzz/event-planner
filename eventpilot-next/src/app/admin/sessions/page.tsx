@@ -76,13 +76,13 @@ export default function AdminSessionsPage() {
 
   const deleteMutation = api.session.delete.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف الجلسة بنجاح");
+      toast.success("تم حذف الحدث بنجاح");
       utils.session.list.invalidate();
       setDeleteDialogOpen(false);
       setSessionToDelete(null);
     },
     onError: (error) => {
-      toast.error(error.message || "فشل حذف الجلسة");
+      toast.error(error.message || "فشل حذف الحدث");
     },
   });
 
@@ -117,13 +117,13 @@ export default function AdminSessionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">الجلسات</h1>
-          <p className="text-muted-foreground">إدارة جلسات ثلوثية الأعمال</p>
+          <h1 className="text-2xl font-bold">الأحداث</h1>
+          <p className="text-muted-foreground">إدارة أحداث ثلوثية الأعمال</p>
         </div>
         <Button asChild>
           <Link href="/admin/sessions/new">
             <Plus className="me-2 h-4 w-4" />
-            جلسة جديدة
+            حدث جديد
           </Link>
         </Button>
       </div>
@@ -131,7 +131,7 @@ export default function AdminSessionsPage() {
       {/* Tabs */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
         <TabsList>
-          <TabsTrigger value="all">جميع الجلسات</TabsTrigger>
+          <TabsTrigger value="all">جميع الأحداث</TabsTrigger>
           <TabsTrigger value="upcoming">القادمة</TabsTrigger>
           <TabsTrigger value="completed">المنتهية</TabsTrigger>
         </TabsList>
@@ -141,10 +141,10 @@ export default function AdminSessionsPage() {
             <CardHeader>
               <CardTitle>
                 {tab === "all"
-                  ? "جميع الجلسات"
+                  ? "جميع الأحداث"
                   : tab === "upcoming"
-                  ? "الجلسات القادمة"
-                  : "الجلسات المنتهية"}
+                  ? "الأحداث القادمة"
+                  : "الأحداث المنتهية"}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0" dir="rtl">
@@ -157,7 +157,7 @@ export default function AdminSessionsPage() {
               ) : !data || data.sessions.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   <Calendar className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                  <p>لا توجد جلسات</p>
+                  <p>لا توجد أحداث</p>
                 </div>
               ) : (
                 <>
@@ -255,7 +255,7 @@ export default function AdminSessionsPage() {
                                   className="text-destructive focus:text-destructive"
                                 >
                                   <Trash2 className="ml-2 h-4 w-4" />
-                                  حذف الجلسة
+                                  حذف الحدث
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -275,9 +275,9 @@ export default function AdminSessionsPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد من حذف الجلسة؟</AlertDialogTitle>
+            <AlertDialogTitle>هل أنت متأكد من حذف الحدث؟</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم حذف الجلسة &quot;{sessionToDelete?.title}&quot; وجميع
+              سيتم حذف الحدث &quot;{sessionToDelete?.title}&quot; وجميع
               التسجيلات المرتبطة بها. هذا الإجراء لا يمكن التراجع عنه.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -13,11 +13,11 @@ export default function NewSessionPage() {
 
   const createMutation = api.session.create.useMutation({
     onSuccess: (session) => {
-      toast.success("تم إنشاء الجلسة بنجاح");
+      toast.success("تم إنشاء الحدث بنجاح");
       router.push(`/admin/sessions/${session.id}`);
     },
     onError: (error) => {
-      toast.error(error.message || "حدث خطأ أثناء إنشاء الجلسة");
+      toast.error(error.message || "حدث خطأ أثناء إنشاء الحدث");
     },
   });
 
@@ -59,9 +59,9 @@ export default function NewSessionPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">جلسة جديدة</h1>
+          <h1 className="text-2xl font-bold">حدث جديد</h1>
           <p className="text-muted-foreground">
-            إنشاء جلسة جديدة لثلوثية الأعمال
+            إنشاء حدث جديد لثلوثية الأعمال
           </p>
         </div>
       </div>

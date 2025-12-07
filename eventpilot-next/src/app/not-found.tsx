@@ -20,7 +20,7 @@ export default function NotFound() {
         <Button variant="outline" asChild>
           <Link href="/sessions">
             <ArrowRight className="ml-2 h-4 w-4" />
-            الجلسات
+            الأحداث
           </Link>
         </Button>
       </div>

@@ -43,13 +43,13 @@ export default function CheckInSelectPage() {
   const getEmptyMessage = () => {
     switch (dateRange) {
       case "today":
-        return "لا توجد جلسات اليوم";
+        return "لا توجد أحداث اليوم";
       case "week":
-        return "لا توجد جلسات هذا الأسبوع";
+        return "لا توجد أحداث هذا الأسبوع";
       case "month":
-        return "لا توجد جلسات هذا الشهر";
+        return "لا توجد أحداث هذا الشهر";
       default:
-        return "لا توجد جلسات";
+        return "لا توجد أحداث";
     }
   };
 
@@ -57,7 +57,7 @@ export default function CheckInSelectPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">تسجيل الحضور</h1>
-        <p className="text-muted-foreground">اختر جلسة لبدء تسجيل الحضور</p>
+        <p className="text-muted-foreground">اختر حدث لبدء تسجيل الحضور</p>
       </div>
 
       {/* Date Range Tabs */}

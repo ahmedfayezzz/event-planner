@@ -55,7 +55,7 @@ export const registrationRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 
@@ -63,14 +63,14 @@ export const registrationRouter = createTRPCRouter({
       if (session.status !== "open") {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "التسجيل مغلق لهذه الجلسة",
+          message: "التسجيل مغلق لهذا الحدث",
         });
       }
 
       if (session._count.registrations >= session.maxParticipants) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "الجلسة مكتملة العدد",
+          message: "الحدث مكتمل العدد",
         });
       }
 
@@ -100,7 +100,7 @@ export const registrationRouter = createTRPCRouter({
       if (existingReg) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: "أنت مسجل مسبقاً في هذه الجلسة",
+          message: "أنت مسجل مسبقاً في هذا الحدث",
         });
       }
 
@@ -252,7 +252,7 @@ export const registrationRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 
@@ -260,14 +260,14 @@ export const registrationRouter = createTRPCRouter({
       if (session.status !== "open") {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "التسجيل مغلق لهذه الجلسة",
+          message: "التسجيل مغلق لهذا الحدث",
         });
       }
 
       if (session._count.registrations >= session.maxParticipants) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "الجلسة مكتملة العدد",
+          message: "الحدث مكتمل العدد",
         });
       }
 
@@ -283,7 +283,7 @@ export const registrationRouter = createTRPCRouter({
         if (!input.inviteToken) {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "هذه الجلسة بدعوة فقط",
+            message: "هذا الحدث بدعوة فقط",
           });
         }
 
@@ -340,7 +340,7 @@ export const registrationRouter = createTRPCRouter({
       if (existingReg) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: "أنت مسجل مسبقاً في هذه الجلسة",
+          message: "أنت مسجل مسبقاً في هذا الحدث",
         });
       }
 
@@ -365,7 +365,7 @@ export const registrationRouter = createTRPCRouter({
         if (userReg) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: "أنت مسجل مسبقاً في هذه الجلسة",
+            message: "أنت مسجل مسبقاً في هذا الحدث",
           });
         }
 
@@ -675,7 +675,7 @@ export const registrationRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 

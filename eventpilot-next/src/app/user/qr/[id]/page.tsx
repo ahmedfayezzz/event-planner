@@ -53,14 +53,14 @@ export default function UserQRPage({ params }: { params: Promise<{ id: string }>
         <div className="max-w-md mx-auto text-center space-y-6">
           <h1 className="text-2xl font-bold">رمز QR غير متوفر</h1>
           <p className="text-muted-foreground">
-            {error?.message || "لم يتم العثور على تسجيل مؤكد لهذه الجلسة"}
+            {error?.message || "لم يتم العثور على تسجيل مؤكد لهذا الحدث"}
           </p>
           <div className="flex flex-col gap-3">
             <Button asChild>
               <Link href="/user/dashboard">العودة للوحة التحكم</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/sessions">استعرض الجلسات</Link>
+              <Link href="/sessions">استعرض الأحداث</Link>
             </Button>
           </div>
         </div>
@@ -124,7 +124,7 @@ export default function UserQRPage({ params }: { params: Promise<{ id: string }>
         {/* Actions */}
         <div className="flex flex-col gap-3">
           <Button variant="outline" asChild>
-            <Link href={`/session/${id}`}>عرض تفاصيل الجلسة</Link>
+            <Link href={`/session/${id}`}>عرض تفاصيل الحدث</Link>
           </Button>
           <Button variant="ghost" asChild>
             <Link href="/user/dashboard">العودة للوحة التحكم</Link>

@@ -128,7 +128,7 @@ export function SessionCard({
           >
             <Link href={`/session/${session.id}`}>
               {session.isFull
-                ? "الجلسة مكتملة"
+                ? "الحدث مكتمل"
                 : session.canRegister
                 ? "سجل الآن"
                 : "عرض التفاصيل"}

@@ -526,11 +526,11 @@ export async function sendWelcomeEmail(
     <p style="margin: 0 0 16px 0;">أهلاً بك في <strong style="color: ${BRAND.primary};">ثلوثية الأعمال</strong>!</p>
     <p style="margin: 0 0 12px 0;">تم إنشاء حسابك بنجاح. يمكنك الآن:</p>
     <ul style="margin: 0 0 16px 0; padding-right: 20px; color: ${BRAND.textMuted};">
-      <li style="margin-bottom: 8px;">التسجيل في الجلسات القادمة</li>
+      <li style="margin-bottom: 8px;">التسجيل في الأحداث القادمة</li>
       <li style="margin-bottom: 8px;">متابعة حالة تسجيلاتك</li>
       <li>استعراض سجل حضورك</li>
     </ul>
-    <p style="margin: 16px 0 0 0;">نتطلع لرؤيتك في جلساتنا القادمة!</p>
+    <p style="margin: 16px 0 0 0;">نتطلع لرؤيتك في أحداثنا القادمة!</p>
   `;
 
   const html = createEmailTemplate({
@@ -617,8 +617,8 @@ export async function sendInvitationEmail(
 
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً،</p>
-    <p style="margin: 0 0 16px 0;">نود دعوتك لحضور جلسة <strong style="color: ${BRAND.primary};">"${session.title}"</strong> في ثلوثية الأعمال.</p>
-    <p style="margin: 0 0 12px 0; font-weight: bold;">تفاصيل الجلسة:</p>
+    <p style="margin: 0 0 16px 0;">نود دعوتك لحضور حدث <strong style="color: ${BRAND.primary};">"${session.title}"</strong> في ثلوثية الأعمال.</p>
+    <p style="margin: 0 0 12px 0; font-weight: bold;">تفاصيل الحدث:</p>
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 0 16px 0; background-color: ${BRAND.footerBg}; border-radius: 8px; width: 100%; border: 1px solid ${BRAND.border};">
       <tr>
         <td style="padding: 16px;">

@@ -53,7 +53,7 @@ const sidebarLinks = [
   },
   {
     href: "/admin/sessions",
-    label: "الجلسات",
+    label: "الأحداث",
     icon: Calendar,
   },
   {

@@ -88,7 +88,7 @@ export default function AnalyticsPage() {
       color: "text-blue-600",
     },
     {
-      title: "إجمالي الجلسات",
+      title: "إجمالي الأحداث",
       value: analytics.overview.totalSessions,
       icon: Calendar,
       color: "text-green-600",
@@ -245,7 +245,7 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>توقيت التسجيل</CardTitle>
-            <CardDescription>متى يسجل الأعضاء قبل الجلسة</CardDescription>
+            <CardDescription>متى يسجل الأعضاء قبل الحدث</CardDescription>
           </CardHeader>
           <CardContent className="h-80">
             {analytics.registrationTiming &&
@@ -278,7 +278,7 @@ export default function AnalyticsPage() {
           <CardHeader>
             <CardTitle>الأعضاء الجدد مقابل العائدين</CardTitle>
             <CardDescription>
-              توزيع الحضور في آخر 10 جلسات
+              توزيع الحضور في آخر 10 أحداث
             </CardDescription>
           </CardHeader>
           <CardContent className="h-80">
@@ -522,9 +522,9 @@ export default function AnalyticsPage() {
       {/* Session Performance Table */}
       <Card>
         <CardHeader>
-          <CardTitle>أداء الجلسات</CardTitle>
+          <CardTitle>أداء الأحداث</CardTitle>
           <CardDescription>
-            إحصائيات التسجيل والحضور لكل جلسة
+            إحصائيات التسجيل والحضور لكل حدث
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -532,7 +532,7 @@ export default function AnalyticsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>الجلسة</TableHead>
+                  <TableHead>الحدث</TableHead>
                   <TableHead>التاريخ</TableHead>
                   <TableHead>المسجلين</TableHead>
                   <TableHead>الحاضرين</TableHead>
@@ -577,7 +577,7 @@ export default function AnalyticsPage() {
             </Table>
           ) : (
             <p className="text-center text-muted-foreground py-8">
-              لا توجد جلسات بعد
+              لا توجد أحداث بعد
             </p>
           )}
         </CardContent>
@@ -596,7 +596,7 @@ export default function AnalyticsPage() {
                 <TableRow>
                   <TableHead>الاسم</TableHead>
                   <TableHead>الشركة</TableHead>
-                  <TableHead>الجلسات المحضورة</TableHead>
+                  <TableHead>الأحداث المحضورة</TableHead>
                   <TableHead>إجمالي التسجيلات</TableHead>
                   <TableHead>نسبة الحضور</TableHead>
                 </TableRow>

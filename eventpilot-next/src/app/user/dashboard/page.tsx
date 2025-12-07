@@ -73,7 +73,7 @@ export default function UserDashboardPage() {
             </div>
             <div className="flex gap-3">
               <Button variant="secondary" className="shadow-lg hover:shadow-xl transition-all" asChild>
-                <Link href="/sessions">تصفح الجلسات</Link>
+                <Link href="/sessions">تصفح الأحداث</Link>
               </Button>
               <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm" asChild>
                 <Link href="/user/profile">إعدادات الحساب</Link>
@@ -94,13 +94,13 @@ export default function UserDashboardPage() {
           </Card>
           <Card className="border-none shadow-lg bg-white/80 backdrop-blur-md hover:transform hover:-translate-y-1 transition-all duration-300">
             <CardHeader className="pb-2">
-              <CardDescription className="text-primary/60 font-medium">الجلسات القادمة</CardDescription>
+              <CardDescription className="text-primary/60 font-medium">الأحداث القادمة</CardDescription>
               <CardTitle className="text-4xl font-bold text-secondary">{dashboard?.stats.upcomingEvents ?? 0}</CardTitle>
             </CardHeader>
           </Card>
           <Card className="border-none shadow-lg bg-white/80 backdrop-blur-md hover:transform hover:-translate-y-1 transition-all duration-300">
             <CardHeader className="pb-2">
-              <CardDescription className="text-primary/60 font-medium">الجلسات المحضورة</CardDescription>
+              <CardDescription className="text-primary/60 font-medium">الأحداث المحضورة</CardDescription>
               <CardTitle className="text-4xl font-bold text-primary">{dashboard?.stats.attendedEvents ?? 0}</CardTitle>
             </CardHeader>
           </Card>
@@ -206,7 +206,7 @@ export default function UserDashboardPage() {
           <Tabs defaultValue="upcoming" className="w-full">
             <div className="border-b px-6 py-4 bg-muted/30">
               <TabsList className="bg-white border shadow-sm">
-                <TabsTrigger value="upcoming" className="data-[state=active]:bg-primary data-[state=active]:text-white">الجلسات القادمة</TabsTrigger>
+                <TabsTrigger value="upcoming" className="data-[state=active]:bg-primary data-[state=active]:text-white">الأحداث القادمة</TabsTrigger>
                 <TabsTrigger value="past" className="data-[state=active]:bg-primary data-[state=active]:text-white">الأرشيف</TabsTrigger>
               </TabsList>
             </div>
@@ -221,10 +221,10 @@ export default function UserDashboardPage() {
                   <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                     <span className="text-2xl">📅</span>
                   </div>
-                  <h3 className="text-lg font-bold text-primary mb-2">لا توجد جلسات قادمة</h3>
-                  <p className="text-muted-foreground mb-6">لم تقم بالتسجيل في أي جلسات قادمة بعد</p>
+                  <h3 className="text-lg font-bold text-primary mb-2">لا توجد أحداث قادمة</h3>
+                  <p className="text-muted-foreground mb-6">لم تقم بالتسجيل في أي أحداث قادمة بعد</p>
                   <Button asChild variant="default">
-                    <Link href="/sessions">استعرض الجلسات المتاحة</Link>
+                    <Link href="/sessions">استعرض الأحداث المتاحة</Link>
                   </Button>
                 </div>
               )}
@@ -237,7 +237,7 @@ export default function UserDashboardPage() {
                 ))
               ) : (
                 <div className="text-center py-16">
-                  <p className="text-muted-foreground">لا يوجد سجل للجلسات السابقة</p>
+                  <p className="text-muted-foreground">لا يوجد سجل للأحداث السابقة</p>
                 </div>
               )}
             </TabsContent>

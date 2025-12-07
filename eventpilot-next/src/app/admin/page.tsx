@@ -140,7 +140,7 @@ export default function AdminDashboardPage() {
       color: "text-blue-600",
     },
     {
-      title: "إجمالي الجلسات",
+      title: "إجمالي الأحداث",
       value: dashboard.stats.totalSessions,
       icon: Calendar,
       color: "text-green-600",
@@ -187,7 +187,7 @@ export default function AdminDashboardPage() {
           <Button asChild>
             <Link href="/admin/sessions/new">
               <Plus className="ml-2 h-4 w-4" />
-              جلسة جديدة
+              حدث جديد
             </Link>
           </Button>
         </div>
@@ -214,15 +214,15 @@ export default function AdminDashboardPage() {
         {/* Upcoming Sessions */}
         <Card>
           <CardHeader>
-            <CardTitle>الجلسات القادمة</CardTitle>
+            <CardTitle>الأحداث القادمة</CardTitle>
             <CardDescription>
-              الجلسات المفتوحة للتسجيل
+              الأحداث المفتوحة للتسجيل
             </CardDescription>
           </CardHeader>
           <CardContent>
             {dashboard.upcomingSessions.length === 0 ? (
               <p className="text-center text-muted-foreground py-4">
-                لا توجد جلسات قادمة
+                لا توجد أحداث قادمة
               </p>
             ) : (
               <div className="space-y-4">
@@ -311,14 +311,14 @@ export default function AdminDashboardPage() {
           <CardHeader>
             <CardTitle>إحصائيات الحضور</CardTitle>
             <CardDescription>
-              نسبة الحضور في آخر 5 جلسات
+              نسبة الحضور في آخر 5 أحداث
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>الجلسة</TableHead>
+                  <TableHead>الحدث</TableHead>
                   <TableHead>التاريخ</TableHead>
                   <TableHead>المسجلين</TableHead>
                   <TableHead>الحاضرين</TableHead>

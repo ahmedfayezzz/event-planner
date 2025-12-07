@@ -163,9 +163,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
   if (!session) {
     return (
       <div className="container py-8 text-center">
-        <h1 className="text-2xl font-bold mb-4">الجلسة غير موجودة</h1>
+        <h1 className="text-2xl font-bold mb-4">الحدث غير موجود</h1>
         <Button asChild>
-          <Link href="/sessions">العودة للجلسات</Link>
+          <Link href="/sessions">العودة للأحداث</Link>
         </Button>
       </div>
     );
@@ -176,10 +176,10 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
       <div className="container py-8 text-center">
         <h1 className="text-2xl font-bold mb-4">التسجيل غير متاح</h1>
         <p className="text-muted-foreground mb-6">
-          {session.isFull ? "الجلسة مكتملة العدد" : "التسجيل مغلق لهذه الجلسة"}
+          {session.isFull ? "الحدث مكتمل العدد" : "التسجيل مغلق لهذا الحدث"}
         </p>
         <Button asChild>
-          <Link href={`/session/${id}`}>العودة لتفاصيل الجلسة</Link>
+          <Link href={`/session/${id}`}>العودة لتفاصيل الحدث</Link>
         </Button>
       </div>
     );
@@ -188,12 +188,12 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
   if (session.inviteOnly && !inviteToken) {
     return (
       <div className="container py-8 text-center">
-        <h1 className="text-2xl font-bold mb-4">جلسة بدعوة فقط</h1>
+        <h1 className="text-2xl font-bold mb-4">حدث بدعوة فقط</h1>
         <p className="text-muted-foreground mb-6">
-          هذه الجلسة تتطلب رابط دعوة للتسجيل
+          هذا الحدث يتطلب رابط دعوة للتسجيل
         </p>
         <Button asChild>
-          <Link href={`/session/${id}`}>العودة لتفاصيل الجلسة</Link>
+          <Link href={`/session/${id}`}>العودة لتفاصيل الحدث</Link>
         </Button>
       </div>
     );
@@ -249,7 +249,7 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
             <CardHeader>
               <CardTitle>التسجيل كزائر</CardTitle>
               <CardDescription>
-                أدخل بياناتك للتسجيل في الجلسة
+                أدخل بياناتك للتسجيل في الحدث
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -505,10 +505,10 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                   />
                   <div className="space-y-1">
                     <Label htmlFor="wantsToHost" className="cursor-pointer font-medium">
-                      هل تريد تقديم الضيافة؟
+                      هل تريد تقديم الضيافة في أحد أحداثنا القادمة؟
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      تطوع لتقديم الضيافة في إحدى الجلسات القادمة
+                      سوف يتم التواصل معكم لتحديد الاحتياج
                     </p>
                   </div>
                 </div>
@@ -582,7 +582,7 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
               {session.requiresApproval && (
                 <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
                   <p className="text-sm text-amber-800">
-                    * هذه الجلسة تتطلب موافقة على التسجيل. سيتم إرسال بريد إلكتروني عند الموافقة.
+                    * هذا الحدث يتطلب موافقة على التسجيل. سيتم إرسال بريد إلكتروني عند الموافقة.
                   </p>
                 </div>
               )}

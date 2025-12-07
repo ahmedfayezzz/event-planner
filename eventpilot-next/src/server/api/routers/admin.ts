@@ -205,7 +205,7 @@ export const adminRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 
@@ -255,7 +255,7 @@ export const adminRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 
@@ -975,4 +975,63 @@ export const adminRouter = createTRPCRouter({
     const csv = exportToCSV(data);
     return { csv, count: data.length };
   }),
+
+  /**
+   * Create a new host manually (admin only)
+   */
+  createHost: adminProcedure
+    .input(
+      z.object({
+        name: z.string().min(1, "الاسم مطلوب"),
+        email: z.string().email("البريد الإلكتروني غير صالح").optional(),
+        phone: z.string().min(1, "رقم الهاتف مطلوب"),
+        companyName: z.string().optional(),
+        hostingTypes: z.array(z.string()).min(1, "يجب اختيار نوع ضيافة واحد على الأقل"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Check if user with same phone already exists
+      const existingUser = await db.user.findFirst({
+        where: {
+          OR: [
+            { phone: input.phone },
+            ...(input.email ? [{ email: input.email }] : []),
+          ],
+        },
+      });
+
+      if (existingUser) {
+        // Update existing user to mark as host
+        const updated = await db.user.update({
+          where: { id: existingUser.id },
+          data: {
+            wantsToHost: true,
+            hostingTypes: {
+              set: Array.from(new Set([...existingUser.hostingTypes, ...input.hostingTypes])),
+            },
+          },
+        });
+        return { user: updated, isNew: false };
+      }
+
+      // Create a new user with host preferences
+      const username = input.phone.replace(/\D/g, "");
+      const user = await db.user.create({
+        data: {
+          name: input.name,
+          email: input.email || `host-${username}@placeholder.local`,
+          phone: input.phone,
+          username,
+          companyName: input.companyName,
+          wantsToHost: true,
+          hostingTypes: input.hostingTypes,
+          isActive: true,
+          isApproved: true,
+        },
+      });
+
+      return { user, isNew: true };
+    }),
 });

@@ -274,12 +274,12 @@ export default function RegisterPage() {
               <div className="space-y-3 md:space-y-4">
                 <h3 className="font-semibold text-primary border-b border-primary/10 pb-2 flex items-center gap-2 text-sm md:text-base">
                   <span className="w-1.5 md:w-2 h-5 md:h-6 bg-secondary rounded-full inline-block"></span>
-                  المعلومات المهنية (اختياري)
+                  المعلومات المهنية
                 </h3>
                 <div className="grid gap-3 md:gap-4 md:grid-cols-2">
                   <div className="space-y-1.5 md:space-y-2">
                     <Label htmlFor="companyName" className="text-sm">
-                      اسم الشركة
+                      اسم الشركة *
                     </Label>
                     <Input
                       id="companyName"
@@ -290,13 +290,14 @@ export default function RegisterPage() {
                           companyName: e.target.value,
                         })
                       }
+                      required
                       disabled={isLoading}
                       className="bg-white/60 backdrop-blur-sm border border-primary/10 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all shadow-none"
                     />
                   </div>
                   <div className="space-y-1.5 md:space-y-2">
                     <Label htmlFor="position" className="text-sm">
-                      المنصب
+                      المنصب *
                     </Label>
                     <Input
                       id="position"
@@ -304,6 +305,7 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, position: e.target.value })
                       }
+                      required
                       disabled={isLoading}
                       className="bg-white/60 backdrop-blur-sm border border-primary/10 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all shadow-none"
                     />
@@ -393,7 +395,7 @@ export default function RegisterPage() {
                 </Label>
                 <Textarea
                   id="goal"
-                  placeholder="ما الذي تتمنى تحقيقه من خلال حضورك لجلسات ثلوثية الأعمال؟"
+                  placeholder="ما الذي تتمنى تحقيقه من خلال حضورك لأحداث ثلوثية الأعمال؟"
                   value={formData.goal}
                   onChange={(e) =>
                     setFormData({ ...formData, goal: e.target.value })
@@ -426,10 +428,10 @@ export default function RegisterPage() {
                   />
                   <div className="space-y-1">
                     <Label htmlFor="wantsToHost" className="cursor-pointer text-sm font-medium">
-                      هل تريد تقديم الضيافة؟
+                      هل تريد تقديم الضيافة في أحد أحداثنا القادمة؟
                     </Label>
                     <p className="text-xs md:text-sm text-muted-foreground">
-                      تطوع لتقديم الضيافة في إحدى الجلسات القادمة
+                      سوف يتم التواصل معكم لتحديد الاحتياج
                     </p>
                   </div>
                 </div>

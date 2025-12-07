@@ -183,9 +183,9 @@ export default function SessionAttendeesPage({
   if (!session) {
     return (
       <div className="text-center py-8">
-        <h2 className="text-xl font-bold mb-4">الجلسة غير موجودة</h2>
+        <h2 className="text-xl font-bold mb-4">الحدث غير موجود</h2>
         <Button asChild>
-          <Link href="/admin/sessions">العودة للجلسات</Link>
+          <Link href="/admin/sessions">العودة للأحداث</Link>
         </Button>
       </div>
     );

@@ -109,7 +109,7 @@ export const attendanceRouter = createTRPCRouter({
       if (registration.sessionId !== parsed.sessionId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "رمز QR لا يتطابق مع الجلسة الحالية",
+          message: "رمز QR لا يتطابق مع الحدث الحالي",
         });
       }
 
@@ -163,7 +163,7 @@ export const attendanceRouter = createTRPCRouter({
       if (!session) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "الجلسة غير موجودة",
+          message: "الحدث غير موجود",
         });
       }
 
@@ -264,7 +264,7 @@ export const attendanceRouter = createTRPCRouter({
       if (!registration) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "لم يتم العثور على تسجيل مؤكد لهذه الجلسة",
+          message: "لم يتم العثور على تسجيل مؤكد لهذا الحدث",
         });
       }
 

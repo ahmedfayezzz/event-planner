@@ -61,7 +61,7 @@ export function CountdownTimer({ targetDate, title, onExpire, compact, variant =
     return (
       <div className={compact ? "text-center py-2" : "text-center py-4 md:py-8"}>
         <p className={compact ? "text-base md:text-lg font-bold text-primary" : "text-xl md:text-2xl font-bold text-primary"}>
-          بدأت الجلسة!
+          بدأ الحدث!
         </p>
       </div>
     );

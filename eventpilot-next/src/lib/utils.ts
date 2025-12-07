@@ -200,6 +200,38 @@ export function shareOnWhatsApp(url: string, text: string): void {
 }
 
 /**
+ * Generate WhatsApp direct message URL
+ * @param phone Phone number (will be cleaned and formatted)
+ * @param message Optional message text
+ * @returns WhatsApp URL
+ */
+export function getWhatsAppUrl(phone: string, message?: string): string {
+  // Remove all non-digit characters except + at the start
+  let cleanPhone = phone.replace(/[^\d+]/g, "");
+
+  // Remove leading + and any leading zeros
+  if (cleanPhone.startsWith("+")) {
+    cleanPhone = cleanPhone.substring(1);
+  }
+
+  // If starts with 0, replace with Saudi Arabia code (966)
+  if (cleanPhone.startsWith("0")) {
+    cleanPhone = "966" + cleanPhone.substring(1);
+  }
+
+  // If doesn't start with country code, assume Saudi Arabia
+  if (!cleanPhone.startsWith("966") && cleanPhone.length <= 10) {
+    cleanPhone = "966" + cleanPhone;
+  }
+
+  const baseUrl = `https://wa.me/${cleanPhone}`;
+  if (message) {
+    return `${baseUrl}?text=${encodeURIComponent(message)}`;
+  }
+  return baseUrl;
+}
+
+/**
  * Get current page URL (for sharing)
  */
 export function getCurrentUrl(): string {

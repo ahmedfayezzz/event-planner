@@ -46,7 +46,9 @@ import {
   Loader2,
   Trash2,
   ExternalLink,
+  UtensilsCrossed,
 } from "lucide-react";
+import { getHostingTypeLabel } from "@/lib/constants";
 
 export default function SessionDetailPage({
   params,
@@ -58,14 +60,15 @@ export default function SessionDetailPage({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data: session, isLoading } = api.session.getAdminDetails.useQuery({ id });
+  const { data: caterings } = api.catering.getSessionCatering.useQuery({ sessionId: id });
 
   const deleteMutation = api.session.delete.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف الجلسة بنجاح");
+      toast.success("تم حذف الحدث بنجاح");
       router.push("/admin/sessions");
     },
     onError: (error) => {
-      toast.error(error.message || "فشل حذف الجلسة");
+      toast.error(error.message || "فشل حذف الحدث");
     },
   });
 
@@ -101,9 +104,9 @@ export default function SessionDetailPage({
   if (!session) {
     return (
       <div className="text-center py-8">
-        <h2 className="text-xl font-bold mb-4">الجلسة غير موجودة</h2>
+        <h2 className="text-xl font-bold mb-4">الحدث غير موجود</h2>
         <Button asChild>
-          <Link href="/admin/sessions">العودة للجلسات</Link>
+          <Link href="/admin/sessions">العودة للأحداث</Link>
         </Button>
       </div>
     );
@@ -162,7 +165,7 @@ export default function SessionDetailPage({
       {/* Session Info Card */}
       <Card>
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg">معلومات الجلسة</CardTitle>
+          <CardTitle className="text-lg">معلومات الحدث</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -319,9 +322,75 @@ export default function SessionDetailPage({
                 تسجيل الحضور
               </Link>
             </Button>
+            <Button variant="outline" asChild>
+              <Link href={`/admin/sessions/${id}/catering`}>
+                <UtensilsCrossed className="ml-2 h-4 w-4" />
+                إدارة الضيافة
+              </Link>
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Catering Section */}
+      {caterings && caterings.caterings.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>الضيافة</CardTitle>
+                <CardDescription>{caterings.caterings.length} عنصر ضيافة</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/admin/sessions/${id}/catering`}>
+                  إدارة الضيافة
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {caterings.caterings.map((catering) => (
+                <div
+                  key={catering.id}
+                  className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border"
+                >
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <UtensilsCrossed className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="secondary">
+                        {getHostingTypeLabel(catering.hostingType)}
+                      </Badge>
+                      {catering.isSelfCatering ? (
+                        <span className="text-sm text-muted-foreground">
+                          ضيافة ذاتية
+                        </span>
+                      ) : catering.host ? (
+                        <span className="text-sm font-medium">
+                          {catering.host.name}
+                          {catering.host.companyName && (
+                            <span className="text-muted-foreground font-normal">
+                              {" "}
+                              - {catering.host.companyName}
+                            </span>
+                          )}
+                        </span>
+                      ) : null}
+                    </div>
+                    {catering.notes && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {catering.notes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Registrations */}
       <Card>
@@ -329,7 +398,7 @@ export default function SessionDetailPage({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>أحدث التسجيلات</CardTitle>
-              <CardDescription>آخر 10 تسجيلات في الجلسة</CardDescription>
+              <CardDescription>آخر 10 تسجيلات في الحدث</CardDescription>
             </div>
             <Button variant="outline" size="sm" asChild>
               <Link href={`/admin/sessions/${id}/attendees`}>
@@ -401,9 +470,9 @@ export default function SessionDetailPage({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد من حذف الجلسة؟</AlertDialogTitle>
+            <AlertDialogTitle>هل أنت متأكد من حذف الحدث؟</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم حذف الجلسة &quot;{session.title}&quot; وجميع التسجيلات المرتبطة بها.
+              سيتم حذف الحدث &quot;{session.title}&quot; وجميع التسجيلات المرتبطة به.
               هذا الإجراء لا يمكن التراجع عنه.
             </AlertDialogDescription>
           </AlertDialogHeader>

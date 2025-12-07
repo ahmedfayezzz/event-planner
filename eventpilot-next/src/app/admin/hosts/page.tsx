@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -21,8 +24,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { formatArabicDate } from "@/lib/utils";
+import { formatArabicDate, getWhatsAppUrl } from "@/lib/utils";
 import { HOSTING_TYPES, getHostingTypeLabel } from "@/lib/constants";
 import {
   UtensilsCrossed,
@@ -31,6 +42,8 @@ import {
   ChevronDown,
   User,
   UserCheck,
+  Plus,
+  MessageCircle,
 } from "lucide-react";
 
 interface HostItem {
@@ -46,6 +59,16 @@ interface HostItem {
 
 export default function AdminHostsPage() {
   const [hostingTypeFilter, setHostingTypeFilter] = useState<string>("all");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    companyName: "",
+    hostingTypes: [] as string[],
+  });
+
+  const utils = api.useUtils();
 
   const {
     data,
@@ -64,12 +87,61 @@ export default function AdminHostsPage() {
     }
   );
 
+  const createHost = api.admin.createHost.useMutation({
+    onSuccess: (data) => {
+      if (data.isNew) {
+        toast.success("تم إضافة المضيف بنجاح");
+      } else {
+        toast.success("تم تحديث بيانات المضيف الموجود");
+      }
+      utils.admin.getHosts.invalidate();
+      setIsAddDialogOpen(false);
+      resetForm();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء إضافة المضيف");
+    },
+  });
+
   const allHosts: HostItem[] =
     data?.pages.flatMap((page) => [...page.users, ...page.guestHosts]) ?? [];
 
   const { refetch: fetchCsv } = api.admin.exportHosts.useQuery(undefined, {
     enabled: false,
   });
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      companyName: "",
+      hostingTypes: [],
+    });
+  };
+
+  const handleAddHost = () => {
+    if (!formData.name.trim()) {
+      toast.error("الاسم مطلوب");
+      return;
+    }
+    if (!formData.phone.trim()) {
+      toast.error("رقم الهاتف مطلوب");
+      return;
+    }
+    if (formData.hostingTypes.length === 0) {
+      toast.error("يجب اختيار نوع ضيافة واحد على الأقل");
+      return;
+    }
+
+    createHost.mutate({
+      name: formData.name,
+      email: formData.email || undefined,
+      phone: formData.phone,
+      companyName: formData.companyName || undefined,
+      hostingTypes: formData.hostingTypes,
+    });
+  };
 
   const handleExport = async () => {
     const result = await fetchCsv();
@@ -83,6 +155,12 @@ export default function AdminHostsPage() {
       link.click();
       toast.success(`تم تصدير ${result.data.count} مضيف`);
     }
+  };
+
+  const handleWhatsApp = (phone: string, name: string) => {
+    const message = `مرحباً ${name}،\n\nنشكرك على تطوعك لتقديم الضيافة في ثلوثية الأعمال.\n\nنود التواصل معك لتنسيق تفاصيل الضيافة.`;
+    const url = getWhatsAppUrl(phone, message);
+    window.open(url, "_blank");
   };
 
   // Show skeleton only on initial load
@@ -100,10 +178,16 @@ export default function AdminHostsPage() {
             قائمة المتطوعين لتقديم الضيافة
           </p>
         </div>
-        <Button variant="outline" onClick={handleExport}>
-          <Download className="me-2 h-4 w-4" />
-          تصدير CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="me-2 h-4 w-4" />
+            إضافة مضيف
+          </Button>
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="me-2 h-4 w-4" />
+            تصدير CSV
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -145,6 +229,14 @@ export default function AdminHostsPage() {
             <div className="py-8 text-center text-muted-foreground">
               <UtensilsCrossed className="mx-auto h-12 w-12 mb-4 opacity-50" />
               <p>لا يوجد مضيفين</p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => setIsAddDialogOpen(true)}
+              >
+                <Plus className="me-2 h-4 w-4" />
+                إضافة مضيف
+              </Button>
             </div>
           ) : (
             <>
@@ -164,6 +256,7 @@ export default function AdminHostsPage() {
                     <TableHead>أنواع الضيافة</TableHead>
                     <TableHead>النوع</TableHead>
                     <TableHead>تاريخ التسجيل</TableHead>
+                    <TableHead className="text-left">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -174,7 +267,7 @@ export default function AdminHostsPage() {
                       </TableCell>
                       <TableCell dir="ltr">
                         <div>
-                          {host.email ? (
+                          {host.email && !host.email.includes("@placeholder.local") ? (
                             <a
                               href={`mailto:${host.email}`}
                               className="text-sm hover:underline underline"
@@ -231,6 +324,21 @@ export default function AdminHostsPage() {
                       <TableCell>
                         {formatArabicDate(new Date(host.createdAt))}
                       </TableCell>
+                      <TableCell>
+                        {host.phone && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            onClick={() =>
+                              handleWhatsApp(host.phone!, host.name || "")
+                            }
+                            title="إرسال رسالة واتساب"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -257,6 +365,123 @@ export default function AdminHostsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Add Host Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>إضافة مضيف جديد</DialogTitle>
+            <DialogDescription>
+              أضف مضيف جديد يدوياً لقائمة المتطوعين للضيافة
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="hostName">الاسم *</Label>
+                <Input
+                  id="hostName"
+                  placeholder="اسم المضيف"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hostPhone">رقم الهاتف *</Label>
+                <Input
+                  id="hostPhone"
+                  placeholder="05XXXXXXXX"
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
+                  dir="ltr"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="hostEmail">البريد الإلكتروني (اختياري)</Label>
+                <Input
+                  id="hostEmail"
+                  type="email"
+                  placeholder="email@example.com"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  dir="ltr"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hostCompany">الشركة (اختياري)</Label>
+                <Input
+                  id="hostCompany"
+                  placeholder="اسم الشركة"
+                  value={formData.companyName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, companyName: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>أنواع الضيافة *</Label>
+              <div className="grid gap-2 grid-cols-2">
+                {HOSTING_TYPES.map((type) => (
+                  <div key={type.value} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`add-hosting-${type.value}`}
+                      checked={formData.hostingTypes.includes(type.value)}
+                      onCheckedChange={(checked) => {
+                        const types = checked
+                          ? [...formData.hostingTypes, type.value]
+                          : formData.hostingTypes.filter(
+                              (t) => t !== type.value
+                            );
+                        setFormData({ ...formData, hostingTypes: types });
+                      }}
+                    />
+                    <Label
+                      htmlFor={`add-hosting-${type.value}`}
+                      className="cursor-pointer text-sm"
+                    >
+                      {type.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetForm();
+                setIsAddDialogOpen(false);
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button onClick={handleAddHost} disabled={createHost.isPending}>
+              {createHost.isPending ? (
+                <>
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  جارٍ الإضافة...
+                </>
+              ) : (
+                "إضافة المضيف"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -42,7 +42,7 @@ export default function EventEmbedPage({ params }: { params: Promise<{ slug: str
     return (
       <div className="p-4 min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-lg font-bold mb-2">الجلسة غير موجودة</h2>
+          <h2 className="text-lg font-bold mb-2">الحدث غير موجود</h2>
           <p className="text-muted-foreground text-sm">
             تأكد من صحة الرابط
           </p>
@@ -57,7 +57,7 @@ export default function EventEmbedPage({ params }: { params: Promise<{ slug: str
         <div className="text-center">
           <h2 className="text-lg font-bold mb-2">التضمين غير مفعل</h2>
           <p className="text-muted-foreground text-sm">
-            هذه الجلسة لا تدعم التضمين
+            هذا الحدث لا يدعم التضمين
           </p>
         </div>
       </div>
@@ -157,14 +157,14 @@ export default function EventEmbedPage({ params }: { params: Promise<{ slug: str
             </Button>
           ) : (
             <Button className="w-full" disabled>
-              {displaySession.isFull ? "الجلسة مكتملة" : "التسجيل مغلق"}
+              {displaySession.isFull ? "الحدث مكتمل" : "التسجيل مغلق"}
             </Button>
           )}
 
           {/* Guest Info */}
           {displaySession.guestName && displaySession.showGuestProfile && (
             <div className="pt-2 border-t text-center">
-              <p className="text-xs text-muted-foreground">ضيف الجلسة</p>
+              <p className="text-xs text-muted-foreground">ضيف الحدث</p>
               <p className="font-medium text-sm">{displaySession.guestName}</p>
             </div>
           )}
