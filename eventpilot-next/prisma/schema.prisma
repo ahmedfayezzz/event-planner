@@ -96,6 +96,8 @@ model Session {
   inviteMessage         String?
   sendQrInEmail         Boolean  @default(true)
   showSocialMediaFields Boolean  @default(true)
+  showRegistrationPurpose Boolean  @default(true)
+  showCateringInterest  Boolean  @default(true)
   locationUrl           String?
 
   createdAt     DateTime  @default(now())
@@ -194,4 +196,22 @@ model EventCatering {
   host    User?   @relation(fields: [hostId], references: [id])
 
   @@index([sessionId])
+}
+
+model Settings {
+  id        String   @id @default(cuid())
+  key       String   @unique // singleton key "global"
+
+  // Registration form field visibility defaults
+  showSocialMediaFields   Boolean  @default(true)
+  showRegistrationPurpose Boolean  @default(true)
+  showCateringInterest    Boolean  @default(true)
+
+  // System settings
+  siteName        String?
+  contactEmail    String?
+  contactPhone    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

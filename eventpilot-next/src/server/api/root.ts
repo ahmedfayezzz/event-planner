@@ -8,6 +8,7 @@ import { attendanceRouter } from "./routers/attendance";
 import { invitationRouter } from "./routers/invitation";
 import { adminRouter } from "./routers/admin";
 import { cateringRouter } from "./routers/catering";
+import { settingsRouter } from "./routers/settings";
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -19,6 +20,7 @@ export const appRouter = createTRPCRouter({
   invitation: invitationRouter,
   admin: adminRouter,
   catering: cateringRouter,
+  settings: settingsRouter,
 });
 
 export type AppRouter = typeof appRouter;

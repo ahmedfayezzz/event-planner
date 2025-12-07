@@ -55,6 +55,9 @@ import {
   Crown,
   Globe,
   UtensilsCrossed,
+  Plus,
+  X,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -63,6 +66,7 @@ import {
   defaultSessionFormData,
 } from "@/lib/schemas/session";
 import { HOSTING_TYPES } from "@/lib/constants";
+import { api } from "@/trpc/react";
 
 // Re-export for backward compatibility
 export type { SessionFormData };
@@ -394,6 +398,18 @@ export function SessionForm({
   const [currentStep, setCurrentStep] = useState(0);
   const [draftSaved, setDraftSaved] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(getInitialSelectedTemplate);
+
+  // Fetch global settings for defaults
+  const { data: settings } = api.settings.get.useQuery();
+
+  // Load settings defaults when creating new session
+  useEffect(() => {
+    if (mode === "create" && settings && !initialData) {
+      setValue("showSocialMediaFields", settings.showSocialMediaFields ?? true);
+      setValue("showRegistrationPurpose", settings.showRegistrationPurpose ?? true);
+      setValue("showCateringInterest", settings.showCateringInterest ?? true);
+    }
+  }, [mode, settings, initialData, setValue]);
 
   // Auto-save draft every 30 seconds (create mode only)
   useEffect(() => {
@@ -806,6 +822,36 @@ export function SessionForm({
                       label="وسائل التواصل"
                       description="إظهار حقول التواصل الاجتماعي"
                       icon={MessageSquare}
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={isPending}
+                    />
+                  )}
+                />
+                <Controller
+                  name="showRegistrationPurpose"
+                  control={control}
+                  render={({ field }) => (
+                    <ToggleCard
+                      id="showRegistrationPurpose"
+                      label="الهدف من التسجيل"
+                      description="السؤال عن هدف المستخدم"
+                      icon={Target}
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={isPending}
+                    />
+                  )}
+                />
+                <Controller
+                  name="showCateringInterest"
+                  control={control}
+                  render={({ field }) => (
+                    <ToggleCard
+                      id="showCateringInterest"
+                      label="الرغبة في الضيافة"
+                      description="السؤال عن رغبة تقديم الضيافة"
+                      icon={UtensilsCrossed}
                       checked={field.value}
                       onCheckedChange={field.onChange}
                       disabled={isPending}
@@ -1525,6 +1571,34 @@ export function SessionForm({
                         id="showSocialMediaFields-edit"
                         label="وسائل التواصل"
                         icon={MessageSquare}
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={isPending}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="showRegistrationPurpose"
+                    control={control}
+                    render={({ field }) => (
+                      <ToggleCard
+                        id="showRegistrationPurpose-edit"
+                        label="الهدف من التسجيل"
+                        icon={Target}
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={isPending}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="showCateringInterest"
+                    control={control}
+                    render={({ field }) => (
+                      <ToggleCard
+                        id="showCateringInterest-edit"
+                        label="الرغبة في الضيافة"
+                        icon={UtensilsCrossed}
                         checked={field.value}
                         onCheckedChange={field.onChange}
                         disabled={isPending}

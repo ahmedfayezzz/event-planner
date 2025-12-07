@@ -110,7 +110,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-2xl mx-auto relative z-10">
         <div className="text-center mb-6 md:mb-8">
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-primary">
-            إنشاء حساب جديد
+            الانضمام كعضو
           </h2>
           <p className="mt-2 text-xs md:text-sm text-muted-foreground">
             انضم إلى مجتمع ثلوثية الأعمال

@@ -250,10 +250,10 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                               className="shadow-lg hover:shadow-xl transition-all w-full sm:w-auto md:text-base"
                             >
                               {authStatus !== "authenticated"
-                                ? "سجل دخول للتسجيل"
+                                ? "الانضمام كعضو"
                                 : isRegistering
                                   ? "جارٍ التسجيل..."
-                                  : "سجل الآن"}
+                                  : "الانضمام كعضو"}
                             </Button>
                             {authStatus !== "authenticated" && (
                               <Button variant="outline" asChild size="default" className="w-full sm:w-auto">
