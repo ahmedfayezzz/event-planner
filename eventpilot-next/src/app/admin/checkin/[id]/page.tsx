@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useCallback, useMemo } from "react";
+import { use, useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { api } from "@/trpc/react";
@@ -15,7 +15,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -30,12 +39,15 @@ import {
   ArrowRight,
   QrCode,
   Check,
-  X,
   Search,
   Users,
-  Camera,
-  CameraOff,
   UserPlus,
+  Camera,
+  Hand,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Clock,
 } from "lucide-react";
 
 // Attendee type for the attendance list
@@ -60,7 +72,7 @@ const Scanner = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-64 bg-muted animate-pulse rounded-lg" />
+      <div className="h-80 bg-muted animate-pulse rounded-lg" />
     ),
   }
 );
@@ -73,8 +85,11 @@ export default function CheckInPage({
   const { id } = use(params);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
-  const [scannerEnabled, setScannerEnabled] = useState(true);
+
+  // QR Scanner Dialog state
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [lastScanned, setLastScanned] = useState<string | null>(null);
+  const [scanCount, setScanCount] = useState(0);
   const [scanResult, setScanResult] = useState<{
     success: boolean;
     name?: string | null;
@@ -82,13 +97,18 @@ export default function CheckInPage({
     error?: string;
   } | null>(null);
 
+  // Manual Check-in Dialog state
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualSearch, setManualSearch] = useState("");
+  const [selectedForCheckIn, setSelectedForCheckIn] = useState<string[]>([]);
+
   const {
     data: attendance,
     isLoading,
     refetch,
   } = api.attendance.getSessionAttendance.useQuery(
     { sessionId: id },
-    { refetchInterval: 10000 } // Refresh every 10s
+    { refetchInterval: 10000 }
   );
 
   const markQRMutation = api.attendance.markAttendanceQR.useMutation({
@@ -98,15 +118,18 @@ export default function CheckInPage({
         name: data.name,
         type: data.type,
       });
-      toast.success(`تم تسجيل حضور ${data.name}`);
+      setScanCount((prev) => prev + 1);
       refetch();
+      // Auto-dismiss success after 2 seconds
+      setTimeout(() => setScanResult(null), 2000);
     },
     onError: (error) => {
       setScanResult({
         success: false,
         error: error.message,
       });
-      toast.error(error.message);
+      // Auto-dismiss error after 3 seconds
+      setTimeout(() => setScanResult(null), 3000);
     },
   });
 
@@ -119,6 +142,14 @@ export default function CheckInPage({
       toast.error(error.message || "حدث خطأ");
     },
   });
+
+  // Reset scan count when dialog opens
+  useEffect(() => {
+    if (scannerOpen) {
+      setScanCount(0);
+      setScanResult(null);
+    }
+  }, [scannerOpen]);
 
   const handleScan = useCallback(
     (result: { rawValue: string }[]) => {
@@ -153,6 +184,65 @@ export default function CheckInPage({
     );
   }, [attendance?.attendanceList, debouncedSearch]);
 
+  // Filter absent attendees for manual check-in dialog
+  const absentAttendees: AttendeeItem[] = useMemo(() => {
+    const list = attendance?.attendanceList || [];
+    const absent = list.filter((a: AttendeeItem) => !a.attended);
+
+    if (!manualSearch.trim()) return absent;
+
+    const searchLower = manualSearch.toLowerCase();
+    return absent.filter(
+      (a: AttendeeItem) =>
+        a.name?.toLowerCase().includes(searchLower) ||
+        a.email?.toLowerCase().includes(searchLower) ||
+        a.phone?.includes(manualSearch)
+    );
+  }, [attendance?.attendanceList, manualSearch]);
+
+  const handleBulkCheckIn = async () => {
+    if (selectedForCheckIn.length === 0) return;
+
+    for (const regId of selectedForCheckIn) {
+      await markManualMutation.mutateAsync({
+        registrationId: regId,
+        attended: true,
+      });
+    }
+
+    toast.success(`تم تسجيل حضور ${selectedForCheckIn.length} شخص`);
+    setSelectedForCheckIn([]);
+    setManualOpen(false);
+  };
+
+  const toggleSelectForCheckIn = (regId: string) => {
+    setSelectedForCheckIn((prev) =>
+      prev.includes(regId)
+        ? prev.filter((id) => id !== regId)
+        : [...prev, regId]
+    );
+  };
+
+  const selectAllAbsent = () => {
+    const allAbsentIds = absentAttendees.map((a) => a.registrationId);
+    const allSelected = allAbsentIds.every((id) =>
+      selectedForCheckIn.includes(id)
+    );
+    if (allSelected) {
+      setSelectedForCheckIn([]);
+    } else {
+      setSelectedForCheckIn(allAbsentIds);
+    }
+  };
+
+  const formatCheckInTime = (date: Date | null) => {
+    if (!date) return "-";
+    return new Date(date).toLocaleTimeString("ar-SA", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -166,10 +256,7 @@ export default function CheckInPage({
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
         </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-96" />
-          <Skeleton className="h-96" />
-        </div>
+        <Skeleton className="h-96" />
       </div>
     );
   }
@@ -255,182 +342,334 @@ export default function CheckInPage({
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* QR Scanner */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <QrCode className="h-5 w-5" />
-                  ماسح QR
-                </CardTitle>
-                <CardDescription>
-                  وجه الكاميرا نحو رمز QR للمسجل
-                </CardDescription>
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setScannerEnabled(!scannerEnabled)}
-              >
-                {scannerEnabled ? (
-                  <CameraOff className="h-4 w-4" />
-                ) : (
-                  <Camera className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {scannerEnabled ? (
-              <div className="overflow-hidden rounded-lg">
-                <Scanner
-                  onScan={handleScan}
-                  allowMultiple={true}
-                  scanDelay={500}
-                  styles={{
-                    container: { height: 300 },
-                    video: { objectFit: "cover" },
-                  }}
-                />
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-3">
+        <Button onClick={() => setScannerOpen(true)} size="lg">
+          <Camera className="ml-2 h-5 w-5" />
+          بدء المسح
+        </Button>
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => setManualOpen(true)}
+        >
+          <Hand className="ml-2 h-5 w-5" />
+          تسجيل حضور يدوي
+        </Button>
+      </div>
+
+      {/* Attendee List - Full Width */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            قائمة المسجلين
+          </CardTitle>
+          <CardDescription>
+            جميع المسجلين في هذه الجلسة
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Search */}
+          <div className="relative max-w-md">
+            <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="بحث بالاسم، البريد، أو الهاتف..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pe-10"
+            />
+          </div>
+
+          {/* List */}
+          <div className="border rounded-lg">
+            {filteredAttendees.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">
+                لا توجد نتائج
               </div>
             ) : (
-              <div className="h-64 rounded-lg bg-muted flex items-center justify-center">
-                <p className="text-muted-foreground">الكاميرا متوقفة</p>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>الاسم</TableHead>
+                    <TableHead>الحالة</TableHead>
+                    <TableHead>وقت الحضور</TableHead>
+                    <TableHead className="w-24">إجراء</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAttendees.map((attendee) => (
+                    <TableRow key={attendee.registrationId}>
+                      <TableCell>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{attendee.name}</p>
+                            {attendee.isInvited && (
+                              <Badge
+                                variant="outline"
+                                className="bg-purple-500/10 text-purple-600 border-purple-200 text-xs"
+                              >
+                                <UserPlus className="me-1 h-3 w-3" />
+                                مرافق
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {attendee.email}
+                          </p>
+                          {attendee.isInvited && attendee.invitedByName && (
+                            <p className="text-xs text-muted-foreground">
+                              مدعو من: {attendee.invitedByName}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={attendee.attended ? "default" : "outline"}
+                          className={
+                            attendee.attended
+                              ? "bg-green-500/10 text-green-600 border-green-200"
+                              : "bg-orange-500/10 text-orange-600 border-orange-200"
+                          }
+                        >
+                          {attendee.attended ? (
+                            <>
+                              <Check className="me-1 h-3 w-3" />
+                              حاضر
+                            </>
+                          ) : (
+                            "غائب"
+                          )}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {attendee.attended ? (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {formatCheckInTime(attendee.checkInTime)}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {!attendee.attended && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              markManualMutation.mutate({
+                                registrationId: attendee.registrationId,
+                                attended: true,
+                              })
+                            }
+                            disabled={markManualMutation.isPending}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
+          </div>
+        </CardContent>
+      </Card>
 
-            {/* Scan Result */}
-            {scanResult && (
-              <div
-                className={`p-4 rounded-lg ${
-                  scanResult.success
-                    ? "bg-green-500/10 text-green-600"
-                    : "bg-red-500/10 text-red-600"
-                }`}
-              >
-                {scanResult.success ? (
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5" />
-                    <span>تم تسجيل حضور: {scanResult.name}</span>
-                    {scanResult.type === "companion" && (
-                      <Badge variant="outline" className="ms-2 bg-purple-500/10 text-purple-600 border-purple-200">
-                        مرافق
-                      </Badge>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <X className="h-5 w-5" />
-                    <span>{scanResult.error}</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* QR Scanner Dialog */}
+      <Dialog open={scannerOpen} onOpenChange={setScannerOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5" />
+              مسح رمز QR
+            </DialogTitle>
+            <DialogDescription>
+              وجه الكاميرا نحو رمز QR للمسجل
+            </DialogDescription>
+          </DialogHeader>
 
-        {/* Attendee List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              قائمة المسجلين
-            </CardTitle>
-            <CardDescription>
-              انقر على المسجل لتسجيل حضوره يدوياً
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="بحث..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pe-10"
+          <div className="relative">
+            {/* Scanner */}
+            <div className="overflow-hidden rounded-lg">
+              <Scanner
+                onScan={handleScan}
+                allowMultiple={true}
+                scanDelay={500}
+                styles={{
+                  container: { height: 320 },
+                  video: { objectFit: "cover" },
+                }}
               />
             </div>
 
-            {/* List */}
-            <div className="max-h-80 overflow-auto">
-              {filteredAttendees.length === 0 ? (
-                <div className="py-4 text-center text-muted-foreground">
-                  لا توجد نتائج
+            {/* Scan Result Overlay */}
+            {scanResult && (
+              <div
+                className={`absolute inset-0 flex flex-col items-center justify-center rounded-lg ${
+                  scanResult.success
+                    ? "bg-green-500/95"
+                    : "bg-red-500/95"
+                }`}
+              >
+                {scanResult.success ? (
+                  <>
+                    <CheckCircle className="h-16 w-16 text-white mb-4 animate-in zoom-in duration-300" />
+                    <p className="text-xl font-bold text-white">
+                      تم التسجيل
+                    </p>
+                    <p className="text-2xl font-bold text-white mt-2">
+                      {scanResult.name}
+                    </p>
+                    {scanResult.type === "companion" && (
+                      <Badge className="mt-2 bg-white/20 text-white border-white/30">
+                        مرافق
+                      </Badge>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-16 w-16 text-white mb-4 animate-in zoom-in duration-300" />
+                    <p className="text-xl font-bold text-white">
+                      خطأ
+                    </p>
+                    <p className="text-lg text-white/90 mt-2 text-center px-4">
+                      {scanResult.error}
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Scan Count */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              تم المسح: <span className="font-bold text-foreground">{scanCount}</span> حضور
+            </p>
+            <Button variant="outline" onClick={() => setScannerOpen(false)}>
+              إغلاق
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Check-in Dialog */}
+      <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Hand className="h-5 w-5" />
+              تسجيل حضور يدوي
+            </DialogTitle>
+            <DialogDescription>
+              اختر الأشخاص الذين تريد تسجيل حضورهم
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="البحث عن مستخدم..."
+              value={manualSearch}
+              onChange={(e) => setManualSearch(e.target.value)}
+              className="pe-10"
+            />
+          </div>
+
+          {/* Absent Attendees List */}
+          <ScrollArea className="h-64 border rounded-md">
+            {absentAttendees.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                {manualSearch
+                  ? "لا توجد نتائج"
+                  : "جميع المسجلين حاضرون"}
+              </div>
+            ) : (
+              <div className="p-2 space-y-1">
+                {/* Select All */}
+                <div
+                  className="flex items-center gap-3 p-2 rounded-md bg-muted/50 cursor-pointer border-b mb-2"
+                  onClick={selectAllAbsent}
+                >
+                  <Checkbox
+                    checked={
+                      absentAttendees.length > 0 &&
+                      absentAttendees.every((a) =>
+                        selectedForCheckIn.includes(a.registrationId)
+                      )
+                    }
+                  />
+                  <span className="font-medium">تحديد الكل</span>
+                  <span className="text-sm text-muted-foreground">
+                    ({absentAttendees.length})
+                  </span>
                 </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>الاسم</TableHead>
-                      <TableHead>الحالة</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAttendees.map((attendee) => (
-                      <TableRow key={attendee.registrationId}>
-                        <TableCell>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">{attendee.name}</p>
-                              {attendee.isInvited && (
-                                <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200 text-xs">
-                                  <UserPlus className="me-1 h-3 w-3" />
-                                  مرافق
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {attendee.email}
-                            </p>
-                            {attendee.isInvited && attendee.invitedByName && (
-                              <p className="text-xs text-muted-foreground">
-                                مدعو من: {attendee.invitedByName}
-                              </p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
+
+                {absentAttendees.map((attendee) => (
+                  <div
+                    key={attendee.registrationId}
+                    className="flex items-center gap-3 p-2 rounded-md hover:bg-muted cursor-pointer"
+                    onClick={() => toggleSelectForCheckIn(attendee.registrationId)}
+                  >
+                    <Checkbox
+                      checked={selectedForCheckIn.includes(
+                        attendee.registrationId
+                      )}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium truncate">{attendee.name}</p>
+                        {attendee.isInvited && (
                           <Badge
-                            variant={attendee.attended ? "default" : "outline"}
-                            className={
-                              attendee.attended
-                                ? "bg-green-500/10 text-green-600 border-green-200"
-                                : ""
-                            }
+                            variant="outline"
+                            className="bg-purple-500/10 text-purple-600 border-purple-200 text-xs"
                           >
-                            {attendee.attended ? "حاضر" : "غائب"}
+                            مرافق
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {!attendee.attended && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                markManualMutation.mutate({
-                                  registrationId: attendee.registrationId,
-                                  attended: true,
-                                })
-                              }
-                              disabled={markManualMutation.isPending}
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {attendee.email}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+
+          {/* Actions */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              تم تحديد: <span className="font-bold text-foreground">{selectedForCheckIn.length}</span>
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setManualOpen(false)}>
+                إلغاء
+              </Button>
+              <Button
+                onClick={handleBulkCheckIn}
+                disabled={
+                  selectedForCheckIn.length === 0 ||
+                  markManualMutation.isPending
+                }
+              >
+                {markManualMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                ) : (
+                  <Check className="h-4 w-4 ml-2" />
+                )}
+                تسجيل الحضور
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

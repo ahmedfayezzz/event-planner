@@ -473,21 +473,23 @@ async function main() {
 
   // ============== REGISTRATIONS & ATTENDANCE ==============
   const companionNames = [
-    { name: "عمر سعد الغامدي", company: "شركة الغامدي للتجارة", title: "مدير مبيعات" },
-    { name: "لينا محمد العتيبي", company: "مكتب العتيبي للمحاماة", title: "محامية" },
-    { name: "ماجد خالد السبيعي", company: "مؤسسة السبيعي", title: "مدير عام" },
-    { name: "دانا عبدالله الحربي", company: "وكالة الحربي الإعلامية", title: "مديرة إبداعية" },
-    { name: "راشد فيصل المطيري", company: "شركة المطيري التقنية", title: "مهندس برمجيات" },
-    { name: "منى سالم القحطاني", company: "استشارات القحطاني", title: "مستشارة مالية" },
-    { name: "بدر عبدالرحمن الزهراني", company: "مجموعة الزهراني", title: "مطور أعمال" },
-    { name: "ريما حسن الشمري", company: "دار الشمري للتصميم", title: "مصممة" },
-    { name: "سعود محمد الدخيل", company: "شركة الدخيل العقارية", title: "مدير تطوير" },
-    { name: "هيا فهد النصار", company: "مؤسسة النصار للتدريب", title: "مدربة معتمدة" },
+    { name: "عمر سعد الغامدي", company: "شركة الغامدي للتجارة", title: "مدير مبيعات", email: "omar.ghamdi@example.com" },
+    { name: "لينا محمد العتيبي", company: "مكتب العتيبي للمحاماة", title: "محامية", email: "lina.otaibi@example.com" },
+    { name: "ماجد خالد السبيعي", company: "مؤسسة السبيعي", title: "مدير عام", email: "majed.subaie@example.com" },
+    { name: "دانا عبدالله الحربي", company: "وكالة الحربي الإعلامية", title: "مديرة إبداعية", email: "dana.harbi@example.com" },
+    { name: "راشد فيصل المطيري", company: "شركة المطيري التقنية", title: "مهندس برمجيات", email: "rashed.mutairi@example.com" },
+    { name: "منى سالم القحطاني", company: "استشارات القحطاني", title: "مستشارة مالية", email: "mona.qahtani@example.com" },
+    { name: "بدر عبدالرحمن الزهراني", company: "مجموعة الزهراني", title: "مطور أعمال", email: "badr.zahrani@example.com" },
+    { name: "ريما حسن الشمري", company: "دار الشمري للتصميم", title: "مصممة", email: "rima.shamri@example.com" },
+    { name: "سعود محمد الدخيل", company: "شركة الدخيل العقارية", title: "مدير تطوير", email: "saud.dakhil@example.com" },
+    { name: "هيا فهد النصار", company: "مؤسسة النصار للتدريب", title: "مدربة معتمدة", email: "haya.nassar@example.com" },
   ];
 
   let totalRegistrations = 0;
   let totalAttendances = 0;
   let totalCompanions = 0;
+  let totalPendingRegistrations = 0;
+  let totalInvitedAttendances = 0;
 
   for (const session of sessions) {
     // Register users for each session (random selection)
@@ -495,7 +497,9 @@ async function main() {
     const shuffledUsers = [...users].sort(() => Math.random() - 0.5);
     const selectedUsers = shuffledUsers.slice(0, Math.min(numRegistrants, users.length));
 
-    for (const user of selectedUsers) {
+    for (let userIndex = 0; userIndex < selectedUsers.length; userIndex++) {
+      const user = selectedUsers[userIndex];
+
       // Check if registration already exists
       const existingReg = await prisma.registration.findUnique({
         where: {
@@ -507,24 +511,32 @@ async function main() {
       });
 
       if (!existingReg) {
+        // Mix of approved and pending registrations (90% approved, 10% pending for open sessions)
+        const isApproved = session.status === "completed" || Math.random() < 0.9;
+
         const registration = await prisma.registration.create({
           data: {
             userId: user.id,
             sessionId: session.id,
-            isApproved: true,
+            isApproved,
+            approvalNotes: !isApproved ? "في انتظار مراجعة الإدارة" : null,
             registeredAt: new Date(session.date.getTime() - Math.random() * 14 * 24 * 60 * 60 * 1000),
           },
         });
         totalRegistrations++;
+        if (!isApproved) totalPendingRegistrations++;
 
-        // Add companions (30% chance)
-        if (Math.random() < 0.3 && session.maxCompanions > 0) {
-          const numCompanions = Math.floor(Math.random() * Math.min(2, session.maxCompanions)) + 1;
+        // Add invited registrations (companions) - 40% chance for approved registrations
+        if (isApproved && Math.random() < 0.4 && session.maxCompanions > 0) {
+          const numCompanions = Math.floor(Math.random() * Math.min(3, session.maxCompanions)) + 1;
           const shuffledCompanions = [...companionNames].sort(() => Math.random() - 0.5);
 
           for (let i = 0; i < numCompanions; i++) {
             const comp = shuffledCompanions[i];
-            await prisma.registration.create({
+            // 80% of companions are approved when parent is approved
+            const companionApproved = Math.random() < 0.8;
+
+            const invitedReg = await prisma.registration.create({
               data: {
                 sessionId: session.id,
                 invitedByRegistrationId: registration.id,
@@ -532,16 +544,34 @@ async function main() {
                 guestCompanyName: comp.company,
                 guestPosition: comp.title,
                 guestPhone: `+9665${Math.floor(10000000 + Math.random() * 90000000)}`,
-                isApproved: true,
+                guestEmail: comp.email,
+                isApproved: companionApproved,
+                approvalNotes: !companionApproved ? "في انتظار تأكيد المرافق" : null,
                 registeredAt: registration.registeredAt,
               },
             });
             totalCompanions++;
+            if (!companionApproved) totalPendingRegistrations++;
+
+            // Create attendance for approved invited registrations in completed sessions
+            if (session.status === "completed" && companionApproved) {
+              const attended = Math.random() < 0.75; // 75% attendance rate for companions
+              await prisma.attendance.create({
+                data: {
+                  registrationId: invitedReg.id,
+                  sessionId: session.id,
+                  attended,
+                  checkInTime: attended ? new Date(session.date.getTime() + Math.random() * 45 * 60 * 1000) : null,
+                  qrVerified: attended && Math.random() < 0.8, // 80% QR verified
+                },
+              });
+              if (attended) totalInvitedAttendances++;
+            }
           }
         }
 
-        // Create attendance for completed sessions
-        if (session.status === "completed") {
+        // Create attendance for completed sessions (parent registration)
+        if (session.status === "completed" && isApproved) {
           const attended = Math.random() < 0.85; // 85% attendance rate
           await prisma.attendance.create({
             data: {
@@ -558,8 +588,9 @@ async function main() {
     }
   }
 
-  // Add some guest registrations for open sessions
+  // Add diverse guest registrations for open sessions
   const guestRegistrations = [
+    // Approved guest with companions
     {
       guestName: "طارق عبدالله الحسني",
       guestEmail: "tariq.hasani@example.com",
@@ -571,7 +602,10 @@ async function main() {
       guestGoal: "توسيع شبكة العلاقات التجارية",
       guestWantsToHost: true,
       guestHostingTypes: ["coffee", "snacks"],
+      isApproved: true,
+      withCompanions: true,
     },
+    // Approved guest without companions
     {
       guestName: "غادة فهد النصار",
       guestEmail: "ghada.nassar@example.com",
@@ -584,7 +618,10 @@ async function main() {
       guestGoal: "التعرف على مستثمرين محتملين",
       guestWantsToHost: true,
       guestHostingTypes: ["dessert"],
+      isApproved: true,
+      withCompanions: false,
     },
+    // Pending guest registration
     {
       guestName: "سلطان مشاري الدخيل",
       guestEmail: "sultan.dakhil@example.com",
@@ -595,25 +632,111 @@ async function main() {
       guestActivityType: "التسويق",
       guestGender: "male",
       guestGoal: "تعلم استراتيجيات جديدة في التسويق",
+      isApproved: false,
+      withCompanions: false,
+    },
+    // Another pending guest
+    {
+      guestName: "نادية محمد الحربي",
+      guestEmail: "nadia.harbi@example.com",
+      guestPhone: "+966524567890",
+      guestInstagram: "nadia_design",
+      guestCompanyName: "استوديو الحربي للتصميم",
+      guestPosition: "مصممة جرافيك",
+      guestActivityType: "التصميم",
+      guestGender: "female",
+      guestGoal: "التواصل مع رواد الأعمال",
+      isApproved: false,
+      withCompanions: true,
+    },
+    // Approved guest with hosting preferences
+    {
+      guestName: "فهد سعود العتيبي",
+      guestEmail: "fahad.otaibi@example.com",
+      guestPhone: "+966525678901",
+      guestSnapchat: "fahad_biz",
+      guestCompanyName: "مجموعة العتيبي التجارية",
+      guestPosition: "رئيس مجلس الإدارة",
+      guestActivityType: "التجارة",
+      guestGender: "male",
+      guestGoal: "استكشاف فرص استثمارية جديدة",
+      guestWantsToHost: true,
+      guestHostingTypes: ["dinner", "drinks", "dessert"],
+      isApproved: true,
+      withCompanions: true,
     },
   ];
 
   const openSessions = sessions.filter(s => s.status === "open");
   for (const guestData of guestRegistrations) {
+    const { withCompanions, ...registrationData } = guestData;
     const randomSession = openSessions[Math.floor(Math.random() * openSessions.length)];
-    await prisma.registration.create({
+
+    const guestReg = await prisma.registration.create({
       data: {
         sessionId: randomSession.id,
-        isApproved: Math.random() > 0.3, // 70% approved
-        ...guestData,
+        approvalNotes: !registrationData.isApproved ? "في انتظار الموافقة" : null,
+        ...registrationData,
       },
     });
     totalRegistrations++;
+    if (!registrationData.isApproved) totalPendingRegistrations++;
+
+    // Add companions for guests that have them
+    if (withCompanions && registrationData.isApproved) {
+      const numCompanions = Math.floor(Math.random() * 2) + 1;
+      const shuffledCompanions = [...companionNames].sort(() => Math.random() - 0.5);
+
+      for (let i = 0; i < numCompanions; i++) {
+        const comp = shuffledCompanions[i];
+        await prisma.registration.create({
+          data: {
+            sessionId: randomSession.id,
+            invitedByRegistrationId: guestReg.id,
+            guestName: comp.name,
+            guestCompanyName: comp.company,
+            guestPosition: comp.title,
+            guestPhone: `+9665${Math.floor(10000000 + Math.random() * 90000000)}`,
+            guestEmail: comp.email,
+            isApproved: true,
+            registeredAt: guestReg.registeredAt,
+          },
+        });
+        totalCompanions++;
+      }
+    }
   }
 
-  console.log(`✅ Created ${totalRegistrations} registrations`);
-  console.log(`✅ Created ${totalCompanions} invited registrations`);
-  console.log(`✅ Created ${totalAttendances} attendance records`);
+  // Add some invites for invite-only testing (if needed in future)
+  const inviteEmails = [
+    "invited1@example.com",
+    "invited2@example.com",
+    "invited3@example.com",
+  ];
+
+  let totalInvites = 0;
+  for (const email of inviteEmails) {
+    const randomSession = openSessions[Math.floor(Math.random() * openSessions.length)];
+    const token = `invite_${Math.random().toString(36).substring(2, 15)}`;
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+
+    await prisma.invite.create({
+      data: {
+        email,
+        sessionId: randomSession.id,
+        token,
+        expiresAt,
+        used: Math.random() < 0.3, // 30% used
+      },
+    });
+    totalInvites++;
+  }
+
+  console.log(`✅ Created ${totalRegistrations} registrations (${totalPendingRegistrations} pending)`);
+  console.log(`✅ Created ${totalCompanions} invited registrations (companions)`);
+  console.log(`✅ Created ${totalAttendances} attendance records (direct)`);
+  console.log(`✅ Created ${totalInvitedAttendances} attendance records (invited/companions)`);
+  console.log(`✅ Created ${totalInvites} session invites`);
 
   // ============== SUMMARY ==============
   console.log("\n" + "=".repeat(50));
@@ -622,9 +745,10 @@ async function main() {
   console.log(`👤 Admin user: 1`);
   console.log(`👥 Regular users: ${users.length}`);
   console.log(`📅 Sessions: ${sessions.length} (${sessions.filter(s => s.status === "completed").length} completed, ${sessions.filter(s => s.status === "open").length} open)`);
-  console.log(`📝 Registrations: ${totalRegistrations}`);
-  console.log(`👥 Invited registrations: ${totalCompanions}`);
-  console.log(`✅ Attendance records: ${totalAttendances}`);
+  console.log(`📝 Registrations: ${totalRegistrations} (${totalPendingRegistrations} pending approval)`);
+  console.log(`👥 Invited registrations (companions): ${totalCompanions}`);
+  console.log(`✅ Attendance records: ${totalAttendances + totalInvitedAttendances} (${totalAttendances} direct, ${totalInvitedAttendances} companions)`);
+  console.log(`📧 Session invites: ${totalInvites}`);
   console.log("=".repeat(50));
   console.log("\n📋 Login Credentials:");
   console.log("─".repeat(50));
