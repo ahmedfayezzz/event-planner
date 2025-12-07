@@ -32,9 +32,6 @@ export const sessionFormSchema = z.object({
   registrationDeadline: z.string().optional(),
   customConfirmationMessage: z.string().optional(),
   locationUrl: z.string().optional(),
-  selfCatering: z.boolean().optional(),
-  cateringType: z.string().optional(),
-  cateringNotes: z.string().optional(),
 });
 
 export type SessionFormData = z.infer<typeof sessionFormSchema>;
@@ -65,7 +62,4 @@ export const defaultSessionFormData: SessionFormData = {
   registrationDeadline: "",
   customConfirmationMessage: "",
   locationUrl: "",
-  selfCatering: false,
-  cateringType: "",
-  cateringNotes: "",
 };
