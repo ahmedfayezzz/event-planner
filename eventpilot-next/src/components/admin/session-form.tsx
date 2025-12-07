@@ -58,6 +58,7 @@ import {
   User,
   UserCheck,
   Users,
+  UtensilsCrossed,
   Wand2,
   Zap,
 } from "lucide-react";

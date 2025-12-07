@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Menu, X } from "lucide-react";
+import { Logo } from "@/components/logo";
 
 export function Navbar() {
   const { data: session, status } = useSession();
@@ -55,11 +56,8 @@ export function Navbar() {
           : 'h-20 border-none bg-transparent'
           }`} style={{ willChange: 'height, border-radius, background-color' }}>
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg shadow-sm group-hover:bg-primary/90 transition-colors">
-              ث
-            </div>
-            <span className="text-xl font-bold text-primary tracking-tight hidden sm:inline">ثلوثية الأعمال</span>
+          <Link href="/" className="group">
+            <Logo variant="navbar" showText={true} />
           </Link>
 
           {/* Desktop Navigation Links */}

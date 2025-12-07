@@ -12,6 +12,23 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "ثلوثية الأعمال - EventPilot",
   description: "منصة إدارة فعاليات التواصل المهني",
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
+  openGraph: {
+    title: "ثلوثية الأعمال - EventPilot",
+    description: "منصة إدارة فعاليات التواصل المهني",
+    images: ['/logo.png'],
+    locale: 'ar_SA',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: "ثلوثية الأعمال - EventPilot",
+    description: "منصة إدارة فعاليات التواصل المهني",
+    images: ['/logo.png'],
+  },
 };
 
 export default function RootLayout({

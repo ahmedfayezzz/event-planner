@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { redirect } from "next/navigation";
@@ -136,9 +137,13 @@ export default function AdminLayout({
           <div className="flex h-14 items-center justify-between px-4 lg:px-6">
             {/* Right: Logo */}
             <Link href="/admin" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-                ث
-              </div>
+              <Image
+                src="/logo.png"
+                alt="ثلوثية الأعمال"
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-lg"
+              />
               <span className="font-semibold hidden sm:inline">لوحة التحكم</span>
             </Link>
 

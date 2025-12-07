@@ -48,11 +48,15 @@ export default function SessionEditPage({
         inviteOnly: session.inviteOnly,
         inviteMessage: session.inviteMessage || "",
         sendQrInEmail: session.sendQrInEmail,
+        showSocialMediaFields: session.showSocialMediaFields,
+        showRegistrationPurpose: session.showRegistrationPurpose,
+        showCateringInterest: session.showCateringInterest,
         slug: session.slug || "",
         registrationDeadline: session.registrationDeadline
           ? new Date(session.registrationDeadline).toISOString().slice(0, 16)
           : "",
         customConfirmationMessage: session.customConfirmationMessage || "",
+        locationUrl: session.locationUrl || "",
       });
     }
   }, [session]);
@@ -89,12 +93,16 @@ export default function SessionEditPage({
       inviteOnly: formData.inviteOnly,
       inviteMessage: formData.inviteMessage || undefined,
       sendQrInEmail: formData.sendQrInEmail,
+      showSocialMediaFields: formData.showSocialMediaFields,
+      showRegistrationPurpose: formData.showRegistrationPurpose,
+      showCateringInterest: formData.showCateringInterest,
       slug: formData.slug || undefined,
       registrationDeadline: formData.registrationDeadline
         ? new Date(formData.registrationDeadline)
         : null,
       customConfirmationMessage:
         formData.customConfirmationMessage || undefined,
+      locationUrl: formData.locationUrl || undefined,
     });
   };
 

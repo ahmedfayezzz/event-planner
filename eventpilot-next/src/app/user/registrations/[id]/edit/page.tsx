@@ -125,7 +125,7 @@ export default function EditRegistrationPage({
   }
 
   const addCompanion = () => {
-    if (companions.length >= (registration.session?.maxParticipants || 5)) {
+    if (companions.length >= (registration.session?.maxCompanions || 5)) {
       toast.error("لقد وصلت للحد الأقصى من المرافقين");
       return;
     }

@@ -159,9 +159,21 @@ function createEmailTemplate({
             <td align="center" style="background: linear-gradient(135deg, ${BRAND.primary} 0%, ${BRAND.primaryDark} 100%); padding: 28px 24px; border-radius: 12px 12px 0 0;">
               <!-- Gold decorative line -->
               <div style="width: 60px; height: 3px; background-color: ${BRAND.accent}; margin: 0 auto 16px auto; border-radius: 2px;"></div>
-              <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">
+
+              <!-- Logo -->
+              <img
+                src="${process.env.BASE_URL || 'http://localhost:3000'}/logo.png"
+                alt="ثلوثية الأعمال"
+                width="80"
+                height="80"
+                style="display: block; margin: 0 auto 12px auto; border-radius: 50%; max-width: 80px;"
+              />
+
+              <!-- Brand Name -->
+              <h1 style="margin: 0; font-size: 24px; font-weight: bold; color: #ffffff;">
                 ثلوثية الأعمال
               </h1>
+
               <div style="width: 60px; height: 3px; background-color: ${BRAND.accent}; margin: 16px auto 0 auto; border-radius: 2px;"></div>
             </td>
           </tr>

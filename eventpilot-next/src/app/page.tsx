@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,10 +39,25 @@ export default function HomePage() {
       {/* Hero Section with Gradient */}
       <section className="relative bg-gradient-hero text-white py-12 md:py-24 lg:py-32 overflow-hidden">
         <div className="container relative z-10 text-center space-y-6 md:space-y-8 px-4">
-          <div className="animate-fade-in space-y-3 md:space-y-4">
-            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight font-cairo leading-tight">
-              ثلوثية الأعمال
-            </h1>
+          <div className="animate-fade-in space-y-6 md:space-y-8">
+            {/* Logo + Brand Name */}
+            <div className="flex flex-col items-center gap-4 md:gap-6">
+              <div className="relative">
+                <Image
+                  src="/logo.png"
+                  alt="ثلوثية الأعمال"
+                  width={160}
+                  height={160}
+                  className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 drop-shadow-2xl"
+                  priority
+                />
+              </div>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight font-cairo leading-tight">
+                ثلوثية الأعمال
+              </h1>
+            </div>
+
+            {/* Subtitle */}
             <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 max-w-3xl mx-auto font-light leading-relaxed px-2">
               ملتقى النخبة من رواد الأعمال وصناع القرار.
               <br className="hidden md:block" />

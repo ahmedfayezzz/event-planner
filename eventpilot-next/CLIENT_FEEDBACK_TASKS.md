@@ -301,6 +301,9 @@
   - `src/lib/email.ts` - Email template footer
 - **Action**: Get client's preferred contact info (phone, email, social links if any)
 
+### 19. Website name/logo updates and SEO
+
+
 ---
 
 ## ❌ Confirmed NOT Implementing
@@ -311,14 +314,14 @@
 
 ## 📋 Task Priority Summary
 
-| Priority        | Total | Completed | Remaining | Focus Area                            |
-|-----------------|-------|-----------|-----------|---------------------------------------|
-| 🔴 High         | 5     | 5 ✅      | 0         | Core functionality, registration flow |
-| 🟡 Medium       | 5     | 6 ✅      | -1        | Configurability, hosting features     |
-| 🟢 UI/UX        | 8     | 1 ✅      | 7         | Tables, display, mobile               |
-| 🔵 New Features | 7     | 1 ✅      | 6         | New capabilities                      |
-| 🎨 Design       | 3     | 0         | 3         | Branding, visual                      |
-| **TOTAL**       | **28**| **13 ✅** | **15**    | **Overall Progress: 46%**             |
+| Priority        | Total  | Completed | Remaining | Focus Area                            |
+|-----------------|--------|-----------|-----------|---------------------------------------|
+| 🔴 High         | 5      | 5 ✅       | 0         | Core functionality, registration flow |
+| 🟡 Medium       | 5      | 6 ✅       | -1        | Configurability, hosting features     |
+| 🟢 UI/UX        | 8      | 1 ✅       | 7         | Tables, display, mobile               |
+| 🔵 New Features | 7      | 1 ✅       | 6         | New capabilities                      |
+| 🎨 Design       | 3      | 0         | 3         | Branding, visual                      |
+| **TOTAL**       | **28** | **13 ✅**  | **15**    | **Overall Progress: 46%**             |
 
 ---
 

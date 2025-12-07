@@ -938,6 +938,7 @@ export const registrationRouter = createTRPCRouter({
           title: registration.session.title,
           date: registration.session.date,
           location: registration.session.location,
+          maxCompanions: registration.session.maxCompanions,
         },
         companions,
         hasAccount: !!registration.user,

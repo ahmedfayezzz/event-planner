@@ -14,14 +14,16 @@ export const sessionRouter = createTRPCRouter({
    */
   list: publicProcedure
     .input(
-      z.object({
-        status: z.enum(["open", "closed", "completed"]).optional(),
-        upcoming: z.boolean().optional(),
-        dateRange: z.enum(["today", "week", "month", "all"]).optional(),
-        sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
-        limit: z.number().min(1).max(100).optional().default(50),
-        cursor: z.string().optional(),
-      }).optional()
+      z
+        .object({
+          status: z.enum(["open", "closed", "completed"]).optional(),
+          upcoming: z.boolean().optional(),
+          dateRange: z.enum(["today", "week", "month", "all"]).optional(),
+          sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
+          limit: z.number().min(1).max(100).optional().default(50),
+          cursor: z.string().optional(),
+        })
+        .optional()
     )
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
@@ -41,7 +43,11 @@ export const sessionRouter = createTRPCRouter({
       // Date range filtering for checkin page
       if (input?.dateRange && input.dateRange !== "all") {
         const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfDay = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate()
+        );
         const endOfDay = new Date(startOfDay);
         endOfDay.setDate(endOfDay.getDate() + 1);
 
@@ -104,7 +110,11 @@ export const sessionRouter = createTRPCRouter({
    * Get upcoming open sessions
    */
   getUpcoming: publicProcedure
-    .input(z.object({ limit: z.number().min(1).max(10).optional().default(5) }).optional())
+    .input(
+      z
+        .object({ limit: z.number().min(1).max(10).optional().default(5) })
+        .optional()
+    )
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
 
@@ -124,9 +134,12 @@ export const sessionRouter = createTRPCRouter({
 
       return sessions.map((s) => ({
         ...s,
-        registrationCount: s.showParticipantCount ? s._count.registrations : null,
+        registrationCount: s.showParticipantCount
+          ? s._count.registrations
+          : null,
         isFull: s._count.registrations >= s.maxParticipants,
-        canRegister: s.status === "open" &&
+        canRegister:
+          s.status === "open" &&
           s._count.registrations < s.maxParticipants &&
           (!s.registrationDeadline || new Date() < s.registrationDeadline),
       }));
@@ -158,11 +171,15 @@ export const sessionRouter = createTRPCRouter({
 
       return {
         ...session,
-        registrationCount: session.showParticipantCount ? session._count.registrations : null,
+        registrationCount: session.showParticipantCount
+          ? session._count.registrations
+          : null,
         isFull: session._count.registrations >= session.maxParticipants,
-        canRegister: session.status === "open" &&
+        canRegister:
+          session.status === "open" &&
           session._count.registrations < session.maxParticipants &&
-          (!session.registrationDeadline || new Date() < session.registrationDeadline),
+          (!session.registrationDeadline ||
+            new Date() < session.registrationDeadline),
       };
     }),
 
@@ -188,7 +205,9 @@ export const sessionRouter = createTRPCRouter({
             take: 10,
             orderBy: { registeredAt: "desc" },
             include: {
-              user: { select: { id: true, name: true, email: true, phone: true } },
+              user: {
+                select: { id: true, name: true, email: true, phone: true },
+              },
               invitedRegistrations: true,
             },
           },
@@ -226,9 +245,10 @@ export const sessionRouter = createTRPCRouter({
           invitesSent: session._count.invites,
           availableSpots: session.maxParticipants - approvedCount,
           fillRate: Math.round((approvedCount / session.maxParticipants) * 100),
-          attendanceRate: approvedCount > 0
-            ? Math.round((session._count.attendances / approvedCount) * 100)
-            : 0,
+          attendanceRate:
+            approvedCount > 0
+              ? Math.round((session._count.attendances / approvedCount) * 100)
+              : 0,
         },
         recentRegistrations: session.registrations.map((r) => ({
           id: r.id,
@@ -269,11 +289,15 @@ export const sessionRouter = createTRPCRouter({
 
       return {
         ...session,
-        registrationCount: session.showParticipantCount ? session._count.registrations : null,
+        registrationCount: session.showParticipantCount
+          ? session._count.registrations
+          : null,
         isFull: session._count.registrations >= session.maxParticipants,
-        canRegister: session.status === "open" &&
+        canRegister:
+          session.status === "open" &&
           session._count.registrations < session.maxParticipants &&
-          (!session.registrationDeadline || new Date() < session.registrationDeadline),
+          (!session.registrationDeadline ||
+            new Date() < session.registrationDeadline),
       };
     }),
 
@@ -322,16 +346,11 @@ export const sessionRouter = createTRPCRouter({
         showRegistrationPurpose: z.boolean().default(true),
         showCateringInterest: z.boolean().default(true),
         locationUrl: z.string().optional(),
-        selfCatering: z.boolean().optional(),
-        cateringType: z.string().optional(),
-        cateringNotes: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
-
-      // Extract catering fields
-      const { selfCatering, cateringType, cateringNotes, ...sessionData } = input;
+      const sessionData = input;
 
       // Auto-generate session number (highest + 1)
       const lastSession = await db.session.findFirst({
@@ -363,19 +382,6 @@ export const sessionRouter = createTRPCRouter({
           slug: slug || null,
         },
       });
-
-      // Create catering entry if self-catering is enabled
-      if (selfCatering && cateringType) {
-        await db.eventCatering.create({
-          data: {
-            sessionId: session.id,
-            hostId: null,
-            hostingType: cateringType,
-            isSelfCatering: true,
-            notes: cateringNotes || null,
-          },
-        });
-      }
 
       return session;
     }),
@@ -413,14 +419,11 @@ export const sessionRouter = createTRPCRouter({
         showRegistrationPurpose: z.boolean().optional(),
         showCateringInterest: z.boolean().optional(),
         locationUrl: z.string().optional(),
-        selfCatering: z.boolean().optional(),
-        cateringType: z.string().optional(),
-        cateringNotes: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
-      const { id, selfCatering, cateringType, cateringNotes, ...data } = input;
+      const { id, ...data } = input;
 
       // Check if session exists
       const existing = await db.session.findUnique({
@@ -463,45 +466,6 @@ export const sessionRouter = createTRPCRouter({
         where: { id },
         data,
       });
-
-      // Handle self-catering
-      if (selfCatering !== undefined) {
-        // Find existing self-catering entry for this session
-        const existingCatering = await db.eventCatering.findFirst({
-          where: {
-            sessionId: id,
-            isSelfCatering: true,
-          },
-        });
-
-        if (selfCatering && cateringType) {
-          // Create or update self-catering entry
-          if (existingCatering) {
-            await db.eventCatering.update({
-              where: { id: existingCatering.id },
-              data: {
-                hostingType: cateringType,
-                notes: cateringNotes || null,
-              },
-            });
-          } else {
-            await db.eventCatering.create({
-              data: {
-                sessionId: id,
-                hostId: null,
-                hostingType: cateringType,
-                isSelfCatering: true,
-                notes: cateringNotes || null,
-              },
-            });
-          }
-        } else if (!selfCatering && existingCatering) {
-          // Remove self-catering entry if disabled
-          await db.eventCatering.delete({
-            where: { id: existingCatering.id },
-          });
-        }
-      }
 
       return session;
     }),
@@ -553,7 +517,9 @@ export const sessionRouter = createTRPCRouter({
       }
 
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const hours = Math.floor(
+        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      );
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
