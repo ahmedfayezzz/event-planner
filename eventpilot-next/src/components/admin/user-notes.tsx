@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { MessageSquare, Trash2, Send, Loader2 } from "lucide-react";
+import { MessageSquare, Trash2, Send, Loader2, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -131,7 +131,7 @@ export function UserNotes({
                 <p className="text-sm whitespace-pre-wrap">{note.content}</p>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
-                    <span>👤</span>
+                    <User className="h-3 w-3" />
                     <span>{note.createdBy.name}</span>
                     <span>•</span>
                     <span>
