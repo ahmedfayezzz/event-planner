@@ -266,19 +266,26 @@
 
 ### 11. WhatsApp Number Improvements
 
-#### 11.1 Add Numbers Separately with Country Code
-- **Current**: Single phone input
-- **Change**: Multi-number input with country code selector, plus button to add more numbers each one at a time
-- **Files**: WhatsApp sending UI in admin
+#### 11.1 Add Numbers Separately with Country Code ✅ DONE
+- **Implementation**: Multi-number input with international phone input component
+- **Features**:
+  - `react-phone-number-input` with country code selector (default: Saudi Arabia)
+  - Plus button to add more numbers one at a time
+  - X button to remove individual numbers
+  - Collapsible section for manual phone entry
+- **Files updated**:
+  - `src/app/admin/sessions/[id]/invitations/page.tsx` - PhoneInput with country selector
 
-#### 11.2 WhatsApp Link Type - User Choice ✅ CLARIFIED
-- **Decision**: Give users the choice to open in regular WhatsApp OR WhatsApp Business
-- **Implementation**: Show two buttons/options when sending WhatsApp message
+#### 11.2 WhatsApp Link Type - User Choice ✅ DONE
+- **Implementation**: Two buttons for Regular WhatsApp and WhatsApp Business
+- **Features**:
   - Regular WhatsApp: `wa.me/[phone]?text=[message]`
-  - WhatsApp Business: `https://api.whatsapp.com/send?phone=[phone]&text=[message]`
-- **Files**:
-  - `src/lib/utils.ts` - Create both URL generator functions
-  - Admin attendee/host pages - Add dropdown or two-button UI for WhatsApp actions
+  - WhatsApp Business: `api.whatsapp.com/send?phone=[phone]&text=[message]`
+  - Both options available side-by-side in UI
+- **Files updated**:
+  - `src/lib/utils.ts` - Added `getWhatsAppBusinessUrl` function
+  - `src/app/admin/hosts/page.tsx` - Two WhatsApp buttons (regular + business)
+  - `src/app/admin/sessions/[id]/invitations/page.tsx` - Two buttons for each generated link
 
 #### 11.3 Phone Contacts Access (Research)
 - **Research**: Web Contacts API availability
@@ -422,15 +429,15 @@
 | 🔴 High         | 5      | 5 ✅       | 0         | Core functionality, registration flow |
 | 🟡 Medium       | 5      | 6 ✅       | -1        | Configurability, hosting features     |
 | 🟢 UI/UX        | 9      | 8 ✅       | 1         | Tables, display, mobile               |
-| 🔵 New Features | 7      | 3 ✅       | 4         | New capabilities                      |
+| 🔵 New Features | 7      | 5 ✅       | 2         | New capabilities                      |
 | 🎨 Design       | 3      | 3 ✅       | 0         | Branding, visual                      |
-| **TOTAL**       | **29** | **25 ✅**  | **4**     | **Overall Progress: 86%**             |
+| **TOTAL**       | **29** | **27 ✅**  | **2**     | **Overall Progress: 93%**             |
 
 ---
 
 ## 📊 Completion Summary
 
-### ✅ Completed Features (25 tasks)
+### ✅ Completed Features (27 tasks)
 1. **Session → Event Renaming** - All UI labels updated
 2. **Social Media Fields** - Configurable per session
 3. **Professional Info** - Made mandatory
@@ -456,6 +463,8 @@
 23. **Session Description Label (#6.3)** - Changed "نبذة عن الجلسة" to "الوصف"
 24. **Footer & Email Contact Info (#17)** - Updated contact information
 25. **Website name/logo updates and SEO (#19)** - Completed branding updates
+26. **WhatsApp Country Code Input (#11.1)** - Multi-number input with `react-phone-number-input` and country selector
+27. **WhatsApp Link Type Choice (#11.2)** - Two buttons for Regular WhatsApp and WhatsApp Business
 
 ### 🔧 Recent Implementation
 
@@ -506,8 +515,7 @@
 5. ~~Registration Flow Improvements (Task 2.1, 2.2, 2.3)~~ ✅ DONE
 6. ~~Companion Details Mandatory (Task 3)~~ ✅ DONE
 7. ~~UI/UX Improvements (Task 6.2, 6.3, 7, 8)~~ ✅ DONE
-8. **Remaining Tasks** (4 items):
+8. ~~WhatsApp Improvements (Task 11.1, 11.2)~~ ✅ DONE - Country code input and link type choice
+9. **Remaining Tasks** (2 items):
    - Task 10: Invitation Expiry Date
-   - Task 11.1: WhatsApp - Add numbers with country code
-   - Task 11.2: WhatsApp Link Type - User choice (Regular vs Business)
    - Task 15: Analytics - Search all users (Guest + Members)

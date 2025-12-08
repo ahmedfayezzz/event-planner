@@ -200,12 +200,11 @@ export function shareOnWhatsApp(url: string, text: string): void {
 }
 
 /**
- * Generate WhatsApp direct message URL
+ * Clean and format phone number for WhatsApp
  * @param phone Phone number (will be cleaned and formatted)
- * @param message Optional message text
- * @returns WhatsApp URL
+ * @returns Cleaned phone number with country code
  */
-export function getWhatsAppUrl(phone: string, message?: string): string {
+function cleanPhoneForWhatsApp(phone: string): string {
   // Remove all non-digit characters except + at the start
   let cleanPhone = phone.replace(/[^\d+]/g, "");
 
@@ -224,6 +223,17 @@ export function getWhatsAppUrl(phone: string, message?: string): string {
     cleanPhone = "966" + cleanPhone;
   }
 
+  return cleanPhone;
+}
+
+/**
+ * Generate WhatsApp direct message URL (Regular WhatsApp)
+ * @param phone Phone number (will be cleaned and formatted)
+ * @param message Optional message text
+ * @returns WhatsApp URL using wa.me
+ */
+export function getWhatsAppUrl(phone: string, message?: string): string {
+  const cleanPhone = cleanPhoneForWhatsApp(phone);
   const baseUrl = `https://wa.me/${cleanPhone}`;
   if (message) {
     return `${baseUrl}?text=${encodeURIComponent(message)}`;

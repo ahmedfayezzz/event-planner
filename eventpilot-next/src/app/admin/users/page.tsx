@@ -105,6 +105,7 @@ export default function AdminUsersPage() {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
   const [labelFilter, setLabelFilter] = useState<string[]>([]);
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
   const [labelSearchValue, setLabelSearchValue] = useState("");
@@ -154,7 +155,7 @@ export default function AdminUsersPage() {
   } = api.admin.getUsers.useInfiniteQuery(
     {
       search: debouncedSearch || undefined,
-      role: "USER", // Only fetch regular users
+      role: roleFilter !== "all" ? roleFilter : undefined, // Filter by role (USER, GUEST, or all)
       isActive: statusFilter !== "all" ? statusFilter === "active" : undefined,
       labelIds: labelFilter.length > 0 ? labelFilter : undefined,
       limit: PAGE_SIZE,
@@ -262,6 +263,16 @@ export default function AdminUsersPage() {
                 className="pe-10"
               />
             </div>
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="نوع العضو" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">الكل</SelectItem>
+                <SelectItem value="USER">أعضاء</SelectItem>
+                <SelectItem value="GUEST">زوار</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="الحالة" />
@@ -392,6 +403,7 @@ export default function AdminUsersPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>العضو</TableHead>
+                    <TableHead>النوع</TableHead>
                     <TableHead className="hidden md:table-cell">الشركة</TableHead>
                     <TableHead className="hidden lg:table-cell">التصنيفات</TableHead>
                     <TableHead>الحالة</TableHead>
@@ -428,6 +440,18 @@ export default function AdminUsersPage() {
                                   {user.phone}
                                 </p>
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  user.role === "USER"
+                                    ? "bg-blue-500/10 text-blue-600 border-blue-200"
+                                    : "bg-orange-500/10 text-orange-600 border-orange-200"
+                                }
+                              >
+                                {user.role === "USER" ? "عضو" : "زائر"}
+                              </Badge>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                               <div>
@@ -585,7 +609,7 @@ export default function AdminUsersPage() {
                           </TableRow>
                           {/* Mobile expanded content */}
                           <tr className="md:hidden">
-                            <td colSpan={3} className="p-0">
+                            <td colSpan={4} className="p-0">
                               <div
                                 className={cn(
                                   "grid transition-all duration-300 ease-in-out",

@@ -646,102 +646,122 @@ async function main() {
     }
   }
 
-  // Add diverse guest registrations for open sessions
-  const guestRegistrations = [
-    // Approved guest with companions
+  // Add GUEST users (users who registered as guests without creating an account)
+  const guestUsersData = [
     {
-      guestName: "طارق عبدالله الحسني",
-      guestEmail: "tariq.hasani@example.com",
-      guestPhone: "+966521234567",
-      guestCompanyName: "مؤسسة الحسني للاستيراد",
-      guestPosition: "مدير عام",
-      guestActivityType: "التجارة",
-      guestGender: "male",
-      guestGoal: "توسيع شبكة العلاقات التجارية",
-      guestWantsToHost: true,
-      guestHostingTypes: ["beverage", "other"],
+      name: "طارق عبدالله الحسني",
+      username: "tariq_hasani",
+      email: "tariq.hasani@example.com",
+      phone: "+966521234567",
+      companyName: "مؤسسة الحسني للاستيراد",
+      position: "مدير عام",
+      activityType: "التجارة",
+      gender: "male",
+      goal: "توسيع شبكة العلاقات التجارية",
+      wantsToHost: true,
+      hostingTypes: ["beverage", "other"],
       isApproved: true,
       withCompanions: true,
     },
-    // Approved guest without companions
     {
-      guestName: "غادة فهد النصار",
-      guestEmail: "ghada.nassar@example.com",
-      guestPhone: "+966522345678",
-      guestInstagram: "ghada_business",
-      guestCompanyName: "مشروع النصار",
-      guestPosition: "مؤسسة",
-      guestActivityType: "ريادة الأعمال",
-      guestGender: "female",
-      guestGoal: "التعرف على مستثمرين محتملين",
-      guestWantsToHost: true,
-      guestHostingTypes: ["dessert"],
+      name: "غادة فهد النصار",
+      username: "ghada_nassar",
+      email: "ghada.nassar@example.com",
+      phone: "+966522345678",
+      instagram: "ghada_business",
+      companyName: "مشروع النصار",
+      position: "مؤسسة",
+      activityType: "ريادة الأعمال",
+      gender: "female",
+      goal: "التعرف على مستثمرين محتملين",
+      wantsToHost: true,
+      hostingTypes: ["dessert"],
       isApproved: true,
       withCompanions: false,
     },
-    // Pending guest registration
     {
-      guestName: "سلطان مشاري الدخيل",
-      guestEmail: "sultan.dakhil@example.com",
-      guestPhone: "+966523456789",
-      guestTwitter: "sultan_dakhil",
-      guestCompanyName: "وكالة الدخيل الرقمية",
-      guestPosition: "مدير تسويق",
-      guestActivityType: "التسويق",
-      guestGender: "male",
-      guestGoal: "تعلم استراتيجيات جديدة في التسويق",
+      name: "سلطان مشاري الدخيل",
+      username: "sultan_dakhil",
+      email: "sultan.dakhil@example.com",
+      phone: "+966523456789",
+      twitter: "sultan_dakhil",
+      companyName: "وكالة الدخيل الرقمية",
+      position: "مدير تسويق",
+      activityType: "التسويق",
+      gender: "male",
+      goal: "تعلم استراتيجيات جديدة في التسويق",
       isApproved: false,
       withCompanions: false,
     },
-    // Another pending guest
     {
-      guestName: "نادية محمد الحربي",
-      guestEmail: "nadia.harbi@example.com",
-      guestPhone: "+966524567890",
-      guestInstagram: "nadia_design",
-      guestCompanyName: "استوديو الحربي للتصميم",
-      guestPosition: "مصممة جرافيك",
-      guestActivityType: "التصميم",
-      guestGender: "female",
-      guestGoal: "التواصل مع رواد الأعمال",
+      name: "نادية محمد الحربي",
+      username: "nadia_harbi",
+      email: "nadia.harbi@example.com",
+      phone: "+966524567890",
+      instagram: "nadia_design",
+      companyName: "استوديو الحربي للتصميم",
+      position: "مصممة جرافيك",
+      activityType: "التصميم",
+      gender: "female",
+      goal: "التواصل مع رواد الأعمال",
       isApproved: false,
       withCompanions: true,
     },
-    // Approved guest with hosting preferences
     {
-      guestName: "فهد سعود العتيبي",
-      guestEmail: "fahad.otaibi@example.com",
-      guestPhone: "+966525678901",
-      guestSnapchat: "fahad_biz",
-      guestCompanyName: "مجموعة العتيبي التجارية",
-      guestPosition: "رئيس مجلس الإدارة",
-      guestActivityType: "التجارة",
-      guestGender: "male",
-      guestGoal: "استكشاف فرص استثمارية جديدة",
-      guestWantsToHost: true,
-      guestHostingTypes: ["dinner", "beverage", "dessert"],
+      name: "فهد سعود العتيبي",
+      username: "fahad_otaibi",
+      email: "fahad.otaibi@example.com",
+      phone: "+966525678901",
+      snapchat: "fahad_biz",
+      companyName: "مجموعة العتيبي التجارية",
+      position: "رئيس مجلس الإدارة",
+      activityType: "التجارة",
+      gender: "male",
+      goal: "استكشاف فرص استثمارية جديدة",
+      wantsToHost: true,
+      hostingTypes: ["dinner", "beverage", "dessert"],
       isApproved: true,
       withCompanions: true,
     },
   ];
 
+  // Create GUEST users and their registrations
+  const guestUsers: User[] = [];
   const openSessions = sessions.filter(s => s.status === "open");
-  for (const guestData of guestRegistrations) {
-    const { withCompanions, ...registrationData } = guestData;
-    const randomSession = openSessions[Math.floor(Math.random() * openSessions.length)];
 
+  for (const guestData of guestUsersData) {
+    const { isApproved, withCompanions, ...userData } = guestData;
+
+    // Create GUEST user (no password - cannot log in)
+    // GUEST users start inactive and become active when registration is approved
+    const guestUser = await prisma.user.upsert({
+      where: { email: userData.email },
+      update: {},
+      create: {
+        ...userData,
+        passwordHash: null, // GUEST users have no password
+        role: "GUEST",
+        isActive: isApproved, // Only active if registration is approved
+        isApproved: isApproved,
+      },
+    });
+    guestUsers.push(guestUser);
+
+    // Create registration linked to the GUEST user
+    const randomSession = openSessions[Math.floor(Math.random() * openSessions.length)];
     const guestReg = await prisma.registration.create({
       data: {
+        userId: guestUser.id, // Link to GUEST user instead of using guest* fields
         sessionId: randomSession.id,
-        approvalNotes: !registrationData.isApproved ? "في انتظار الموافقة" : null,
-        ...registrationData,
+        isApproved,
+        approvalNotes: !isApproved ? "في انتظار الموافقة" : null,
       },
     });
     totalRegistrations++;
-    if (!registrationData.isApproved) totalPendingRegistrations++;
+    if (!isApproved) totalPendingRegistrations++;
 
-    // Add companions for guests that have them
-    if (withCompanions && registrationData.isApproved) {
+    // Add companions (companions still use guest* fields - no User record for them)
+    if (withCompanions && isApproved) {
       const numCompanions = Math.floor(Math.random() * 2) + 1;
       const shuffledCompanions = [...companionNames].sort(() => Math.random() - 0.5);
 
@@ -764,6 +784,7 @@ async function main() {
       }
     }
   }
+  console.log(`✅ Created ${guestUsers.length} GUEST users with registrations`);
 
   // Add some invites for invite-only testing (if needed in future)
   const inviteEmails = [

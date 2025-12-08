@@ -36,17 +36,6 @@ export const authRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      // Check if email already exists
-      const existingEmail = await db.user.findUnique({
-        where: { email: input.email.toLowerCase() },
-      });
-      if (existingEmail) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "البريد الإلكتروني مسجل مسبقاً",
-        });
-      }
-
       // Format and validate phone
       const formattedPhone = formatPhoneNumber(input.phone);
       if (!validateSaudiPhone(input.phone)) {
@@ -56,57 +45,78 @@ export const authRouter = createTRPCRouter({
         });
       }
 
-      // Check if phone already exists
-      const existingPhone = await db.user.findUnique({
-        where: { phone: formattedPhone },
+      const email = input.email.toLowerCase();
+
+      // Check if phone OR email matches an existing user
+      const existingUser = await db.user.findFirst({
+        where: {
+          OR: [{ phone: formattedPhone }, { email }],
+        },
       });
-      if (existingPhone) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "رقم الهاتف مسجل مسبقاً",
+
+      let user;
+      let isUpgrade = false;
+
+      if (existingUser) {
+        // If it's a GUEST user, upgrade to USER
+        if (existingUser.role === "GUEST") {
+          const passwordHash = await bcrypt.hash(input.password, 10);
+
+          user = await db.user.update({
+            where: { id: existingUser.id },
+            data: {
+              role: "USER",
+              passwordHash,
+              // Override profile data with form data
+              name: input.name,
+              email,
+              phone: formattedPhone,
+              instagram: input.instagram || null,
+              snapchat: input.snapchat || null,
+              twitter: input.twitter || null,
+              companyName: input.companyName || null,
+              position: input.position || null,
+              activityType: input.activityType || null,
+              gender: input.gender || null,
+              goal: input.goal || null,
+              wantsToHost: input.wantsToHost,
+              hostingTypes: input.wantsToHost ? input.hostingTypes : [],
+            },
+          });
+          isUpgrade = true;
+        } else {
+          // USER, ADMIN, or SUPER_ADMIN - account already exists
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "الحساب مسجل مسبقاً، يرجى تسجيل الدخول",
+          });
+        }
+      } else {
+        // No existing user - create new USER account
+        const username = await generateUsername(input.name);
+        const passwordHash = await bcrypt.hash(input.password, 10);
+
+        user = await db.user.create({
+          data: {
+            name: input.name,
+            username,
+            email,
+            phone: formattedPhone,
+            passwordHash,
+            role: "USER",
+            instagram: input.instagram || null,
+            snapchat: input.snapchat || null,
+            twitter: input.twitter || null,
+            companyName: input.companyName || null,
+            position: input.position || null,
+            activityType: input.activityType || null,
+            gender: input.gender || null,
+            goal: input.goal || null,
+            wantsToHost: input.wantsToHost,
+            hostingTypes: input.wantsToHost ? input.hostingTypes : [],
+          },
         });
       }
-
-      // Generate unique username
-      const username = await generateUsername(input.name);
-
-      // Hash password
-      const passwordHash = await bcrypt.hash(input.password, 10);
-
-      // Create user
-      const user = await db.user.create({
-        data: {
-          name: input.name,
-          username,
-          email: input.email.toLowerCase(),
-          phone: formattedPhone,
-          passwordHash,
-          instagram: input.instagram || null,
-          snapchat: input.snapchat || null,
-          twitter: input.twitter || null,
-          companyName: input.companyName || null,
-          position: input.position || null,
-          activityType: input.activityType || null,
-          gender: input.gender || null,
-          goal: input.goal || null,
-          wantsToHost: input.wantsToHost,
-          hostingTypes: input.wantsToHost ? input.hostingTypes : [],
-        },
-      });
-
-      // Link any previous guest registrations by email or phone
-      await db.registration.updateMany({
-        where: {
-          userId: null,
-          OR: [
-            { guestEmail: input.email.toLowerCase() },
-            { guestPhone: formattedPhone },
-          ],
-        },
-        data: {
-          userId: user.id,
-        },
-      });
 
       // Send welcome email
       await sendWelcomeEmail(user.email, user.name);
@@ -115,6 +125,7 @@ export const authRouter = createTRPCRouter({
         success: true,
         userId: user.id,
         username: user.username,
+        upgraded: isUpgrade,
       };
     }),
 

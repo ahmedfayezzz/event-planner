@@ -332,6 +332,9 @@ export const registrationRouter = createTRPCRouter({
         });
       }
 
+      // Determine approval status early (needed for GUEST user isActive)
+      const isApproved = !session.requiresApproval;
+
       // Format phone
       const formattedPhone = formatPhoneNumber(input.phone);
       if (!validateSaudiPhone(input.phone)) {
@@ -343,27 +346,13 @@ export const registrationRouter = createTRPCRouter({
 
       const email = input.email.toLowerCase();
 
-      // Check for duplicate registration
-      const existingReg = await db.registration.findFirst({
-        where: {
-          sessionId: input.sessionId,
-          OR: [{ guestEmail: email }, { guestPhone: formattedPhone }],
-        },
-      });
+      let userId: string;
+      let isNewAccount = false;
 
-      if (existingReg) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "أنت مسجل مسبقاً في هذا الحدث",
-        });
-      }
-
-      let userId: string | null = null;
-
-      // Check if email/phone belongs to existing user
+      // Check if phone OR email belongs to existing user (phone priority)
       const existingUser = await db.user.findFirst({
         where: {
-          OR: [{ email }, { phone: formattedPhone }],
+          OR: [{ phone: formattedPhone }, { email }],
         },
       });
 
@@ -384,8 +373,30 @@ export const registrationRouter = createTRPCRouter({
         }
 
         userId = existingUser.id;
+
+        // If it's a GUEST user, update their info with fresh data
+        // Also set them to active if registration is approved
+        if (existingUser.role === "GUEST") {
+          await db.user.update({
+            where: { id: existingUser.id },
+            data: {
+              name: input.name,
+              instagram: input.instagram || existingUser.instagram,
+              snapchat: input.snapchat || existingUser.snapchat,
+              twitter: input.twitter || existingUser.twitter,
+              companyName: input.companyName || existingUser.companyName,
+              position: input.position || existingUser.position,
+              activityType: input.activityType || existingUser.activityType,
+              gender: input.gender || existingUser.gender,
+              goal: input.goal || existingUser.goal,
+              wantsToHost: input.wantsToHost || existingUser.wantsToHost,
+              hostingTypes: input.wantsToHost ? input.hostingTypes : existingUser.hostingTypes,
+              isActive: isApproved ? true : existingUser.isActive, // Activate if registration approved
+            },
+          });
+        }
       } else if (input.createAccount && input.password) {
-        // Create new user account
+        // Create new USER account (with password)
         const username = await generateUsername(input.name);
         const passwordHash = await bcrypt.hash(input.password, 10);
 
@@ -396,6 +407,7 @@ export const registrationRouter = createTRPCRouter({
             email,
             phone: formattedPhone,
             passwordHash,
+            role: "USER",
             instagram: input.instagram || null,
             snapchat: input.snapchat || null,
             twitter: input.twitter || null,
@@ -410,33 +422,46 @@ export const registrationRouter = createTRPCRouter({
         });
 
         userId = newUser.id;
+        isNewAccount = true;
 
         // Send welcome email for new account
         await sendWelcomeEmail(email, input.name);
+      } else {
+        // Create new GUEST user (no password, cannot login)
+        // GUEST users start inactive and become active when registration is approved
+        const username = await generateUsername(input.name);
+
+        const newGuestUser = await db.user.create({
+          data: {
+            name: input.name,
+            username,
+            email,
+            phone: formattedPhone,
+            passwordHash: null,
+            role: "GUEST",
+            isActive: isApproved, // Only active if registration is approved
+            instagram: input.instagram || null,
+            snapchat: input.snapchat || null,
+            twitter: input.twitter || null,
+            companyName: input.companyName || null,
+            position: input.position || null,
+            activityType: input.activityType || null,
+            gender: input.gender || null,
+            goal: input.goal || null,
+            wantsToHost: input.wantsToHost,
+            hostingTypes: input.wantsToHost ? input.hostingTypes : [],
+          },
+        });
+
+        userId = newGuestUser.id;
       }
 
-      // Determine approval status
-      const isApproved = !session.requiresApproval;
-
-      // Create registration
+      // Create registration (always linked to user - no guest* fields needed for primary registrant)
       const registration = await db.registration.create({
         data: {
           userId,
           sessionId: input.sessionId,
           isApproved,
-          guestName: userId ? null : input.name,
-          guestEmail: userId ? null : email,
-          guestPhone: userId ? null : formattedPhone,
-          guestInstagram: userId ? null : input.instagram || null,
-          guestSnapchat: userId ? null : input.snapchat || null,
-          guestTwitter: userId ? null : input.twitter || null,
-          guestCompanyName: userId ? null : input.companyName || null,
-          guestPosition: userId ? null : input.position || null,
-          guestActivityType: userId ? null : input.activityType || null,
-          guestGender: userId ? null : input.gender || null,
-          guestGoal: userId ? null : input.goal || null,
-          guestWantsToHost: userId ? false : input.wantsToHost,
-          guestHostingTypes: userId ? [] : (input.wantsToHost ? input.hostingTypes : []),
         },
       });
 
