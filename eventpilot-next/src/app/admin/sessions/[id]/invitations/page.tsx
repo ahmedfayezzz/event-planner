@@ -2,6 +2,8 @@
 
 import React, { use, useState } from "react";
 import Link from "next/link";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 import { api } from "@/trpc/react";
 import { useExpandableRows } from "@/hooks/use-expandable-rows";
 import { cn } from "@/lib/utils";
@@ -58,6 +60,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  Plus,
+  X,
 } from "lucide-react";
 import { copyToClipboard } from "@/lib/utils";
 
@@ -92,8 +96,23 @@ export default function InvitationsPage({
   // WhatsApp tab state
   const [whatsappSearch, setWhatsappSearch] = useState("");
   const [selectedPhones, setSelectedPhones] = useState<string[]>([]);
-  const [manualPhones, setManualPhones] = useState("");
+  const [manualPhones, setManualPhones] = useState<string[]>([""]);
   const [manualOpen, setManualOpen] = useState(false);
+
+  // Helper functions for manual phone inputs
+  const addPhoneInput = () => {
+    setManualPhones([...manualPhones, ""]);
+  };
+
+  const removePhoneInput = (index: number) => {
+    setManualPhones(manualPhones.filter((_, i) => i !== index));
+  };
+
+  const updatePhoneInput = (index: number, value: string) => {
+    const updated = [...manualPhones];
+    updated[index] = value;
+    setManualPhones(updated);
+  };
   const [whatsappLinks, setWhatsappLinks] = useState<{ phone: string; link: string }[]>([]);
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
 
@@ -152,7 +171,7 @@ export default function InvitationsPage({
       setWhatsappLinks(data.links);
       toast.success(`تم إنشاء ${data.links.length} رابط`);
       setSelectedPhones([]);
-      setManualPhones("");
+      setManualPhones([""]);
       utils.invitation.getUsersForInvite.invalidate({ sessionId });
       utils.invitation.getSessionInvites.invalidate({ sessionId });
     },
@@ -221,7 +240,11 @@ export default function InvitationsPage({
 
   const handleGenerateWhatsApp = () => {
     const phonesFromUsers = selectedPhones;
-    const phonesFromManual = manualPhones.split("\n").map((p) => p.trim()).filter(Boolean);
+    // PhoneInput returns E.164 format like +966500000000
+    // Remove + prefix for consistency with existing API
+    const phonesFromManual = manualPhones
+      .filter((p) => p.trim())
+      .map((p) => (p.startsWith("+") ? p.substring(1) : p));
     const allPhones = [...phonesFromUsers, ...phonesFromManual];
 
     if (allPhones.length === 0) {
@@ -662,24 +685,49 @@ export default function InvitationsPage({
                     <ChevronDown className={`h-4 w-4 transition-transform ${manualOpen ? "rotate-180" : ""}`} />
                   </Button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-2 pt-2">
-                  <Textarea
-                    placeholder="966500000000&#10;966501234567"
-                    value={manualPhones}
-                    onChange={(e) => setManualPhones(e.target.value)}
-                    rows={3}
-                    dir="ltr"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    أدخل أرقام الهواتف بالتنسيق الدولي بدون + أو مسافات (رقم واحد في كل سطر)
-                  </p>
+                <CollapsibleContent className="space-y-3 pt-2">
+                  {manualPhones.map((phone, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <div className="flex-1 border rounded-md px-3 py-2">
+                        <PhoneInput
+                          international
+                          defaultCountry="SA"
+                          value={phone}
+                          onChange={(value) => updatePhoneInput(index, value || "")}
+                          className="phone-input-container"
+                          placeholder="5XXXXXXXX"
+                        />
+                      </div>
+                      {manualPhones.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removePhoneInput(index)}
+                          className="shrink-0 text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addPhoneInput}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 me-2" />
+                    إضافة رقم
+                  </Button>
                 </CollapsibleContent>
               </Collapsible>
 
               <Button
                 onClick={handleGenerateWhatsApp}
                 disabled={
-                  (selectedPhones.length === 0 && !manualPhones.trim()) ||
+                  (selectedPhones.length === 0 && !manualPhones.some((p) => p.trim())) ||
                   generateWhatsAppMutation.isPending
                 }
                 className="w-full"
