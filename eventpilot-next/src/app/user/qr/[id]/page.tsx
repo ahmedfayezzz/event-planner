@@ -82,7 +82,7 @@ export default function UserQRPage({ params }: { params: Promise<{ id: string }>
           </p>
           <div className="flex flex-col gap-3">
             <Button asChild>
-              <Link href="/user/dashboard">العودة للوحة التحكم</Link>
+              <Link href="/user/registrations">العودة لتسجيلاتي</Link>
             </Button>
             <Button variant="outline" asChild>
               <Link href="/sessions">استعرض الأحداث</Link>
@@ -99,7 +99,7 @@ export default function UserQRPage({ params }: { params: Promise<{ id: string }>
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/user/dashboard">
+            <Link href="/user/registrations">
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
@@ -165,7 +165,7 @@ export default function UserQRPage({ params }: { params: Promise<{ id: string }>
             <Link href={`/session/${id}`}>عرض تفاصيل الحدث</Link>
           </Button>
           <Button variant="ghost" asChild>
-            <Link href="/user/dashboard">العودة للوحة التحكم</Link>
+            <Link href="/user/registrations">العودة لتسجيلاتي</Link>
           </Button>
         </div>
       </div>

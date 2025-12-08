@@ -26,18 +26,7 @@ interface RegistrationItem {
   companions: { id: string; name: string }[];
 }
 
-interface AttendanceItem {
-  id: string;
-  attended: boolean;
-  checkInTime: Date | null;
-  session: {
-    id: string;
-    title: string;
-    date: Date;
-  };
-}
-
-export default function UserDashboardPage() {
+export default function UserRegistrationsPage() {
   const { data: authSession, status } = useSession();
   const { data: dashboard, isLoading } = api.user.getDashboard.useQuery(undefined, {
     enabled: status === "authenticated",
@@ -68,7 +57,7 @@ export default function UserDashboardPage() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold">مرحباً، {dashboard?.user.name}</h1>
-                <p className="text-white/80 mt-1">لوحة التحكم الخاصة بك</p>
+                <p className="text-white/80 mt-1">تسجيلاتي في الأحداث</p>
               </div>
             </div>
             <div className="flex gap-3">

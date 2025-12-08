@@ -176,13 +176,23 @@
   - Any other session display components
 
 ### 7. Mobile-Friendly Tables (Expandable) ✅ DONE
-- **Implementation**: Expandable table rows using Collapsible component
-- **Approach**: CSS-based column hiding with expand button for mobile
-- **Files updated**:
-  - `src/app/admin/users/page.tsx` - Users table with expandable rows
-  - `src/app/admin/sessions/[id]/attendees/page.tsx` - Attendees table with expandable rows
-- **Mobile visible columns**: Name + Status + Expand button
-- **Expanded content shows**: Email, Phone, Type, Date, Actions
+- **Implementation**: Expandable table rows using `useExpandableRows` hook with CSS Grid animation
+- **Approach**: CSS-based column hiding with expand button for mobile, smooth 300ms transitions
+- **Hook**: `src/hooks/use-expandable-rows.ts` - Reusable hook for state management
+- **Files updated** (12 tables across 10 files):
+  - `src/app/admin/users/page.tsx` - Users table
+  - `src/app/admin/sessions/[id]/attendees/page.tsx` - Attendees table
+  - `src/app/admin/sessions/page.tsx` - Sessions list table
+  - `src/app/admin/admins/page.tsx` - Admin users table
+  - `src/app/admin/hosts/page.tsx` - Hosts table
+  - `src/app/admin/sessions/[id]/page.tsx` - Recent registrations table
+  - `src/app/admin/sessions/[id]/invitations/page.tsx` - Invitations table
+  - `src/app/admin/sessions/[id]/catering/page.tsx` - Catering table
+  - `src/app/admin/checkin/[id]/page.tsx` - Check-in table
+  - `src/app/admin/users/[id]/page.tsx` - User registration history table
+  - `src/app/admin/analytics/page.tsx` - Session performance + Top attendees tables
+  - `src/app/admin/page.tsx` - Dashboard attendance stats table
+- **Pattern**: React.Fragment wrapping, `grid-rows-[0fr]` → `grid-rows-[1fr]` animation
 - **Desktop**: Full table unchanged with all columns visible
 
 ### 8. Attendees Table Enhancements
@@ -440,7 +450,7 @@
 17. **Bulk Selection (8.2)** - Checkbox column, select all, bulk approve/export/WhatsApp actions
 18. **WhatsApp Confirmation (8.3)** - Send confirmation messages via WhatsApp with pre-filled event details
 19. **QR Code Image Design (#16)** - Branded QR template with logo, session info, and download button
-20. **Mobile-Friendly Tables (#7)** - Expandable rows using Collapsible component for Users and Attendees tables
+20. **Mobile-Friendly Tables (#7)** - Expandable rows on ALL 12 admin tables using `useExpandableRows` hook with CSS Grid animation
 21. **Public QR Page (8.4)** - Shareable QR page link in WhatsApp messages with download option
 
 ### 🔧 Recent Implementation

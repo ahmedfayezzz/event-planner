@@ -55,9 +55,9 @@ export default function UserProfilePage() {
                 <div className="container relative z-10">
                     <div className="flex items-center gap-4 mb-6">
                         <Button variant="ghost" className="text-white hover:bg-white/10" asChild>
-                            <Link href="/user/dashboard">
+                            <Link href="/user/registrations">
                                 <ArrowRight className="ml-2 h-5 w-5" />
-                                العودة للوحة التحكم
+                                العودة لتسجيلاتي
                             </Link>
                         </Button>
                     </div>

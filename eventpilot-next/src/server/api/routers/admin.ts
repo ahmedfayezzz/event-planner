@@ -350,6 +350,7 @@ export const adminRouter = createTRPCRouter({
           _count: {
             select: {
               registrations: { where: { isApproved: true } },
+              notes: true,
             },
           },
           registrations: {
@@ -370,6 +371,7 @@ export const adminRouter = createTRPCRouter({
           ...u,
           registrationCount: u._count.registrations,
           attendanceCount: u.registrations.length,
+          noteCount: u._count.notes,
         })),
         nextCursor,
       };
@@ -392,6 +394,14 @@ export const adminRouter = createTRPCRouter({
               name: true,
               color: true,
             },
+          },
+          notes: {
+            include: {
+              createdBy: {
+                select: { id: true, name: true },
+              },
+            },
+            orderBy: { createdAt: "desc" },
           },
           registrations: {
             orderBy: { registeredAt: "desc" },

@@ -187,7 +187,7 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
           </Button>
           {registration.hasAccount ? (
             <Button variant="outline" asChild>
-              <Link href="/user/dashboard">الذهاب للوحة التحكم</Link>
+              <Link href="/user/registrations">الذهاب لتسجيلاتي</Link>
             </Button>
           ) : (
             <Button variant="outline" asChild>

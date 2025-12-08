@@ -273,7 +273,7 @@ export default function AdminLayout({
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/user/dashboard" className="cursor-pointer">
+                    <Link href="/user/registrations" className="cursor-pointer">
                       <User className="me-2 h-4 w-4" />
                       لوحة المستخدم
                     </Link>

@@ -11,7 +11,7 @@ async function main() {
 
   // ============== SUPER ADMIN USER ==============
   const superAdmin = await prisma.user.upsert({
-    where: { email: "admin@eventpilot.com" },
+    where: { email: "admin@example.com" },
     update: {
       role: "SUPER_ADMIN",
       // Super Admin has all permissions by default (the code handles this)
@@ -26,7 +26,7 @@ async function main() {
     create: {
       name: "مدير النظام الرئيسي",
       username: "admin",
-      email: "admin@eventpilot.com",
+      email: "admin@example.com",
       phone: "+966500000000",
       passwordHash: adminPassword,
       role: "SUPER_ADMIN",
@@ -47,7 +47,7 @@ async function main() {
 
   // ============== REGULAR ADMIN USER (for testing permissions) ==============
   const regularAdmin = await prisma.user.upsert({
-    where: { email: "moderator@eventpilot.com" },
+    where: { email: "moderator@example.com" },
     update: {
       role: "ADMIN",
       canAccessDashboard: true,
@@ -62,7 +62,7 @@ async function main() {
     create: {
       name: "مشرف الأحداث",
       username: "moderator",
-      email: "moderator@eventpilot.com",
+      email: "moderator@example.com",
       phone: "+966500000001",
       passwordHash: adminPassword,
       role: "ADMIN",
@@ -531,16 +531,16 @@ async function main() {
 
   // ============== REGISTRATIONS & ATTENDANCE ==============
   const companionNames = [
-    { name: "عمر سعد الغامدي", company: "شركة الغامدي للتجارة", title: "مدير مبيعات", email: "omar.ghamdi@example.com" },
-    { name: "لينا محمد العتيبي", company: "مكتب العتيبي للمحاماة", title: "محامية", email: "lina.otaibi@example.com" },
-    { name: "ماجد خالد السبيعي", company: "مؤسسة السبيعي", title: "مدير عام", email: "majed.subaie@example.com" },
-    { name: "دانا عبدالله الحربي", company: "وكالة الحربي الإعلامية", title: "مديرة إبداعية", email: "dana.harbi@example.com" },
-    { name: "راشد فيصل المطيري", company: "شركة المطيري التقنية", title: "مهندس برمجيات", email: "rashed.mutairi@example.com" },
-    { name: "منى سالم القحطاني", company: "استشارات القحطاني", title: "مستشارة مالية", email: "mona.qahtani@example.com" },
-    { name: "بدر عبدالرحمن الزهراني", company: "مجموعة الزهراني", title: "مطور أعمال", email: "badr.zahrani@example.com" },
-    { name: "ريما حسن الشمري", company: "دار الشمري للتصميم", title: "مصممة", email: "rima.shamri@example.com" },
-    { name: "سعود محمد الدخيل", company: "شركة الدخيل العقارية", title: "مدير تطوير", email: "saud.dakhil@example.com" },
-    { name: "هيا فهد النصار", company: "مؤسسة النصار للتدريب", title: "مدربة معتمدة", email: "haya.nassar@example.com" },
+    { name: "عمر سعد الغامدي", company: "شركة الغامدي للتجارة", title: "مدير مبيعات", phone: "+966530123456", email: "omar.ghamdi@example.com" },
+    { name: "لينا محمد العتيبي", company: "مكتب العتيبي للمحاماة", title: "محامية", phone: "+966530234567", email: "lina.otaibi@example.com" },
+    { name: "ماجد خالد السبيعي", company: "مؤسسة السبيعي", title: "مدير عام", phone: "+966530345678", email: "majed.subaie@example.com" },
+    { name: "دانا عبدالله الحربي", company: "وكالة الحربي الإعلامية", title: "مديرة إبداعية", phone: "+966530456789", email: "dana.harbi@example.com" },
+    { name: "راشد فيصل المطيري", company: "شركة المطيري التقنية", title: "مهندس برمجيات", phone: "+966530567890", email: "rashed.mutairi@example.com" },
+    { name: "منى سالم القحطاني", company: "استشارات القحطاني", title: "مستشارة مالية", phone: "+966530678901", email: "mona.qahtani@example.com" },
+    { name: "بدر عبدالرحمن الزهراني", company: "مجموعة الزهراني", title: "مطور أعمال", phone: "+966530789012", email: "badr.zahrani@example.com" },
+    { name: "ريما حسن الشمري", company: "دار الشمري للتصميم", title: "مصممة", phone: "+966530890123", email: "rima.shamri@example.com" },
+    { name: "سعود محمد الدخيل", company: "شركة الدخيل العقارية", title: "مدير تطوير", phone: "+966530901234", email: "saud.dakhil@example.com" },
+    { name: "هيا فهد النصار", company: "مؤسسة النصار للتدريب", title: "مدربة معتمدة", phone: "+966531012345", email: "haya.nassar@example.com" },
   ];
 
   let totalRegistrations = 0;
@@ -601,7 +601,7 @@ async function main() {
                 guestName: comp.name,
                 guestCompanyName: comp.company,
                 guestPosition: comp.title,
-                guestPhone: `+9665${Math.floor(10000000 + Math.random() * 90000000)}`,
+                guestPhone: comp.phone,
                 guestEmail: comp.email,
                 isApproved: companionApproved,
                 approvalNotes: !companionApproved ? "في انتظار تأكيد المرافق" : null,
@@ -754,7 +754,7 @@ async function main() {
             guestName: comp.name,
             guestCompanyName: comp.company,
             guestPosition: comp.title,
-            guestPhone: `+9665${Math.floor(10000000 + Math.random() * 90000000)}`,
+            guestPhone: comp.phone,
             guestEmail: comp.email,
             isApproved: true,
             registeredAt: guestReg.registeredAt,
@@ -868,8 +868,8 @@ async function main() {
   console.log("=".repeat(50));
   console.log("\n📋 Login Credentials:");
   console.log("─".repeat(50));
-  console.log("Super Admin:  admin@eventpilot.com / admin123 (full access)");
-  console.log("Admin:        moderator@eventpilot.com / admin123 (limited: dashboard, sessions, checkin)");
+  console.log("Super Admin:  admin@example.com / admin123 (full access)");
+  console.log("Admin:        moderator@example.com / admin123 (limited: dashboard, sessions, checkin)");
   console.log("Users:        [any user email] / password123");
   console.log("─".repeat(50));
   console.log("\n🎉 Seeding completed successfully!");

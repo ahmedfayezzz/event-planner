@@ -70,6 +70,8 @@ model User {
   registrations Registration[]
   eventCaterings EventCatering[]
   labels UserLabel[]
+  notes         UserNote[] @relation("UserNotes")
+  notesCreated  UserNote[] @relation("NotesCreated")
 }
 
 model Session {
@@ -246,4 +248,23 @@ model UserLabel {
   users User[]
 
   @@index([name])
+}
+
+model UserNote {
+  id        String   @id @default(cuid())
+  content   String
+
+  // User this note is about
+  userId    String
+  user      User     @relation("UserNotes", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Admin who created the note
+  createdById String
+  createdBy   User   @relation("NotesCreated", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([createdById])
 }

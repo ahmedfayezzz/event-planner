@@ -52,6 +52,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { UserLabelManager } from "@/components/admin/user-label-manager";
+import { UserNotes } from "@/components/admin/user-notes";
 import { toast } from "sonner";
 import { formatArabicDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -76,6 +77,7 @@ import {
   Building2,
   Briefcase,
   Calendar,
+  MessageSquare,
 } from "lucide-react";
 
 interface UserItem {
@@ -92,6 +94,7 @@ interface UserItem {
   registrationCount: number;
   attendanceCount: number;
   labels: Array<{ id: string; name: string; color: string }>;
+  noteCount: number;
 }
 
 const PAGE_SIZE = 20;
@@ -484,7 +487,28 @@ export default function AdminUsersPage() {
                               {formatArabicDate(new Date(user.createdAt))}
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
-                              <DropdownMenu>
+                              <div className="flex items-center gap-1">
+                                {/* Notes indicator */}
+                                <UserNotes
+                                  userId={user.id}
+                                  noteCount={user.noteCount}
+                                  onUpdate={() => refetch()}
+                                  trigger={
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="relative"
+                                    >
+                                      <MessageSquare className="h-4 w-4" />
+                                      {user.noteCount > 0 && (
+                                        <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                                          {user.noteCount}
+                                        </span>
+                                      )}
+                                    </Button>
+                                  }
+                                />
+                                <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon">
                                     <MoreVertical className="h-4 w-4" />
@@ -542,6 +566,7 @@ export default function AdminUsersPage() {
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
+                              </div>
                             </TableCell>
                             {/* Mobile expand button */}
                             <TableCell className="md:hidden">
@@ -638,6 +663,23 @@ export default function AdminUsersPage() {
                                       عرض الملف
                                     </Link>
                                   </Button>
+                                  {/* Notes */}
+                                  <UserNotes
+                                    userId={user.id}
+                                    noteCount={user.noteCount}
+                                    onUpdate={() => refetch()}
+                                    trigger={
+                                      <Button variant="outline" size="sm" className="relative">
+                                        <MessageSquare className="me-2 h-4 w-4" />
+                                        ملاحظات
+                                        {user.noteCount > 0 && (
+                                          <span className="ms-1 bg-primary text-primary-foreground text-[10px] rounded-full px-1.5 py-0.5">
+                                            {user.noteCount}
+                                          </span>
+                                        )}
+                                      </Button>
+                                    }
+                                  />
                                   {isSuperAdmin && (
                                     <Button
                                       variant="outline"

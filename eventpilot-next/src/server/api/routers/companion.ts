@@ -17,10 +17,10 @@ export const companionRouter = createTRPCRouter({
     .input(
       z.object({
         registrationId: z.string(),
-        name: z.string().min(2),
+        name: z.string().min(2, "اسم المرافق مطلوب"),
         company: z.string().optional(),
         title: z.string().optional(),
-        phone: z.string().optional(),
+        phone: z.string().min(9, "رقم الهاتف مطلوب"),
         email: z.string().email().optional(),
       })
     )
@@ -68,7 +68,7 @@ export const companionRouter = createTRPCRouter({
           guestName: input.name,
           guestCompanyName: input.company || null,
           guestPosition: input.title || null,
-          guestPhone: input.phone ? formatPhoneNumber(input.phone) : null,
+          guestPhone: formatPhoneNumber(input.phone),
           guestEmail: input.email?.toLowerCase() || null,
         },
       });

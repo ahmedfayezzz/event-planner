@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UserLabelManager } from "@/components/admin/user-label-manager";
+import { UserNotes } from "@/components/admin/user-notes";
 import { formatArabicDate } from "@/lib/utils";
 import {
   ArrowRight,
@@ -37,6 +38,7 @@ import {
   UserX,
   ChevronUp,
   ChevronDown,
+  MessageSquare,
 } from "lucide-react";
 
 export default function UserProfilePage({
@@ -271,6 +273,51 @@ export default function UserProfilePage({
                   ))
                 )}
               </div>
+            </div>
+
+            {/* Notes */}
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  الملاحظات
+                  {user.notes && user.notes.length > 0 && (
+                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
+                      {user.notes.length}
+                    </span>
+                  )}
+                </span>
+                <UserNotes
+                  userId={user.id}
+                  notes={user.notes}
+                  noteCount={user.notes?.length ?? 0}
+                  onUpdate={() => refetch()}
+                  trigger={
+                    <Button variant="ghost" size="sm">
+                      {user.notes && user.notes.length > 0 ? "عرض الكل" : "إضافة"}
+                    </Button>
+                  }
+                />
+              </div>
+              {user.notes && user.notes.length > 0 ? (
+                <div className="space-y-2">
+                  {user.notes.slice(0, 2).map((note) => (
+                    <div key={note.id} className="text-sm bg-muted/50 p-2 rounded">
+                      <p className="line-clamp-2">{note.content}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {note.createdBy.name}
+                      </p>
+                    </div>
+                  ))}
+                  {user.notes.length > 2 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      +{user.notes.length - 2} ملاحظات أخرى
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">لا توجد ملاحظات</p>
+              )}
             </div>
           </CardContent>
         </Card>

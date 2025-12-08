@@ -200,7 +200,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                           </div>
                           {registration.registration.isApproved && (
                             <Button variant="outline" asChild className="shadow w-full sm:w-auto" size="sm">
-                              <Link href="/user/dashboard">
+                              <Link href="/user/registrations">
                                 عرض تفاصيل التسجيل
                                 <ArrowLeft className="w-4 h-4 mr-2" />
                               </Link>

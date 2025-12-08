@@ -51,7 +51,7 @@ export default function EditRegistrationPage({
   const updateMutation = api.registration.updateRegistration.useMutation({
     onSuccess: () => {
       toast.success("تم تحديث التسجيل بنجاح!");
-      router.push("/user/dashboard");
+      router.push("/user/registrations");
     },
     onError: (error) => {
       toast.error(error.message || "حدث خطأ أثناء التحديث");
@@ -96,9 +96,9 @@ export default function EditRegistrationPage({
           التسجيل غير موجود
         </h1>
         <Button asChild size="lg">
-          <Link href="/user/dashboard">
+          <Link href="/user/registrations">
             <ArrowLeft className="w-4 h-4 ml-2" />
-            العودة للوحة التحكم
+            العودة لتسجيلاتي
           </Link>
         </Button>
       </div>
@@ -115,9 +115,9 @@ export default function EditRegistrationPage({
           التسجيلات الخاصة بالزوار لا يمكن تعديلها
         </p>
         <Button asChild size="lg">
-          <Link href="/user/dashboard">
+          <Link href="/user/registrations">
             <ArrowLeft className="w-4 h-4 ml-2" />
-            العودة للوحة التحكم
+            العودة لتسجيلاتي
           </Link>
         </Button>
       </div>
@@ -181,11 +181,11 @@ export default function EditRegistrationPage({
         {/* Header */}
         <div className="mb-6">
           <Link
-            href="/user/dashboard"
+            href="/user/registrations"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-4"
           >
             <ArrowLeft className="w-4 h-4 ml-2" />
-            العودة للوحة التحكم
+            العودة لتسجيلاتي
           </Link>
           <h1 className="text-3xl font-bold text-primary mb-2">
             تعديل التسجيل
@@ -356,7 +356,7 @@ export default function EditRegistrationPage({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/user/dashboard")}
+                onClick={() => router.push("/user/registrations")}
                 disabled={isSubmitting}
                 className="flex-1"
               >

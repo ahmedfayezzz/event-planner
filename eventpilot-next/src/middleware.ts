@@ -30,7 +30,7 @@ export default auth((req) => {
   const isAuthPath = authPaths.some((path) => nextUrl.pathname === path);
 
   if (isAuthPath && isLoggedIn) {
-    return NextResponse.redirect(new URL("/user/dashboard", nextUrl));
+    return NextResponse.redirect(new URL("/user/registrations", nextUrl));
   }
 
   // Admin routes - require ADMIN role
@@ -43,7 +43,7 @@ export default auth((req) => {
     }
 
     if (!isAdmin) {
-      return NextResponse.redirect(new URL("/user/dashboard", nextUrl));
+      return NextResponse.redirect(new URL("/user/registrations", nextUrl));
     }
   }
 

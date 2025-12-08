@@ -122,12 +122,16 @@ export function Navbar() {
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/user/dashboard">لوحة التحكم</Link>
+                    <Link href="/user/registrations">تسجيلاتي</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/user/profile">الملف الشخصي</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/user/change-password">تغيير كلمة المرور</Link>
                   </DropdownMenuItem>
-                  {session.user?.role === "ADMIN" && (
+                  {(session.user?.role === "ADMIN" ||
+                    session.user?.role === "SUPER_ADMIN") && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
@@ -217,7 +221,8 @@ export function Navbar() {
                     الأحداث
                   </Link>
 
-                  {session?.user?.role === "ADMIN" && (
+                  {(session?.user?.role === "ADMIN" ||
+                    session?.user?.role === "SUPER_ADMIN") && (
                     <Link
                       href="/admin"
                       target="_blank"
@@ -234,11 +239,18 @@ export function Navbar() {
                     <>
                       <div className="border-t pt-4 mt-2">
                         <Link
-                          href="/user/dashboard"
+                          href="/user/registrations"
                           className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-primary/5 hover:text-primary transition-colors"
                           onClick={() => setMobileMenuOpen(false)}
                         >
-                          لوحة التحكم
+                          تسجيلاتي
+                        </Link>
+                        <Link
+                          href="/user/profile"
+                          className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-primary/5 hover:text-primary transition-colors"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          الملف الشخصي
                         </Link>
                         <Link
                           href="/user/change-password"

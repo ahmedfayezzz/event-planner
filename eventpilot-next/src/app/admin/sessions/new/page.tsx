@@ -41,11 +41,15 @@ export default function NewSessionPage() {
       inviteOnly: formData.inviteOnly,
       inviteMessage: formData.inviteMessage || undefined,
       sendQrInEmail: formData.sendQrInEmail,
+      showSocialMediaFields: formData.showSocialMediaFields,
+      showRegistrationPurpose: formData.showRegistrationPurpose,
+      showCateringInterest: formData.showCateringInterest,
       slug: formData.slug || undefined,
       registrationDeadline: formData.registrationDeadline
         ? new Date(formData.registrationDeadline)
         : undefined,
       customConfirmationMessage: formData.customConfirmationMessage || undefined,
+      locationUrl: formData.locationUrl || undefined,
     });
   };
 
