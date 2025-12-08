@@ -2,10 +2,12 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
+  publicProcedure,
   protectedProcedure,
   adminProcedure,
 } from "../trpc";
 import { parseQRData, generateQRCode, createQRCheckInData } from "@/lib/qr";
+import { generateBrandedQRCode } from "@/lib/qr-branded";
 
 export const attendanceRouter = createTRPCRouter({
   /**
@@ -279,6 +281,222 @@ export const attendanceRouter = createTRPCRouter({
 
       return {
         qrCode,
+        session: {
+          id: registration.session.id,
+          title: registration.session.title,
+          date: registration.session.date,
+          location: registration.session.location,
+        },
+      };
+    }),
+
+  /**
+   * Get branded QR code for download
+   */
+  getBrandedQR: protectedProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+
+      // Find user's registration with user info
+      const registration = await db.registration.findFirst({
+        where: {
+          userId: session.user.id,
+          sessionId: input.sessionId,
+          isApproved: true,
+        },
+        include: {
+          session: true,
+          user: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!registration) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "لم يتم العثور على تسجيل مؤكد لهذا الحدث",
+        });
+      }
+
+      // Generate QR data
+      const qrData = createQRCheckInData({
+        type: "attendance",
+        registrationId: registration.id,
+        sessionId: registration.sessionId,
+      });
+
+      // Format date and time for the branded QR
+      const sessionDate = registration.session.date.toLocaleDateString("ar-SA", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+      const sessionTime = registration.session.date.toLocaleTimeString("ar-SA", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      // Get attendee name
+      const attendeeName = registration.user?.name || registration.guestName || undefined;
+
+      // Generate branded QR
+      const brandedQrBuffer = await generateBrandedQRCode(qrData, {
+        sessionTitle: registration.session.title,
+        sessionDate,
+        sessionTime,
+        attendeeName,
+      });
+
+      if (!brandedQrBuffer) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "فشل في إنشاء رمز QR",
+        });
+      }
+
+      return {
+        qrCode: `data:image/png;base64,${brandedQrBuffer.toString("base64")}`,
+        session: {
+          id: registration.session.id,
+          title: registration.session.title,
+          date: registration.session.date,
+          location: registration.session.location,
+        },
+      };
+    }),
+
+  /**
+   * Get QR code by registration ID (public - for sharing via WhatsApp)
+   */
+  getPublicQR: publicProcedure
+    .input(z.object({ registrationId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const registration = await db.registration.findUnique({
+        where: { id: input.registrationId },
+        include: {
+          session: true,
+          user: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!registration) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "التسجيل غير موجود",
+        });
+      }
+
+      if (!registration.isApproved) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "التسجيل غير مؤكد بعد",
+        });
+      }
+
+      // Generate QR code
+      const qrData = createQRCheckInData({
+        type: "attendance",
+        registrationId: registration.id,
+        sessionId: registration.sessionId,
+      });
+
+      const qrCode = await generateQRCode(qrData);
+
+      return {
+        qrCode,
+        attendeeName: registration.user?.name || registration.guestName,
+        session: {
+          id: registration.session.id,
+          title: registration.session.title,
+          date: registration.session.date,
+          location: registration.session.location,
+        },
+      };
+    }),
+
+  /**
+   * Get branded QR code by registration ID (public - for download)
+   */
+  getPublicBrandedQR: publicProcedure
+    .input(z.object({ registrationId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const registration = await db.registration.findUnique({
+        where: { id: input.registrationId },
+        include: {
+          session: true,
+          user: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!registration) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "التسجيل غير موجود",
+        });
+      }
+
+      if (!registration.isApproved) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "التسجيل غير مؤكد بعد",
+        });
+      }
+
+      // Generate QR data
+      const qrData = createQRCheckInData({
+        type: "attendance",
+        registrationId: registration.id,
+        sessionId: registration.sessionId,
+      });
+
+      // Format date and time for the branded QR
+      const sessionDate = registration.session.date.toLocaleDateString("ar-SA", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+      const sessionTime = registration.session.date.toLocaleTimeString("ar-SA", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      // Get attendee name
+      const attendeeName = registration.user?.name || registration.guestName || undefined;
+
+      // Generate branded QR
+      const brandedQrBuffer = await generateBrandedQRCode(qrData, {
+        sessionTitle: registration.session.title,
+        sessionDate,
+        sessionTime,
+        attendeeName,
+      });
+
+      if (!brandedQrBuffer) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "فشل في إنشاء رمز QR",
+        });
+      }
+
+      return {
+        qrCode: `data:image/png;base64,${brandedQrBuffer.toString("base64")}`,
+        attendeeName,
         session: {
           id: registration.session.id,
           title: registration.session.title,

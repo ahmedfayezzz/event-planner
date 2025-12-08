@@ -46,15 +46,27 @@ export function Navbar() {
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ease-out ${isScrolled
-      ? 'pt-4 px-4 bg-transparent'
-      : 'pt-0 px-0 border-b border-border/40 bg-background/95 backdrop-blur-sm'
-      }`} style={{ willChange: 'padding, background-color' }}>
-      <div className={`container mx-auto transition-all duration-200 ease-out ${isScrolled ? 'max-w-7xl' : 'max-w-full px-0'}`}>
-        <div className={`flex items-center justify-between px-6 transition-all duration-200 ease-out ${isScrolled
-          ? 'h-16 rounded-full border border-white/20 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg shadow-black/5'
-          : 'h-20 border-none bg-transparent'
-          }`} style={{ willChange: 'height, border-radius, background-color' }}>
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ease-out ${
+        isScrolled
+          ? "pt-4 px-4 bg-transparent"
+          : "pt-0 px-0 border-b border-border/40 bg-background/95 backdrop-blur-sm"
+      }`}
+      style={{ willChange: "padding, background-color" }}
+    >
+      <div
+        className={`container mx-auto transition-all duration-200 ease-out ${
+          isScrolled ? "max-w-7xl" : "max-w-full px-0"
+        }`}
+      >
+        <div
+          className={`flex items-center justify-between px-6 transition-all duration-200 ease-out ${
+            isScrolled
+              ? "h-16 rounded-full border border-white/20 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg shadow-black/5"
+              : "h-20 border-none bg-transparent"
+          }`}
+          style={{ willChange: "height, border-radius, background-color" }}
+        >
           {/* Logo */}
           <Link href="/" className="group">
             <Logo variant="navbar" showText={true} />
@@ -68,7 +80,8 @@ export function Navbar() {
             >
               الأحداث
             </Link>
-            {session?.user?.role === "ADMIN" && (
+            {(session?.user?.role === "ADMIN" ||
+              session?.user?.role === "SUPER_ADMIN") && (
               <Link
                 href="/admin"
                 target="_blank"
@@ -87,7 +100,10 @@ export function Navbar() {
             ) : session ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-primary/10">
+                  <Button
+                    variant="ghost"
+                    className="relative h-9 w-9 rounded-full hover:bg-primary/10"
+                  >
                     <Avatar className="h-9 w-9 border-2 border-primary/20">
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                         {getInitials(session.user?.name || "U")}
@@ -115,7 +131,11 @@ export function Navbar() {
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
-                        <Link href="/admin" target="_blank" rel="noopener noreferrer">
+                        <Link
+                          href="/admin"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           إدارة الموقع
                         </Link>
                       </DropdownMenuItem>
@@ -132,10 +152,19 @@ export function Navbar() {
               </DropdownMenu>
             ) : (
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" className="rounded-full hover:bg-primary/10" asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full hover:bg-primary/10"
+                  asChild
+                >
                   <Link href="/user/login">تسجيل الدخول</Link>
                 </Button>
-                <Button size="sm" className="rounded-full shadow-md hover:shadow-lg transition-shadow" asChild>
+                <Button
+                  size="sm"
+                  className="rounded-full shadow-md hover:shadow-lg transition-shadow"
+                  asChild
+                >
                   <Link href="/register">إنشاء حساب</Link>
                 </Button>
               </div>
@@ -146,14 +175,20 @@ export function Navbar() {
           <div className="md:hidden">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-primary/10">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 w-9 p-0 rounded-full hover:bg-primary/10"
+                >
                   <Menu className="h-5 w-5" />
                   <span className="sr-only">فتح القائمة</span>
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                 <SheetHeader>
-                  <SheetTitle className="text-right text-primary">القائمة</SheetTitle>
+                  <SheetTitle className="text-right text-primary">
+                    القائمة
+                  </SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-4 mt-8">
                   {/* User Info if logged in */}

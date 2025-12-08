@@ -6,7 +6,7 @@ import {
   adminProcedure,
 } from "../trpc";
 import { formatPhoneNumber } from "@/lib/validation";
-import { generateQRCode, createQRCheckInData } from "@/lib/qr";
+import { createQRCheckInData } from "@/lib/qr";
 import { sendCompanionEmail } from "@/lib/email";
 
 export const companionRouter = createTRPCRouter({
@@ -84,7 +84,6 @@ export const companionRouter = createTRPCRouter({
           registrationId: invitedRegistration.id,
           sessionId: parentRegistration.session.id,
         });
-        const qrCode = await generateQRCode(qrData);
 
         await sendCompanionEmail(
           invitedRegistration.guestEmail,
@@ -92,7 +91,7 @@ export const companionRouter = createTRPCRouter({
           user?.name || "المسجل",
           parentRegistration.session,
           true,
-          qrCode || undefined
+          qrData
         );
       }
 
@@ -240,13 +239,12 @@ export const companionRouter = createTRPCRouter({
         });
       }
 
-      // Generate QR and send email
+      // Generate QR data and send email
       const qrData = createQRCheckInData({
         type: "attendance",
         registrationId: invitedRegistration.id,
         sessionId: invitedRegistration.session.id,
       });
-      const qrCode = await generateQRCode(qrData);
 
       await sendCompanionEmail(
         invitedRegistration.guestEmail,
@@ -254,7 +252,7 @@ export const companionRouter = createTRPCRouter({
         invitedRegistration.invitedByRegistration?.user?.name || "المسجل",
         invitedRegistration.session,
         true,
-        qrCode || undefined
+        qrData
       );
 
       return { success: true };

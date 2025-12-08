@@ -46,6 +46,12 @@ export const settingsRouter = createTRPCRouter({
         siteName: z.string().optional(),
         contactEmail: z.string().email().optional().nullable(),
         contactPhone: z.string().optional().nullable(),
+        // Social media handles
+        twitterHandle: z.string().optional().nullable(),
+        instagramHandle: z.string().optional().nullable(),
+        snapchatHandle: z.string().optional().nullable(),
+        linkedinUrl: z.string().url().optional().nullable().or(z.literal("")),
+        whatsappNumber: z.string().optional().nullable(),
       })
     )
     .mutation(async ({ ctx, input }) => {

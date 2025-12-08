@@ -1,6 +1,50 @@
 import { Resend } from "resend";
+import { generateBrandedQRCode } from "./qr-branded";
+import { db } from "@/server/db";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// =============================================================================
+// SETTINGS HELPER
+// =============================================================================
+
+interface EmailSettings {
+  siteName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  twitterHandle: string | null;
+  instagramHandle: string | null;
+  snapchatHandle: string | null;
+  linkedinUrl: string | null;
+  whatsappNumber: string | null;
+}
+
+async function getEmailSettings(): Promise<EmailSettings> {
+  const settings = await db.settings.findUnique({
+    where: { key: "global" },
+    select: {
+      siteName: true,
+      contactEmail: true,
+      contactPhone: true,
+      twitterHandle: true,
+      instagramHandle: true,
+      snapchatHandle: true,
+      linkedinUrl: true,
+      whatsappNumber: true,
+    },
+  });
+
+  return {
+    siteName: settings?.siteName ?? null,
+    contactEmail: settings?.contactEmail ?? null,
+    contactPhone: settings?.contactPhone ?? null,
+    twitterHandle: settings?.twitterHandle ?? null,
+    instagramHandle: settings?.instagramHandle ?? null,
+    snapchatHandle: settings?.snapchatHandle ?? null,
+    linkedinUrl: settings?.linkedinUrl ?? null,
+    whatsappNumber: settings?.whatsappNumber ?? null,
+  };
+}
 
 interface EmailAttachment {
   filename: string;
@@ -77,6 +121,7 @@ interface EmailTemplateOptions {
   buttonText?: string;
   buttonUrl?: string;
   extraContent?: string; // For QR codes or additional content after button
+  settings?: EmailSettings;
 }
 
 // =============================================================================
@@ -111,7 +156,57 @@ function createEmailTemplate({
   buttonText,
   buttonUrl,
   extraContent,
+  settings,
 }: EmailTemplateOptions): string {
+  const siteName = settings?.siteName ?? "ثلوثية الأعمال";
+  const contactEmail = settings?.contactEmail ?? "thlothyah@tda.sa";
+  const contactPhone = settings?.contactPhone ?? "+966 50 000 0000";
+
+  // Build social links array
+  const socialLinks: { name: string; url: string }[] = [];
+  if (settings?.instagramHandle) {
+    socialLinks.push({
+      name: "Instagram",
+      url: `https://instagram.com/${settings.instagramHandle.replace("@", "")}`,
+    });
+  }
+  if (settings?.twitterHandle) {
+    socialLinks.push({
+      name: "X",
+      url: `https://twitter.com/${settings.twitterHandle.replace("@", "")}`,
+    });
+  }
+  if (settings?.snapchatHandle) {
+    socialLinks.push({
+      name: "Snapchat",
+      url: `https://snapchat.com/add/${settings.snapchatHandle.replace("@", "")}`,
+    });
+  }
+  if (settings?.linkedinUrl) {
+    socialLinks.push({ name: "LinkedIn", url: settings.linkedinUrl });
+  }
+  if (settings?.whatsappNumber) {
+    socialLinks.push({
+      name: "WhatsApp",
+      url: `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, "")}`,
+    });
+  }
+
+  // Fallback to default social if none configured
+  if (socialLinks.length === 0) {
+    socialLinks.push(
+      { name: "Instagram", url: "https://instagram.com/thlothyah" },
+      { name: "X", url: "https://twitter.com/thlothyah" },
+      { name: "Snapchat", url: "https://snapchat.com/add/thlothyah" }
+    );
+  }
+
+  const socialLinksHtml = socialLinks
+    .map(
+      (link, i) =>
+        `<a href="${link.url}" style="color: ${BRAND.primary}; text-decoration: none; font-weight: 500;">${link.name}</a>${i < socialLinks.length - 1 ? " &nbsp;|&nbsp; " : ""}`
+    )
+    .join("");
   const buttonHtml = buttonText && buttonUrl
     ? `
     <tr>
@@ -163,7 +258,7 @@ function createEmailTemplate({
               <!-- Logo -->
               <img
                 src="${process.env.BASE_URL || 'http://localhost:3000'}/logo.png"
-                alt="ثلوثية الأعمال"
+                alt="${siteName}"
                 width="80"
                 height="80"
                 style="display: block; margin: 0 auto 12px auto; border-radius: 50%; max-width: 80px;"
@@ -171,7 +266,7 @@ function createEmailTemplate({
 
               <!-- Brand Name -->
               <h1 style="margin: 0; font-size: 24px; font-weight: bold; color: #ffffff;">
-                ثلوثية الأعمال
+                ${siteName}
               </h1>
 
               <div style="width: 60px; height: 3px; background-color: ${BRAND.accent}; margin: 16px auto 0 auto; border-radius: 2px;"></div>
@@ -204,10 +299,10 @@ function createEmailTemplate({
                       للتواصل والاستفسارات
                     </p>
                     <p style="margin: 0 0 4px 0; color: ${BRAND.textMuted}; font-size: 14px;">
-                      thlothyah@tda.sa
+                      ${contactEmail}
                     </p>
                     <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px; direction: ltr;">
-                      +966 50 000 0000
+                      ${contactPhone}
                     </p>
                   </td>
                 </tr>
@@ -215,12 +310,7 @@ function createEmailTemplate({
                 <tr>
                   <td align="center" style="padding-top: 12px; border-top: 1px solid ${BRAND.border};">
                     <p style="margin: 12px 0 0 0; color: ${BRAND.textLight}; font-size: 13px;">
-                      تابعونا:
-                      <a href="https://instagram.com/thlothyah" style="color: ${BRAND.primary}; text-decoration: none; font-weight: 500;">Instagram</a>
-                      &nbsp;|&nbsp;
-                      <a href="https://twitter.com/thlothyah" style="color: ${BRAND.primary}; text-decoration: none; font-weight: 500;">X</a>
-                      &nbsp;|&nbsp;
-                      <a href="https://snapchat.com/add/thlothyah" style="color: ${BRAND.primary}; text-decoration: none; font-weight: 500;">Snapchat</a>
+                      تابعونا: ${socialLinksHtml}
                     </p>
                   </td>
                 </tr>
@@ -240,7 +330,12 @@ function createEmailTemplate({
 /**
  * Create plain text version of email (strips HTML formatting)
  */
-function createPlainText(content: string, buttonText?: string, buttonUrl?: string): string {
+function createPlainText(
+  content: string,
+  buttonText?: string,
+  buttonUrl?: string,
+  settings?: EmailSettings
+): string {
   // Remove HTML tags and decode entities
   const plainContent = content
     .replace(/<br\s*\/?>/gi, "\n")
@@ -255,14 +350,26 @@ function createPlainText(content: string, buttonText?: string, buttonUrl?: strin
     ? `\n\n${buttonText}:\n${buttonUrl}`
     : "";
 
+  const contactEmail = settings?.contactEmail ?? "thlothyah@tda.sa";
+  const contactPhone = settings?.contactPhone ?? "+966 50 000 0000";
+
+  // Build social links text
+  const socialNames: string[] = [];
+  if (settings?.instagramHandle) socialNames.push("Instagram");
+  if (settings?.twitterHandle) socialNames.push("X");
+  if (settings?.snapchatHandle) socialNames.push("Snapchat");
+  if (settings?.linkedinUrl) socialNames.push("LinkedIn");
+  if (settings?.whatsappNumber) socialNames.push("WhatsApp");
+  const socialText = socialNames.length > 0 ? socialNames.join(" | ") : "Instagram | X | Snapchat - @thlothyah";
+
   const footer = `
 
 ---
 للتواصل والاستفسارات:
-thlothyah@tda.sa
-+966 50 000 0000
+${contactEmail}
+${contactPhone}
 
-تابعونا على: Instagram | X | Snapchat - @thlothyah
+تابعونا على: ${socialText}
 `;
 
   return plainContent + buttonSection + footer;
@@ -292,6 +399,21 @@ function formatSessionDate(date: Date): string {
   });
 }
 
+function formatDateOnly(date: Date): string {
+  return date.toLocaleDateString("ar-SA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+function formatTimeOnly(date: Date): string {
+  return date.toLocaleTimeString("ar-SA", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 // =============================================================================
 // EMAIL FUNCTIONS
 // =============================================================================
@@ -304,6 +426,7 @@ export async function sendConfirmationEmail(
   name: string,
   session: SessionInfo
 ): Promise<boolean> {
+  const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
 
   const content = `
@@ -322,8 +445,8 @@ export async function sendConfirmationEmail(
     <p style="margin: 16px 0 0 0;">نتطلع لرؤيتك معنا!</p>
   `;
 
-  const html = createEmailTemplate({ content });
-  const text = createPlainText(content);
+  const html = createEmailTemplate({ content, settings });
+  const text = createPlainText(content, undefined, undefined, settings);
 
   return sendEmail({
     to: emailAddress,
@@ -341,6 +464,7 @@ export async function sendPendingEmail(
   name: string,
   session: SessionInfo
 ): Promise<boolean> {
+  const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
 
   const content = `
@@ -361,8 +485,8 @@ export async function sendPendingEmail(
     </p>
   `;
 
-  const html = createEmailTemplate({ content });
-  const text = createPlainText(content);
+  const html = createEmailTemplate({ content, settings });
+  const text = createPlainText(content, undefined, undefined, settings);
 
   return sendEmail({
     to: emailAddress,
@@ -373,29 +497,48 @@ export async function sendPendingEmail(
 }
 
 /**
- * Send registration confirmed email with optional QR code
+ * Send registration confirmed email with optional branded QR code
+ * @param qrCheckInData - The raw QR check-in data (JSON string) to encode in the QR
  */
 export async function sendConfirmedEmail(
   emailAddress: string,
   name: string,
   session: SessionInfo,
-  qrData?: string
+  qrCheckInData?: string
 ): Promise<boolean> {
+  const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
 
   let qrSection = "";
-  if (qrData && session.sendQrInEmail) {
-    qrSection = `
-      <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px auto; text-align: center;" align="center">
-        <tr>
-          <td align="center" style="padding: 20px; background-color: ${BRAND.footerBg}; border-radius: 12px; border: 1px solid ${BRAND.border};">
-            <p style="margin: 0 0 12px 0; font-weight: bold; color: ${BRAND.textDark};">رمز الحضور الخاص بك:</p>
-            <img src="cid:qrcode" alt="QR Code" style="max-width: 180px; height: auto; display: block; margin: 0 auto;">
-            <p style="margin: 12px 0 0 0; font-size: 13px; color: ${BRAND.textLight};">أظهر هذا الرمز عند الحضور</p>
-          </td>
-        </tr>
-      </table>
-    `;
+  let attachments: EmailAttachment[] | undefined;
+
+  // Generate branded QR code if data provided and enabled
+  if (qrCheckInData && session.sendQrInEmail) {
+    const brandedQrBuffer = await generateBrandedQRCode(qrCheckInData, {
+      sessionTitle: session.title,
+      sessionDate: formatDateOnly(session.date),
+      sessionTime: formatTimeOnly(session.date),
+      attendeeName: name,
+    });
+
+    if (brandedQrBuffer) {
+      qrSection = `
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px auto; text-align: center;" align="center">
+          <tr>
+            <td align="center" style="padding: 0;">
+              <img src="cid:qrcode" alt="QR Code" style="max-width: 400px; width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 12px;">
+            </td>
+          </tr>
+        </table>
+      `;
+      attachments = [
+        {
+          filename: "qrcode.png",
+          content: brandedQrBuffer.toString("base64"),
+          content_id: "qrcode",
+        },
+      ];
+    }
   }
 
   const content = `
@@ -414,23 +557,8 @@ export async function sendConfirmedEmail(
     <p style="margin: 16px 0 0 0;">نتطلع لرؤيتك معنا!</p>
   `;
 
-  const html = createEmailTemplate({ content, extraContent: qrSection });
-  const text = createPlainText(content);
-
-  // Build attachments if QR code provided
-  let attachments: EmailAttachment[] | undefined;
-  if (qrData && session.sendQrInEmail) {
-    if (qrData.startsWith("data:image/png;base64,")) {
-      const qrBase64 = qrData.split(",")[1];
-      attachments = [
-        {
-          filename: "qrcode.png",
-          content: qrBase64,
-          content_id: "qrcode",
-        },
-      ];
-    }
-  }
+  const html = createEmailTemplate({ content, extraContent: qrSection, settings });
+  const text = createPlainText(content, undefined, undefined, settings);
 
   return sendEmail({
     to: emailAddress,
@@ -443,6 +571,7 @@ export async function sendConfirmedEmail(
 
 /**
  * Send email to companion notifying them of registration
+ * @param qrCheckInData - The raw QR check-in data (JSON string) to encode in the QR
  */
 export async function sendCompanionEmail(
   emailAddress: string,
@@ -450,27 +579,45 @@ export async function sendCompanionEmail(
   registrantName: string,
   session: SessionInfo,
   isApproved = false,
-  qrData?: string
+  qrCheckInData?: string
 ): Promise<boolean> {
+  const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
 
   let statusMessage: string;
   let qrSection = "";
+  let attachments: EmailAttachment[] | undefined;
 
   if (isApproved) {
     statusMessage = `<p style="margin: 16px 0 0 0;">نتطلع لرؤيتك معنا!</p>`;
-    if (qrData && session.sendQrInEmail) {
-      qrSection = `
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px auto; text-align: center;" align="center">
-          <tr>
-            <td align="center" style="padding: 20px; background-color: ${BRAND.footerBg}; border-radius: 12px; border: 1px solid ${BRAND.border};">
-              <p style="margin: 0 0 12px 0; font-weight: bold; color: ${BRAND.textDark};">رمز الحضور الخاص بك:</p>
-              <img src="cid:qrcode" alt="QR Code" style="max-width: 180px; height: auto; display: block; margin: 0 auto;">
-              <p style="margin: 12px 0 0 0; font-size: 13px; color: ${BRAND.textLight};">أظهر هذا الرمز عند الحضور</p>
-            </td>
-          </tr>
-        </table>
-      `;
+
+    // Generate branded QR code if data provided and enabled
+    if (qrCheckInData && session.sendQrInEmail) {
+      const brandedQrBuffer = await generateBrandedQRCode(qrCheckInData, {
+        sessionTitle: session.title,
+        sessionDate: formatDateOnly(session.date),
+        sessionTime: formatTimeOnly(session.date),
+        attendeeName: companionName,
+      });
+
+      if (brandedQrBuffer) {
+        qrSection = `
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px auto; text-align: center;" align="center">
+            <tr>
+              <td align="center" style="padding: 0;">
+                <img src="cid:qrcode" alt="QR Code" style="max-width: 400px; width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 12px;">
+              </td>
+            </tr>
+          </table>
+        `;
+        attachments = [
+          {
+            filename: "qrcode.png",
+            content: brandedQrBuffer.toString("base64"),
+            content_id: "qrcode",
+          },
+        ];
+      }
     }
   } else {
     statusMessage = `
@@ -496,23 +643,8 @@ export async function sendCompanionEmail(
     ${statusMessage}
   `;
 
-  const html = createEmailTemplate({ content, extraContent: qrSection });
-  const text = createPlainText(content);
-
-  // Build attachments if QR code provided
-  let attachments: EmailAttachment[] | undefined;
-  if (isApproved && qrData && session.sendQrInEmail) {
-    if (qrData.startsWith("data:image/png;base64,")) {
-      const qrBase64 = qrData.split(",")[1];
-      attachments = [
-        {
-          filename: "qrcode.png",
-          content: qrBase64,
-          content_id: "qrcode",
-        },
-      ];
-    }
-  }
+  const html = createEmailTemplate({ content, extraContent: qrSection, settings });
+  const text = createPlainText(content, undefined, undefined, settings);
 
   return sendEmail({
     to: emailAddress,
@@ -530,12 +662,14 @@ export async function sendWelcomeEmail(
   emailAddress: string,
   name: string
 ): Promise<boolean> {
+  const settings = await getEmailSettings();
+  const siteName = settings.siteName ?? "ثلوثية الأعمال";
   const baseUrl = process.env.BASE_URL || "http://localhost:3000";
   const loginUrl = `${baseUrl}/user/login`;
 
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
-    <p style="margin: 0 0 16px 0;">أهلاً بك في <strong style="color: ${BRAND.primary};">ثلوثية الأعمال</strong>!</p>
+    <p style="margin: 0 0 16px 0;">أهلاً بك في <strong style="color: ${BRAND.primary};">${siteName}</strong>!</p>
     <p style="margin: 0 0 12px 0;">تم إنشاء حسابك بنجاح. يمكنك الآن:</p>
     <ul style="margin: 0 0 16px 0; padding-right: 20px; color: ${BRAND.textMuted};">
       <li style="margin-bottom: 8px;">التسجيل في الأحداث القادمة</li>
@@ -549,12 +683,13 @@ export async function sendWelcomeEmail(
     content,
     buttonText: "تسجيل الدخول",
     buttonUrl: loginUrl,
+    settings,
   });
-  const text = createPlainText(content, "تسجيل الدخول", loginUrl);
+  const text = createPlainText(content, "تسجيل الدخول", loginUrl, settings);
 
   return sendEmail({
     to: emailAddress,
-    subject: "مرحباً بك في ثلوثية الأعمال",
+    subject: `مرحباً بك في ${siteName}`,
     html,
     text,
   });
@@ -568,6 +703,9 @@ export async function sendPasswordResetEmail(
   name: string,
   resetUrl: string
 ): Promise<boolean> {
+  const settings = await getEmailSettings();
+  const siteName = settings.siteName ?? "ثلوثية الأعمال";
+
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
     <p style="margin: 0 0 16px 0;">لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.</p>
@@ -584,12 +722,13 @@ export async function sendPasswordResetEmail(
     content,
     buttonText: "إعادة تعيين كلمة المرور",
     buttonUrl: resetUrl,
+    settings,
   });
-  const text = createPlainText(content, "إعادة تعيين كلمة المرور", resetUrl);
+  const text = createPlainText(content, "إعادة تعيين كلمة المرور", resetUrl, settings);
 
   return sendEmail({
     to: emailAddress,
-    subject: "إعادة تعيين كلمة المرور - ثلوثية الأعمال",
+    subject: `إعادة تعيين كلمة المرور - ${siteName}`,
     html,
     text,
   });
@@ -604,6 +743,8 @@ export async function sendInvitationEmail(
   token: string,
   customMessage?: string
 ): Promise<boolean> {
+  const settings = await getEmailSettings();
+  const siteName = settings.siteName ?? "ثلوثية الأعمال";
   const baseUrl = process.env.BASE_URL || "http://localhost:3000";
   const registrationLink = `${baseUrl}/event/${session.slug || session.id}/register?token=${token}`;
 
@@ -629,7 +770,7 @@ export async function sendInvitationEmail(
 
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً،</p>
-    <p style="margin: 0 0 16px 0;">نود دعوتك لحضور حدث <strong style="color: ${BRAND.primary};">"${session.title}"</strong> في ثلوثية الأعمال.</p>
+    <p style="margin: 0 0 16px 0;">نود دعوتك لحضور حدث <strong style="color: ${BRAND.primary};">"${session.title}"</strong> في ${siteName}.</p>
     <p style="margin: 0 0 12px 0; font-weight: bold;">تفاصيل الحدث:</p>
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 0 16px 0; background-color: ${BRAND.footerBg}; border-radius: 8px; width: 100%; border: 1px solid ${BRAND.border};">
       <tr>
@@ -650,8 +791,9 @@ export async function sendInvitationEmail(
     content,
     buttonText: "التسجيل الآن",
     buttonUrl: registrationLink,
+    settings,
   });
-  const text = createPlainText(content, "التسجيل الآن", registrationLink);
+  const text = createPlainText(content, "التسجيل الآن", registrationLink, settings);
 
   return sendEmail({
     to: emailAddress,

@@ -223,6 +223,13 @@ model Settings {
   contactEmail    String?
   contactPhone    String?
 
+  // Social media handles (organization's social media)
+  twitterHandle   String?
+  instagramHandle String?
+  snapchatHandle  String?
+  linkedinUrl     String?
+  whatsappNumber  String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

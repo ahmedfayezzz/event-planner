@@ -175,30 +175,61 @@
   - `src/app/admin/sessions/*/page.tsx`
   - Any other session display components
 
-### 7. Mobile-Friendly Tables (Expandable)
-- **Current**: Standard tables in admin views
-- **Change**: Implement responsive/expandable table pattern
-- **Files affected**:
-  - `src/app/admin/sessions/[id]/attendees/page.tsx`
-  - `src/app/admin/users/page.tsx`
-  - `src/app/admin/hosts/page.tsx`
-- **Implementation**: Use collapsible rows or card view on mobile
+### 7. Mobile-Friendly Tables (Expandable) ✅ DONE
+- **Implementation**: Expandable table rows using Collapsible component
+- **Approach**: CSS-based column hiding with expand button for mobile
+- **Files updated**:
+  - `src/app/admin/users/page.tsx` - Users table with expandable rows
+  - `src/app/admin/sessions/[id]/attendees/page.tsx` - Attendees table with expandable rows
+- **Mobile visible columns**: Name + Status + Expand button
+- **Expanded content shows**: Email, Phone, Type, Date, Actions
+- **Desktop**: Full table unchanged with all columns visible
 
 ### 8. Attendees Table Enhancements
 
-#### 8.1 Filter by Status
+#### 8.1 Filter by Status ✅ DONE
 - **Files**: `src/app/admin/sessions/[id]/attendees/page.tsx`
-- **Add**: Dropdown filter for approval status (approved/pending/all)
+- **Implementation**: Dropdown filter for approval status (approved/pending/all)
 
-#### 8.2 Bulk Selection with Checkboxes
+#### 8.2 Bulk Selection with Checkboxes ✅ DONE
 - **Files**: `src/app/admin/sessions/[id]/attendees/page.tsx`
-- **Add**: Checkbox column, select all, bulk actions (approve, send message, export)
+- **Implementation**:
+  - Checkbox column with "select all" header checkbox
+  - Indeterminate state for partial selection
+  - Selected rows highlighted
+  - Bulk actions bar appears when items selected:
+    - **تأكيد (Approve)** - Approves all pending selected registrations
+    - **واتساب (WhatsApp)** - Opens WhatsApp for first selected with phone
+    - **تصدير المحدد (Export Selected)** - Downloads CSV of selected rows
+  - Clear selection button
+- **Backend**: Added `approveMultiple` mutation to registration router
 
-#### 8.3 WhatsApp Confirmation Message Option
-- **New Feature**: Send confirmation via WhatsApp
-- **Files**:
-  - `src/app/admin/sessions/[id]/attendees/page.tsx`
-  - Create WhatsApp message template function
+#### 8.3 WhatsApp Confirmation Message Option ✅ DONE
+- **Files**: `src/app/admin/sessions/[id]/attendees/page.tsx`
+- **Implementation**:
+  - WhatsApp icon button in actions column for each row with phone number
+  - Pre-filled Arabic message with event details:
+    - Greeting with attendee name
+    - Event title and date
+    - Location
+    - **QR code page link** for attendance verification
+    - Sign-off from "ثلوثية الأعمال"
+  - Uses existing `getWhatsAppUrl` utility to open WhatsApp app
+
+#### 8.4 Public QR Page for WhatsApp Sharing ✅ DONE
+- **Implementation**: Created public QR page accessible via link (no auth required)
+- **Files created**:
+  - `src/app/qr/[id]/page.tsx` - Public QR page with download option
+- **Files updated**:
+  - `src/server/api/routers/attendance.ts` - Added `getPublicQR` and `getPublicBrandedQR` endpoints
+  - `src/app/admin/sessions/[id]/attendees/page.tsx` - WhatsApp message includes QR page link
+- **Features**:
+  - Displays QR code with attendee name and session info
+  - Download button for branded QR (with logo, session title, date/time)
+  - Shows session date, time, and location
+  - Attendance instructions in Arabic
+  - Error handling for invalid/unapproved registrations
+- **URL format**: `/qr/{registrationId}`
 
 ---
 
@@ -213,7 +244,7 @@
   - `src/app/session/[id]/page.tsx` - Renders location as clickable link with icon
   - `src/server/api/routers/session.ts` - Added to create/update mutations
   - `prisma/seed.ts` - Added sample location URLs for all sessions
-
+ 
 ### 10. Invitation Expiry Date
 - **Current**: `Invite` model has `usedAt` but no expiry
 - **Add**: `expiresAt: DateTime?` to Invite model
@@ -242,18 +273,32 @@
 - **Research**: Web Contacts API availability
 - **Note**: Limited browser support, may not be feasible
 
-### 12. User Labels/Groups
-- **New Feature**: Tag users with custom labels
-- **Schema**:
+### 12. User Labels/Groups ✅ DONE
+- **Implementation**: Complete label system with Jira-style UX
+- **Schema**: Added UserLabel model with many-to-many User relationship
   ```prisma
   model UserLabel {
     id    String @id @default(cuid())
     name  String @unique
-    color String?
+    color String @default("#3b82f6")
     users User[]
   }
   ```
-- **Admin UI**: Label management + user tagging
+- **Features**:
+  - Assign 0, 1, or multiple labels to users
+  - Filter users by label(s) in admin users page
+  - Create labels on-the-fly during assignment (Jira-style)
+  - Auto-save on selection change
+  - Random color assignment for new labels (8 preset colors)
+  - Clickable label cell in users table opens assignment dialog
+- **Files created**:
+  - `src/server/api/routers/label.ts` - Complete CRUD + assignment API
+  - `src/components/admin/user-label-manager.tsx` - Label assignment dialog
+- **Files updated**:
+  - `prisma/schema.prisma` - Added UserLabel model
+  - `src/server/api/root.ts` - Registered label router
+  - `src/server/api/routers/admin.ts` - Added label filtering to getUsers
+  - `src/app/admin/users/page.tsx` - Label column, filter dialog, assignment UI
 
 ### 13. Admin Roles (Dynamic Permissions) ✅ DONE
 - **Current**: Simple ADMIN/USER role in User model
@@ -268,9 +313,14 @@
   - Regular ADMIN needs explicit permission flags set to true
   - Only SUPER_ADMIN can manage other admins' permissions
   - Admin sidebar filters based on permissions
-  - Permission management UI in Users page (only visible to SUPER_ADMIN)
+  - **Separate pages for Members vs Admins**:
+    - `/admin/users` - "الأعضاء" (Members) - Regular users with company, labels, registrations, attendance
+    - `/admin/admins` - "المديرين" (Admins) - Admin users with role and permission management (SUPER_ADMIN only)
+  - Create new admin users directly with permissions
+  - Promote regular users to admin from Members page
 - **Files created**:
   - `src/lib/permissions.ts` - Permission helper library with constants and utility functions
+  - `src/app/admin/admins/page.tsx` - Dedicated admin users management page
 - **Files updated**:
   - `prisma/schema.prisma` - Added SUPER_ADMIN role and permission fields
   - `src/types/next-auth.d.ts` - Updated session types with permissions
@@ -278,17 +328,26 @@
   - `src/server/auth.ts` - Return permissions from authorize
   - `src/middleware.ts` - Check for both ADMIN and SUPER_ADMIN
   - `src/server/api/trpc.ts` - Added superAdminProcedure
-  - `src/server/api/routers/admin.ts` - Added getAdminUsers, updateUserPermissions
-  - `src/app/admin/layout.tsx` - Filter sidebar links based on permissions
-  - `src/app/admin/users/page.tsx` - Permission management dialog
+  - `src/server/api/routers/admin.ts` - Added getAdminUsers, updateUserPermissions, createAdmin
+  - `src/app/admin/layout.tsx` - Filter sidebar links based on permissions, added "المديرين" link
+  - `src/app/admin/users/page.tsx` - Simplified to show only regular users (role=USER)
   - `prisma/seed.ts` - Added SUPER_ADMIN and limited ADMIN users
 - **Login credentials**:
   - Super Admin: admin@eventpilot.com / admin123 (full access)
   - Admin: moderator@eventpilot.com / admin123 (limited: dashboard, sessions, checkin)
 
-### 14. User Profile in Admin
-- **New Page**: `src/app/admin/users/[id]/page.tsx`
-- **Content**: Full user details, registration history, attendance record, labels
+### 14. User Profile in Admin ✅ DONE
+- **Implementation**: Complete user profile page with full details
+- **Files created**: `src/app/admin/users/[id]/page.tsx`
+- **Files updated**:
+  - `src/server/api/routers/admin.ts` - Added `getUserById` query
+  - `src/app/admin/users/page.tsx` - Added "عرض الملف" (View Profile) link in dropdown menu
+- **Features**:
+  - Header with user name, role badge, active status
+  - Stats cards: registrations, attendance (with percentage), companions, hosting requests
+  - User details card: email, phone, company, position, social links, labels
+  - Labels management with inline assignment (Jira-style)
+  - Registration history table with session info, date, companions, status, attendance
 
 ### 15. Analytics - Search All Users (Guest + Members)
 - **Current**: `src/server/api/routers/admin.ts` - `getAnalytics`
@@ -299,15 +358,26 @@
 
 ## 🎨 Design & Branding
 
-### 16. QR Code Image Design ✅ CLARIFIED
-- **Current**: Basic QR code generation in `src/lib/qr.ts`
-- **Change**: Design a branded image template and embed QR code inside it
-- **Implementation**:
-  1. Create branded image template (with logo, borders, event branding)
-  2. Generate QR code
-  3. Composite QR code into the designated area of the template
-- **Technical approach**: Use canvas or image manipulation library (sharp, jimp, or canvas)
-- **Client to provide**: Design template/mockup for the branded frame
+### 16. QR Code Image Design ✅ DONE
+- **Implementation**: Created branded QR code template with EventPilot branding
+- **Files created**:
+  - `src/lib/qr-branded.ts` - Branded QR generator using sharp
+- **Files updated**:
+  - `src/lib/email.ts` - Updated to use branded QR in confirmation emails
+  - `src/server/api/routers/registration.ts` - Pass raw QR data to email functions
+  - `src/server/api/routers/companion.ts` - Pass raw QR data to email functions
+  - `src/server/api/routers/attendance.ts` - Added `getBrandedQR` and `getPublicBrandedQR` endpoints
+  - `src/app/user/qr/[id]/page.tsx` - Added download button
+  - `src/app/qr/[id]/page.tsx` - Added download button for public QR page
+  - `package.json` - Moved sharp to production dependencies
+- **Features**:
+  - Branded template (400x540px) with logo, gold border, emerald green theme
+  - **Welcome message** "مرحباً" with attendee name
+  - Session-specific info: title, date, time
+  - Arabic text "امسح للتحقق من الحضور" (Scan to verify attendance)
+  - **Decorative brand elements**: gold corner accents, gradient lines, emerald dots
+  - Download button on both user QR page and public QR page
+  - Used in confirmation emails (both user and companion emails)
 
 ### 17. Footer & Email Contact Info
 - **Current**: Email template has placeholder contact info
@@ -341,16 +411,16 @@
 |-----------------|--------|-----------|-----------|---------------------------------------|
 | 🔴 High         | 5      | 5 ✅       | 0         | Core functionality, registration flow |
 | 🟡 Medium       | 5      | 6 ✅       | -1        | Configurability, hosting features     |
-| 🟢 UI/UX        | 8      | 1 ✅       | 7         | Tables, display, mobile               |
-| 🔵 New Features | 7      | 2 ✅       | 5         | New capabilities                      |
-| 🎨 Design       | 3      | 0         | 3         | Branding, visual                      |
-| **TOTAL**       | **28** | **14 ✅**  | **14**    | **Overall Progress: 50%**             |
+| 🟢 UI/UX        | 9      | 6 ✅       | 3         | Tables, display, mobile               |
+| 🔵 New Features | 7      | 3 ✅       | 4         | New capabilities                      |
+| 🎨 Design       | 3      | 1 ✅       | 2         | Branding, visual                      |
+| **TOTAL**       | **29** | **21 ✅**  | **8**     | **Overall Progress: 72%**             |
 
 ---
 
 ## 📊 Completion Summary
 
-### ✅ Completed Features (14 tasks)
+### ✅ Completed Features (21 tasks)
 1. **Session → Event Renaming** - All UI labels updated
 2. **Social Media Fields** - Configurable per session
 3. **Professional Info** - Made mandatory
@@ -363,9 +433,32 @@
 10. **Member Registration Flow** - Simplified registration for authenticated users (companions + catering only)
 11. **Companion Details Mandatory** - Name and phone required, email optional
 12. **Edit Registration** - Users can edit their event registrations and manage companions
-13. **Admin Roles (Dynamic Permissions)** - SUPER_ADMIN role with granular menu-level permissions for regular admins
+13. **Admin Roles (Dynamic Permissions)** - SUPER_ADMIN role with separate Members/Admins pages
+14. **User Labels/Groups** - Jira-style label assignment with inline creation, filtering, and auto-save
+15. **User Profile in Admin** - Full user details page with registration history and stats
+16. **Filter by Status (8.1)** - Attendees table has status filter dropdown
+17. **Bulk Selection (8.2)** - Checkbox column, select all, bulk approve/export/WhatsApp actions
+18. **WhatsApp Confirmation (8.3)** - Send confirmation messages via WhatsApp with pre-filled event details
+19. **QR Code Image Design (#16)** - Branded QR template with logo, session info, and download button
+20. **Mobile-Friendly Tables (#7)** - Expandable rows using Collapsible component for Users and Attendees tables
+21. **Public QR Page (8.4)** - Shareable QR page link in WhatsApp messages with download option
 
 ### 🔧 Recent Implementation
+
+**Public QR Page for WhatsApp Sharing** - Shareable attendance QR page:
+- Public page at `/qr/{registrationId}` - no authentication required
+- WhatsApp confirmation message now includes QR page link
+- Download button fetches branded QR with logo, session title, date/time
+- Shows attendee name, session details, location, and instructions
+- Error handling for invalid or unapproved registrations
+
+**User Labels/Groups** - Jira-style label management system:
+- Click on any user's label cell to open assignment dialog
+- Type to search existing labels, click to toggle
+- If label doesn't exist, click "إنشاء [name]" to create instantly
+- Labels auto-save on selection (no save button needed)
+- Multi-select label filter in users table
+- Color-coded badges throughout UI
 
 **Edit Registration Feature** - Complete registration editing system:
 - Users can edit their event registrations from the dashboard

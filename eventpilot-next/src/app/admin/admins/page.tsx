@@ -33,6 +33,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatArabicDate } from "@/lib/utils";
 import {
@@ -92,6 +102,13 @@ export default function AdminsPage() {
   const [newAdminPassword, setNewAdminPassword] = useState("");
   const [newAdminPhone, setNewAdminPhone] = useState("");
   const [newAdminPermissions, setNewAdminPermissions] = useState<PermissionKey[]>(ALL_PERMISSIONS);
+
+  // Confirmation dialog state
+  const [confirmAction, setConfirmAction] = useState<{
+    type: "activate" | "deactivate" | "demote";
+    adminId: string;
+    adminName: string;
+  } | null>(null);
 
   // Fetch admin users
   const { data, isLoading, refetch } = api.admin.getAdminUsers.useQuery();
@@ -224,6 +241,21 @@ export default function AdminsPage() {
     if (admin.canAccessCheckin) count++;
     if (admin.canAccessSettings) count++;
     return count;
+  };
+
+  // Handle confirmed action
+  const handleConfirmedAction = () => {
+    if (!confirmAction) return;
+
+    if (confirmAction.type === "demote") {
+      updateRoleMutation.mutate({
+        userId: confirmAction.adminId,
+        role: "USER",
+      });
+    } else {
+      toggleActiveMutation.mutate({ userId: confirmAction.adminId });
+    }
+    setConfirmAction(null);
   };
 
   const admins = data?.admins ?? [];
@@ -386,9 +418,10 @@ export default function AdminsPage() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() =>
-                                  updateRoleMutation.mutate({
-                                    userId: admin.id,
-                                    role: "USER",
+                                  setConfirmAction({
+                                    type: "demote",
+                                    adminId: admin.id,
+                                    adminName: admin.name,
                                   })
                                 }
                                 className="text-amber-600"
@@ -398,7 +431,11 @@ export default function AdminsPage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
-                                  toggleActiveMutation.mutate({ userId: admin.id })
+                                  setConfirmAction({
+                                    type: admin.isActive ? "deactivate" : "activate",
+                                    adminId: admin.id,
+                                    adminName: admin.name,
+                                  })
                                 }
                                 className={
                                   admin.isActive ? "text-red-600" : "text-green-600"
@@ -588,6 +625,40 @@ export default function AdminsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.type === "deactivate" && "تأكيد تعطيل الحساب"}
+              {confirmAction?.type === "activate" && "تأكيد تفعيل الحساب"}
+              {confirmAction?.type === "demote" && "إزالة صلاحيات المدير"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.type === "deactivate" &&
+                `هل أنت متأكد من تعطيل حساب "${confirmAction.adminName}"؟ لن يتمكن من تسجيل الدخول.`}
+              {confirmAction?.type === "activate" &&
+                `هل أنت متأكد من تفعيل حساب "${confirmAction?.adminName}"؟`}
+              {confirmAction?.type === "demote" &&
+                `هل أنت متأكد من إزالة صلاحيات المدير من "${confirmAction?.adminName}"؟ سيصبح عضواً عادياً.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmedAction}
+              className={
+                confirmAction?.type === "deactivate" || confirmAction?.type === "demote"
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  : ""
+              }
+            >
+              تأكيد
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

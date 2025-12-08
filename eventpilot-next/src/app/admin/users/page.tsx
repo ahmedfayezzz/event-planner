@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { api } from "@/trpc/react";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useExpandableRows } from "@/hooks/use-expandable-rows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +41,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { UserLabelManager } from "@/components/admin/user-label-manager";
 import { toast } from "sonner";
 import { formatArabicDate } from "@/lib/utils";
@@ -53,10 +65,17 @@ import {
   Download,
   Loader2,
   ChevronDown,
+  ChevronUp,
   Tag,
   Check,
   X,
   Plus,
+  Eye,
+  Mail,
+  Phone,
+  Building2,
+  Briefcase,
+  Calendar,
 } from "lucide-react";
 
 interface UserItem {
@@ -86,6 +105,12 @@ export default function AdminUsersPage() {
   const [labelFilter, setLabelFilter] = useState<string[]>([]);
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
   const [labelSearchValue, setLabelSearchValue] = useState("");
+  const { isExpanded, toggleRow } = useExpandableRows();
+  const [confirmAction, setConfirmAction] = useState<{
+    type: "activate" | "deactivate" | "promote";
+    userId: string;
+    userName: string;
+  } | null>(null);
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -185,6 +210,21 @@ export default function AdminUsersPage() {
 
   const clearLabelFilter = () => {
     setLabelFilter([]);
+  };
+
+  // Handle confirmed action
+  const handleConfirmedAction = () => {
+    if (!confirmAction) return;
+
+    if (confirmAction.type === "promote") {
+      updateRoleMutation.mutate({
+        userId: confirmAction.userId,
+        role: "ADMIN",
+      });
+    } else {
+      toggleActiveMutation.mutate({ userId: confirmAction.userId });
+    }
+    setConfirmAction(null);
   };
 
   // Show skeleton only on initial load
@@ -349,142 +389,304 @@ export default function AdminUsersPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>العضو</TableHead>
-                    <TableHead>الشركة</TableHead>
-                    <TableHead>التصنيفات</TableHead>
+                    <TableHead className="hidden md:table-cell">الشركة</TableHead>
+                    <TableHead className="hidden lg:table-cell">التصنيفات</TableHead>
                     <TableHead>الحالة</TableHead>
-                    <TableHead>التسجيلات</TableHead>
-                    <TableHead>الحضور</TableHead>
-                    <TableHead>تاريخ الانضمام</TableHead>
-                    <TableHead></TableHead>
+                    <TableHead className="hidden md:table-cell">التسجيلات</TableHead>
+                    <TableHead className="hidden md:table-cell">الحضور</TableHead>
+                    <TableHead className="hidden lg:table-cell">تاريخ الانضمام</TableHead>
+                    <TableHead className="hidden md:table-cell"></TableHead>
+                    {/* Mobile expand button */}
+                    <TableHead className="md:hidden w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {allUsers.map((user: UserItem) => (
-                    <TableRow
-                      key={user.id}
-                      className={!user.isActive ? "opacity-60" : ""}
-                    >
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {user.email}
-                          </p>
-                          <p
-                            className="text-xs text-muted-foreground"
-                            dir="ltr"
-                          >
-                            {user.phone}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p>{user.companyName || "-"}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {user.position || ""}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <UserLabelManager
-                          userId={user.id}
-                          userLabels={user.labels}
-                          onUpdate={refetch}
-                          trigger={
-                            <button className="flex flex-wrap gap-1 items-center hover:bg-muted/50 p-1.5 rounded transition-colors">
-                              {user.labels.length === 0 ? (
-                                <Badge variant="outline" className="gap-1">
-                                  <Tag className="h-3 w-3" />
-                                  إضافة
-                                </Badge>
-                              ) : (
-                                user.labels.map((label) => (
-                                  <Badge
-                                    key={label.id}
-                                    variant="outline"
-                                    className="text-xs"
-                                    style={{
-                                      backgroundColor: label.color + "20",
-                                      color: label.color,
-                                      borderColor: label.color + "40",
-                                    }}
-                                  >
-                                    {label.name}
-                                  </Badge>
-                                ))
-                              )}
-                            </button>
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            user.isActive
-                              ? "bg-green-500/10 text-green-600 border-green-200"
-                              : "bg-red-500/10 text-red-600 border-red-200"
-                          }
+                  {allUsers.map((user: UserItem) => {
+                    const expanded = isExpanded(user.id);
+                    return (
+                      <React.Fragment key={user.id}>
+                        <TableRow
+                          className={cn(
+                            !user.isActive && "opacity-60",
+                            expanded && "md:border-b border-b-0"
+                          )}
                         >
-                          {user.isActive ? "نشط" : "معطل"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{user.registrationCount}</TableCell>
-                      <TableCell>{user.attendanceCount}</TableCell>
-                      <TableCell>
-                        {formatArabicDate(new Date(user.createdAt))}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {/* Promote to admin - only for SUPER_ADMIN */}
-                            {isSuperAdmin && (
-                              <>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    updateRoleMutation.mutate({
-                                      userId: user.id,
-                                      role: "ADMIN",
-                                    })
-                                  }
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{user.name}</p>
+                                {/* Show email/phone on desktop only */}
+                                <p className="text-sm text-muted-foreground hidden md:block">
+                                  {user.email}
+                                </p>
+                                <p
+                                  className="text-xs text-muted-foreground hidden md:block"
+                                  dir="ltr"
                                 >
-                                  <Shield className="me-2 h-4 w-4" />
-                                  ترقية لمدير
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                              </>
-                            )}
-                            <DropdownMenuItem
-                              onClick={() =>
-                                toggleActiveMutation.mutate({ userId: user.id })
-                              }
-                              className={
-                                user.isActive ? "text-red-600" : "text-green-600"
-                              }
-                            >
-                              {user.isActive ? (
-                                <>
-                                  <UserX className="me-2 h-4 w-4" />
-                                  تعطيل الحساب
-                                </>
-                              ) : (
-                                <>
-                                  <UserCheck className="me-2 h-4 w-4" />
-                                  تفعيل الحساب
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                                  {user.phone}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              <div>
+                                <p>{user.companyName || "-"}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {user.position || ""}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              <UserLabelManager
+                                userId={user.id}
+                                userLabels={user.labels}
+                                onUpdate={refetch}
+                                trigger={
+                                  <button className="flex flex-wrap gap-1 items-center hover:bg-muted/50 p-1.5 rounded transition-colors">
+                                    {user.labels.length === 0 ? (
+                                      <Badge variant="outline" className="gap-1">
+                                        <Tag className="h-3 w-3" />
+                                        إضافة
+                                      </Badge>
+                                    ) : (
+                                      user.labels.map((label) => (
+                                        <Badge
+                                          key={label.id}
+                                          variant="outline"
+                                          className="text-xs"
+                                          style={{
+                                            backgroundColor: label.color + "20",
+                                            color: label.color,
+                                            borderColor: label.color + "40",
+                                          }}
+                                        >
+                                          {label.name}
+                                        </Badge>
+                                      ))
+                                    )}
+                                  </button>
+                                }
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  user.isActive
+                                    ? "bg-green-500/10 text-green-600 border-green-200"
+                                    : "bg-red-500/10 text-red-600 border-red-200"
+                                }
+                              >
+                                {user.isActive ? "نشط" : "معطل"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell">{user.registrationCount}</TableCell>
+                            <TableCell className="hidden md:table-cell">{user.attendanceCount}</TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              {formatArabicDate(new Date(user.createdAt))}
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem asChild>
+                                    <Link href={`/admin/users/${user.id}`}>
+                                      <Eye className="me-2 h-4 w-4" />
+                                      عرض الملف
+                                    </Link>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  {/* Promote to admin - only for SUPER_ADMIN */}
+                                  {isSuperAdmin && (
+                                    <>
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          setConfirmAction({
+                                            type: "promote",
+                                            userId: user.id,
+                                            userName: user.name,
+                                          })
+                                        }
+                                      >
+                                        <Shield className="me-2 h-4 w-4" />
+                                        ترقية لمدير
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                    </>
+                                  )}
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      setConfirmAction({
+                                        type: user.isActive ? "deactivate" : "activate",
+                                        userId: user.id,
+                                        userName: user.name,
+                                      })
+                                    }
+                                    className={
+                                      user.isActive ? "text-red-600" : "text-green-600"
+                                    }
+                                  >
+                                    {user.isActive ? (
+                                      <>
+                                        <UserX className="me-2 h-4 w-4" />
+                                        تعطيل الحساب
+                                      </>
+                                    ) : (
+                                      <>
+                                        <UserCheck className="me-2 h-4 w-4" />
+                                        تفعيل الحساب
+                                      </>
+                                    )}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                            {/* Mobile expand button */}
+                            <TableCell className="md:hidden">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => toggleRow(user.id)}
+                              >
+                                {expanded ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                          {/* Mobile expanded content */}
+                          <tr className="md:hidden">
+                            <td colSpan={3} className="p-0">
+                              <div
+                                className={cn(
+                                  "grid transition-all duration-300 ease-in-out",
+                                  expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                                )}
+                              >
+                                <div className="overflow-hidden">
+                                  <div className="p-4 bg-muted/30 border-b">
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    <span className="truncate">{user.email}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    <span dir="ltr">{user.phone}</span>
+                                  </div>
+                                  {user.companyName && (
+                                    <div className="flex items-center gap-2">
+                                      <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                                      <span>{user.companyName}</span>
+                                    </div>
+                                  )}
+                                  {user.position && (
+                                    <div className="flex items-center gap-2">
+                                      <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
+                                      <span>{user.position}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    <span>{formatArabicDate(new Date(user.createdAt))}</span>
+                                  </div>
+                                  <div className="flex items-center gap-4">
+                                    <span className="text-muted-foreground">التسجيلات: {user.registrationCount}</span>
+                                    <span className="text-muted-foreground">الحضور: {user.attendanceCount}</span>
+                                  </div>
+                                </div>
+                                {/* Labels */}
+                                <div className="mt-3 pt-3 border-t">
+                                  <UserLabelManager
+                                    userId={user.id}
+                                    userLabels={user.labels}
+                                    onUpdate={refetch}
+                                    trigger={
+                                      <button className="flex flex-wrap gap-1 items-center hover:bg-muted/50 p-1.5 rounded transition-colors">
+                                        <Tag className="h-4 w-4 text-muted-foreground me-1" />
+                                        {user.labels.length === 0 ? (
+                                          <span className="text-sm text-muted-foreground">إضافة تصنيف</span>
+                                        ) : (
+                                          user.labels.map((label) => (
+                                            <Badge
+                                              key={label.id}
+                                              variant="outline"
+                                              className="text-xs"
+                                              style={{
+                                                backgroundColor: label.color + "20",
+                                                color: label.color,
+                                                borderColor: label.color + "40",
+                                              }}
+                                            >
+                                              {label.name}
+                                            </Badge>
+                                          ))
+                                        )}
+                                      </button>
+                                    }
+                                  />
+                                </div>
+                                {/* Actions */}
+                                <div className="mt-3 pt-3 border-t flex flex-wrap items-center gap-2">
+                                  <Button variant="outline" size="sm" asChild>
+                                    <Link href={`/admin/users/${user.id}`}>
+                                      <Eye className="me-2 h-4 w-4" />
+                                      عرض الملف
+                                    </Link>
+                                  </Button>
+                                  {isSuperAdmin && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        setConfirmAction({
+                                          type: "promote",
+                                          userId: user.id,
+                                          userName: user.name,
+                                        })
+                                      }
+                                    >
+                                      <Shield className="me-2 h-4 w-4" />
+                                      ترقية لمدير
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      setConfirmAction({
+                                        type: user.isActive ? "deactivate" : "activate",
+                                        userId: user.id,
+                                        userName: user.name,
+                                      })
+                                    }
+                                    className={user.isActive ? "text-red-600" : "text-green-600"}
+                                  >
+                                    {user.isActive ? (
+                                      <>
+                                        <UserX className="me-2 h-4 w-4" />
+                                        تعطيل
+                                      </>
+                                    ) : (
+                                      <>
+                                        <UserCheck className="me-2 h-4 w-4" />
+                                        تفعيل
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                      </React.Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
 
@@ -509,6 +711,40 @@ export default function AdminUsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.type === "deactivate" && "تأكيد تعطيل الحساب"}
+              {confirmAction?.type === "activate" && "تأكيد تفعيل الحساب"}
+              {confirmAction?.type === "promote" && "تأكيد الترقية لمدير"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.type === "deactivate" &&
+                `هل أنت متأكد من تعطيل حساب "${confirmAction.userName}"؟ لن يتمكن من تسجيل الدخول.`}
+              {confirmAction?.type === "activate" &&
+                `هل أنت متأكد من تفعيل حساب "${confirmAction?.userName}"؟`}
+              {confirmAction?.type === "promote" &&
+                `هل أنت متأكد من ترقية "${confirmAction?.userName}" إلى مدير؟ سيتمكن من الوصول إلى لوحة التحكم.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmedAction}
+              className={
+                confirmAction?.type === "deactivate"
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  : ""
+              }
+            >
+              تأكيد
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,15 +1,17 @@
 "use client";
 
-import { use, useState, useMemo } from "react";
+import React, { use, useState, useMemo } from "react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useExpandableRows } from "@/hooks/use-expandable-rows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -19,7 +21,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { formatArabicDate } from "@/lib/utils";
+import { formatArabicDate, getWhatsAppUrl } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import {
   ArrowRight,
   Search,
@@ -29,6 +49,14 @@ import {
   CheckCheck,
   Loader2,
   UserPlus,
+  MessageCircle,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Mail,
+  Phone,
+  Calendar,
+  User,
 } from "lucide-react";
 
 interface RegistrationItem {
@@ -45,6 +73,7 @@ interface RegistrationItem {
 }
 
 type FilterType = "all" | "direct" | "invited";
+type StatusFilterType = "all" | "approved" | "pending";
 
 export default function SessionAttendeesPage({
   params,
@@ -54,6 +83,13 @@ export default function SessionAttendeesPage({
   const { id } = use(params);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const { isExpanded, toggleRow } = useExpandableRows();
+  const [confirmAction, setConfirmAction] = useState<{
+    type: "approveAll" | "approveSelected";
+    count: number;
+  } | null>(null);
   const debouncedSearch = useDebounce(search, 300);
 
   const { data: session, isLoading: sessionLoading } =
@@ -88,6 +124,17 @@ export default function SessionAttendeesPage({
     },
   });
 
+  const approveSelectedMutation = api.registration.approveMultiple.useMutation({
+    onSuccess: (data) => {
+      toast.success(`تم تأكيد ${data.approvedCount} تسجيل`);
+      setSelectedIds(new Set());
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ");
+    },
+  });
+
   const { refetch: fetchCsv } = api.admin.exportSessionRegistrations.useQuery(
     { sessionId: id },
     { enabled: false }
@@ -107,7 +154,30 @@ export default function SessionAttendeesPage({
     }
   };
 
-  // Filter registrations by search and type
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(filteredRegistrations.map((r: RegistrationItem) => r.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectOne = (regId: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(regId);
+    } else {
+      newSelected.delete(regId);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  // Filter registrations by search, type, and status
   const filteredRegistrations = useMemo(() => {
     if (!registrations) return [];
 
@@ -118,6 +188,13 @@ export default function SessionAttendeesPage({
       filtered = filtered.filter((reg: RegistrationItem) => !reg.isInvited);
     } else if (filter === "invited") {
       filtered = filtered.filter((reg: RegistrationItem) => reg.isInvited);
+    }
+
+    // Filter by status
+    if (statusFilter === "approved") {
+      filtered = filtered.filter((reg: RegistrationItem) => reg.isApproved);
+    } else if (statusFilter === "pending") {
+      filtered = filtered.filter((reg: RegistrationItem) => !reg.isApproved);
     }
 
     // Filter by search
@@ -133,7 +210,7 @@ export default function SessionAttendeesPage({
     }
 
     return filtered;
-  }, [registrations, debouncedSearch, filter]);
+  }, [registrations, debouncedSearch, filter, statusFilter]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -158,8 +235,110 @@ export default function SessionAttendeesPage({
     };
   }, [registrations]);
 
+  // Get selected registrations data
+  const selectedRegistrations = useMemo(() => {
+    return filteredRegistrations.filter((r: RegistrationItem) => selectedIds.has(r.id));
+  }, [filteredRegistrations, selectedIds]);
+
+  // Get pending selected registrations (for approve action)
+  const pendingSelectedCount = selectedRegistrations.filter((r: RegistrationItem) => !r.isApproved).length;
+
+  // Check if all filtered items are selected
+  const isAllSelected = filteredRegistrations.length > 0 &&
+    filteredRegistrations.every((r: RegistrationItem) => selectedIds.has(r.id));
+  const isSomeSelected = selectedIds.size > 0 && !isAllSelected;
+
+  // Handle WhatsApp message for single registration
+  const handleSendWhatsApp = (reg: RegistrationItem) => {
+    if (!reg.phone) {
+      toast.error("لا يوجد رقم هاتف");
+      return;
+    }
+
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const qrPageUrl = `${baseUrl}/qr/${reg.id}`;
+
+    const message = `السلام عليكم ${reg.name || ""}،
+
+تم تأكيد تسجيلكم في حدث "${session?.title}"
+📅 التاريخ: ${session ? formatArabicDate(new Date(session.date)) : ""}
+📍 المكان: ${session?.location || "سيتم تحديده"}
+
+🎫 رمز الحضور (QR):
+${qrPageUrl}
+
+نتشرف بحضوركم.
+
+ثلوثية الأعمال`;
+
+    const url = getWhatsAppUrl(reg.phone, message);
+    window.open(url, "_blank");
+  };
+
+  // Handle bulk WhatsApp - opens first selected with phone
+  const handleBulkWhatsApp = () => {
+    const withPhone = selectedRegistrations.filter((r: RegistrationItem) => r.phone);
+    if (withPhone.length === 0) {
+      toast.error("لا يوجد أرقام هاتف للمحددين");
+      return;
+    }
+
+    // Open WhatsApp for the first person with a phone number
+    // Note: WhatsApp API doesn't support bulk messaging, so we open one at a time
+    handleSendWhatsApp(withPhone[0]);
+
+    if (withPhone.length > 1) {
+      toast.info(`تم فتح واتساب للأول. المتبقي: ${withPhone.length - 1} شخص`);
+    }
+  };
+
+  // Export selected as CSV
+  const handleExportSelected = () => {
+    if (selectedRegistrations.length === 0) {
+      toast.error("لم يتم تحديد أي مسجلين");
+      return;
+    }
+
+    const headers = ["الاسم", "البريد", "الهاتف", "النوع", "الحالة", "تاريخ التسجيل"];
+    const rows = selectedRegistrations.map((r: RegistrationItem) => [
+      r.name || "",
+      r.email || "",
+      r.phone || "",
+      r.isInvited ? "مرافق" : (r.isGuest ? "زائر" : "عضو"),
+      r.isApproved ? "مؤكد" : "معلق",
+      formatArabicDate(new Date(r.registeredAt)),
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `selected-attendees-${session?.sessionNumber || id}.csv`;
+    link.click();
+    toast.success(`تم تصدير ${selectedRegistrations.length} مسجل`);
+  };
+
   // Show inline loading when refetching
   const showInlineLoading = isFetching && !registrationsLoading;
+
+  // Handle confirmed action
+  const handleConfirmedAction = () => {
+    if (!confirmAction) return;
+
+    if (confirmAction.type === "approveAll") {
+      approveAllMutation.mutate({ sessionId: id });
+    } else if (confirmAction.type === "approveSelected") {
+      const pendingIds = selectedRegistrations
+        .filter((r: RegistrationItem) => !r.isApproved)
+        .map((r: RegistrationItem) => r.id);
+      approveSelectedMutation.mutate({ registrationIds: pendingIds });
+    }
+    setConfirmAction(null);
+  };
 
   if (sessionLoading) {
     return (
@@ -212,7 +391,7 @@ export default function SessionAttendeesPage({
           {stats.pending > 0 && (
             <Button
               variant="outline"
-              onClick={() => approveAllMutation.mutate({ sessionId: id })}
+              onClick={() => setConfirmAction({ type: "approveAll", count: stats.pending })}
               disabled={approveAllMutation.isPending}
             >
               <CheckCheck className="me-2 h-4 w-4" />
@@ -290,6 +469,16 @@ export default function SessionAttendeesPage({
             </TabsTrigger>
           </TabsList>
         </Tabs>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilterType)}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="الحالة" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الحالات</SelectItem>
+            <SelectItem value="approved">مؤكد ({stats.approved})</SelectItem>
+            <SelectItem value="pending">معلق ({stats.pending})</SelectItem>
+          </SelectContent>
+        </Select>
         <div className="relative flex-1">
           <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -300,6 +489,50 @@ export default function SessionAttendeesPage({
           />
         </div>
       </div>
+
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="py-3 px-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-sm">
+                  {selectedIds.size} محدد
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={clearSelection}>
+                  <X className="h-4 w-4 me-1" />
+                  إلغاء التحديد
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                {pendingSelectedCount > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConfirmAction({ type: "approveSelected", count: pendingSelectedCount })}
+                    disabled={approveSelectedMutation.isPending}
+                  >
+                    {approveSelectedMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 me-1 animate-spin" />
+                    ) : (
+                      <CheckCheck className="h-4 w-4 me-1" />
+                    )}
+                    تأكيد ({pendingSelectedCount})
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={handleBulkWhatsApp}>
+                  <MessageCircle className="h-4 w-4 me-1" />
+                  واتساب
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportSelected}>
+                  <Download className="h-4 w-4 me-1" />
+                  تصدير المحدد
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Table */}
       <Card>
@@ -327,83 +560,244 @@ export default function SessionAttendeesPage({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={isAllSelected}
+                        ref={(el) => {
+                          if (el) {
+                            (el as unknown as HTMLInputElement).indeterminate = isSomeSelected;
+                          }
+                        }}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="تحديد الكل"
+                      />
+                    </TableHead>
                     <TableHead>الاسم</TableHead>
-                    <TableHead>البريد</TableHead>
-                    <TableHead>الهاتف</TableHead>
-                    <TableHead>النوع</TableHead>
-                    {filter !== "invited" && <TableHead>المرافقين</TableHead>}
-                    {filter !== "direct" && <TableHead>مدعو من</TableHead>}
+                    <TableHead className="hidden md:table-cell">البريد</TableHead>
+                    <TableHead className="hidden md:table-cell">الهاتف</TableHead>
+                    <TableHead className="hidden lg:table-cell">النوع</TableHead>
+                    {filter !== "invited" && <TableHead className="hidden lg:table-cell">المرافقين</TableHead>}
+                    {filter !== "direct" && <TableHead className="hidden lg:table-cell">مدعو من</TableHead>}
                     <TableHead>الحالة</TableHead>
-                    <TableHead>تاريخ التسجيل</TableHead>
-                    <TableHead>الإجراءات</TableHead>
+                    <TableHead className="hidden md:table-cell">تاريخ التسجيل</TableHead>
+                    <TableHead className="hidden md:table-cell">الإجراءات</TableHead>
+                    {/* Mobile expand button */}
+                    <TableHead className="md:hidden w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRegistrations.map((reg: RegistrationItem) => (
-                    <TableRow key={reg.id}>
-                      <TableCell className="font-medium">{reg.name}</TableCell>
-                      <TableCell>{reg.email}</TableCell>
-                      <TableCell dir="ltr">{reg.phone}</TableCell>
-                      <TableCell>
-                        {reg.isInvited ? (
-                          <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200">
-                            <UserPlus className="me-1 h-3 w-3" />
-                            مرافق
-                          </Badge>
-                        ) : (
-                          <Badge variant={reg.isGuest ? "secondary" : "default"}>
-                            {reg.isGuest ? "زائر" : "عضو"}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      {filter !== "invited" && (
-                        <TableCell>{reg.companionCount || 0}</TableCell>
-                      )}
-                      {filter !== "direct" && (
-                        <TableCell className="text-muted-foreground">
-                          {reg.invitedByName || "-"}
-                        </TableCell>
-                      )}
-                      <TableCell>
-                        <Badge
-                          variant={reg.isApproved ? "default" : "outline"}
-                          className={
-                            reg.isApproved
-                              ? "bg-green-500/10 text-green-600 border-green-200"
-                              : "bg-orange-500/10 text-orange-600 border-orange-200"
-                          }
+                  {filteredRegistrations.map((reg: RegistrationItem) => {
+                    const expanded = isExpanded(reg.id);
+                    return (
+                      <React.Fragment key={reg.id}>
+                        <TableRow
+                          className={cn(
+                            selectedIds.has(reg.id) && "bg-primary/5",
+                            expanded && "md:border-b border-b-0"
+                          )}
                         >
-                          {reg.isApproved ? "مؤكد" : "معلق"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {formatArabicDate(new Date(reg.registeredAt))}
-                      </TableCell>
-                      <TableCell>
-                        {!reg.isApproved && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              approveMutation.mutate({
-                                registrationId: reg.id,
-                              })
-                            }
-                            disabled={approveMutation.isPending}
-                            title="تأكيد التسجيل"
-                          >
-                            <Check className="h-4 w-4 text-green-600" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedIds.has(reg.id)}
+                                onCheckedChange={(checked) => handleSelectOne(reg.id, checked as boolean)}
+                                aria-label={`تحديد ${reg.name}`}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">{reg.name}</TableCell>
+                            <TableCell className="hidden md:table-cell">{reg.email}</TableCell>
+                            <TableCell className="hidden md:table-cell" dir="ltr">{reg.phone}</TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              {reg.isInvited ? (
+                                <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200">
+                                  <UserPlus className="me-1 h-3 w-3" />
+                                  مرافق
+                                </Badge>
+                              ) : (
+                                <Badge variant={reg.isGuest ? "secondary" : "default"}>
+                                  {reg.isGuest ? "زائر" : "عضو"}
+                                </Badge>
+                              )}
+                            </TableCell>
+                            {filter !== "invited" && (
+                              <TableCell className="hidden lg:table-cell">{reg.companionCount || 0}</TableCell>
+                            )}
+                            {filter !== "direct" && (
+                              <TableCell className="hidden lg:table-cell text-muted-foreground">
+                                {reg.invitedByName || "-"}
+                              </TableCell>
+                            )}
+                            <TableCell>
+                              <Badge
+                                variant={reg.isApproved ? "default" : "outline"}
+                                className={
+                                  reg.isApproved
+                                    ? "bg-green-500/10 text-green-600 border-green-200"
+                                    : "bg-orange-500/10 text-orange-600 border-orange-200"
+                                }
+                              >
+                                {reg.isApproved ? "مؤكد" : "معلق"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              {formatArabicDate(new Date(reg.registeredAt))}
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              <div className="flex items-center gap-1">
+                                {!reg.isApproved && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      approveMutation.mutate({
+                                        registrationId: reg.id,
+                                      })
+                                    }
+                                    disabled={approveMutation.isPending}
+                                    title="تأكيد التسجيل"
+                                  >
+                                    <Check className="h-4 w-4 text-green-600" />
+                                  </Button>
+                                )}
+                                {reg.phone && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleSendWhatsApp(reg)}
+                                    title="إرسال رسالة واتساب"
+                                  >
+                                    <MessageCircle className="h-4 w-4 text-green-600" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                            {/* Mobile expand button */}
+                            <TableCell className="md:hidden">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => toggleRow(reg.id)}
+                              >
+                                {expanded ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                          {/* Mobile expanded content */}
+                          <tr className="md:hidden">
+                            <td colSpan={4} className="p-0">
+                              <div
+                                className={cn(
+                                  "grid transition-all duration-300 ease-in-out",
+                                  expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                                )}
+                              >
+                                <div className="overflow-hidden">
+                                  <div className="p-4 bg-muted/30 border-b">
+                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                      <div className="flex items-center gap-2">
+                                        <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span className="truncate">{reg.email || "-"}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span dir="ltr">{reg.phone || "-"}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        {reg.isInvited ? (
+                                          <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200">
+                                            <UserPlus className="me-1 h-3 w-3" />
+                                            مرافق
+                                          </Badge>
+                                        ) : (
+                                          <Badge variant={reg.isGuest ? "secondary" : "default"}>
+                                            {reg.isGuest ? "زائر" : "عضو"}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span>{formatArabicDate(new Date(reg.registeredAt))}</span>
+                                      </div>
+                                      {!reg.isInvited && (
+                                        <div className="flex items-center gap-2 col-span-2">
+                                          <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+                                          <span>المرافقين: {reg.companionCount || 0}</span>
+                                        </div>
+                                      )}
+                                      {reg.isInvited && reg.invitedByName && (
+                                        <div className="flex items-center gap-2 col-span-2">
+                                          <UserPlus className="h-4 w-4 text-muted-foreground shrink-0" />
+                                          <span>مدعو من: {reg.invitedByName}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    {/* Actions */}
+                                    <div className="mt-3 pt-3 border-t flex flex-wrap items-center gap-2">
+                                      {!reg.isApproved && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() =>
+                                            approveMutation.mutate({
+                                              registrationId: reg.id,
+                                            })
+                                          }
+                                          disabled={approveMutation.isPending}
+                                        >
+                                          <Check className="me-2 h-4 w-4" />
+                                          تأكيد
+                                        </Button>
+                                      )}
+                                      {reg.phone && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleSendWhatsApp(reg)}
+                                        >
+                                          <MessageCircle className="me-2 h-4 w-4" />
+                                          واتساب
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                      </React.Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </>
           )}
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد التسجيلات</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.type === "approveAll" &&
+                `هل أنت متأكد من تأكيد ${confirmAction.count} تسجيل معلق؟`}
+              {confirmAction?.type === "approveSelected" &&
+                `هل أنت متأكد من تأكيد ${confirmAction?.count} تسجيل محدد؟`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmedAction}>
+              تأكيد
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

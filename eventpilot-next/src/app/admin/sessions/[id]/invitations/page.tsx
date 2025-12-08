@@ -4,6 +4,16 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -87,6 +97,13 @@ export default function InvitationsPage({
   const [statusFilter, setStatusFilter] = useState<"all" | "valid" | "expired" | "used" | "invalidated">("all");
   const [inviteSearch, setInviteSearch] = useState("");
   const [selectedInvites, setSelectedInvites] = useState<string[]>([]);
+
+  // Confirmation dialog state
+  const [confirmAction, setConfirmAction] = useState<{
+    type: "invalidateSingle" | "invalidateBulk" | "resendBulk";
+    inviteId?: string;
+    count?: number;
+  } | null>(null);
 
   // Queries
   const { data: session, isLoading: loadingSession } = api.session.getById.useQuery(
@@ -279,6 +296,20 @@ export default function InvitationsPage({
     } else {
       setSelectedInvites(selectableIds);
     }
+  };
+
+  // Handle confirmed action
+  const handleConfirmedAction = () => {
+    if (!confirmAction) return;
+
+    if (confirmAction.type === "invalidateSingle" && confirmAction.inviteId) {
+      invalidateMutation.mutate({ inviteId: confirmAction.inviteId });
+    } else if (confirmAction.type === "invalidateBulk") {
+      bulkInvalidateMutation.mutate({ inviteIds: selectedInvites });
+    } else if (confirmAction.type === "resendBulk") {
+      bulkResendMutation.mutate({ inviteIds: selectedInvites });
+    }
+    setConfirmAction(null);
   };
 
   if (loadingSession) {
@@ -747,7 +778,7 @@ export default function InvitationsPage({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => bulkResendMutation.mutate({ inviteIds: selectedInvites })}
+                    onClick={() => setConfirmAction({ type: "resendBulk", count: selectedInvites.length })}
                     disabled={bulkResendMutation.isPending}
                   >
                     {bulkResendMutation.isPending ? (
@@ -761,7 +792,7 @@ export default function InvitationsPage({
                     size="sm"
                     variant="outline"
                     className="text-destructive"
-                    onClick={() => bulkInvalidateMutation.mutate({ inviteIds: selectedInvites })}
+                    onClick={() => setConfirmAction({ type: "invalidateBulk", count: selectedInvites.length })}
                     disabled={bulkInvalidateMutation.isPending}
                   >
                     {bulkInvalidateMutation.isPending ? (
@@ -859,7 +890,7 @@ export default function InvitationsPage({
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => invalidateMutation.mutate({ inviteId: invite.id })}
+                                    onClick={() => setConfirmAction({ type: "invalidateSingle", inviteId: invite.id })}
                                     disabled={invalidateMutation.isPending}
                                   >
                                     <Ban className="h-4 w-4 text-destructive" />
@@ -882,6 +913,40 @@ export default function InvitationsPage({
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.type === "invalidateSingle" && "إلغاء الدعوة"}
+              {confirmAction?.type === "invalidateBulk" && "إلغاء الدعوات"}
+              {confirmAction?.type === "resendBulk" && "إعادة إرسال الدعوات"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.type === "invalidateSingle" &&
+                "هل أنت متأكد من إلغاء هذه الدعوة؟ لن يتمكن المستلم من استخدامها."}
+              {confirmAction?.type === "invalidateBulk" &&
+                `هل أنت متأكد من إلغاء ${confirmAction?.count} دعوة؟ لن يتمكن المستلمون من استخدامها.`}
+              {confirmAction?.type === "resendBulk" &&
+                `هل أنت متأكد من إعادة إرسال ${confirmAction?.count} دعوة؟`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmedAction}
+              className={
+                confirmAction?.type === "invalidateSingle" || confirmAction?.type === "invalidateBulk"
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  : ""
+              }
+            >
+              تأكيد
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

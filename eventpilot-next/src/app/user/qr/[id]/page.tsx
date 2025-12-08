@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
@@ -10,16 +10,41 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { QRCodeImage } from "@/components/qr-display";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Download, Loader2 } from "lucide-react";
 
 export default function UserQRPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { status: authStatus } = useSession();
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const { data: qrData, isLoading, error } = api.attendance.getMyQR.useQuery(
     { sessionId: id },
     { enabled: authStatus === "authenticated" }
   );
+
+  const utils = api.useUtils();
+
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      // Fetch branded QR code
+      const brandedQR = await utils.attendance.getBrandedQR.fetch({ sessionId: id });
+
+      if (brandedQR?.qrCode) {
+        // Create download link
+        const link = document.createElement("a");
+        link.href = brandedQR.qrCode;
+        link.download = `qr-${brandedQR.session.title.replace(/\s+/g, "-")}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (err) {
+      console.error("Failed to download QR:", err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   if (authStatus === "loading" || isLoading) {
     return (
@@ -123,6 +148,19 @@ export default function UserQRPage({ params }: { params: Promise<{ id: string }>
 
         {/* Actions */}
         <div className="flex flex-col gap-3">
+          <Button onClick={handleDownload} disabled={isDownloading}>
+            {isDownloading ? (
+              <>
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                جاري التحميل...
+              </>
+            ) : (
+              <>
+                <Download className="ml-2 h-4 w-4" />
+                تحميل رمز QR
+              </>
+            )}
+          </Button>
           <Button variant="outline" asChild>
             <Link href={`/session/${id}`}>عرض تفاصيل الحدث</Link>
           </Button>

@@ -376,6 +376,86 @@ export const adminRouter = createTRPCRouter({
     }),
 
   /**
+   * Get user by ID with full details (admin only)
+   */
+  getUserById: adminProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const user = await db.user.findUnique({
+        where: { id: input.id },
+        include: {
+          labels: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
+          },
+          registrations: {
+            orderBy: { registeredAt: "desc" },
+            include: {
+              session: {
+                select: {
+                  id: true,
+                  title: true,
+                  sessionNumber: true,
+                  date: true,
+                },
+              },
+              attendance: {
+                select: {
+                  attended: true,
+                  checkInTime: true,
+                },
+              },
+              invitedRegistrations: {
+                select: {
+                  id: true,
+                  guestName: true,
+                },
+              },
+            },
+          },
+          eventCaterings: {
+            orderBy: { createdAt: "desc" },
+            include: {
+              session: {
+                select: {
+                  id: true,
+                  title: true,
+                  sessionNumber: true,
+                  date: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "المستخدم غير موجود",
+        });
+      }
+
+      // Calculate stats
+      const stats = {
+        totalRegistrations: user.registrations.length,
+        totalAttendances: user.registrations.filter((r) => r.attendance?.attended).length,
+        totalCompanions: user.registrations.reduce((sum, r) => sum + r.invitedRegistrations.length, 0),
+        hostingRequests: user.eventCaterings.length,
+      };
+
+      return {
+        ...user,
+        stats,
+      };
+    }),
+
+  /**
    * Toggle user active status (admin only)
    */
   toggleUserActive: adminProcedure

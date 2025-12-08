@@ -160,10 +160,11 @@ export const registrationRouter = createTRPCRouter({
         invitedRegistrations.push(invitedReg);
       }
 
-      // Generate QR code if approved
+      // Generate QR data if approved
       let qrCode: string | null = null;
+      let qrData: string | null = null;
       if (isApproved) {
-        const qrData = createQRCheckInData({
+        qrData = createQRCheckInData({
           type: "attendance",
           registrationId: registration.id,
           sessionId: session.id,
@@ -171,9 +172,9 @@ export const registrationRouter = createTRPCRouter({
         qrCode = await generateQRCode(qrData);
       }
 
-      // Send confirmation email
+      // Send confirmation email (pass raw qrData for branded QR generation)
       if (isApproved) {
-        await sendConfirmedEmail(user.email, user.name, session, qrCode || undefined);
+        await sendConfirmedEmail(user.email, user.name, session, qrData || undefined);
       } else {
         await sendPendingEmail(user.email, user.name, session);
       }
@@ -181,14 +182,13 @@ export const registrationRouter = createTRPCRouter({
       // Send companion emails
       for (const invitedReg of invitedRegistrations) {
         if (invitedReg.guestEmail) {
-          let companionQr: string | null = null;
+          let companionQrData: string | null = null;
           if (isApproved) {
-            const companionQrData = createQRCheckInData({
+            companionQrData = createQRCheckInData({
               type: "attendance",
               registrationId: invitedReg.id,
               sessionId: session.id,
             });
-            companionQr = await generateQRCode(companionQrData);
           }
           await sendCompanionEmail(
             invitedReg.guestEmail,
@@ -196,7 +196,7 @@ export const registrationRouter = createTRPCRouter({
             user.name,
             session,
             isApproved,
-            companionQr || undefined
+            companionQrData || undefined
           );
         }
       }
@@ -458,20 +458,19 @@ export const registrationRouter = createTRPCRouter({
         invitedRegistrations.push(invitedReg);
       }
 
-      // Generate QR code if approved
-      let qrCode: string | null = null;
+      // Generate QR data if approved
+      let qrData: string | null = null;
       if (isApproved) {
-        const qrData = createQRCheckInData({
+        qrData = createQRCheckInData({
           type: "attendance",
           registrationId: registration.id,
           sessionId: session.id,
         });
-        qrCode = await generateQRCode(qrData);
       }
 
-      // Send confirmation email
+      // Send confirmation email (pass raw qrData for branded QR generation)
       if (isApproved) {
-        await sendConfirmedEmail(email, input.name, session, qrCode || undefined);
+        await sendConfirmedEmail(email, input.name, session, qrData || undefined);
       } else {
         await sendPendingEmail(email, input.name, session);
       }
@@ -479,14 +478,13 @@ export const registrationRouter = createTRPCRouter({
       // Send companion emails
       for (const invitedReg of invitedRegistrations) {
         if (invitedReg.guestEmail) {
-          let companionQr: string | null = null;
+          let companionQrData: string | null = null;
           if (isApproved) {
-            const companionQrData = createQRCheckInData({
+            companionQrData = createQRCheckInData({
               type: "attendance",
               registrationId: invitedReg.id,
               sessionId: session.id,
             });
-            companionQr = await generateQRCode(companionQrData);
           }
           await sendCompanionEmail(
             invitedReg.guestEmail,
@@ -494,7 +492,7 @@ export const registrationRouter = createTRPCRouter({
             input.name,
             session,
             isApproved,
-            companionQr || undefined
+            companionQrData || undefined
           );
         }
       }
@@ -639,9 +637,8 @@ export const registrationRouter = createTRPCRouter({
           registrationId: registration.id,
           sessionId: registration.session.id,
         });
-        const qrCode = await generateQRCode(qrData);
 
-        await sendConfirmedEmail(email, name, registration.session, qrCode || undefined);
+        await sendConfirmedEmail(email, name, registration.session, qrData);
       }
 
       // Approve and send emails to invited registrations (companions)
@@ -658,7 +655,6 @@ export const registrationRouter = createTRPCRouter({
             registrationId: invitedReg.id,
             sessionId: registration.session.id,
           });
-          const companionQr = await generateQRCode(companionQrData);
 
           await sendCompanionEmail(
             invitedReg.guestEmail,
@@ -666,7 +662,7 @@ export const registrationRouter = createTRPCRouter({
             name || "المسجل",
             registration.session,
             true,
-            companionQr || undefined
+            companionQrData
           );
         }
       }
@@ -737,9 +733,8 @@ export const registrationRouter = createTRPCRouter({
             registrationId: registration.id,
             sessionId: session.id,
           });
-          const qrCode = await generateQRCode(qrData);
 
-          await sendConfirmedEmail(email, name, session, qrCode || undefined);
+          await sendConfirmedEmail(email, name, session, qrData);
         }
 
         // Send companion emails
@@ -750,7 +745,6 @@ export const registrationRouter = createTRPCRouter({
               registrationId: invitedReg.id,
               sessionId: session.id,
             });
-            const companionQr = await generateQRCode(companionQrData);
 
             await sendCompanionEmail(
               invitedReg.guestEmail,
@@ -758,7 +752,104 @@ export const registrationRouter = createTRPCRouter({
               name || "المسجل",
               session,
               true,
-              companionQr || undefined
+              companionQrData
+            );
+          }
+        }
+      }
+
+      return {
+        success: true,
+        approvedCount: pendingRegistrations.length,
+      };
+    }),
+
+  /**
+   * Approve multiple specific registrations (admin only)
+   */
+  approveMultiple: adminProcedure
+    .input(z.object({ registrationIds: z.array(z.string()).min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Get all pending registrations that match the IDs
+      const pendingRegistrations = await db.registration.findMany({
+        where: {
+          id: { in: input.registrationIds },
+          isApproved: false,
+        },
+        include: {
+          user: true,
+          session: true,
+          invitedRegistrations: true,
+        },
+      });
+
+      if (pendingRegistrations.length === 0) {
+        return {
+          success: true,
+          approvedCount: 0,
+        };
+      }
+
+      // Approve all selected registrations
+      await db.registration.updateMany({
+        where: {
+          id: { in: input.registrationIds },
+          isApproved: false,
+        },
+        data: { isApproved: true },
+      });
+
+      // Also approve all companions of selected parent registrations
+      const parentIds = pendingRegistrations
+        .filter((r) => r.invitedByRegistrationId === null)
+        .map((r) => r.id);
+
+      if (parentIds.length > 0) {
+        await db.registration.updateMany({
+          where: {
+            invitedByRegistrationId: { in: parentIds },
+            isApproved: false,
+          },
+          data: { isApproved: true },
+        });
+      }
+
+      // Send confirmation emails for parent registrations only
+      for (const registration of pendingRegistrations.filter(
+        (r) => r.invitedByRegistrationId === null
+      )) {
+        const email = registration.user?.email || registration.guestEmail;
+        const name = registration.user?.name || registration.guestName;
+        const session = registration.session;
+
+        if (email && name && session) {
+          const qrData = createQRCheckInData({
+            type: "attendance",
+            registrationId: registration.id,
+            sessionId: session.id,
+          });
+
+          await sendConfirmedEmail(email, name, session, qrData);
+        }
+
+        // Send companion emails
+        for (const invitedReg of registration.invitedRegistrations) {
+          if (invitedReg.guestEmail && registration.session) {
+            const companionQrData = createQRCheckInData({
+              type: "attendance",
+              registrationId: invitedReg.id,
+              sessionId: registration.session.id,
+            });
+
+            await sendCompanionEmail(
+              invitedReg.guestEmail,
+              invitedReg.guestName || "المرافق",
+              name || "المسجل",
+              registration.session,
+              true,
+              companionQrData
             );
           }
         }
