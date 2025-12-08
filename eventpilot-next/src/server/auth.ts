@@ -41,6 +41,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           email: user.email,
           name: user.name,
           role: user.role,
+          // Include admin permissions
+          canAccessDashboard: user.canAccessDashboard,
+          canAccessSessions: user.canAccessSessions,
+          canAccessUsers: user.canAccessUsers,
+          canAccessHosts: user.canAccessHosts,
+          canAccessAnalytics: user.canAccessAnalytics,
+          canAccessCheckin: user.canAccessCheckin,
+          canAccessSettings: user.canAccessSettings,
         };
       },
     }),

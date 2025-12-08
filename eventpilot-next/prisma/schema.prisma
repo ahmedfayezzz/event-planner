@@ -13,6 +13,7 @@ datasource db {
 enum Role {
   USER
   ADMIN
+  SUPER_ADMIN
 }
 
 model User {
@@ -41,6 +42,15 @@ model User {
   isActive      Boolean   @default(true)
   role          Role      @default(USER)
 
+  // Admin permissions (only relevant if role is ADMIN)
+  canAccessDashboard  Boolean  @default(false)
+  canAccessSessions   Boolean  @default(false)
+  canAccessUsers      Boolean  @default(false)
+  canAccessHosts      Boolean  @default(false)
+  canAccessAnalytics  Boolean  @default(false)
+  canAccessCheckin    Boolean  @default(false)
+  canAccessSettings   Boolean  @default(false)
+
   // Password reset
   resetToken        String?
   resetTokenExpires DateTime?
@@ -59,6 +69,7 @@ model User {
   // Relations
   registrations Registration[]
   eventCaterings EventCatering[]
+  labels UserLabel[]
 }
 
 model Session {
@@ -214,4 +225,18 @@ model Settings {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model UserLabel {
+  id    String @id @default(cuid())
+  name  String @unique
+  color String @default("#3b82f6") // Default blue color
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users User[]
+
+  @@index([name])
 }

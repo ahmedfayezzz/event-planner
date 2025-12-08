@@ -9,23 +9,77 @@ async function main() {
   const defaultPassword = await bcrypt.hash("password123", 10);
   const adminPassword = await bcrypt.hash("admin123", 10);
 
-  // ============== ADMIN USER ==============
-  const admin = await prisma.user.upsert({
+  // ============== SUPER ADMIN USER ==============
+  const superAdmin = await prisma.user.upsert({
     where: { email: "admin@eventpilot.com" },
-    update: {},
+    update: {
+      role: "SUPER_ADMIN",
+      // Super Admin has all permissions by default (the code handles this)
+      canAccessDashboard: true,
+      canAccessSessions: true,
+      canAccessUsers: true,
+      canAccessHosts: true,
+      canAccessAnalytics: true,
+      canAccessCheckin: true,
+      canAccessSettings: true,
+    },
     create: {
-      name: "مدير النظام",
+      name: "مدير النظام الرئيسي",
       username: "admin",
       email: "admin@eventpilot.com",
       phone: "+966500000000",
       passwordHash: adminPassword,
+      role: "SUPER_ADMIN",
+      isActive: true,
+      companyName: "ثلوثية الأعمال",
+      position: "مدير النظام الرئيسي",
+      // Super Admin has all permissions by default
+      canAccessDashboard: true,
+      canAccessSessions: true,
+      canAccessUsers: true,
+      canAccessHosts: true,
+      canAccessAnalytics: true,
+      canAccessCheckin: true,
+      canAccessSettings: true,
+    },
+  });
+  console.log(`✅ Created super admin: ${superAdmin.email}`);
+
+  // ============== REGULAR ADMIN USER (for testing permissions) ==============
+  const regularAdmin = await prisma.user.upsert({
+    where: { email: "moderator@eventpilot.com" },
+    update: {
+      role: "ADMIN",
+      canAccessDashboard: true,
+      canAccessSessions: true,
+      canAccessCheckin: true,
+      // Limited access - no users, hosts, analytics, or settings
+      canAccessUsers: false,
+      canAccessHosts: false,
+      canAccessAnalytics: false,
+      canAccessSettings: false,
+    },
+    create: {
+      name: "مشرف الأحداث",
+      username: "moderator",
+      email: "moderator@eventpilot.com",
+      phone: "+966500000001",
+      passwordHash: adminPassword,
       role: "ADMIN",
       isActive: true,
       companyName: "ثلوثية الأعمال",
-      position: "مدير النظام",
+      position: "مشرف أحداث",
+      // Limited permissions - only dashboard, sessions, and checkin
+      canAccessDashboard: true,
+      canAccessSessions: true,
+      canAccessUsers: false,
+      canAccessHosts: false,
+      canAccessAnalytics: false,
+      canAccessCheckin: true,
+      canAccessSettings: false,
     },
   });
-  console.log(`✅ Created admin: ${admin.email}`);
+  console.log(`✅ Created admin (limited): ${regularAdmin.email}`);
 
   // ============== SAMPLE USERS ==============
   const usersData = [
@@ -802,7 +856,8 @@ async function main() {
   console.log("\n" + "=".repeat(50));
   console.log("📊 Database Seeding Summary:");
   console.log("=".repeat(50));
-  console.log(`👤 Admin user: 1`);
+  console.log(`👑 Super Admin user: 1`);
+  console.log(`👤 Admin user (limited): 1`);
   console.log(`👥 Regular users: ${users.length}`);
   console.log(`📅 Sessions: ${sessions.length} (${sessions.filter(s => s.status === "completed").length} completed, ${sessions.filter(s => s.status === "open").length} open)`);
   console.log(`📝 Registrations: ${totalRegistrations} (${totalPendingRegistrations} pending approval)`);
@@ -813,8 +868,9 @@ async function main() {
   console.log("=".repeat(50));
   console.log("\n📋 Login Credentials:");
   console.log("─".repeat(50));
-  console.log("Admin:  admin@eventpilot.com / admin123");
-  console.log("Users:  [any user email] / password123");
+  console.log("Super Admin:  admin@eventpilot.com / admin123 (full access)");
+  console.log("Admin:        moderator@eventpilot.com / admin123 (limited: dashboard, sessions, checkin)");
+  console.log("Users:        [any user email] / password123");
   console.log("─".repeat(50));
   console.log("\n🎉 Seeding completed successfully!");
 }

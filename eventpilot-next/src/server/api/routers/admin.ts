@@ -3,10 +3,12 @@ import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
   adminProcedure,
+  superAdminProcedure,
 } from "../trpc";
 import { generateQRCode } from "@/lib/qr";
 import { exportToCSV } from "@/lib/utils";
 import { getHostingTypeLabel } from "@/lib/constants";
+import { ADMIN_PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 
 export const adminRouter = createTRPCRouter({
   /**
@@ -282,8 +284,9 @@ export const adminRouter = createTRPCRouter({
     .input(
       z.object({
         search: z.string().optional(),
-        role: z.enum(["USER", "ADMIN"]).optional(),
+        role: z.enum(["USER", "ADMIN", "SUPER_ADMIN"]).optional(),
         isActive: z.boolean().optional(),
+        labelIds: z.array(z.string()).optional(),
         limit: z.number().min(1).max(100).default(50),
         cursor: z.string().optional(),
       }).optional()
@@ -311,6 +314,16 @@ export const adminRouter = createTRPCRouter({
         where.isActive = input.isActive;
       }
 
+      if (input?.labelIds && input.labelIds.length > 0) {
+        where.labels = {
+          some: {
+            id: {
+              in: input.labelIds,
+            },
+          },
+        };
+      }
+
       const users = await db.user.findMany({
         where,
         take: (input?.limit ?? 50) + 1,
@@ -327,6 +340,13 @@ export const adminRouter = createTRPCRouter({
           role: true,
           isActive: true,
           createdAt: true,
+          labels: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
+          },
           _count: {
             select: {
               registrations: { where: { isApproved: true } },
@@ -394,9 +414,9 @@ export const adminRouter = createTRPCRouter({
     }),
 
   /**
-   * Update user role (admin only)
+   * Update user role (super admin only)
    */
-  updateUserRole: adminProcedure
+  updateUserRole: superAdminProcedure
     .input(
       z.object({
         userId: z.string(),
@@ -425,14 +445,300 @@ export const adminRouter = createTRPCRouter({
         });
       }
 
+      // Cannot change SUPER_ADMIN role
+      if (user.role === "SUPER_ADMIN") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "لا يمكنك تغيير صلاحيات المدير الرئيسي",
+        });
+      }
+
+      // When promoting to ADMIN, give default permissions (all true)
+      // When demoting to USER, reset all permissions to false
+      const permissionData = input.role === "ADMIN"
+        ? {
+            canAccessDashboard: true,
+            canAccessSessions: true,
+            canAccessUsers: true,
+            canAccessHosts: true,
+            canAccessAnalytics: true,
+            canAccessCheckin: true,
+            canAccessSettings: true,
+          }
+        : {
+            canAccessDashboard: false,
+            canAccessSessions: false,
+            canAccessUsers: false,
+            canAccessHosts: false,
+            canAccessAnalytics: false,
+            canAccessCheckin: false,
+            canAccessSettings: false,
+          };
+
       const updated = await db.user.update({
         where: { id: input.userId },
-        data: { role: input.role },
+        data: {
+          role: input.role,
+          ...permissionData,
+        },
       });
 
       return {
         success: true,
         role: updated.role,
+      };
+    }),
+
+  /**
+   * Create a new admin user (super admin only)
+   */
+  createAdmin: superAdminProcedure
+    .input(
+      z.object({
+        name: z.string().min(2, "الاسم مطلوب"),
+        email: z.string().email("البريد الإلكتروني غير صالح"),
+        password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
+        phone: z.string().min(9, "رقم الهاتف مطلوب"),
+        permissions: z.array(
+          z.enum([
+            "dashboard",
+            "sessions",
+            "users",
+            "hosts",
+            "analytics",
+            "checkin",
+            "settings",
+          ])
+        ),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const bcrypt = await import("bcryptjs");
+
+      // Check if email already exists
+      const existingUser = await db.user.findUnique({
+        where: { email: input.email.toLowerCase() },
+      });
+
+      if (existingUser) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "البريد الإلكتروني مستخدم بالفعل",
+        });
+      }
+
+      // Hash password
+      const passwordHash = await bcrypt.hash(input.password, 10);
+
+      // Build permission data
+      const allPermissions: PermissionKey[] = [
+        "dashboard",
+        "sessions",
+        "users",
+        "hosts",
+        "analytics",
+        "checkin",
+        "settings",
+      ];
+
+      const permissionData: Record<string, boolean> = {};
+      for (const perm of allPermissions) {
+        const field = ADMIN_PERMISSIONS[perm];
+        permissionData[field] = input.permissions.includes(perm);
+      }
+
+      // Create the admin user
+      const user = await db.user.create({
+        data: {
+          name: input.name,
+          email: input.email.toLowerCase(),
+          phone: input.phone,
+          username: input.email.split("@")[0],
+          passwordHash,
+          role: "ADMIN",
+          isActive: true,
+          isApproved: true,
+          ...permissionData,
+        },
+      });
+
+      return {
+        success: true,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      };
+    }),
+
+  /**
+   * Bootstrap: Upgrade current admin to SUPER_ADMIN if no SUPER_ADMIN exists
+   * This is a one-time setup action for the first admin
+   */
+  bootstrapSuperAdmin: adminProcedure.mutation(async ({ ctx }) => {
+    const { db, session } = ctx;
+
+    // Check if any SUPER_ADMIN already exists
+    const existingSuperAdmin = await db.user.findFirst({
+      where: { role: "SUPER_ADMIN" },
+    });
+
+    if (existingSuperAdmin) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "يوجد مدير رئيسي بالفعل في النظام",
+      });
+    }
+
+    // Upgrade current user to SUPER_ADMIN
+    const updated = await db.user.update({
+      where: { id: session.user.id },
+      data: {
+        role: "SUPER_ADMIN",
+        canAccessDashboard: true,
+        canAccessSessions: true,
+        canAccessUsers: true,
+        canAccessHosts: true,
+        canAccessAnalytics: true,
+        canAccessCheckin: true,
+        canAccessSettings: true,
+      },
+    });
+
+    return {
+      success: true,
+      message: "تم ترقيتك إلى مدير رئيسي بنجاح. يرجى تسجيل الخروج وإعادة تسجيل الدخول.",
+      user: {
+        id: updated.id,
+        name: updated.name,
+        role: updated.role,
+      },
+    };
+  }),
+
+  /**
+   * Get admin users with their permissions (super admin only)
+   */
+  getAdminUsers: superAdminProcedure.query(async ({ ctx }) => {
+    const { db, session } = ctx;
+
+    const admins = await db.user.findMany({
+      where: {
+        role: { in: ["ADMIN", "SUPER_ADMIN"] },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        canAccessDashboard: true,
+        canAccessSessions: true,
+        canAccessUsers: true,
+        canAccessHosts: true,
+        canAccessAnalytics: true,
+        canAccessCheckin: true,
+        canAccessSettings: true,
+        createdAt: true,
+      },
+      orderBy: [{ role: "desc" }, { createdAt: "asc" }],
+    });
+
+    return {
+      admins,
+      currentUserId: session.user.id,
+    };
+  }),
+
+  /**
+   * Update user permissions (super admin only)
+   */
+  updateUserPermissions: superAdminProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        permissions: z.array(
+          z.enum([
+            "dashboard",
+            "sessions",
+            "users",
+            "hosts",
+            "analytics",
+            "checkin",
+            "settings",
+          ])
+        ),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+
+      // Prevent self permission change
+      if (input.userId === session.user.id) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "لا يمكنك تغيير صلاحياتك الخاصة",
+        });
+      }
+
+      const user = await db.user.findUnique({
+        where: { id: input.userId },
+      });
+
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "المستخدم غير موجود",
+        });
+      }
+
+      // Cannot change SUPER_ADMIN permissions
+      if (user.role === "SUPER_ADMIN") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "لا يمكنك تغيير صلاحيات المدير الرئيسي",
+        });
+      }
+
+      // Build permission data object
+      const permissionData: Record<string, boolean> = {};
+      const allPermissions: PermissionKey[] = [
+        "dashboard",
+        "sessions",
+        "users",
+        "hosts",
+        "analytics",
+        "checkin",
+        "settings",
+      ];
+
+      for (const perm of allPermissions) {
+        const field = ADMIN_PERMISSIONS[perm];
+        permissionData[field] = input.permissions.includes(perm);
+      }
+
+      const updated = await db.user.update({
+        where: { id: input.userId },
+        data: permissionData,
+      });
+
+      return {
+        success: true,
+        user: {
+          id: updated.id,
+          name: updated.name,
+          canAccessDashboard: updated.canAccessDashboard,
+          canAccessSessions: updated.canAccessSessions,
+          canAccessUsers: updated.canAccessUsers,
+          canAccessHosts: updated.canAccessHosts,
+          canAccessAnalytics: updated.canAccessAnalytics,
+          canAccessCheckin: updated.canAccessCheckin,
+          canAccessSettings: updated.canAccessSettings,
+        },
       };
     }),
 

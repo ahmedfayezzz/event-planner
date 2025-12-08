@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { api } from "@/trpc/react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
@@ -30,8 +31,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { UserLabelManager } from "@/components/admin/user-label-manager";
 import { toast } from "sonner";
 import { formatArabicDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import {
   Search,
   Users,
@@ -42,6 +53,10 @@ import {
   Download,
   Loader2,
   ChevronDown,
+  Tag,
+  Check,
+  X,
+  Plus,
 } from "lucide-react";
 
 interface UserItem {
@@ -57,16 +72,48 @@ interface UserItem {
   position?: string | null;
   registrationCount: number;
   attendanceCount: number;
+  labels: Array<{ id: string; name: string; color: string }>;
 }
 
 const PAGE_SIZE = 20;
 
 export default function AdminUsersPage() {
+  const { data: session } = useSession();
+  const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
+
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [labelFilter, setLabelFilter] = useState<string[]>([]);
+  const [labelDialogOpen, setLabelDialogOpen] = useState(false);
+  const [labelSearchValue, setLabelSearchValue] = useState("");
 
   const debouncedSearch = useDebounce(search, 300);
+
+  // Fetch all labels for filtering
+  const { data: allLabels, refetch: refetchLabels } = api.label.getAll.useQuery();
+
+  // Filter labels for dialog
+  const filteredLabelsForDialog = allLabels?.filter((label) =>
+    label.name.toLowerCase().includes(labelSearchValue.toLowerCase())
+  ) ?? [];
+
+  // Check if search value exactly matches an existing label
+  const labelExactMatch = allLabels?.some(
+    (label) => label.name.toLowerCase() === labelSearchValue.toLowerCase().trim()
+  );
+
+  // Create label mutation
+  const createLabelMutation = api.label.create.useMutation({
+    onSuccess: async (newLabel) => {
+      await refetchLabels();
+      handleToggleLabelFilter(newLabel.id);
+      setLabelSearchValue("");
+      toast.success("تم إنشاء التصنيف بنجاح");
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ");
+    },
+  });
 
   const {
     data,
@@ -79,8 +126,9 @@ export default function AdminUsersPage() {
   } = api.admin.getUsers.useInfiniteQuery(
     {
       search: debouncedSearch || undefined,
-      role: roleFilter !== "all" ? (roleFilter as "USER" | "ADMIN") : undefined,
+      role: "USER", // Only fetch regular users
       isActive: statusFilter !== "all" ? statusFilter === "active" : undefined,
+      labelIds: labelFilter.length > 0 ? labelFilter : undefined,
       limit: PAGE_SIZE,
     },
     {
@@ -102,7 +150,7 @@ export default function AdminUsersPage() {
 
   const updateRoleMutation = api.admin.updateUserRole.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث الصلاحيات");
+      toast.success("تم ترقية المستخدم لمدير");
       refetch();
     },
     onError: (error) => {
@@ -127,6 +175,18 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleToggleLabelFilter = (labelId: string) => {
+    setLabelFilter((prev) =>
+      prev.includes(labelId)
+        ? prev.filter((id) => id !== labelId)
+        : [...prev, labelId]
+    );
+  };
+
+  const clearLabelFilter = () => {
+    setLabelFilter([]);
+  };
+
   // Show skeleton only on initial load
   const showTableSkeleton = isLoading && allUsers.length === 0;
   // Show inline loading indicator when filtering/searching
@@ -137,8 +197,8 @@ export default function AdminUsersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">المستخدمين</h1>
-          <p className="text-muted-foreground">إدارة حسابات المستخدمين</p>
+          <h1 className="text-2xl font-bold">الأعضاء</h1>
+          <p className="text-muted-foreground">إدارة حسابات الأعضاء المسجلين</p>
         </div>
         <Button variant="outline" onClick={handleExport}>
           <Download className="me-2 h-4 w-4" />
@@ -159,16 +219,6 @@ export default function AdminUsersPage() {
                 className="pe-10"
               />
             </div>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="الصلاحية" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">الكل</SelectItem>
-                <SelectItem value="USER">مستخدم</SelectItem>
-                <SelectItem value="ADMIN">مدير</SelectItem>
-              </SelectContent>
-            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="الحالة" />
@@ -179,6 +229,95 @@ export default function AdminUsersPage() {
                 <SelectItem value="inactive">معطل</SelectItem>
               </SelectContent>
             </Select>
+            {/* Label Filter - Dialog */}
+            <Dialog open={labelDialogOpen} onOpenChange={setLabelDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn("w-full sm:w-48 justify-between", labelFilter.length > 0 && "border-primary")}
+                >
+                  <span className="flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    {labelFilter.length > 0
+                      ? `${labelFilter.length} تصنيف`
+                      : "التصنيفات"}
+                  </span>
+                  {labelFilter.length > 0 ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        clearLabelFilter();
+                      }}
+                      className="hover:bg-muted rounded-full p-1"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  ) : (
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>تصفية حسب التصنيف</DialogTitle>
+                  <DialogDescription>
+                    اختر تصنيف واحد أو أكثر للتصفية
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="border rounded-lg">
+                  <div className="flex items-center border-b px-3">
+                    <input
+                      placeholder="بحث عن تصنيف..."
+                      value={labelSearchValue}
+                      onChange={(e) => setLabelSearchValue(e.target.value)}
+                      className="flex h-10 w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+                    />
+                  </div>
+                  <div className="max-h-[250px] overflow-y-auto p-1">
+                    {filteredLabelsForDialog.length === 0 && !labelSearchValue.trim() && (
+                      <div className="py-6 text-center text-sm text-muted-foreground">
+                        لا توجد تصنيفات
+                      </div>
+                    )}
+                    {filteredLabelsForDialog.map((label) => {
+                      const isSelected = labelFilter.includes(label.id);
+                      return (
+                        <button
+                          key={label.id}
+                          onClick={() => handleToggleLabelFilter(label.id)}
+                          className="w-full flex items-center gap-2 px-2 py-2.5 rounded hover:bg-accent text-sm"
+                        >
+                          <div
+                            className="w-3 h-3 rounded-full shrink-0"
+                            style={{ backgroundColor: label.color }}
+                          />
+                          <span className="flex-1 text-right">{label.name}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {label._count.users}
+                          </Badge>
+                          {isSelected && <Check className="h-4 w-4 text-primary" />}
+                        </button>
+                      );
+                    })}
+                    {/* Show create option when searching and no exact match */}
+                    {labelSearchValue.trim() && !labelExactMatch && (
+                      <button
+                        onClick={() => {
+                          createLabelMutation.mutate({
+                            name: labelSearchValue.trim(),
+                            color: "#3b82f6",
+                          });
+                        }}
+                        className="w-full flex items-center gap-2 px-2 py-2.5 rounded hover:bg-accent text-sm text-primary border-t mt-1"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>إنشاء &quot;{labelSearchValue.trim()}&quot;</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
@@ -195,7 +334,7 @@ export default function AdminUsersPage() {
           ) : allUsers.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
               <Users className="mx-auto h-12 w-12 mb-4 opacity-50" />
-              <p>لا يوجد مستخدمين</p>
+              <p>لا يوجد أعضاء</p>
             </div>
           ) : (
             <>
@@ -209,9 +348,9 @@ export default function AdminUsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>المستخدم</TableHead>
+                    <TableHead>العضو</TableHead>
                     <TableHead>الشركة</TableHead>
-                    <TableHead>الصلاحية</TableHead>
+                    <TableHead>التصنيفات</TableHead>
                     <TableHead>الحالة</TableHead>
                     <TableHead>التسجيلات</TableHead>
                     <TableHead>الحضور</TableHead>
@@ -248,13 +387,36 @@ export default function AdminUsersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            user.role === "ADMIN" ? "default" : "secondary"
+                        <UserLabelManager
+                          userId={user.id}
+                          userLabels={user.labels}
+                          onUpdate={refetch}
+                          trigger={
+                            <button className="flex flex-wrap gap-1 items-center hover:bg-muted/50 p-1.5 rounded transition-colors">
+                              {user.labels.length === 0 ? (
+                                <Badge variant="outline" className="gap-1">
+                                  <Tag className="h-3 w-3" />
+                                  إضافة
+                                </Badge>
+                              ) : (
+                                user.labels.map((label) => (
+                                  <Badge
+                                    key={label.id}
+                                    variant="outline"
+                                    className="text-xs"
+                                    style={{
+                                      backgroundColor: label.color + "20",
+                                      color: label.color,
+                                      borderColor: label.color + "40",
+                                    }}
+                                  >
+                                    {label.name}
+                                  </Badge>
+                                ))
+                              )}
+                            </button>
                           }
-                        >
-                          {user.role === "ADMIN" ? "مدير" : "مستخدم"}
-                        </Badge>
+                        />
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -281,21 +443,23 @@ export default function AdminUsersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() =>
-                                updateRoleMutation.mutate({
-                                  userId: user.id,
-                                  role:
-                                    user.role === "ADMIN" ? "USER" : "ADMIN",
-                                })
-                              }
-                            >
-                              <Shield className="me-2 h-4 w-4" />
-                              {user.role === "ADMIN"
-                                ? "إزالة صلاحية المدير"
-                                : "ترقية لمدير"}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+                            {/* Promote to admin - only for SUPER_ADMIN */}
+                            {isSuperAdmin && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    updateRoleMutation.mutate({
+                                      userId: user.id,
+                                      role: "ADMIN",
+                                    })
+                                  }
+                                >
+                                  <Shield className="me-2 h-4 w-4" />
+                                  ترقية لمدير
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
                             <DropdownMenuItem
                               onClick={() =>
                                 toggleActiveMutation.mutate({ userId: user.id })

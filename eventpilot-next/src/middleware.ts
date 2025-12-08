@@ -7,7 +7,8 @@ const { auth } = NextAuth(authConfig);
 export default auth((req) => {
   const { nextUrl, auth: session } = req;
   const isLoggedIn = !!session?.user;
-  const isAdmin = session?.user?.role === "ADMIN";
+  const userRole = session?.user?.role;
+  const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
 
   // Public paths that don't require authentication
   const publicPaths = [

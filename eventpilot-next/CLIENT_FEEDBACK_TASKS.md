@@ -226,7 +226,7 @@
 
 #### 11.1 Add Numbers Separately with Country Code
 - **Current**: Single phone input
-- **Change**: Multi-number input with country code selector
+- **Change**: Multi-number input with country code selector, plus button to add more numbers each one at a time
 - **Files**: WhatsApp sending UI in admin
 
 #### 11.2 WhatsApp Link Type - User Choice ✅ CLARIFIED
@@ -255,13 +255,36 @@
   ```
 - **Admin UI**: Label management + user tagging
 
-### 13. Admin Roles (Dynamic Permissions)
+### 13. Admin Roles (Dynamic Permissions) ✅ DONE
 - **Current**: Simple ADMIN/USER role in User model
-- **Change**: Granular permissions based on menu items
-- **Options**:
-  1. Role-based (Admin, Moderator, Viewer)
-  2. Permission-based (can_manage_sessions, can_view_analytics, etc.)
-- **Files**: Auth middleware, admin layout sidebar
+- **Implementation**: Granular permissions based on menu items with SUPER_ADMIN role
+- **Schema changes**:
+  - Added `SUPER_ADMIN` to Role enum (full access to everything)
+  - Added 7 boolean permission fields to User model:
+    - `canAccessDashboard`, `canAccessSessions`, `canAccessUsers`
+    - `canAccessHosts`, `canAccessAnalytics`, `canAccessCheckin`, `canAccessSettings`
+- **Features**:
+  - SUPER_ADMIN has all permissions by default (hardcoded in logic)
+  - Regular ADMIN needs explicit permission flags set to true
+  - Only SUPER_ADMIN can manage other admins' permissions
+  - Admin sidebar filters based on permissions
+  - Permission management UI in Users page (only visible to SUPER_ADMIN)
+- **Files created**:
+  - `src/lib/permissions.ts` - Permission helper library with constants and utility functions
+- **Files updated**:
+  - `prisma/schema.prisma` - Added SUPER_ADMIN role and permission fields
+  - `src/types/next-auth.d.ts` - Updated session types with permissions
+  - `src/server/auth.config.ts` - Include permissions in JWT and session
+  - `src/server/auth.ts` - Return permissions from authorize
+  - `src/middleware.ts` - Check for both ADMIN and SUPER_ADMIN
+  - `src/server/api/trpc.ts` - Added superAdminProcedure
+  - `src/server/api/routers/admin.ts` - Added getAdminUsers, updateUserPermissions
+  - `src/app/admin/layout.tsx` - Filter sidebar links based on permissions
+  - `src/app/admin/users/page.tsx` - Permission management dialog
+  - `prisma/seed.ts` - Added SUPER_ADMIN and limited ADMIN users
+- **Login credentials**:
+  - Super Admin: admin@eventpilot.com / admin123 (full access)
+  - Admin: moderator@eventpilot.com / admin123 (limited: dashboard, sessions, checkin)
 
 ### 14. User Profile in Admin
 - **New Page**: `src/app/admin/users/[id]/page.tsx`
@@ -319,15 +342,15 @@
 | 🔴 High         | 5      | 5 ✅       | 0         | Core functionality, registration flow |
 | 🟡 Medium       | 5      | 6 ✅       | -1        | Configurability, hosting features     |
 | 🟢 UI/UX        | 8      | 1 ✅       | 7         | Tables, display, mobile               |
-| 🔵 New Features | 7      | 1 ✅       | 6         | New capabilities                      |
+| 🔵 New Features | 7      | 2 ✅       | 5         | New capabilities                      |
 | 🎨 Design       | 3      | 0         | 3         | Branding, visual                      |
-| **TOTAL**       | **28** | **13 ✅**  | **15**    | **Overall Progress: 46%**             |
+| **TOTAL**       | **28** | **14 ✅**  | **14**    | **Overall Progress: 50%**             |
 
 ---
 
 ## 📊 Completion Summary
 
-### ✅ Completed Features (13 tasks)
+### ✅ Completed Features (14 tasks)
 1. **Session → Event Renaming** - All UI labels updated
 2. **Social Media Fields** - Configurable per session
 3. **Professional Info** - Made mandatory
@@ -340,6 +363,7 @@
 10. **Member Registration Flow** - Simplified registration for authenticated users (companions + catering only)
 11. **Companion Details Mandatory** - Name and phone required, email optional
 12. **Edit Registration** - Users can edit their event registrations and manage companions
+13. **Admin Roles (Dynamic Permissions)** - SUPER_ADMIN role with granular menu-level permissions for regular admins
 
 ### 🔧 Recent Implementation
 

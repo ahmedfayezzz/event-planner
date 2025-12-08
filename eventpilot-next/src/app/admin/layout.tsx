@@ -43,44 +43,71 @@ import {
   ChevronLeft,
   BarChart3,
   UtensilsCrossed,
+  ShieldCheck,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/admin/breadcrumbs";
+import {
+  hasPermission,
+  type PermissionKey,
+  type AdminUser,
+} from "@/lib/permissions";
 
-const sidebarLinks = [
+type SidebarLink = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  permission?: PermissionKey;
+  superAdminOnly?: boolean;
+};
+
+const allSidebarLinks: SidebarLink[] = [
   {
     href: "/admin",
     label: "لوحة التحكم",
     icon: LayoutDashboard,
+    permission: "dashboard",
   },
   {
     href: "/admin/sessions",
     label: "الأحداث",
     icon: Calendar,
+    permission: "sessions",
   },
   {
     href: "/admin/users",
-    label: "المستخدمين",
+    label: "الأعضاء",
     icon: Users,
+    permission: "users",
+  },
+  {
+    href: "/admin/admins",
+    label: "المديرين",
+    icon: ShieldCheck,
+    superAdminOnly: true,
   },
   {
     href: "/admin/hosts",
     label: "المضيفين",
     icon: UtensilsCrossed,
+    permission: "hosts",
   },
   {
     href: "/admin/analytics",
     label: "الإحصائيات",
     icon: BarChart3,
+    permission: "analytics",
   },
   {
     href: "/admin/checkin",
     label: "تسجيل الحضور",
     icon: QrCode,
+    permission: "checkin",
   },
   {
     href: "/admin/settings",
     label: "الإعدادات",
     icon: Settings,
+    permission: "settings",
   },
 ];
 
@@ -117,9 +144,29 @@ export default function AdminLayout({
     );
   }
 
-  if (status === "unauthenticated" || session?.user?.role !== "ADMIN") {
+  const userRole = session?.user?.role;
+  const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
+
+  if (status === "unauthenticated" || !isAdmin) {
     redirect("/user/login?callbackUrl=/admin");
   }
+
+  // Cast user to AdminUser type for permission checks
+  const adminUser = session?.user as AdminUser | undefined;
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
+
+  // Filter sidebar links based on permissions
+  const sidebarLinks = allSidebarLinks.filter((link) => {
+    // Super admin only links
+    if (link.superAdminOnly) {
+      return isSuperAdmin;
+    }
+    // Permission-based links
+    if (link.permission) {
+      return hasPermission(adminUser, link.permission);
+    }
+    return true;
+  });
 
   const userInitials =
     session?.user?.name

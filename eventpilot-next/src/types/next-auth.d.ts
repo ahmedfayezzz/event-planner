@@ -5,25 +5,54 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      role: string;
+      role: "USER" | "ADMIN" | "SUPER_ADMIN";
+      // Admin permissions
+      canAccessDashboard: boolean;
+      canAccessSessions: boolean;
+      canAccessUsers: boolean;
+      canAccessHosts: boolean;
+      canAccessAnalytics: boolean;
+      canAccessCheckin: boolean;
+      canAccessSettings: boolean;
     } & DefaultSession["user"];
   }
 
   interface User {
-    role: string;
+    role: "USER" | "ADMIN" | "SUPER_ADMIN";
+    canAccessDashboard: boolean;
+    canAccessSessions: boolean;
+    canAccessUsers: boolean;
+    canAccessHosts: boolean;
+    canAccessAnalytics: boolean;
+    canAccessCheckin: boolean;
+    canAccessSettings: boolean;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     id: string;
-    role: string;
+    role: "USER" | "ADMIN" | "SUPER_ADMIN";
+    canAccessDashboard: boolean;
+    canAccessSessions: boolean;
+    canAccessUsers: boolean;
+    canAccessHosts: boolean;
+    canAccessAnalytics: boolean;
+    canAccessCheckin: boolean;
+    canAccessSettings: boolean;
   }
 }
 
 // Extend AdapterUser to include role (fixes type mismatch with @auth/prisma-adapter)
 declare module "@auth/core/adapters" {
   interface AdapterUser {
-    role: string;
+    role: "USER" | "ADMIN" | "SUPER_ADMIN";
+    canAccessDashboard: boolean;
+    canAccessSessions: boolean;
+    canAccessUsers: boolean;
+    canAccessHosts: boolean;
+    canAccessAnalytics: boolean;
+    canAccessCheckin: boolean;
+    canAccessSettings: boolean;
   }
 }
