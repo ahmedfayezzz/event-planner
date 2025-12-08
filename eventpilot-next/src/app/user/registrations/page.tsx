@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
-import { Mail, Phone, Building2, Briefcase, Instagram, Twitter, Edit } from "lucide-react";
+import { Mail, Phone, Building2, Briefcase, Instagram, Twitter, Edit, Calendar, Clock, MapPin, Users, CalendarCheck } from "lucide-react";
 
 interface RegistrationItem {
   id: string;
@@ -208,7 +208,7 @@ export default function UserRegistrationsPage() {
               ) : (
                 <div className="text-center py-16">
                   <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl">📅</span>
+                    <Calendar className="w-8 h-8 text-muted-foreground" />
                   </div>
                   <h3 className="text-lg font-bold text-primary mb-2">لا توجد أحداث قادمة</h3>
                   <p className="text-muted-foreground mb-6">لم تقم بالتسجيل في أي أحداث قادمة بعد</p>
@@ -263,6 +263,10 @@ function RegistrationCard({
           <div className="space-y-1">
             <CardTitle className="text-xl text-primary group-hover:text-secondary transition-colors">{registration.session.title}</CardTitle>
             <CardDescription className="font-medium">التجمع رقم {registration.session.sessionNumber}</CardDescription>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
+              <CalendarCheck className="w-3.5 h-3.5" />
+              <span>تم التسجيل: {formatArabicDate(new Date(registration.registeredAt))} - {formatArabicTime(new Date(registration.registeredAt))}</span>
+            </div>
           </div>
           <Badge variant={registration.isApproved ? "default" : "secondary"} className="px-3 py-1">
             {registration.isApproved ? "مؤكد" : "في انتظار الموافقة"}
@@ -273,14 +277,18 @@ function RegistrationCard({
         <div className="grid gap-6 md:grid-cols-2 bg-muted/20 p-4 rounded-xl">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">📅</div>
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <Calendar className="w-4 h-4" />
+              </div>
               <div>
                 <p className="text-xs text-muted-foreground">التاريخ</p>
                 <p className="font-medium">{formatArabicDate(new Date(registration.session.date))}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">⏰</div>
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <Clock className="w-4 h-4" />
+              </div>
               <div>
                 <p className="text-xs text-muted-foreground">الوقت</p>
                 <p className="font-medium">{formatArabicTime(new Date(registration.session.date))}</p>
@@ -291,7 +299,9 @@ function RegistrationCard({
           <div className="space-y-3">
             {registration.session.location && (
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">📍</div>
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <MapPin className="w-4 h-4" />
+                </div>
                 <div>
                   <p className="text-xs text-muted-foreground">المكان</p>
                   <p className="font-medium">{registration.session.location}</p>
@@ -300,7 +310,9 @@ function RegistrationCard({
             )}
             {registration.companions.length > 0 && (
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">👥</div>
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <Users className="w-4 h-4" />
+                </div>
                 <div>
                   <p className="text-xs text-muted-foreground">المرافقين</p>
                   <p className="font-medium">{registration.companions.map((c) => c.name).join(", ")}</p>
