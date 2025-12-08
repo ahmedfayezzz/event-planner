@@ -1,4 +1,4 @@
-# EventPilot Migration Tasks: Flask → Next.js
+# thlothyah Migration Tasks: Flask → Next.js
 
 ## Progress Legend
 - [ ] Not started
@@ -248,15 +248,15 @@ BASE_URL=http://localhost:3000
 
 ## Files Reference (Flask → Next.js)
 
-| Flask File | Next.js Equivalent |
-|------------|-------------------|
-| `routes.py` (1614 lines) | `src/server/api/routers/*.ts` |
-| `models.py` | `prisma/schema.prisma` |
-| `utils.py` (479 lines) | `src/lib/*.ts` |
-| `ai_service.py` | DROPPED (for now) |
-| `templates/*.html` (26 files) | `src/app/**/*.tsx` |
-| `static/js/*.js` (1542 lines) | React components + hooks |
-| `static/css/*.css` (922 lines) | Tailwind + shadcn/ui |
+| Flask File                     | Next.js Equivalent            |
+|--------------------------------|-------------------------------|
+| `routes.py` (1614 lines)       | `src/server/api/routers/*.ts` |
+| `models.py`                    | `prisma/schema.prisma`        |
+| `utils.py` (479 lines)         | `src/lib/*.ts`                |
+| `ai_service.py`                | DROPPED (for now)             |
+| `templates/*.html` (26 files)  | `src/app/**/*.tsx`            |
+| `static/js/*.js` (1542 lines)  | React components + hooks      |
+| `static/css/*.css` (922 lines) | Tailwind + shadcn/ui          |
 
 ---
 

@@ -1,4 +1,4 @@
-# EventPilot Migration: Missing Features & Pages
+# thlothyah Migration: Missing Features & Pages
 
 ## Summary
 
@@ -353,18 +353,18 @@ src/app/
 
 ## Estimated Effort
 
-| Feature | Complexity | Time Estimate |
-|---------|------------|---------------|
-| Public Profile | Medium | 2-3 hours |
-| Guest Registration | High | 4-6 hours |
-| Registration Confirmation | Low | 1-2 hours |
-| QR Code Display | Low | 1-2 hours |
-| Session Companions | Low | 1-2 hours |
-| Invitation UI | Medium | 3-4 hours |
-| Embed Pages | Medium | 3-4 hours |
-| Analytics Page | Medium | 3-4 hours |
-| CSV Export | Low | 1-2 hours |
-| Slug URLs | Low | 1 hour |
+| Feature                   | Complexity | Time Estimate |
+|---------------------------|------------|---------------|
+| Public Profile            | Medium     | 2-3 hours     |
+| Guest Registration        | High       | 4-6 hours     |
+| Registration Confirmation | Low        | 1-2 hours     |
+| QR Code Display           | Low        | 1-2 hours     |
+| Session Companions        | Low        | 1-2 hours     |
+| Invitation UI             | Medium     | 3-4 hours     |
+| Embed Pages               | Medium     | 3-4 hours     |
+| Analytics Page            | Medium     | 3-4 hours     |
+| CSV Export                | Low        | 1-2 hours     |
+| Slug URLs                 | Low        | 1 hour        |
 
 **Total Estimated: 20-30 hours**
 
@@ -381,15 +381,15 @@ Below are features present in Flask pages that are **missing from their Next.js 
 **Flask Template:** `templates/user_dashboard.html`
 **Next.js Page:** `src/app/user/dashboard/page.tsx`
 
-| Feature | Flask | Next.js | Notes |
-|---------|-------|---------|-------|
-| Profile info section | ✅ | ❌ | Name, email, phone, company, position, goal, AI description |
-| Edit profile button | ✅ | ❌ | Links to profile edit |
-| Attendance rate stat | ✅ | ❌ | Shows % of sessions attended |
-| Attendance status per registration | ✅ | ❌ | Shows attended/absent/not started |
-| QR code modal | ✅ | ❌ | `/my-qr/{sessionId}` endpoint, modal display |
-| QR button per session | ✅ | ❌ | Button links to non-existent `/user/qr/[id]` |
-| Logout button in header | ✅ | ❌ | Explicit logout action |
+| Feature                            | Flask | Next.js | Notes                                                       |
+|------------------------------------|-------|---------|-------------------------------------------------------------|
+| Profile info section               | ✅     | ❌       | Name, email, phone, company, position, goal, AI description |
+| Edit profile button                | ✅     | ❌       | Links to profile edit                                       |
+| Attendance rate stat               | ✅     | ❌       | Shows % of sessions attended                                |
+| Attendance status per registration | ✅     | ❌       | Shows attended/absent/not started                           |
+| QR code modal                      | ✅     | ❌       | `/my-qr/{sessionId}` endpoint, modal display                |
+| QR button per session              | ✅     | ❌       | Button links to non-existent `/user/qr/[id]`                |
+| Logout button in header            | ✅     | ❌       | Explicit logout action                                      |
 
 **Missing tRPC Data:**
 - User profile details in dashboard response
@@ -403,14 +403,14 @@ Below are features present in Flask pages that are **missing from their Next.js 
 **Flask Template:** `templates/session_detail.html`
 **Next.js Page:** `src/app/session/[id]/page.tsx`
 
-| Feature | Flask | Next.js | Notes |
-|---------|-------|---------|-------|
-| User info section | ✅ | ❌ | Shows logged-in user's name, email, phone, company |
-| Share on X (Twitter) button | ✅ | ❌ | Opens Twitter share dialog |
-| Copy session link button | ✅ | ❌ | Copies URL to clipboard |
-| QR code modal | ✅ | ❌ | For registered users |
-| Show QR button | ✅ | ❌ | When user is approved |
-| Registration date display | ✅ | ❌ | Shows when user registered |
+| Feature                     | Flask | Next.js | Notes                                              |
+|-----------------------------|-------|---------|----------------------------------------------------|
+| User info section           | ✅     | ❌       | Shows logged-in user's name, email, phone, company |
+| Share on X (Twitter) button | ✅     | ❌       | Opens Twitter share dialog                         |
+| Copy session link button    | ✅     | ❌       | Copies URL to clipboard                            |
+| QR code modal               | ✅     | ❌       | For registered users                               |
+| Show QR button              | ✅     | ❌       | When user is approved                              |
+| Registration date display   | ✅     | ❌       | Shows when user registered                         |
 
 **Implementation:**
 - Add share buttons (Twitter/copy link)
@@ -424,14 +424,14 @@ Below are features present in Flask pages that are **missing from their Next.js 
 **Flask Template:** `templates/admin/dashboard.html`
 **Next.js Page:** `src/app/admin/page.tsx`
 
-| Feature | Flask | Next.js | Notes |
-|---------|-------|---------|-------|
-| Approve button in registrations table | ✅ | ❌ | Quick approve for pending |
-| Session dropdown menu | ✅ | ❌ | Attendees, Check-in, Generate QR links |
-| Quick Actions section | ✅ | ❌ | Add session, Send notifications, Bulk actions |
-| Export data dropdown | ✅ | ❌ | Export users/sessions CSV |
-| Analytics page link | ✅ | ❌ | Link to `/admin/analytics` |
-| QR code modal for sessions | ✅ | ❌ | Generate session QR codes |
+| Feature                               | Flask | Next.js | Notes                                         |
+|---------------------------------------|-------|---------|-----------------------------------------------|
+| Approve button in registrations table | ✅     | ❌       | Quick approve for pending                     |
+| Session dropdown menu                 | ✅     | ❌       | Attendees, Check-in, Generate QR links        |
+| Quick Actions section                 | ✅     | ❌       | Add session, Send notifications, Bulk actions |
+| Export data dropdown                  | ✅     | ❌       | Export users/sessions CSV                     |
+| Analytics page link                   | ✅     | ❌       | Link to `/admin/analytics`                    |
+| QR code modal for sessions            | ✅     | ❌       | Generate session QR codes                     |
 
 **Next.js Extras (not in Flask):**
 - Attendance stats table with charts ✅
@@ -443,13 +443,13 @@ Below are features present in Flask pages that are **missing from their Next.js 
 **Flask Template:** `templates/admin/sessions.html`
 **Next.js Page:** `src/app/admin/sessions/page.tsx`
 
-| Feature | Flask | Next.js | Notes |
-|---------|-------|---------|-------|
-| Session status filter | ✅ | ❓ | Filter by open/closed/completed |
-| Batch actions | ✅ | ❌ | Select multiple sessions |
-| Quick status change | ✅ | ❌ | Dropdown to change status |
-| Companions link | ✅ | ❌ | Link to view companions |
-| Check-in link | ✅ | ❓ | Link to check-in page |
+| Feature               | Flask | Next.js | Notes                           |
+|-----------------------|-------|---------|---------------------------------|
+| Session status filter | ✅     | ❓       | Filter by open/closed/completed |
+| Batch actions         | ✅     | ❌       | Select multiple sessions        |
+| Quick status change   | ✅     | ❌       | Dropdown to change status       |
+| Companions link       | ✅     | ❌       | Link to view companions         |
+| Check-in link         | ✅     | ❓       | Link to check-in page           |
 
 ---
 
@@ -458,13 +458,13 @@ Below are features present in Flask pages that are **missing from their Next.js 
 **Flask Template:** `templates/admin/edit_session.html`
 **Next.js Page:** `src/app/admin/sessions/[id]/page.tsx`
 
-| Feature | Flask | Next.js | Notes |
-|---------|-------|---------|-------|
-| Invitation section | ✅ | ❌ | Add emails, send invites |
-| Invitation history | ✅ | ❌ | List of sent invitations |
-| WhatsApp invite generator | ✅ | ❌ | Generate WhatsApp message links |
-| Embed code preview | ✅ | ❌ | Show iframe embed code |
-| Delete session button | ✅ | ❓ | With confirmation |
+| Feature                   | Flask | Next.js | Notes                           |
+|---------------------------|-------|---------|---------------------------------|
+| Invitation section        | ✅     | ❌       | Add emails, send invites        |
+| Invitation history        | ✅     | ❌       | List of sent invitations        |
+| WhatsApp invite generator | ✅     | ❌       | Generate WhatsApp message links |
+| Embed code preview        | ✅     | ❌       | Show iframe embed code          |
+| Delete session button     | ✅     | ❓       | With confirmation               |
 
 ---
 
@@ -473,14 +473,14 @@ Below are features present in Flask pages that are **missing from their Next.js 
 **Flask Template:** `templates/admin/session_attendees.html`
 **Next.js Page:** `src/app/admin/sessions/[id]/attendees/page.tsx`
 
-| Feature | Flask | Next.js | Notes |
-|---------|-------|---------|-------|
-| Companion count column | ✅ | ❓ | Show # of companions per registrant |
-| View companions link | ✅ | ❌ | Link to companions page |
-| Approve button | ✅ | ❓ | For pending registrations |
-| Export attendees button | ✅ | ❌ | CSV export |
-| Send reminder email | ✅ | ❌ | Send email to all attendees |
-| Search/filter | ✅ | ❓ | Filter by name/email |
+| Feature                 | Flask | Next.js | Notes                               |
+|-------------------------|-------|---------|-------------------------------------|
+| Companion count column  | ✅     | ❓       | Show # of companions per registrant |
+| View companions link    | ✅     | ❌       | Link to companions page             |
+| Approve button          | ✅     | ❓       | For pending registrations           |
+| Export attendees button | ✅     | ❌       | CSV export                          |
+| Send reminder email     | ✅     | ❌       | Send email to all attendees         |
+| Search/filter           | ✅     | ❓       | Filter by name/email                |
 
 ---
 
@@ -489,14 +489,14 @@ Below are features present in Flask pages that are **missing from their Next.js 
 **Flask Template:** `templates/register.html`
 **Next.js Page:** `src/app/register/page.tsx`
 
-| Feature | Flask | Next.js | Notes |
-|---------|-------|---------|-------|
-| Social media fields | ✅ | ❓ | Instagram, Snapchat, Twitter |
-| Company fields | ✅ | ❓ | Company name, position, activity type |
-| Gender field | ✅ | ❓ | Male/Female selection |
-| Goal field | ✅ | ❓ | What they want from joining |
-| Phone validation (Saudi) | ✅ | ❓ | Format: 05XXXXXXXX |
-| Username generation | ✅ | ❓ | Auto-generate from email |
+| Feature                  | Flask | Next.js | Notes                                 |
+|--------------------------|-------|---------|---------------------------------------|
+| Social media fields      | ✅     | ❓       | Instagram, Snapchat, Twitter          |
+| Company fields           | ✅     | ❓       | Company name, position, activity type |
+| Gender field             | ✅     | ❓       | Male/Female selection                 |
+| Goal field               | ✅     | ❓       | What they want from joining           |
+| Phone validation (Saudi) | ✅     | ❓       | Format: 05XXXXXXXX                    |
+| Username generation      | ✅     | ❓       | Auto-generate from email              |
 
 ---
 
@@ -505,13 +505,13 @@ Below are features present in Flask pages that are **missing from their Next.js 
 **Flask Template:** `templates/sessions.html`
 **Next.js Page:** `src/app/sessions/page.tsx`
 
-| Feature | Flask | Next.js | Notes |
-|---------|-------|---------|-------|
-| Session filters | ✅ | ❓ | Filter by status (open/closed/completed) |
-| Search sessions | ✅ | ❌ | Search by title |
-| Countdown per session | ✅ | ❓ | Show countdown to session date |
-| Guest info display | ✅ | ❓ | Show guest name if set |
-| Registration progress bar | ✅ | ❓ | Visual fill indicator |
+| Feature                   | Flask | Next.js | Notes                                    |
+|---------------------------|-------|---------|------------------------------------------|
+| Session filters           | ✅     | ❓       | Filter by status (open/closed/completed) |
+| Search sessions           | ✅     | ❌       | Search by title                          |
+| Countdown per session     | ✅     | ❓       | Show countdown to session date           |
+| Guest info display        | ✅     | ❓       | Show guest name if set                   |
+| Registration progress bar | ✅     | ❓       | Visual fill indicator                    |
 
 ---
 
@@ -554,11 +554,11 @@ Based on the detailed comparison, here's the updated priority:
 
 ## Summary of All Gaps
 
-| Category | Count | Priority |
-|----------|-------|----------|
-| Missing Pages | 6 | High |
-| Missing Features in Existing Pages | 25+ | Medium-High |
-| Missing tRPC Endpoints | 8 | High |
-| UI Enhancements | 15+ | Medium |
+| Category                           | Count | Priority    |
+|------------------------------------|-------|-------------|
+| Missing Pages                      | 6     | High        |
+| Missing Features in Existing Pages | 25+   | Medium-High |
+| Missing tRPC Endpoints             | 8     | High        |
+| UI Enhancements                    | 15+   | Medium      |
 
 **Revised Total Estimated: 35-45 hours**

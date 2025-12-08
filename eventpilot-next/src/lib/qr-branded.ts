@@ -41,7 +41,9 @@ function createTextSVG(
 ): Buffer {
   // Cairo font with RTL direction for Arabic
   const svg = `
-    <svg width="${width}" height="${fontSize + 10}" xmlns="http://www.w3.org/2000/svg">
+    <svg width="${width}" height="${
+    fontSize + 10
+  }" xmlns="http://www.w3.org/2000/svg">
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&amp;display=swap');
         text {
@@ -53,7 +55,9 @@ function createTextSVG(
           text-anchor: middle;
         }
       </style>
-      <text x="${width / 2}" y="${fontSize}" dominant-baseline="middle">${escapeXml(text)}</text>
+      <text x="${
+        width / 2
+      }" y="${fontSize}" dominant-baseline="middle">${escapeXml(text)}</text>
     </svg>
   `;
   return Buffer.from(svg);
@@ -72,7 +76,7 @@ function escapeXml(text: string): string {
 }
 
 /**
- * Generate branded QR code with EventPilot branding and session info
+ * Generate branded QR code with thlothyah branding and session info
  */
 export async function generateBrandedQRCode(
   qrData: string,
@@ -123,12 +127,24 @@ export async function generateBrandedQRCode(
       : options.sessionDate;
 
     const contentWidth = TEMPLATE_WIDTH - PADDING * 2;
-    const titleSvg = createTextSVG(titleText, 20, BRAND.primary, contentWidth, "bold");
+    const titleSvg = createTextSVG(
+      titleText,
+      20,
+      BRAND.primary,
+      contentWidth,
+      "bold"
+    );
     const welcomeSvg = options.attendeeName
       ? createTextSVG(welcomeText, 14, BRAND.textMuted, contentWidth)
       : null;
     const attendeeNameSvg = options.attendeeName
-      ? createTextSVG(options.attendeeName, 18, BRAND.textDark, contentWidth, "bold")
+      ? createTextSVG(
+          options.attendeeName,
+          18,
+          BRAND.textDark,
+          contentWidth,
+          "bold"
+        )
       : null;
     const scanSvg = createTextSVG(scanText, 12, BRAND.textMuted, contentWidth);
     const sessionTitleSvg = createTextSVG(
@@ -138,7 +154,12 @@ export async function generateBrandedQRCode(
       contentWidth,
       "bold"
     );
-    const dateTimeSvg = createTextSVG(dateTimeText, 13, BRAND.textMuted, contentWidth);
+    const dateTimeSvg = createTextSVG(
+      dateTimeText,
+      13,
+      BRAND.textMuted,
+      contentWidth
+    );
 
     // 4. Create background
     const background = await sharp({
@@ -175,9 +196,15 @@ export async function generateBrandedQRCode(
         <defs>
           <!-- Gold gradient for accents -->
           <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:${BRAND.accentLight};stop-opacity:0" />
-            <stop offset="50%" style="stop-color:${BRAND.accent};stop-opacity:1" />
-            <stop offset="100%" style="stop-color:${BRAND.accentLight};stop-opacity:0" />
+            <stop offset="0%" style="stop-color:${
+              BRAND.accentLight
+            };stop-opacity:0" />
+            <stop offset="50%" style="stop-color:${
+              BRAND.accent
+            };stop-opacity:1" />
+            <stop offset="100%" style="stop-color:${
+              BRAND.accentLight
+            };stop-opacity:0" />
           </linearGradient>
           <!-- Corner pattern -->
           <pattern id="cornerPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -221,22 +248,44 @@ export async function generateBrandedQRCode(
         />
 
         <!-- Corner decorations - top left -->
-        <path d="M 12 30 L 12 12 L 30 12" fill="none" stroke="${BRAND.accent}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M 12 30 L 12 12 L 30 12" fill="none" stroke="${
+          BRAND.accent
+        }" stroke-width="2" stroke-linecap="round"/>
 
         <!-- Corner decorations - top right -->
-        <path d="M ${TEMPLATE_WIDTH - 12} 30 L ${TEMPLATE_WIDTH - 12} 12 L ${TEMPLATE_WIDTH - 30} 12" fill="none" stroke="${BRAND.accent}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M ${TEMPLATE_WIDTH - 12} 30 L ${TEMPLATE_WIDTH - 12} 12 L ${
+      TEMPLATE_WIDTH - 30
+    } 12" fill="none" stroke="${
+      BRAND.accent
+    }" stroke-width="2" stroke-linecap="round"/>
 
         <!-- Corner decorations - bottom left -->
-        <path d="M 12 ${TEMPLATE_HEIGHT - 30} L 12 ${TEMPLATE_HEIGHT - 12} L 30 ${TEMPLATE_HEIGHT - 12}" fill="none" stroke="${BRAND.accent}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M 12 ${TEMPLATE_HEIGHT - 30} L 12 ${
+      TEMPLATE_HEIGHT - 12
+    } L 30 ${TEMPLATE_HEIGHT - 12}" fill="none" stroke="${
+      BRAND.accent
+    }" stroke-width="2" stroke-linecap="round"/>
 
         <!-- Corner decorations - bottom right -->
-        <path d="M ${TEMPLATE_WIDTH - 12} ${TEMPLATE_HEIGHT - 30} L ${TEMPLATE_WIDTH - 12} ${TEMPLATE_HEIGHT - 12} L ${TEMPLATE_WIDTH - 30} ${TEMPLATE_HEIGHT - 12}" fill="none" stroke="${BRAND.accent}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M ${TEMPLATE_WIDTH - 12} ${TEMPLATE_HEIGHT - 30} L ${
+      TEMPLATE_WIDTH - 12
+    } ${TEMPLATE_HEIGHT - 12} L ${TEMPLATE_WIDTH - 30} ${
+      TEMPLATE_HEIGHT - 12
+    }" fill="none" stroke="${
+      BRAND.accent
+    }" stroke-width="2" stroke-linecap="round"/>
 
         <!-- Decorative dots pattern in corners -->
         <circle cx="22" cy="22" r="2" fill="${BRAND.accent}" opacity="0.4"/>
-        <circle cx="${TEMPLATE_WIDTH - 22}" cy="22" r="2" fill="${BRAND.accent}" opacity="0.4"/>
-        <circle cx="22" cy="${TEMPLATE_HEIGHT - 22}" r="2" fill="${BRAND.accent}" opacity="0.4"/>
-        <circle cx="${TEMPLATE_WIDTH - 22}" cy="${TEMPLATE_HEIGHT - 22}" r="2" fill="${BRAND.accent}" opacity="0.4"/>
+        <circle cx="${TEMPLATE_WIDTH - 22}" cy="22" r="2" fill="${
+      BRAND.accent
+    }" opacity="0.4"/>
+        <circle cx="22" cy="${TEMPLATE_HEIGHT - 22}" r="2" fill="${
+      BRAND.accent
+    }" opacity="0.4"/>
+        <circle cx="${TEMPLATE_WIDTH - 22}" cy="${
+      TEMPLATE_HEIGHT - 22
+    }" r="2" fill="${BRAND.accent}" opacity="0.4"/>
 
         <!-- Bottom decorative gold line -->
         <line
@@ -249,9 +298,15 @@ export async function generateBrandedQRCode(
         />
 
         <!-- Small emerald accent dots along bottom -->
-        <circle cx="${TEMPLATE_WIDTH / 2 - 30}" cy="${dateTimeY + 28}" r="3" fill="${BRAND.primary}" opacity="0.6"/>
-        <circle cx="${TEMPLATE_WIDTH / 2}" cy="${dateTimeY + 28}" r="3" fill="${BRAND.accent}"/>
-        <circle cx="${TEMPLATE_WIDTH / 2 + 30}" cy="${dateTimeY + 28}" r="3" fill="${BRAND.primary}" opacity="0.6"/>
+        <circle cx="${TEMPLATE_WIDTH / 2 - 30}" cy="${
+      dateTimeY + 28
+    }" r="3" fill="${BRAND.primary}" opacity="0.6"/>
+        <circle cx="${TEMPLATE_WIDTH / 2}" cy="${dateTimeY + 28}" r="3" fill="${
+      BRAND.accent
+    }"/>
+        <circle cx="${TEMPLATE_WIDTH / 2 + 30}" cy="${
+      dateTimeY + 28
+    }" r="3" fill="${BRAND.primary}" opacity="0.6"/>
       </svg>
     `;
 
@@ -276,7 +331,9 @@ export async function generateBrandedQRCode(
     // Add welcome and attendee name if provided
     if (welcomeSvg && attendeeNameSvg) {
       // Insert welcome and name before QR code
-      compositeElements.splice(3, 0,
+      compositeElements.splice(
+        3,
+        0,
         { input: welcomeSvg, top: welcomeY, left: PADDING },
         { input: attendeeNameSvg, top: attendeeNameY, left: PADDING }
       );

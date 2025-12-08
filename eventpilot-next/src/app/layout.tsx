@@ -10,14 +10,14 @@ import {
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ثلوثية الأعمال - EventPilot",
+  title: "ثلوثية الأعمال",
   description: "منصة إدارة فعاليات التواصل المهني",
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
   openGraph: {
-    title: "ثلوثية الأعمال - EventPilot",
+    title: "ثلوثية الأعمال",
     description: "منصة إدارة فعاليات التواصل المهني",
     images: ['/logo.png'],
     locale: 'ar_SA',
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary',
-    title: "ثلوثية الأعمال - EventPilot",
+    title: "ثلوثية الأعمال",
     description: "منصة إدارة فعاليات التواصل المهني",
     images: ['/logo.png'],
   },

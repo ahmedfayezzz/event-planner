@@ -181,7 +181,7 @@ export default function EventEmbedPage({ params }: { params: Promise<{ slug: str
             rel="noopener noreferrer"
             className="text-primary hover:underline"
           >
-            EventPilot
+            ثلوثية الأعمال
           </a>
         </p>
       </div>
