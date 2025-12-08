@@ -1,9 +1,11 @@
 "use client";
 
-import { use, useState } from "react";
+import React, { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
+import { useExpandableRows } from "@/hooks/use-expandable-rows";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +49,8 @@ import {
   Trash2,
   ExternalLink,
   UtensilsCrossed,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { getHostingTypeLabel } from "@/lib/constants";
 
@@ -58,6 +62,7 @@ export default function SessionDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { isExpanded, toggleRow } = useExpandableRows();
 
   const { data: session, isLoading } = api.session.getAdminDetails.useQuery({ id });
   const { data: caterings } = api.catering.getSessionCatering.useQuery({ sessionId: id });
@@ -413,48 +418,106 @@ export default function SessionDetailPage({
               <TableHeader>
                 <TableRow>
                   <TableHead>الاسم</TableHead>
-                  <TableHead>البريد / الهاتف</TableHead>
-                  <TableHead>النوع</TableHead>
+                  <TableHead className="hidden md:table-cell">البريد / الهاتف</TableHead>
+                  <TableHead className="hidden md:table-cell">النوع</TableHead>
                   <TableHead>الحالة</TableHead>
-                  <TableHead>المرافقين</TableHead>
-                  <TableHead>التاريخ</TableHead>
+                  <TableHead className="hidden md:table-cell">المرافقين</TableHead>
+                  <TableHead className="hidden md:table-cell">التاريخ</TableHead>
+                  <TableHead className="md:hidden w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {session.recentRegistrations.map((reg) => (
-                  <TableRow key={reg.id}>
-                    <TableCell className="font-medium">{reg.name}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {reg.email && <div>{reg.email}</div>}
-                        {reg.phone && (
-                          <div className="text-muted-foreground">{reg.phone}</div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={reg.isGuest ? "bg-orange-500/10 text-orange-600" : ""}>
-                        {reg.isGuest ? "ضيف" : "عضو"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={
-                          reg.isApproved
-                            ? "bg-green-500/10 text-green-600"
-                            : "bg-yellow-500/10 text-yellow-600"
-                        }
-                      >
-                        {reg.isApproved ? "موافق عليه" : "بانتظار الموافقة"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{reg.companionCount}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatArabicDate(new Date(reg.registeredAt))}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {session.recentRegistrations.map((reg) => {
+                  const expanded = isExpanded(reg.id);
+                  return (
+                    <React.Fragment key={reg.id}>
+                      <TableRow>
+                        <TableCell className="font-medium">{reg.name}</TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <div className="text-sm">
+                            {reg.email && <div>{reg.email}</div>}
+                            {reg.phone && (
+                              <div className="text-muted-foreground">{reg.phone}</div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <Badge variant="outline" className={reg.isGuest ? "bg-orange-500/10 text-orange-600" : ""}>
+                            {reg.isGuest ? "ضيف" : "عضو"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={
+                              reg.isApproved
+                                ? "bg-green-500/10 text-green-600"
+                                : "bg-yellow-500/10 text-yellow-600"
+                            }
+                          >
+                            {reg.isApproved ? "موافق عليه" : "بانتظار الموافقة"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">{reg.companionCount}</TableCell>
+                        <TableCell className="hidden md:table-cell text-muted-foreground">
+                          {formatArabicDate(new Date(reg.registeredAt))}
+                        </TableCell>
+                        <TableCell className="md:hidden">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleRow(reg.id)}
+                          >
+                            {expanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      <tr className="md:hidden">
+                        <td colSpan={3} className="p-0">
+                          <div
+                            className={cn(
+                              "grid transition-all duration-300 ease-in-out",
+                              expanded
+                                ? "grid-rows-[1fr] opacity-100"
+                                : "grid-rows-[0fr] opacity-0"
+                            )}
+                          >
+                            <div className="overflow-hidden">
+                              <div className="p-4 bg-muted/30 border-b space-y-2 text-sm">
+                                {(reg.email || reg.phone) && (
+                                  <div>
+                                    <span className="text-muted-foreground">التواصل:</span>
+                                    <span className="mr-1">
+                                      {reg.email || reg.phone}
+                                    </span>
+                                  </div>
+                                )}
+                                <div>
+                                  <span className="text-muted-foreground">النوع:</span>
+                                  <Badge variant="outline" className={cn("mr-1", reg.isGuest ? "bg-orange-500/10 text-orange-600" : "")}>
+                                    {reg.isGuest ? "ضيف" : "عضو"}
+                                  </Badge>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">المرافقين:</span>
+                                  <span className="mr-1">{reg.companionCount}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">التاريخ:</span>
+                                  <span className="mr-1">{formatArabicDate(new Date(reg.registeredAt))}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : (

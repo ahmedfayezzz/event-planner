@@ -1,7 +1,10 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
+import { useExpandableRows } from "@/hooks/use-expandable-rows";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatArabicDate } from "@/lib/utils";
-import { Users, Calendar, CheckCircle, Clock, Plus, Check, Loader2, Download, FileDown } from "lucide-react";
+import { Users, Calendar, CheckCircle, Clock, Plus, Check, Loader2, Download, FileDown, ChevronUp, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 interface UpcomingSession {
@@ -52,6 +55,7 @@ interface AttendanceStat {
 export default function AdminDashboardPage() {
   const utils = api.useUtils();
   const { data: dashboard, isLoading } = api.admin.getDashboard.useQuery();
+  const { isExpanded, toggleRow } = useExpandableRows();
 
   const approveMutation = api.registration.approve.useMutation({
     onSuccess: () => {
@@ -319,32 +323,80 @@ export default function AdminDashboardPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>الحدث</TableHead>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>المسجلين</TableHead>
-                  <TableHead>الحاضرين</TableHead>
+                  <TableHead className="hidden md:table-cell">التاريخ</TableHead>
+                  <TableHead className="hidden md:table-cell">المسجلين</TableHead>
+                  <TableHead className="hidden md:table-cell">الحاضرين</TableHead>
                   <TableHead>نسبة الحضور</TableHead>
+                  <TableHead className="md:hidden w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dashboard.attendanceStats.map((stat: AttendanceStat) => (
-                  <TableRow key={stat.sessionId}>
-                    <TableCell className="font-medium">{stat.title}</TableCell>
-                    <TableCell>{formatArabicDate(new Date(stat.date))}</TableCell>
-                    <TableCell>{stat.registrations}</TableCell>
-                    <TableCell>{stat.attendees}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
+                {dashboard.attendanceStats.map((stat: AttendanceStat) => {
+                  const expanded = isExpanded(stat.sessionId);
+                  return (
+                    <React.Fragment key={stat.sessionId}>
+                      <TableRow>
+                        <TableCell className="font-medium">{stat.title}</TableCell>
+                        <TableCell className="hidden md:table-cell">{formatArabicDate(new Date(stat.date))}</TableCell>
+                        <TableCell className="hidden md:table-cell">{stat.registrations}</TableCell>
+                        <TableCell className="hidden md:table-cell">{stat.attendees}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className="h-full bg-primary"
+                                style={{ width: `${stat.attendanceRate}%` }}
+                              />
+                            </div>
+                            <span className="text-sm">{stat.attendanceRate}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="md:hidden">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleRow(stat.sessionId)}
+                          >
+                            {expanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      <tr className="md:hidden">
+                        <td colSpan={3} className="p-0">
                           <div
-                            className="h-full bg-primary"
-                            style={{ width: `${stat.attendanceRate}%` }}
-                          />
-                        </div>
-                        <span className="text-sm">{stat.attendanceRate}%</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                            className={cn(
+                              "grid transition-all duration-300 ease-in-out",
+                              expanded
+                                ? "grid-rows-[1fr] opacity-100"
+                                : "grid-rows-[0fr] opacity-0"
+                            )}
+                          >
+                            <div className="overflow-hidden">
+                              <div className="p-4 bg-muted/30 border-b space-y-2 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">التاريخ:</span>
+                                  <span className="mr-1">{formatArabicDate(new Date(stat.date))}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">المسجلين:</span>
+                                  <span className="mr-1">{stat.registrations}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">الحاضرين:</span>
+                                  <span className="mr-1">{stat.attendees}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

@@ -1,8 +1,10 @@
 "use client";
 
-import { use } from "react";
+import React, { use } from "react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
+import { useExpandableRows } from "@/hooks/use-expandable-rows";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +35,8 @@ import {
   Shield,
   UserCheck,
   UserX,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 
 export default function UserProfilePage({
@@ -41,6 +45,7 @@ export default function UserProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const { isExpanded, toggleRow } = useExpandableRows();
 
   const { data: user, isLoading, refetch } = api.admin.getUserById.useQuery({ id });
 
@@ -289,69 +294,141 @@ export default function UserProfilePage({
                 <TableHeader>
                   <TableRow>
                     <TableHead>الحدث</TableHead>
-                    <TableHead>التاريخ</TableHead>
-                    <TableHead>المرافقين</TableHead>
+                    <TableHead className="hidden md:table-cell">التاريخ</TableHead>
+                    <TableHead className="hidden md:table-cell">المرافقين</TableHead>
                     <TableHead>الحالة</TableHead>
-                    <TableHead>الحضور</TableHead>
+                    <TableHead className="hidden md:table-cell">الحضور</TableHead>
+                    <TableHead className="md:hidden w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {user.registrations.map((reg) => (
-                    <TableRow key={reg.id}>
-                      <TableCell>
-                        <Link
-                          href={`/admin/sessions/${reg.session.id}`}
-                          className="font-medium hover:underline"
-                        >
-                          {reg.session.title}
-                        </Link>
-                        <p className="text-xs text-muted-foreground">
-                          #{reg.session.sessionNumber}
-                        </p>
-                      </TableCell>
-                      <TableCell>
-                        {formatArabicDate(new Date(reg.session.date))}
-                      </TableCell>
-                      <TableCell>
-                        {reg.invitedRegistrations.length > 0 ? (
-                          <Badge variant="outline">
-                            {reg.invitedRegistrations.length} مرافق
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={reg.isApproved ? "default" : "outline"}
-                          className={
-                            reg.isApproved
-                              ? "bg-green-500/10 text-green-600 border-green-200"
-                              : "bg-orange-500/10 text-orange-600 border-orange-200"
-                          }
-                        >
-                          {reg.isApproved ? "مؤكد" : "معلق"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {reg.attendance?.attended ? (
-                          <Badge className="bg-green-500/10 text-green-600 border-green-200">
-                            <CheckCircle className="h-3 w-3 me-1" />
-                            حضر
-                          </Badge>
-                        ) : new Date(reg.session.date) < new Date() ? (
-                          <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-200">
-                            لم يحضر
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-muted-foreground">
-                            <Clock className="h-3 w-3 me-1" />
-                            قادم
-                          </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {user.registrations.map((reg) => {
+                    const expanded = isExpanded(reg.id);
+                    return (
+                      <React.Fragment key={reg.id}>
+                        <TableRow>
+                          <TableCell>
+                            <Link
+                              href={`/admin/sessions/${reg.session.id}`}
+                              className="font-medium hover:underline"
+                            >
+                              {reg.session.title}
+                            </Link>
+                            <p className="text-xs text-muted-foreground hidden md:block">
+                              #{reg.session.sessionNumber}
+                            </p>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {formatArabicDate(new Date(reg.session.date))}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {reg.invitedRegistrations.length > 0 ? (
+                              <Badge variant="outline">
+                                {reg.invitedRegistrations.length} مرافق
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={reg.isApproved ? "default" : "outline"}
+                              className={
+                                reg.isApproved
+                                  ? "bg-green-500/10 text-green-600 border-green-200"
+                                  : "bg-orange-500/10 text-orange-600 border-orange-200"
+                              }
+                            >
+                              {reg.isApproved ? "مؤكد" : "معلق"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {reg.attendance?.attended ? (
+                              <Badge className="bg-green-500/10 text-green-600 border-green-200">
+                                <CheckCircle className="h-3 w-3 me-1" />
+                                حضر
+                              </Badge>
+                            ) : new Date(reg.session.date) < new Date() ? (
+                              <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-200">
+                                لم يحضر
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-muted-foreground">
+                                <Clock className="h-3 w-3 me-1" />
+                                قادم
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="md:hidden">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => toggleRow(reg.id)}
+                            >
+                              {expanded ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        <tr className="md:hidden">
+                          <td colSpan={3} className="p-0">
+                            <div
+                              className={cn(
+                                "grid transition-all duration-300 ease-in-out",
+                                expanded
+                                  ? "grid-rows-[1fr] opacity-100"
+                                  : "grid-rows-[0fr] opacity-0"
+                              )}
+                            >
+                              <div className="overflow-hidden">
+                                <div className="p-4 bg-muted/30 border-b space-y-2 text-sm">
+                                  <div>
+                                    <span className="text-muted-foreground">رقم الحدث:</span>
+                                    <span className="mr-1">#{reg.session.sessionNumber}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">التاريخ:</span>
+                                    <span className="mr-1">{formatArabicDate(new Date(reg.session.date))}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">المرافقين:</span>
+                                    <span className="mr-1">
+                                      {reg.invitedRegistrations.length > 0
+                                        ? `${reg.invitedRegistrations.length} مرافق`
+                                        : "-"}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">الحضور:</span>
+                                    <span className="mr-1">
+                                      {reg.attendance?.attended ? (
+                                        <Badge className="bg-green-500/10 text-green-600 border-green-200">
+                                          <CheckCircle className="h-3 w-3 me-1" />
+                                          حضر
+                                        </Badge>
+                                      ) : new Date(reg.session.date) < new Date() ? (
+                                        <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-200">
+                                          لم يحضر
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-muted-foreground">
+                                          <Clock className="h-3 w-3 me-1" />
+                                          قادم
+                                        </Badge>
+                                      )}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      </React.Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}

@@ -1,9 +1,11 @@
 "use client";
 
-import { use, useState, useCallback, useMemo, useEffect } from "react";
+import React, { use, useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { api } from "@/trpc/react";
+import { useExpandableRows } from "@/hooks/use-expandable-rows";
+import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +50,8 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 
 // Attendee type for the attendance list
@@ -85,6 +89,7 @@ export default function CheckInPage({
   const { id } = use(params);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
+  const { isExpanded, toggleRow } = useExpandableRows();
 
   // QR Scanner Dialog state
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -393,85 +398,161 @@ export default function CheckInPage({
                   <TableRow>
                     <TableHead>الاسم</TableHead>
                     <TableHead>الحالة</TableHead>
-                    <TableHead>وقت الحضور</TableHead>
-                    <TableHead className="w-24">إجراء</TableHead>
+                    <TableHead className="hidden md:table-cell">وقت الحضور</TableHead>
+                    <TableHead className="hidden md:table-cell w-24">إجراء</TableHead>
+                    <TableHead className="md:hidden w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAttendees.map((attendee) => (
-                    <TableRow key={attendee.registrationId}>
-                      <TableCell>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{attendee.name}</p>
-                            {attendee.isInvited && (
-                              <Badge
-                                variant="outline"
-                                className="bg-purple-500/10 text-purple-600 border-purple-200 text-xs"
-                              >
-                                <UserPlus className="me-1 h-3 w-3" />
-                                مرافق
-                              </Badge>
+                  {filteredAttendees.map((attendee) => {
+                    const expanded = isExpanded(attendee.registrationId);
+                    return (
+                      <React.Fragment key={attendee.registrationId}>
+                        <TableRow>
+                          <TableCell>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">{attendee.name}</p>
+                                {attendee.isInvited && (
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-purple-500/10 text-purple-600 border-purple-200 text-xs"
+                                  >
+                                    <UserPlus className="me-1 h-3 w-3" />
+                                    مرافق
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground hidden md:block">
+                                {attendee.email}
+                              </p>
+                              {attendee.isInvited && attendee.invitedByName && (
+                                <p className="text-xs text-muted-foreground hidden md:block">
+                                  مدعو من: {attendee.invitedByName}
+                                </p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={attendee.attended ? "default" : "outline"}
+                              className={
+                                attendee.attended
+                                  ? "bg-green-500/10 text-green-600 border-green-200"
+                                  : "bg-orange-500/10 text-orange-600 border-orange-200"
+                              }
+                            >
+                              {attendee.attended ? (
+                                <>
+                                  <Check className="me-1 h-3 w-3" />
+                                  حاضر
+                                </>
+                              ) : (
+                                "غائب"
+                              )}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {attendee.attended ? (
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                {formatCheckInTime(attendee.checkInTime)}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
                             )}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {attendee.email}
-                          </p>
-                          {attendee.isInvited && attendee.invitedByName && (
-                            <p className="text-xs text-muted-foreground">
-                              مدعو من: {attendee.invitedByName}
-                            </p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={attendee.attended ? "default" : "outline"}
-                          className={
-                            attendee.attended
-                              ? "bg-green-500/10 text-green-600 border-green-200"
-                              : "bg-orange-500/10 text-orange-600 border-orange-200"
-                          }
-                        >
-                          {attendee.attended ? (
-                            <>
-                              <Check className="me-1 h-3 w-3" />
-                              حاضر
-                            </>
-                          ) : (
-                            "غائب"
-                          )}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {attendee.attended ? (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            {formatCheckInTime(attendee.checkInTime)}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {!attendee.attended && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              markManualMutation.mutate({
-                                registrationId: attendee.registrationId,
-                                attended: true,
-                              })
-                            }
-                            disabled={markManualMutation.isPending}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {!attendee.attended && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  markManualMutation.mutate({
+                                    registrationId: attendee.registrationId,
+                                    attended: true,
+                                  })
+                                }
+                                disabled={markManualMutation.isPending}
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                          <TableCell className="md:hidden">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => toggleRow(attendee.registrationId)}
+                            >
+                              {expanded ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        <tr className="md:hidden">
+                          <td colSpan={3} className="p-0">
+                            <div
+                              className={cn(
+                                "grid transition-all duration-300 ease-in-out",
+                                expanded
+                                  ? "grid-rows-[1fr] opacity-100"
+                                  : "grid-rows-[0fr] opacity-0"
+                              )}
+                            >
+                              <div className="overflow-hidden">
+                                <div className="p-4 bg-muted/30 border-b space-y-3">
+                                  <div className="text-sm space-y-2">
+                                    {attendee.email && (
+                                      <div>
+                                        <span className="text-muted-foreground">البريد:</span>
+                                        <span className="mr-1">{attendee.email}</span>
+                                      </div>
+                                    )}
+                                    {attendee.isInvited && attendee.invitedByName && (
+                                      <div>
+                                        <span className="text-muted-foreground">مدعو من:</span>
+                                        <span className="mr-1">{attendee.invitedByName}</span>
+                                      </div>
+                                    )}
+                                    {attendee.attended && (
+                                      <div>
+                                        <span className="text-muted-foreground">وقت الحضور:</span>
+                                        <span className="mr-1">
+                                          {formatCheckInTime(attendee.checkInTime)}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {!attendee.attended && (
+                                    <div className="pt-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                          markManualMutation.mutate({
+                                            registrationId: attendee.registrationId,
+                                            attended: true,
+                                          })
+                                        }
+                                        disabled={markManualMutation.isPending}
+                                      >
+                                        <Check className="h-3 w-3 ml-1" />
+                                        تسجيل حضور
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      </React.Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}

@@ -1,8 +1,10 @@
 "use client";
 
-import { use, useState } from "react";
+import React, { use, useState } from "react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
+import { useExpandableRows } from "@/hooks/use-expandable-rows";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -50,6 +52,7 @@ import {
   Copy,
   Check,
   ChevronDown,
+  ChevronUp,
   Users,
   MailCheck,
   Clock,
@@ -76,6 +79,7 @@ export default function InvitationsPage({
 }) {
   const { id: sessionId } = use(params);
   const utils = api.useUtils();
+  const { isExpanded, toggleRow } = useExpandableRows();
 
   // Shared state
   const [activeTab, setActiveTab] = useState("email");
@@ -828,8 +832,9 @@ export default function InvitationsPage({
                         </TableHead>
                         <TableHead>البريد / الرقم</TableHead>
                         <TableHead>الحالة</TableHead>
-                        <TableHead>تاريخ الإرسال</TableHead>
-                        <TableHead>إجراءات</TableHead>
+                        <TableHead className="hidden md:table-cell">تاريخ الإرسال</TableHead>
+                        <TableHead className="hidden md:table-cell">إجراءات</TableHead>
+                        <TableHead className="md:hidden w-10"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -838,67 +843,131 @@ export default function InvitationsPage({
                         const displayValue = isWhatsApp
                           ? invite.email.replace("whatsapp-", "").replace("@placeholder.local", "")
                           : invite.email;
+                        const expanded = isExpanded(invite.id);
 
                         return (
-                          <TableRow key={invite.id}>
-                            <TableCell>
-                              <Checkbox
-                                checked={selectedInvites.includes(invite.id)}
-                                onCheckedChange={() => toggleInvite(invite.id)}
-                                disabled={invite.used || invite.invalidated}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {isWhatsApp ? (
-                                  <Phone className="h-4 w-4 text-green-600" />
+                          <React.Fragment key={invite.id}>
+                            <TableRow>
+                              <TableCell>
+                                <Checkbox
+                                  checked={selectedInvites.includes(invite.id)}
+                                  onCheckedChange={() => toggleInvite(invite.id)}
+                                  disabled={invite.used || invite.invalidated}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {isWhatsApp ? (
+                                    <Phone className="h-4 w-4 text-green-600" />
+                                  ) : (
+                                    <Mail className="h-4 w-4 text-blue-600" />
+                                  )}
+                                  <span className={cn(isWhatsApp && "font-mono", "truncate max-w-[150px] md:max-w-none")} dir={isWhatsApp ? "ltr" : "rtl"}>
+                                    {displayValue}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {invite.used ? (
+                                  <Badge variant="default" className="bg-blue-500">مستخدمة</Badge>
+                                ) : invite.invalidated ? (
+                                  <Badge variant="destructive">ملغاة</Badge>
+                                ) : invite.isExpired ? (
+                                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600">منتهية</Badge>
                                 ) : (
-                                  <Mail className="h-4 w-4 text-blue-600" />
+                                  <Badge variant="outline" className="bg-green-500/10 text-green-600">سارية</Badge>
                                 )}
-                                <span className={isWhatsApp ? "font-mono" : ""} dir={isWhatsApp ? "ltr" : "rtl"}>
-                                  {displayValue}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {invite.used ? (
-                                <Badge variant="default" className="bg-blue-500">مستخدمة</Badge>
-                              ) : invite.invalidated ? (
-                                <Badge variant="destructive">ملغاة</Badge>
-                              ) : invite.isExpired ? (
-                                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600">منتهية</Badge>
-                              ) : (
-                                <Badge variant="outline" className="bg-green-500/10 text-green-600">سارية</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {invite.sentAt ? new Date(invite.sentAt).toLocaleDateString("ar-SA") : "-"}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                {!invite.used && !invite.invalidated && !isWhatsApp && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => resendMutation.mutate({ inviteId: invite.id })}
-                                    disabled={resendMutation.isPending}
-                                  >
-                                    <RefreshCw className="h-4 w-4" />
-                                  </Button>
-                                )}
-                                {!invite.used && !invite.invalidated && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => setConfirmAction({ type: "invalidateSingle", inviteId: invite.id })}
-                                    disabled={invalidateMutation.isPending}
-                                  >
-                                    <Ban className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                {invite.sentAt ? new Date(invite.sentAt).toLocaleDateString("ar-SA") : "-"}
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                <div className="flex gap-1">
+                                  {!invite.used && !invite.invalidated && !isWhatsApp && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => resendMutation.mutate({ inviteId: invite.id })}
+                                      disabled={resendMutation.isPending}
+                                    >
+                                      <RefreshCw className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {!invite.used && !invite.invalidated && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setConfirmAction({ type: "invalidateSingle", inviteId: invite.id })}
+                                      disabled={invalidateMutation.isPending}
+                                    >
+                                      <Ban className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="md:hidden">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => toggleRow(invite.id)}
+                                >
+                                  {expanded ? (
+                                    <ChevronUp className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronDown className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                            <tr className="md:hidden">
+                              <td colSpan={4} className="p-0">
+                                <div
+                                  className={cn(
+                                    "grid transition-all duration-300 ease-in-out",
+                                    expanded
+                                      ? "grid-rows-[1fr] opacity-100"
+                                      : "grid-rows-[0fr] opacity-0"
+                                  )}
+                                >
+                                  <div className="overflow-hidden">
+                                    <div className="p-4 bg-muted/30 border-b space-y-3">
+                                      <div className="text-sm">
+                                        <span className="text-muted-foreground">تاريخ الإرسال:</span>
+                                        <span className="mr-1">
+                                          {invite.sentAt ? new Date(invite.sentAt).toLocaleDateString("ar-SA") : "-"}
+                                        </span>
+                                      </div>
+                                      {(!invite.used && !invite.invalidated) && (
+                                        <div className="flex gap-2">
+                                          {!isWhatsApp && (
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() => resendMutation.mutate({ inviteId: invite.id })}
+                                              disabled={resendMutation.isPending}
+                                            >
+                                              <RefreshCw className="h-3 w-3 ml-1" />
+                                              إعادة إرسال
+                                            </Button>
+                                          )}
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="text-destructive"
+                                            onClick={() => setConfirmAction({ type: "invalidateSingle", inviteId: invite.id })}
+                                            disabled={invalidateMutation.isPending}
+                                          >
+                                            <Ban className="h-3 w-3 ml-1" />
+                                            إلغاء
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          </React.Fragment>
                         );
                       })}
                     </TableBody>

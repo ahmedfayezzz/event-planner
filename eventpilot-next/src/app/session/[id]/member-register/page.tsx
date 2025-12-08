@@ -333,8 +333,8 @@ export default function MemberRegisterPage({
               </CardContent>
             </Card>
 
-            {/* Hosting Section - Only show if user is not already a host */}
-            {!isAlreadyHost && (
+            {/* Hosting Section - Only show if user is not already a host and session allows it */}
+            {!isAlreadyHost && session?.showCateringInterest && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">

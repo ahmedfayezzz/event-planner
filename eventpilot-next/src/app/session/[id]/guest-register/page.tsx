@@ -348,54 +348,60 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="goal">ماذا تتمنى من الانضمام؟</Label>
-                  <Textarea
-                    id="goal"
-                    value={formData.goal}
-                    onChange={(e) => handleInputChange("goal", e.target.value)}
-                    placeholder="أخبرنا عن أهدافك من الانضمام للتجمع"
-                    rows={3}
-                  />
-                </div>
+                {session?.showRegistrationPurpose && (
+                  <div className="space-y-2">
+                    <Label htmlFor="goal">ماذا تتمنى من الانضمام؟</Label>
+                    <Textarea
+                      id="goal"
+                      value={formData.goal}
+                      onChange={(e) => handleInputChange("goal", e.target.value)}
+                      placeholder="أخبرنا عن أهدافك من الانضمام للتجمع"
+                      rows={3}
+                    />
+                  </div>
+                )}
               </div>
-
-              <Separator />
 
               {/* Social Media */}
-              <div className="space-y-4">
-                <h3 className="font-semibold">وسائل التواصل الاجتماعي</h3>
+              {session?.showSocialMediaFields && (
+                <>
+                  <Separator />
 
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="instagram">Instagram</Label>
-                    <Input
-                      id="instagram"
-                      value={formData.instagram}
-                      onChange={(e) => handleInputChange("instagram", e.target.value)}
-                      placeholder="اسم المستخدم"
-                    />
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">وسائل التواصل الاجتماعي</h3>
+
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="instagram">Instagram</Label>
+                        <Input
+                          id="instagram"
+                          value={formData.instagram}
+                          onChange={(e) => handleInputChange("instagram", e.target.value)}
+                          placeholder="اسم المستخدم"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="snapchat">Snapchat</Label>
+                        <Input
+                          id="snapchat"
+                          value={formData.snapchat}
+                          onChange={(e) => handleInputChange("snapchat", e.target.value)}
+                          placeholder="اسم المستخدم"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="twitter">X (Twitter)</Label>
+                        <Input
+                          id="twitter"
+                          value={formData.twitter}
+                          onChange={(e) => handleInputChange("twitter", e.target.value)}
+                          placeholder="اسم المستخدم"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="snapchat">Snapchat</Label>
-                    <Input
-                      id="snapchat"
-                      value={formData.snapchat}
-                      onChange={(e) => handleInputChange("snapchat", e.target.value)}
-                      placeholder="اسم المستخدم"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="twitter">X (Twitter)</Label>
-                    <Input
-                      id="twitter"
-                      value={formData.twitter}
-                      onChange={(e) => handleInputChange("twitter", e.target.value)}
-                      placeholder="اسم المستخدم"
-                    />
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
 
               <Separator />
 
@@ -489,61 +495,65 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
               )}
 
               {/* Hosting Section */}
-              <div className="space-y-4">
-                <h3 className="font-semibold">تقديم الضيافة (اختياري)</h3>
-                <div className="flex items-start space-x-3 space-x-reverse">
-                  <Checkbox
-                    id="wantsToHost"
-                    checked={formData.wantsToHost}
-                    onCheckedChange={(checked) =>
-                      setFormData({
-                        ...formData,
-                        wantsToHost: checked === true,
-                        hostingTypes: checked ? formData.hostingTypes : [],
-                      })
-                    }
-                    className="mt-1"
-                  />
-                  <div className="space-y-1">
-                    <Label htmlFor="wantsToHost" className="cursor-pointer font-medium">
-                      هل تريد تقديم الضيافة في أحد أحداثنا القادمة؟
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      سوف يتم التواصل معكم لتحديد الاحتياج
-                    </p>
-                  </div>
-                </div>
-
-                {formData.wantsToHost && (
-                  <div className="pe-7 space-y-2">
-                    <Label>نوع الضيافة</Label>
-                    <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
-                      {HOSTING_TYPES.map((type) => (
-                        <div key={type.value} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`hosting-${type.value}`}
-                            checked={formData.hostingTypes.includes(type.value)}
-                            onCheckedChange={(checked) => {
-                              const types = checked
-                                ? [...formData.hostingTypes, type.value]
-                                : formData.hostingTypes.filter((t) => t !== type.value);
-                              setFormData({ ...formData, hostingTypes: types });
-                            }}
-                          />
-                          <Label
-                            htmlFor={`hosting-${type.value}`}
-                            className="cursor-pointer text-sm"
-                          >
-                            {type.label}
-                          </Label>
-                        </div>
-                      ))}
+              {session?.showCateringInterest && (
+                <>
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">تقديم الضيافة (اختياري)</h3>
+                    <div className="flex items-start space-x-3 space-x-reverse">
+                      <Checkbox
+                        id="wantsToHost"
+                        checked={formData.wantsToHost}
+                        onCheckedChange={(checked) =>
+                          setFormData({
+                            ...formData,
+                            wantsToHost: checked === true,
+                            hostingTypes: checked ? formData.hostingTypes : [],
+                          })
+                        }
+                        className="mt-1"
+                      />
+                      <div className="space-y-1">
+                        <Label htmlFor="wantsToHost" className="cursor-pointer font-medium">
+                          هل تريد تقديم الضيافة في أحد أحداثنا القادمة؟
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          سوف يتم التواصل معكم لتحديد الاحتياج
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
 
-              <Separator />
+                    {formData.wantsToHost && (
+                      <div className="pe-7 space-y-2">
+                        <Label>نوع الضيافة</Label>
+                        <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
+                          {HOSTING_TYPES.map((type) => (
+                            <div key={type.value} className="flex items-center gap-2">
+                              <Checkbox
+                                id={`hosting-${type.value}`}
+                                checked={formData.hostingTypes.includes(type.value)}
+                                onCheckedChange={(checked) => {
+                                  const types = checked
+                                    ? [...formData.hostingTypes, type.value]
+                                    : formData.hostingTypes.filter((t) => t !== type.value);
+                                  setFormData({ ...formData, hostingTypes: types });
+                                }}
+                              />
+                              <Label
+                                htmlFor={`hosting-${type.value}`}
+                                className="cursor-pointer text-sm"
+                              >
+                                {type.label}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+                </>
+              )}
 
               {/* Create Account Option */}
               <div className="space-y-4">

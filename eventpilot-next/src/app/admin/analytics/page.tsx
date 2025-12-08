@@ -1,6 +1,10 @@
 "use client";
 
+import React from "react";
 import { api } from "@/trpc/react";
+import { useExpandableRows } from "@/hooks/use-expandable-rows";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -27,6 +31,8 @@ import {
   Clock,
   UtensilsCrossed,
   UsersRound,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import {
   LineChart,
@@ -57,6 +63,7 @@ const COLORS = [
 
 export default function AnalyticsPage() {
   const { data: analytics, isLoading } = api.admin.getAnalytics.useQuery();
+  const { isExpanded, toggleRow } = useExpandableRows();
 
   if (isLoading) {
     return (
@@ -533,46 +540,104 @@ export default function AnalyticsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>الحدث</TableHead>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>المسجلين</TableHead>
-                  <TableHead>الحاضرين</TableHead>
+                  <TableHead className="hidden md:table-cell">التاريخ</TableHead>
+                  <TableHead className="hidden lg:table-cell">المسجلين</TableHead>
+                  <TableHead className="hidden lg:table-cell">الحاضرين</TableHead>
                   <TableHead>نسبة الحضور</TableHead>
-                  <TableHead>نسبة الامتلاء</TableHead>
+                  <TableHead className="hidden md:table-cell">نسبة الامتلاء</TableHead>
+                  <TableHead className="md:hidden w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {analytics.sessionPerformance.map((session) => (
-                  <TableRow key={session.id}>
-                    <TableCell className="font-medium">{session.title}</TableCell>
-                    <TableCell>
-                      {formatArabicDate(new Date(session.date))}
-                    </TableCell>
-                    <TableCell>{session.registrations}</TableCell>
-                    <TableCell>{session.attendees}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
+                {analytics.sessionPerformance.map((session) => {
+                  const expanded = isExpanded(`session-${session.id}`);
+                  return (
+                    <React.Fragment key={session.id}>
+                      <TableRow>
+                        <TableCell className="font-medium">{session.title}</TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          {formatArabicDate(new Date(session.date))}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">{session.registrations}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{session.attendees}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className="h-full bg-green-500"
+                                style={{ width: `${session.attendanceRate}%` }}
+                              />
+                            </div>
+                            <span className="text-sm">{session.attendanceRate}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className="h-full bg-blue-500"
+                                style={{ width: `${session.fillRate}%` }}
+                              />
+                            </div>
+                            <span className="text-sm">{session.fillRate}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="md:hidden">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleRow(`session-${session.id}`)}
+                          >
+                            {expanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      <tr className="md:hidden">
+                        <td colSpan={3} className="p-0">
                           <div
-                            className="h-full bg-green-500"
-                            style={{ width: `${session.attendanceRate}%` }}
-                          />
-                        </div>
-                        <span className="text-sm">{session.attendanceRate}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
-                          <div
-                            className="h-full bg-blue-500"
-                            style={{ width: `${session.fillRate}%` }}
-                          />
-                        </div>
-                        <span className="text-sm">{session.fillRate}%</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                            className={cn(
+                              "grid transition-all duration-300 ease-in-out",
+                              expanded
+                                ? "grid-rows-[1fr] opacity-100"
+                                : "grid-rows-[0fr] opacity-0"
+                            )}
+                          >
+                            <div className="overflow-hidden">
+                              <div className="p-4 bg-muted/30 border-b space-y-2 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">التاريخ:</span>
+                                  <span className="mr-1">{formatArabicDate(new Date(session.date))}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">المسجلين:</span>
+                                  <span className="mr-1">{session.registrations}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">الحاضرين:</span>
+                                  <span className="mr-1">{session.attendees}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-muted-foreground">نسبة الامتلاء:</span>
+                                  <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
+                                    <div
+                                      className="h-full bg-blue-500"
+                                      style={{ width: `${session.fillRate}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-sm">{session.fillRate}%</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : (
@@ -595,32 +660,80 @@ export default function AnalyticsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>الاسم</TableHead>
-                  <TableHead>الشركة</TableHead>
-                  <TableHead>الأحداث المحضورة</TableHead>
-                  <TableHead>إجمالي التسجيلات</TableHead>
+                  <TableHead className="hidden md:table-cell">الشركة</TableHead>
+                  <TableHead className="hidden md:table-cell">الأحداث المحضورة</TableHead>
+                  <TableHead className="hidden lg:table-cell">إجمالي التسجيلات</TableHead>
                   <TableHead>نسبة الحضور</TableHead>
+                  <TableHead className="md:hidden w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {analytics.topAttendees.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.company || "-"}</TableCell>
-                    <TableCell>{user.sessionsAttended}</TableCell>
-                    <TableCell>{user.totalRegistrations}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
+                {analytics.topAttendees.map((user) => {
+                  const expanded = isExpanded(`attendee-${user.id}`);
+                  return (
+                    <React.Fragment key={user.id}>
+                      <TableRow>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell className="hidden md:table-cell">{user.company || "-"}</TableCell>
+                        <TableCell className="hidden md:table-cell">{user.sessionsAttended}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{user.totalRegistrations}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className="h-full bg-primary"
+                                style={{ width: `${user.attendanceRate}%` }}
+                              />
+                            </div>
+                            <span className="text-sm">{user.attendanceRate}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="md:hidden">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleRow(`attendee-${user.id}`)}
+                          >
+                            {expanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      <tr className="md:hidden">
+                        <td colSpan={3} className="p-0">
                           <div
-                            className="h-full bg-primary"
-                            style={{ width: `${user.attendanceRate}%` }}
-                          />
-                        </div>
-                        <span className="text-sm">{user.attendanceRate}%</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                            className={cn(
+                              "grid transition-all duration-300 ease-in-out",
+                              expanded
+                                ? "grid-rows-[1fr] opacity-100"
+                                : "grid-rows-[0fr] opacity-0"
+                            )}
+                          >
+                            <div className="overflow-hidden">
+                              <div className="p-4 bg-muted/30 border-b space-y-2 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">الشركة:</span>
+                                  <span className="mr-1">{user.company || "-"}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">الأحداث المحضورة:</span>
+                                  <span className="mr-1">{user.sessionsAttended}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">إجمالي التسجيلات:</span>
+                                  <span className="mr-1">{user.totalRegistrations}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : (

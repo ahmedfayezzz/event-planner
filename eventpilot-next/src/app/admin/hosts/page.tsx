@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { api } from "@/trpc/react";
+import { useExpandableRows } from "@/hooks/use-expandable-rows";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,6 +42,7 @@ import {
   Download,
   Loader2,
   ChevronDown,
+  ChevronUp,
   User,
   UserCheck,
   Plus,
@@ -60,6 +63,7 @@ interface HostItem {
 export default function AdminHostsPage() {
   const [hostingTypeFilter, setHostingTypeFilter] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const { isExpanded, toggleRow } = useExpandableRows();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -251,96 +255,180 @@ export default function AdminHostsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>المضيف</TableHead>
-                    <TableHead>التواصل</TableHead>
-                    <TableHead>الشركة</TableHead>
+                    <TableHead className="hidden md:table-cell">التواصل</TableHead>
+                    <TableHead className="hidden lg:table-cell">الشركة</TableHead>
                     <TableHead>أنواع الضيافة</TableHead>
-                    <TableHead>النوع</TableHead>
-                    <TableHead>تاريخ التسجيل</TableHead>
-                    <TableHead className="text-left">إجراءات</TableHead>
+                    <TableHead className="hidden md:table-cell">النوع</TableHead>
+                    <TableHead className="hidden lg:table-cell">تاريخ التسجيل</TableHead>
+                    <TableHead className="hidden md:table-cell text-left">إجراءات</TableHead>
+                    <TableHead className="md:hidden w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {allHosts.map((host) => (
-                    <TableRow key={host.id}>
-                      <TableCell>
-                        <p className="font-medium">{host.name || "-"}</p>
-                      </TableCell>
-                      <TableCell dir="ltr">
-                        <div>
-                          {host.email && !host.email.includes("@placeholder.local") ? (
-                            <a
-                              href={`mailto:${host.email}`}
-                              className="text-sm hover:underline underline"
-                            >
-                              {host.email}
-                            </a>
-                          ) : (
-                            <p className="text-sm">-</p>
-                          )}
-                          {host.phone ? (
-                            <a
-                              href={`tel:${host.phone}`}
-                              className="text-xs text-muted-foreground hover:underline underline block"
-                            >
-                              {host.phone}
-                            </a>
-                          ) : (
-                            <p className="text-xs text-muted-foreground">-</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{host.companyName || "-"}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {host.hostingTypes.map((type) => (
+                  {allHosts.map((host) => {
+                    const expanded = isExpanded(host.id);
+                    return (
+                      <React.Fragment key={host.id}>
+                        <TableRow>
+                          <TableCell>
+                            <p className="font-medium">{host.name || "-"}</p>
+                          </TableCell>
+                          <TableCell dir="ltr" className="hidden md:table-cell">
+                            <div>
+                              {host.email && !host.email.includes("@placeholder.local") ? (
+                                <a
+                                  href={`mailto:${host.email}`}
+                                  className="text-sm hover:underline underline"
+                                >
+                                  {host.email}
+                                </a>
+                              ) : (
+                                <p className="text-sm">-</p>
+                              )}
+                              {host.phone ? (
+                                <a
+                                  href={`tel:${host.phone}`}
+                                  className="text-xs text-muted-foreground hover:underline underline block"
+                                >
+                                  {host.phone}
+                                </a>
+                              ) : (
+                                <p className="text-xs text-muted-foreground">-</p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">{host.companyName || "-"}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {host.hostingTypes.map((type) => (
+                                <Badge
+                                  key={type}
+                                  variant="outline"
+                                  className="bg-primary/10 text-primary border-primary/20"
+                                >
+                                  {getHostingTypeLabel(type)}
+                                </Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
                             <Badge
-                              key={type}
-                              variant="outline"
-                              className="bg-primary/10 text-primary border-primary/20"
+                              variant={host.isGuest ? "secondary" : "default"}
+                              className="gap-1"
                             >
-                              {getHostingTypeLabel(type)}
+                              {host.isGuest ? (
+                                <>
+                                  <User className="h-3 w-3" />
+                                  زائر
+                                </>
+                              ) : (
+                                <>
+                                  <UserCheck className="h-3 w-3" />
+                                  عضو
+                                </>
+                              )}
                             </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={host.isGuest ? "secondary" : "default"}
-                          className="gap-1"
-                        >
-                          {host.isGuest ? (
-                            <>
-                              <User className="h-3 w-3" />
-                              زائر
-                            </>
-                          ) : (
-                            <>
-                              <UserCheck className="h-3 w-3" />
-                              عضو
-                            </>
-                          )}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {formatArabicDate(new Date(host.createdAt))}
-                      </TableCell>
-                      <TableCell>
-                        {host.phone && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                            onClick={() =>
-                              handleWhatsApp(host.phone!, host.name || "")
-                            }
-                            title="إرسال رسالة واتساب"
-                          >
-                            <MessageCircle className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {formatArabicDate(new Date(host.createdAt))}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {host.phone && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                onClick={() =>
+                                  handleWhatsApp(host.phone!, host.name || "")
+                                }
+                                title="إرسال رسالة واتساب"
+                              >
+                                <MessageCircle className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                          <TableCell className="md:hidden">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => toggleRow(host.id)}
+                            >
+                              {expanded ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        <tr className="md:hidden">
+                          <td colSpan={3} className="p-0">
+                            <div
+                              className={cn(
+                                "grid transition-all duration-300 ease-in-out",
+                                expanded
+                                  ? "grid-rows-[1fr] opacity-100"
+                                  : "grid-rows-[0fr] opacity-0"
+                              )}
+                            >
+                              <div className="overflow-hidden">
+                                <div className="p-4 bg-muted/30 border-b space-y-3">
+                                  <div className="text-sm space-y-2">
+                                    <div dir="ltr">
+                                      <span className="text-muted-foreground">البريد:</span>
+                                      <span className="mr-1">
+                                        {host.email && !host.email.includes("@placeholder.local")
+                                          ? host.email
+                                          : "-"}
+                                      </span>
+                                    </div>
+                                    <div dir="ltr">
+                                      <span className="text-muted-foreground">الهاتف:</span>
+                                      <span className="mr-1">{host.phone || "-"}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">الشركة:</span>
+                                      <span className="mr-1">{host.companyName || "-"}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">النوع:</span>
+                                      <span className="mr-1">
+                                        <Badge
+                                          variant={host.isGuest ? "secondary" : "default"}
+                                          className="gap-1"
+                                        >
+                                          {host.isGuest ? "زائر" : "عضو"}
+                                        </Badge>
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">تاريخ التسجيل:</span>
+                                      <span className="mr-1">{formatArabicDate(new Date(host.createdAt))}</span>
+                                    </div>
+                                  </div>
+                                  {host.phone && (
+                                    <div className="pt-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-green-600 hover:text-green-700"
+                                        onClick={() =>
+                                          handleWhatsApp(host.phone!, host.name || "")
+                                        }
+                                      >
+                                        <MessageCircle className="ml-1 h-3 w-3" />
+                                        واتساب
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      </React.Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
 

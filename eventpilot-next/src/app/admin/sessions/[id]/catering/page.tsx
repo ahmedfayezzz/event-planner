@@ -1,8 +1,10 @@
 "use client";
 
-import { use, useState } from "react";
+import React, { use, useState } from "react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
+import { useExpandableRows } from "@/hooks/use-expandable-rows";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -63,6 +65,8 @@ import {
   Phone,
   Building2,
   User,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatArabicDate } from "@/lib/utils";
@@ -80,6 +84,7 @@ interface PageProps {
 
 export default function CateringPage({ params }: PageProps) {
   const { id } = use(params);
+  const { isExpanded, toggleRow } = useExpandableRows();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -264,87 +269,168 @@ export default function CateringPage({ params }: PageProps) {
                 <TableRow>
                   <TableHead>نوع الضيافة</TableHead>
                   <TableHead>المضيف</TableHead>
-                  <TableHead>الهاتف</TableHead>
-                  <TableHead>الشركة</TableHead>
-                  <TableHead>ملاحظات</TableHead>
-                  <TableHead className="text-left">إجراءات</TableHead>
+                  <TableHead className="hidden md:table-cell">الهاتف</TableHead>
+                  <TableHead className="hidden lg:table-cell">الشركة</TableHead>
+                  <TableHead className="hidden lg:table-cell">ملاحظات</TableHead>
+                  <TableHead className="hidden md:table-cell text-left">إجراءات</TableHead>
+                  <TableHead className="md:hidden w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {caterings.map((catering) => (
-                  <TableRow key={catering.id}>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {getHostingTypeLabel(catering.hostingType)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {catering.isSelfCatering ? (
-                        <span className="text-muted-foreground">
-                          ضيافة ذاتية
-                        </span>
-                      ) : catering.host ? (
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          {catering.host.name}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">غير محدد</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {catering.host?.phone ? (
-                        <a
-                          href={`tel:${catering.host.phone}`}
-                          className="flex items-center gap-1 text-primary hover:underline"
-                        >
-                          <Phone className="h-3 w-3" />
-                          {catering.host.phone}
-                        </a>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {catering.host?.companyName ? (
-                        <div className="flex items-center gap-1">
-                          <Building2 className="h-3 w-3 text-muted-foreground" />
-                          {catering.host.companyName}
-                        </div>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {catering.notes ? (
-                        <span className="text-sm text-muted-foreground">
-                          {catering.notes}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(catering)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => setDeleteId(catering.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {caterings.map((catering) => {
+                  const expanded = isExpanded(catering.id);
+                  return (
+                    <React.Fragment key={catering.id}>
+                      <TableRow>
+                        <TableCell>
+                          <Badge variant="secondary">
+                            {getHostingTypeLabel(catering.hostingType)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {catering.isSelfCatering ? (
+                            <span className="text-muted-foreground">
+                              ضيافة ذاتية
+                            </span>
+                          ) : catering.host ? (
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              {catering.host.name}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">غير محدد</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          {catering.host?.phone ? (
+                            <a
+                              href={`tel:${catering.host.phone}`}
+                              className="flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <Phone className="h-3 w-3" />
+                              {catering.host.phone}
+                            </a>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          {catering.host?.companyName ? (
+                            <div className="flex items-center gap-1">
+                              <Building2 className="h-3 w-3 text-muted-foreground" />
+                              {catering.host.companyName}
+                            </div>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          {catering.notes ? (
+                            <span className="text-sm text-muted-foreground">
+                              {catering.notes}
+                            </span>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditDialog(catering)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setDeleteId(catering.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell className="md:hidden">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleRow(catering.id)}
+                          >
+                            {expanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      <tr className="md:hidden">
+                        <td colSpan={3} className="p-0">
+                          <div
+                            className={cn(
+                              "grid transition-all duration-300 ease-in-out",
+                              expanded
+                                ? "grid-rows-[1fr] opacity-100"
+                                : "grid-rows-[0fr] opacity-0"
+                            )}
+                          >
+                            <div className="overflow-hidden">
+                              <div className="p-4 bg-muted/30 border-b space-y-3">
+                                <div className="text-sm space-y-2">
+                                  {catering.host?.phone && (
+                                    <div>
+                                      <span className="text-muted-foreground">الهاتف:</span>
+                                      <a
+                                        href={`tel:${catering.host.phone}`}
+                                        className="mr-1 text-primary hover:underline"
+                                        dir="ltr"
+                                      >
+                                        {catering.host.phone}
+                                      </a>
+                                    </div>
+                                  )}
+                                  {catering.host?.companyName && (
+                                    <div>
+                                      <span className="text-muted-foreground">الشركة:</span>
+                                      <span className="mr-1">{catering.host.companyName}</span>
+                                    </div>
+                                  )}
+                                  {catering.notes && (
+                                    <div>
+                                      <span className="text-muted-foreground">ملاحظات:</span>
+                                      <span className="mr-1">{catering.notes}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex gap-2 pt-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openEditDialog(catering)}
+                                  >
+                                    <Edit className="h-3 w-3 ml-1" />
+                                    تعديل
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => setDeleteId(catering.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3 ml-1" />
+                                    حذف
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/trpc/react";
+import { useExpandableRows } from "@/hooks/use-expandable-rows";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +57,8 @@ import {
   UserCheck,
   Loader2,
   ShieldCheck,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { PERMISSION_LABELS, type PermissionKey } from "@/lib/permissions";
 
@@ -89,6 +93,7 @@ interface AdminUser {
 export default function AdminsPage() {
   const { data: session } = useSession();
   const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
+  const { isExpanded, toggleRow } = useExpandableRows();
 
   // Permission dialog state
   const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
@@ -332,10 +337,11 @@ export default function AdminsPage() {
                 <TableRow>
                   <TableHead>المدير</TableHead>
                   <TableHead>الدور</TableHead>
-                  <TableHead>الصلاحيات</TableHead>
+                  <TableHead className="hidden md:table-cell">الصلاحيات</TableHead>
                   <TableHead>الحالة</TableHead>
-                  <TableHead>تاريخ الإنشاء</TableHead>
-                  <TableHead></TableHead>
+                  <TableHead className="hidden md:table-cell">تاريخ الإنشاء</TableHead>
+                  <TableHead className="hidden md:table-cell"></TableHead>
+                  <TableHead className="md:hidden w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -343,121 +349,229 @@ export default function AdminsPage() {
                   const isCurrentUser = admin.id === currentUserId;
                   const isSuperAdminUser = admin.role === "SUPER_ADMIN";
                   const permissionCount = getPermissionCount(admin);
+                  const expanded = isExpanded(admin.id);
 
                   return (
-                    <TableRow key={admin.id}>
-                      <TableCell>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{admin.name}</p>
-                            {isCurrentUser && (
-                              <Badge variant="outline" className="text-xs">
-                                أنت
-                              </Badge>
-                            )}
+                    <React.Fragment key={admin.id}>
+                      <TableRow>
+                        <TableCell>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{admin.name}</p>
+                              {isCurrentUser && (
+                                <Badge variant="outline" className="text-xs">
+                                  أنت
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground hidden md:block">
+                              {admin.email}
+                            </p>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {admin.email}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={isSuperAdminUser ? "destructive" : "default"}
-                          className="gap-1"
-                        >
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={isSuperAdminUser ? "destructive" : "default"}
+                            className="gap-1"
+                          >
+                            {isSuperAdminUser ? (
+                              <Crown className="h-3 w-3" />
+                            ) : (
+                              <Shield className="h-3 w-3" />
+                            )}
+                            {isSuperAdminUser ? "مدير رئيسي" : "مدير"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
                           {isSuperAdminUser ? (
-                            <Crown className="h-3 w-3" />
+                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                              جميع الصلاحيات
+                            </Badge>
                           ) : (
-                            <Shield className="h-3 w-3" />
+                            <Badge variant="outline">
+                              {permissionCount} من {ALL_PERMISSIONS.length}
+                            </Badge>
                           )}
-                          {isSuperAdminUser ? "مدير رئيسي" : "مدير"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {isSuperAdminUser ? (
-                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                            جميع الصلاحيات
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={
+                              admin.isActive
+                                ? "bg-green-500/10 text-green-600 border-green-200"
+                                : "bg-red-500/10 text-red-600 border-red-200"
+                            }
+                          >
+                            {admin.isActive ? "نشط" : "معطل"}
                           </Badge>
-                        ) : (
-                          <Badge variant="outline">
-                            {permissionCount} من {ALL_PERMISSIONS.length}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            admin.isActive
-                              ? "bg-green-500/10 text-green-600 border-green-200"
-                              : "bg-red-500/10 text-red-600 border-red-200"
-                          }
-                        >
-                          {admin.isActive ? "نشط" : "معطل"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {formatArabicDate(new Date(admin.createdAt))}
-                      </TableCell>
-                      <TableCell>
-                        {isSuperAdmin && !isCurrentUser && !isSuperAdminUser && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => openPermissionDialog(admin)}
-                              >
-                                <Settings className="me-2 h-4 w-4" />
-                                إدارة صلاحيات الوصول
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  setConfirmAction({
-                                    type: "demote",
-                                    adminId: admin.id,
-                                    adminName: admin.name,
-                                  })
-                                }
-                                className="text-amber-600"
-                              >
-                                <Shield className="me-2 h-4 w-4" />
-                                إزالة صلاحية المدير
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  setConfirmAction({
-                                    type: admin.isActive ? "deactivate" : "activate",
-                                    adminId: admin.id,
-                                    adminName: admin.name,
-                                  })
-                                }
-                                className={
-                                  admin.isActive ? "text-red-600" : "text-green-600"
-                                }
-                              >
-                                {admin.isActive ? (
-                                  <>
-                                    <UserX className="me-2 h-4 w-4" />
-                                    تعطيل الحساب
-                                  </>
-                                ) : (
-                                  <>
-                                    <UserCheck className="me-2 h-4 w-4" />
-                                    تفعيل الحساب
-                                  </>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          {formatArabicDate(new Date(admin.createdAt))}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          {isSuperAdmin && !isCurrentUser && !isSuperAdminUser && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => openPermissionDialog(admin)}
+                                >
+                                  <Settings className="me-2 h-4 w-4" />
+                                  إدارة صلاحيات الوصول
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    setConfirmAction({
+                                      type: "demote",
+                                      adminId: admin.id,
+                                      adminName: admin.name,
+                                    })
+                                  }
+                                  className="text-amber-600"
+                                >
+                                  <Shield className="me-2 h-4 w-4" />
+                                  إزالة صلاحية المدير
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    setConfirmAction({
+                                      type: admin.isActive ? "deactivate" : "activate",
+                                      adminId: admin.id,
+                                      adminName: admin.name,
+                                    })
+                                  }
+                                  className={
+                                    admin.isActive ? "text-red-600" : "text-green-600"
+                                  }
+                                >
+                                  {admin.isActive ? (
+                                    <>
+                                      <UserX className="me-2 h-4 w-4" />
+                                      تعطيل الحساب
+                                    </>
+                                  ) : (
+                                    <>
+                                      <UserCheck className="me-2 h-4 w-4" />
+                                      تفعيل الحساب
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </TableCell>
+                        <TableCell className="md:hidden">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleRow(admin.id)}
+                          >
+                            {expanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      <tr className="md:hidden">
+                        <td colSpan={4} className="p-0">
+                          <div
+                            className={cn(
+                              "grid transition-all duration-300 ease-in-out",
+                              expanded
+                                ? "grid-rows-[1fr] opacity-100"
+                                : "grid-rows-[0fr] opacity-0"
+                            )}
+                          >
+                            <div className="overflow-hidden">
+                              <div className="p-4 bg-muted/30 border-b space-y-3">
+                                <div className="text-sm space-y-2">
+                                  <div>
+                                    <span className="text-muted-foreground">البريد:</span>
+                                    <span className="mr-1" dir="ltr">{admin.email}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">الصلاحيات:</span>
+                                    <span className="mr-1">
+                                      {isSuperAdminUser ? (
+                                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                                          جميع الصلاحيات
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline">
+                                          {permissionCount} من {ALL_PERMISSIONS.length}
+                                        </Badge>
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">تاريخ الإنشاء:</span>
+                                    <span className="mr-1">{formatArabicDate(new Date(admin.createdAt))}</span>
+                                  </div>
+                                </div>
+                                {isSuperAdmin && !isCurrentUser && !isSuperAdminUser && (
+                                  <div className="flex flex-wrap gap-2 pt-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openPermissionDialog(admin)}
+                                    >
+                                      <Settings className="ml-1 h-3 w-3" />
+                                      الصلاحيات
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-amber-600"
+                                      onClick={() =>
+                                        setConfirmAction({
+                                          type: "demote",
+                                          adminId: admin.id,
+                                          adminName: admin.name,
+                                        })
+                                      }
+                                    >
+                                      <Shield className="ml-1 h-3 w-3" />
+                                      إزالة المدير
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className={admin.isActive ? "text-red-600" : "text-green-600"}
+                                      onClick={() =>
+                                        setConfirmAction({
+                                          type: admin.isActive ? "deactivate" : "activate",
+                                          adminId: admin.id,
+                                          adminName: admin.name,
+                                        })
+                                      }
+                                    >
+                                      {admin.isActive ? (
+                                        <>
+                                          <UserX className="ml-1 h-3 w-3" />
+                                          تعطيل
+                                        </>
+                                      ) : (
+                                        <>
+                                          <UserCheck className="ml-1 h-3 w-3" />
+                                          تفعيل
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
                                 )}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </TableCell>
-                    </TableRow>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    </React.Fragment>
                   );
                 })}
               </TableBody>
