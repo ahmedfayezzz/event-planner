@@ -5,7 +5,7 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      role: "USER" | "ADMIN" | "SUPER_ADMIN";
+      role: "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN";
       // Admin permissions
       canAccessDashboard: boolean;
       canAccessSessions: boolean;
@@ -18,7 +18,7 @@ declare module "next-auth" {
   }
 
   interface User {
-    role: "USER" | "ADMIN" | "SUPER_ADMIN";
+    role: "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN";
     canAccessDashboard: boolean;
     canAccessSessions: boolean;
     canAccessUsers: boolean;
@@ -32,7 +32,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     id: string;
-    role: "USER" | "ADMIN" | "SUPER_ADMIN";
+    role: "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN";
     canAccessDashboard: boolean;
     canAccessSessions: boolean;
     canAccessUsers: boolean;
@@ -46,7 +46,7 @@ declare module "next-auth/jwt" {
 // Extend AdapterUser to include role (fixes type mismatch with @auth/prisma-adapter)
 declare module "@auth/core/adapters" {
   interface AdapterUser {
-    role: "USER" | "ADMIN" | "SUPER_ADMIN";
+    role: "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN";
     canAccessDashboard: boolean;
     canAccessSessions: boolean;
     canAccessUsers: boolean;
