@@ -59,7 +59,7 @@ import {
   UserCheck,
   Users,
   UtensilsCrossed,
-  Wand2,
+  // Wand2, // Commented out - used for slug field
   Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -429,9 +429,9 @@ export function SessionForm({
   const formValues = watch();
 
   const [hasGuest, setHasGuest] = useState(getInitialHasGuest);
-  const [slugManuallyEdited, setSlugManuallyEdited] = useState(
-    !!initialData?.slug
-  );
+  // const [slugManuallyEdited, setSlugManuallyEdited] = useState(
+  //   !!initialData?.slug
+  // ); // Commented out - used for slug field
   const [currentStep, setCurrentStep] = useState(0);
   const [draftSaved, setDraftSaved] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(
@@ -532,9 +532,9 @@ export function SessionForm({
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setValue("title", newTitle);
-    if (!slugManuallyEdited) {
-      setValue("slug", generateSlug(newTitle));
-    }
+    // if (!slugManuallyEdited) {
+    //   setValue("slug", generateSlug(newTitle));
+    // }
   };
 
   // Render wizard step content
@@ -918,9 +918,8 @@ export function SessionForm({
               </div>
             </div>
 
-            <Separator />
-
-            {/* Custom Message */}
+            {/* Custom Message - Commented out for now */}
+            {/* <Separator />
             <div className="space-y-2">
               <Label htmlFor="customConfirmationMessage">
                 رسالة التأكيد المخصصة
@@ -933,10 +932,10 @@ export function SessionForm({
                 placeholder="اتركه فارغاً لاستخدام الرسالة الافتراضية"
                 disabled={isPending}
               />
-            </div>
+            </div> */}
 
-            {/* Advanced - Slug */}
-            <div className="space-y-2">
+            {/* Advanced - Slug - Commented out for now */}
+            {/* <div className="space-y-2">
               <Label htmlFor="slug">
                 الرابط المخصص
                 <HelpTooltip text="رابط مخصص للحدث يُولّد تلقائياً من العنوان" />
@@ -968,7 +967,7 @@ export function SessionForm({
                   <Wand2 className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
+            </div> */}
           </div>
         );
 
@@ -1287,7 +1286,8 @@ export function SessionForm({
                         disabled={isPending}
                       />
                     </div>
-                    <div className="space-y-2 md:col-span-2">
+                    {/* Slug - Commented out for now */}
+                    {/* <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="slug">الرابط المخصص</Label>
                       <div className="flex gap-2">
                         <Input
@@ -1316,7 +1316,7 @@ export function SessionForm({
                           <Wand2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -1621,8 +1621,8 @@ export function SessionForm({
                 </AccordionContent>
               </AccordionItem>
 
-              {/* Custom Message Section */}
-              <AccordionItem
+              {/* Custom Message Section - Commented out for now */}
+              {/* <AccordionItem
                 value="message"
                 className="bg-white/70 backdrop-blur-xl border border-white/50 shadow-lg rounded-xl overflow-hidden"
               >
@@ -1650,7 +1650,7 @@ export function SessionForm({
                     />
                   </div>
                 </AccordionContent>
-              </AccordionItem>
+              </AccordionItem> */}
             </Accordion>
 
             {/* Submit Buttons */}

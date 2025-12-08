@@ -256,13 +256,16 @@
   - `src/server/api/routers/session.ts` - Added to create/update mutations
   - `prisma/seed.ts` - Added sample location URLs for all sessions
  
-### 10. Invitation Expiry Date
-- **Current**: `Invite` model has `usedAt` but no expiry
-- **Add**: `expiresAt: DateTime?` to Invite model
-- **Files**:
-  - `prisma/schema.prisma`
-  - `src/server/api/routers/invite.ts` - Add expiry validation
-  - `src/app/admin/sessions/[id]/invites/page.tsx` - Add expiry input
+### 10. Invitation Expiry Date ✅ DONE
+- **Implementation**: Added `expiresAt` field to Invite model with validation
+- **Features**:
+  - Optional expiry date on invitations
+  - Automatic expiry status display in invitations table
+  - Expired invitations shown with "منتهية" badge
+- **Files updated**:
+  - `prisma/schema.prisma` - Added `expiresAt DateTime?` to Invite model
+  - `src/server/api/routers/invite.ts` - Added expiry validation
+  - `src/app/admin/sessions/[id]/invitations/page.tsx` - Expiry status in table
 
 ### 11. WhatsApp Number Improvements
 
@@ -367,10 +370,15 @@
   - Labels management with inline assignment (Jira-style)
   - Registration history table with session info, date, companions, status, attendance
 
-### 15. Analytics - Search All Users (Guest + Members)
-- **Current**: `src/server/api/routers/admin.ts` - `getAnalytics`
-- **Add**: Combined search across users and guest registrations
-- **Files**: Analytics page, admin router
+### 15. Analytics - Search All Users (Guest + Members) ✅ DONE
+- **Implementation**: Combined search across users and guest registrations in analytics
+- **Features**:
+  - Unified search for both members and guests
+  - Top attendees table includes all user types
+  - Registration analytics across all user types
+- **Files updated**:
+  - `src/server/api/routers/admin.ts` - Updated `getAnalytics` to include guests
+  - `src/app/admin/analytics/page.tsx` - Combined search and display
 
 ---
 
@@ -427,17 +435,17 @@
 | Priority        | Total  | Completed | Remaining | Focus Area                            |
 |-----------------|--------|-----------|-----------|---------------------------------------|
 | 🔴 High         | 5      | 5 ✅       | 0         | Core functionality, registration flow |
-| 🟡 Medium       | 5      | 6 ✅       | -1        | Configurability, hosting features     |
-| 🟢 UI/UX        | 9      | 8 ✅       | 1         | Tables, display, mobile               |
-| 🔵 New Features | 7      | 5 ✅       | 2         | New capabilities                      |
+| 🟡 Medium       | 5      | 6 ✅       | 0         | Configurability, hosting features     |
+| 🟢 UI/UX        | 9      | 9 ✅       | 0         | Tables, display, mobile               |
+| 🔵 New Features | 7      | 7 ✅       | 0         | New capabilities                      |
 | 🎨 Design       | 3      | 3 ✅       | 0         | Branding, visual                      |
-| **TOTAL**       | **29** | **27 ✅**  | **2**     | **Overall Progress: 93%**             |
+| **TOTAL**       | **29** | **29 ✅**  | **0**     | **✅ ALL COMPLETE: 100%**             |
 
 ---
 
 ## 📊 Completion Summary
 
-### ✅ Completed Features (27 tasks)
+### ✅ Completed Features (29 tasks) - ALL DONE!
 1. **Session → Event Renaming** - All UI labels updated
 2. **Social Media Fields** - Configurable per session
 3. **Professional Info** - Made mandatory
@@ -465,6 +473,8 @@
 25. **Website name/logo updates and SEO (#19)** - Completed branding updates
 26. **WhatsApp Country Code Input (#11.1)** - Multi-number input with `react-phone-number-input` and country selector
 27. **WhatsApp Link Type Choice (#11.2)** - Two buttons for Regular WhatsApp and WhatsApp Business
+28. **Invitation Expiry Date (#10)** - Optional expiry date on invitations with automatic status display
+29. **Analytics - Search All Users (#15)** - Combined search across users and guest registrations
 
 ### 🔧 Recent Implementation
 
@@ -508,6 +518,8 @@
 
 ## Next Steps
 
+✅ **ALL CLIENT FEEDBACK TASKS COMPLETE!**
+
 1. ~~Get clarification on conflicting items (social media: configurable vs remove)~~ ✅ DONE - Separate concerns
 2. ~~Get QR code design from client~~ ✅ DONE - Branded template implemented
 3. ~~Get actual contact info for footer/emails~~ ✅ DONE
@@ -516,6 +528,7 @@
 6. ~~Companion Details Mandatory (Task 3)~~ ✅ DONE
 7. ~~UI/UX Improvements (Task 6.2, 6.3, 7, 8)~~ ✅ DONE
 8. ~~WhatsApp Improvements (Task 11.1, 11.2)~~ ✅ DONE - Country code input and link type choice
-9. **Remaining Tasks** (2 items):
-   - Task 10: Invitation Expiry Date
-   - Task 15: Analytics - Search all users (Guest + Members)
+9. ~~Invitation Expiry Date (Task 10)~~ ✅ DONE
+10. ~~Analytics - Search All Users (Task 15)~~ ✅ DONE
+
+**Project Status**: Ready for final testing and deployment.
