@@ -1197,7 +1197,8 @@ export function SessionForm({
                 </AccordionTrigger>
                 <AccordionContent className="px-6 pb-6">
                   <div className="grid gap-4 md:grid-cols-2 pt-2">
-                    <div className="space-y-2">
+                    {/* Session Number - Disabled in edit mode */}
+                    {/* <div className="space-y-2">
                       <Label htmlFor="sessionNumber">رقم الحدث</Label>
                       <Input
                         id="sessionNumber"
@@ -1206,7 +1207,7 @@ export function SessionForm({
                         {...register("sessionNumber")}
                         disabled={isPending}
                       />
-                    </div>
+                    </div> */}
                     <div className="space-y-2">
                       <Label htmlFor="title">عنوان الحدث *</Label>
                       <Input
