@@ -694,15 +694,6 @@ export default function GuestRegisterPage({
                 )}
               </div>
 
-              {session.requiresApproval && (
-                <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
-                  <p className="text-sm text-amber-800">
-                    * هذا الحدث يتطلب موافقة على التسجيل. سيتم إرسال بريد
-                    إلكتروني عند الموافقة.
-                  </p>
-                </div>
-              )}
-
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "جارٍ التسجيل..." : "تأكيد التسجيل"}
               </Button>

@@ -422,12 +422,6 @@ export default function MemberRegisterPage({
               </Button>
             </div>
 
-            {session.requiresApproval && (
-              <p className="text-sm text-center text-amber-700">
-                ⓘ هذا الحدث يتطلب موافقة على التسجيل. سيتم إرسال تأكيد بعد
-                المراجعة.
-              </p>
-            )}
           </div>
         </form>
       </div>

@@ -246,11 +246,6 @@ export function SessionDetailClient({ id }: { id: string }) {
                         </div>
                       ) : session.canRegister ? (
                         <div className="flex flex-col items-center lg:items-start gap-3 md:gap-4">
-                          {session.requiresApproval && (
-                            <p className="text-xs md:text-sm text-amber-700 text-center lg:text-right">
-                              ⓘ هذا الحدث يتطلب موافقة على التسجيل
-                            </p>
-                          )}
                           <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full sm:w-auto">
                             <Button
                               asChild
