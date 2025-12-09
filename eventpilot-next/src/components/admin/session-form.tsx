@@ -33,6 +33,7 @@ import {
   type SessionFormData,
 } from "@/lib/schemas/session";
 import { cn } from "@/lib/utils";
+import { parseFormDateToUTC, toSaudiTime } from "@/lib/timezone";
 import { api } from "@/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -228,13 +229,15 @@ function SessionPreview({
 }) {
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "التاريخ";
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("ar-SA", {
+    // Parse the date string as Saudi timezone and convert back for display
+    const utcDate = parseFormDateToUTC(dateStr, "12:00");
+    const saudiDate = toSaudiTime(utcDate);
+    return saudiDate?.toLocaleDateString("ar-SA", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
-    });
+    }) ?? "التاريخ";
   };
 
   const formatTime = (timeStr: string) => {

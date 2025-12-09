@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { generateBrandedQRCode } from "./qr-branded";
 import { db } from "@/server/db";
+import { toSaudiTime } from "./timezone";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -390,7 +391,10 @@ interface SessionInfo {
 }
 
 function formatSessionDate(date: Date): string {
-  return date.toLocaleDateString("ar-SA", {
+  // Convert UTC to Saudi time for email display
+  const saudiDate = toSaudiTime(date);
+  if (!saudiDate) return "";
+  return saudiDate.toLocaleDateString("ar-SA", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -400,7 +404,10 @@ function formatSessionDate(date: Date): string {
 }
 
 function formatDateOnly(date: Date): string {
-  return date.toLocaleDateString("ar-SA", {
+  // Convert UTC to Saudi time for email display
+  const saudiDate = toSaudiTime(date);
+  if (!saudiDate) return "";
+  return saudiDate.toLocaleDateString("ar-SA", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -408,7 +415,10 @@ function formatDateOnly(date: Date): string {
 }
 
 function formatTimeOnly(date: Date): string {
-  return date.toLocaleTimeString("ar-SA", {
+  // Convert UTC to Saudi time for email display
+  const saudiDate = toSaudiTime(date);
+  if (!saudiDate) return "";
+  return saudiDate.toLocaleTimeString("ar-SA", {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -748,15 +758,16 @@ export async function sendInvitationEmail(
   const baseUrl = process.env.BASE_URL || "http://localhost:3000";
   const registrationLink = `${baseUrl}/event/${session.slug || session.id}/register?token=${token}`;
 
-  const dateStr = session.date.toLocaleDateString("ar-SA", {
+  const saudiDate = toSaudiTime(session.date);
+  const dateStr = saudiDate?.toLocaleDateString("ar-SA", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  });
-  const timeStr = session.date.toLocaleTimeString("ar-SA", {
+  }) ?? "";
+  const timeStr = saudiDate?.toLocaleTimeString("ar-SA", {
     hour: "2-digit",
     minute: "2-digit",
-  });
+  }) ?? "";
 
   if (customMessage) {
     // For custom messages, use simple format with link replacement

@@ -7,6 +7,14 @@ import {
   adminProcedure,
 } from "../trpc";
 import { generateSlug } from "@/lib/utils";
+import {
+  startOfDayInSaudi,
+  endOfDayInSaudi,
+  startOfWeekInSaudi,
+  endOfWeekInSaudi,
+  startOfMonthInSaudi,
+  endOfMonthInSaudi,
+} from "@/lib/timezone";
 
 export const sessionRouter = createTRPCRouter({
   /**
@@ -41,37 +49,22 @@ export const sessionRouter = createTRPCRouter({
         where.inviteOnly = false; // Don't show invite-only sessions in public listings
       }
 
-      // Date range filtering for checkin page
+      // Date range filtering for checkin page (using Saudi Arabia timezone)
       if (input?.dateRange && input.dateRange !== "all") {
-        const now = new Date();
-        const startOfDay = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate()
-        );
-        const endOfDay = new Date(startOfDay);
-        endOfDay.setDate(endOfDay.getDate() + 1);
-
         if (input.dateRange === "today") {
           where.date = {
-            gte: startOfDay,
-            lt: endOfDay,
+            gte: startOfDayInSaudi(),
+            lte: endOfDayInSaudi(),
           };
         } else if (input.dateRange === "week") {
-          const startOfWeek = new Date(startOfDay);
-          startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-          const endOfWeek = new Date(startOfWeek);
-          endOfWeek.setDate(endOfWeek.getDate() + 7);
           where.date = {
-            gte: startOfWeek,
-            lt: endOfWeek,
+            gte: startOfWeekInSaudi(),
+            lte: endOfWeekInSaudi(),
           };
         } else if (input.dateRange === "month") {
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-          const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
           where.date = {
-            gte: startOfMonth,
-            lt: endOfMonth,
+            gte: startOfMonthInSaudi(),
+            lte: endOfMonthInSaudi(),
           };
         }
       }

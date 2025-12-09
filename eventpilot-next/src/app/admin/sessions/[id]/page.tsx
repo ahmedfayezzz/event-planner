@@ -28,7 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { formatArabicDate } from "@/lib/utils";
+import { formatArabicDate, formatArabicTime } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   ArrowRight,
@@ -192,10 +192,7 @@ export default function SessionDetailPage({
               <div>
                 <p className="text-sm text-muted-foreground">الوقت</p>
                 <p className="font-medium">
-                  {new Date(session.date).toLocaleTimeString("ar-SA", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  {formatArabicTime(new Date(session.date))}
                 </p>
               </div>
             </div>

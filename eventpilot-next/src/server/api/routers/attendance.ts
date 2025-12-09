@@ -8,6 +8,7 @@ import {
 } from "../trpc";
 import { parseQRData, generateQRCode, createQRCheckInData } from "@/lib/qr";
 import { generateBrandedQRCode } from "@/lib/qr-branded";
+import { toSaudiTime } from "@/lib/timezone";
 
 export const attendanceRouter = createTRPCRouter({
   /**
@@ -329,16 +330,17 @@ export const attendanceRouter = createTRPCRouter({
         sessionId: registration.sessionId,
       });
 
-      // Format date and time for the branded QR
-      const sessionDate = registration.session.date.toLocaleDateString("ar-SA", {
+      // Format date and time for the branded QR (in Saudi timezone)
+      const saudiSessionDate = toSaudiTime(registration.session.date);
+      const sessionDate = saudiSessionDate?.toLocaleDateString("ar-SA", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
-      });
-      const sessionTime = registration.session.date.toLocaleTimeString("ar-SA", {
+      }) ?? "";
+      const sessionTime = saudiSessionDate?.toLocaleTimeString("ar-SA", {
         hour: "2-digit",
         minute: "2-digit",
-      });
+      }) ?? "";
 
       // Get attendee name
       const attendeeName = registration.user?.name || registration.guestName || undefined;
@@ -465,16 +467,17 @@ export const attendanceRouter = createTRPCRouter({
         sessionId: registration.sessionId,
       });
 
-      // Format date and time for the branded QR
-      const sessionDate = registration.session.date.toLocaleDateString("ar-SA", {
+      // Format date and time for the branded QR (in Saudi timezone)
+      const saudiSessionDate = toSaudiTime(registration.session.date);
+      const sessionDate = saudiSessionDate?.toLocaleDateString("ar-SA", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
-      });
-      const sessionTime = registration.session.date.toLocaleTimeString("ar-SA", {
+      }) ?? "";
+      const sessionTime = saudiSessionDate?.toLocaleTimeString("ar-SA", {
         hour: "2-digit",
         minute: "2-digit",
-      });
+      }) ?? "";
 
       // Get attendee name
       const attendeeName = registration.user?.name || registration.guestName || undefined;

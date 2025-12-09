@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { db } from "@/server/db";
 import { SessionDetailClient } from "./session-detail-client";
+import { toSaudiTime } from "@/lib/timezone";
 
 export async function generateMetadata({
   params,
@@ -19,7 +20,8 @@ export async function generateMetadata({
     };
   }
 
-  const dateStr = new Date(session.date).toLocaleDateString("ar-SA");
+  const saudiDate = toSaudiTime(new Date(session.date));
+  const dateStr = saudiDate?.toLocaleDateString("ar-SA") ?? "";
   const metaDescription = session.description
     ? session.description.length > 150
       ? `${session.description.substring(0, 150)}...`

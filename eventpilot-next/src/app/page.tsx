@@ -331,7 +331,7 @@ export default function HomePage() {
               className="btn-lift w-full sm:w-auto"
               asChild
             >
-              <Link href="/register">إنشاء حساب مجاني</Link>
+              <Link href="/register">سجل كعضو</Link>
             </Button>
             <Button
               size="default"

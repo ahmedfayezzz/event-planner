@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
+import { formatArabicDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -201,9 +202,7 @@ export default function EditRegistrationPage({
                 <CardTitle className="text-lg">معلومات التسجيل</CardTitle>
                 <CardDescription>
                   تم التسجيل في{" "}
-                  {new Date(registration.registeredAt).toLocaleDateString(
-                    "ar-SA"
-                  )}
+{formatArabicDate(new Date(registration.registeredAt))}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">

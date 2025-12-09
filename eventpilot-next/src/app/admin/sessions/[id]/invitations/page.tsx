@@ -6,7 +6,7 @@ import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import { api } from "@/trpc/react";
 import { useExpandableRows } from "@/hooks/use-expandable-rows";
-import { cn } from "@/lib/utils";
+import { cn, formatArabicDate } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -927,7 +927,7 @@ export default function InvitationsPage({
                                 )}
                               </TableCell>
                               <TableCell className="hidden md:table-cell">
-                                {invite.sentAt ? new Date(invite.sentAt).toLocaleDateString("ar-SA") : "-"}
+                                {invite.sentAt ? formatArabicDate(new Date(invite.sentAt)) : "-"}
                               </TableCell>
                               <TableCell className="hidden md:table-cell">
                                 <div className="flex gap-1">
@@ -982,7 +982,7 @@ export default function InvitationsPage({
                                       <div className="text-sm">
                                         <span className="text-muted-foreground">تاريخ الإرسال:</span>
                                         <span className="mr-1">
-                                          {invite.sentAt ? new Date(invite.sentAt).toLocaleDateString("ar-SA") : "-"}
+                                          {invite.sentAt ? formatArabicDate(new Date(invite.sentAt)) : "-"}
                                         </span>
                                       </div>
                                       {(!invite.used && !invite.invalidated) && (

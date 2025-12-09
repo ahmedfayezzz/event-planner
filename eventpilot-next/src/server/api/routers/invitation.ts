@@ -7,6 +7,7 @@ import {
 } from "../trpc";
 import { generateInviteToken } from "@/lib/utils";
 import { sendInvitationEmail } from "@/lib/email";
+import { toSaudiTime } from "@/lib/timezone";
 
 export const invitationRouter = createTRPCRouter({
   /**
@@ -236,9 +237,10 @@ export const invitationRouter = createTRPCRouter({
 
           const registrationUrl = `${baseUrl}/event/${session.slug || session.id}/register?token=${token}`;
 
+          const saudiDate = toSaudiTime(session.date);
           const message = session.inviteMessage
             ? session.inviteMessage.replace("[رابط التسجيل]", registrationUrl)
-            : `مرحباً،\n\nندعوك للتسجيل في حدث "${session.title}" في ثلوثية الأعمال.\n\n📅 التاريخ: ${session.date.toLocaleDateString("ar-SA")}\n\nسجل الآن:\n${registrationUrl}`;
+            : `مرحباً،\n\nندعوك للتسجيل في حدث "${session.title}" في ثلوثية الأعمال.\n\n📅 التاريخ: ${saudiDate?.toLocaleDateString("ar-SA") ?? ""}\n\nسجل الآن:\n${registrationUrl}`;
 
           // Format phone for WhatsApp (remove + and spaces)
           const cleanPhone = phone.replace(/\D/g, "");

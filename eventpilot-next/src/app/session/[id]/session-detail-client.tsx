@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CountdownTimer } from "@/components/countdown-timer";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
+import { toSaudiTime } from "@/lib/timezone";
 import { toast } from "sonner";
 import {
   Calendar,
@@ -70,8 +71,9 @@ export function SessionDetailClient({ id }: { id: string }) {
   }
 
   const sessionDate = new Date(session.date);
-  const day = sessionDate.getDate();
-  const month = sessionDate.toLocaleDateString("ar-SA", { month: "long" });
+  const saudiDate = toSaudiTime(sessionDate);
+  const day = saudiDate?.getDate() ?? sessionDate.getDate();
+  const month = saudiDate?.toLocaleDateString("ar-SA", { month: "long" }) ?? sessionDate.toLocaleDateString("ar-SA", { month: "long" });
 
   const statusColors: Record<string, string> = {
     open: "bg-emerald-100 text-emerald-800 border-emerald-200",

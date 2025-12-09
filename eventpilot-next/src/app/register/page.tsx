@@ -235,7 +235,11 @@ export default function RegisterPage() {
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         tabIndex={-1}
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -262,11 +266,17 @@ export default function RegisterPage() {
                       />
                       <button
                         type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         tabIndex={-1}
                       >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -350,7 +360,10 @@ export default function RegisterPage() {
                         placeholder="instagram.com/..."
                         value={formData.instagram}
                         onChange={(e) =>
-                          setFormData({ ...formData, instagram: e.target.value })
+                          setFormData({
+                            ...formData,
+                            instagram: e.target.value,
+                          })
                         }
                         disabled={isLoading}
                         dir="ltr"
@@ -418,7 +431,7 @@ export default function RegisterPage() {
                 <div className="space-y-3 md:space-y-4">
                   <h3 className="font-semibold text-primary border-b border-primary/10 pb-2 flex items-center gap-2 text-sm md:text-base">
                     <span className="w-1.5 md:w-2 h-5 md:h-6 bg-secondary rounded-full inline-block"></span>
-                    تقديم الضيافة (اختياري)
+                    الرعاية
                   </h3>
                   <div className="flex items-start space-x-3 space-x-reverse">
                     <Checkbox
@@ -435,8 +448,11 @@ export default function RegisterPage() {
                       className="mt-1"
                     />
                     <div className="space-y-1">
-                      <Label htmlFor="wantsToHost" className="cursor-pointer text-sm font-medium">
-                        هل تريد تقديم الضيافة في أحد أحداثنا القادمة؟
+                      <Label
+                        htmlFor="wantsToHost"
+                        className="cursor-pointer text-sm font-medium"
+                      >
+                        هل ترغب في رعاية الضيافة في احداثنا القادمة؟
                       </Label>
                       <p className="text-xs md:text-sm text-muted-foreground">
                         سوف يتم التواصل معكم لتحديد الاحتياج
@@ -449,15 +465,25 @@ export default function RegisterPage() {
                       <Label className="text-sm">نوع الضيافة</Label>
                       <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
                         {HOSTING_TYPES.map((type) => (
-                          <div key={type.value} className="flex items-center gap-2">
+                          <div
+                            key={type.value}
+                            className="flex items-center gap-2"
+                          >
                             <Checkbox
                               id={`hosting-${type.value}`}
-                              checked={formData.hostingTypes.includes(type.value)}
+                              checked={formData.hostingTypes.includes(
+                                type.value
+                              )}
                               onCheckedChange={(checked) => {
                                 const types = checked
                                   ? [...formData.hostingTypes, type.value]
-                                  : formData.hostingTypes.filter((t) => t !== type.value);
-                                setFormData({ ...formData, hostingTypes: types });
+                                  : formData.hostingTypes.filter(
+                                      (t) => t !== type.value
+                                    );
+                                setFormData({
+                                  ...formData,
+                                  hostingTypes: types,
+                                });
                               }}
                               disabled={isLoading}
                             />

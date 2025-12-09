@@ -12,6 +12,7 @@ import {
   SessionForm,
   SessionFormData,
 } from "@/components/admin/session-form";
+import { formatDateForForm, formatDateTimeForForm, parseFormDateToUTC } from "@/lib/timezone";
 
 export default function SessionEditPage({
   params,
@@ -28,13 +29,14 @@ export default function SessionEditPage({
 
   useEffect(() => {
     if (session) {
-      const date = new Date(session.date);
+      // Convert UTC dates to Saudi time for form display
+      const { date: dateStr, time: timeStr } = formatDateForForm(session.date);
       setInitialFormData({
         sessionNumber: session.sessionNumber.toString(),
         title: session.title,
         description: session.description || "",
-        date: date.toISOString().split("T")[0],
-        time: date.toTimeString().slice(0, 5),
+        date: dateStr,
+        time: timeStr,
         location: session.location || "",
         guestName: session.guestName || "",
         guestProfile: session.guestProfile || "",
@@ -53,7 +55,7 @@ export default function SessionEditPage({
         showCateringInterest: session.showCateringInterest,
         slug: session.slug || "",
         registrationDeadline: session.registrationDeadline
-          ? new Date(session.registrationDeadline).toISOString().slice(0, 16)
+          ? formatDateTimeForForm(session.registrationDeadline)
           : "",
         customConfirmationMessage: session.customConfirmationMessage || "",
         locationUrl: session.locationUrl || "",
@@ -72,7 +74,8 @@ export default function SessionEditPage({
   });
 
   const handleSubmit = async (formData: SessionFormData) => {
-    const dateTime = new Date(`${formData.date}T${formData.time}`);
+    // Convert Saudi time input to UTC for database storage
+    const dateTime = parseFormDateToUTC(formData.date, formData.time);
 
     await updateMutation.mutateAsync({
       id,
@@ -97,8 +100,9 @@ export default function SessionEditPage({
       showRegistrationPurpose: formData.showRegistrationPurpose,
       showCateringInterest: formData.showCateringInterest,
       // slug field is commented out in form - removed from mutation
+      // Convert registration deadline from Saudi time to UTC
       registrationDeadline: formData.registrationDeadline
-        ? new Date(formData.registrationDeadline)
+        ? parseFormDateToUTC(formData.registrationDeadline.split("T")[0], formData.registrationDeadline.split("T")[1])
         : null,
       // customConfirmationMessage field is commented out in form - removed from mutation
       locationUrl: formData.locationUrl || undefined,

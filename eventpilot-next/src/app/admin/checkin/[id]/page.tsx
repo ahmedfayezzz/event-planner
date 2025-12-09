@@ -5,7 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { api } from "@/trpc/react";
 import { useExpandableRows } from "@/hooks/use-expandable-rows";
-import { cn } from "@/lib/utils";
+import { cn, formatArabicTime } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -242,10 +242,7 @@ export default function CheckInPage({
 
   const formatCheckInTime = (date: Date | null) => {
     if (!date) return "-";
-    return new Date(date).toLocaleTimeString("ar-SA", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatArabicTime(new Date(date));
   };
 
   if (isLoading) {

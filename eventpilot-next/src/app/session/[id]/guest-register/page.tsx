@@ -5,12 +5,24 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -27,7 +39,11 @@ interface Companion {
   email: string;
 }
 
-export default function GuestRegisterPage({ params }: { params: Promise<{ id: string }> }) {
+export default function GuestRegisterPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -76,14 +92,21 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
       toast.error(`الحد الأقصى للمرافقين هو ${session.maxCompanions}`);
       return;
     }
-    setCompanions([...companions, { name: "", company: "", title: "", phone: "", email: "" }]);
+    setCompanions([
+      ...companions,
+      { name: "", company: "", title: "", phone: "", email: "" },
+    ]);
   };
 
   const handleRemoveCompanion = (index: number) => {
     setCompanions(companions.filter((_, i) => i !== index));
   };
 
-  const handleCompanionChange = (index: number, field: keyof Companion, value: string) => {
+  const handleCompanionChange = (
+    index: number,
+    field: keyof Companion,
+    value: string
+  ) => {
     const updated = [...companions];
     updated[index] = { ...updated[index], [field]: value };
     setCompanions(updated);
@@ -118,7 +141,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
     }
 
     // Validate companions have required fields (name and phone)
-    const validCompanions = companions.filter((c) => c.name.trim() && c.phone.trim().length >= 9);
+    const validCompanions = companions.filter(
+      (c) => c.name.trim() && c.phone.trim().length >= 9
+    );
 
     setIsSubmitting(true);
     try {
@@ -210,9 +235,14 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
             <div className="flex items-start justify-between gap-4">
               <div>
                 <CardTitle>{session.title}</CardTitle>
-                <CardDescription>التجمع رقم {session.sessionNumber}</CardDescription>
+                <CardDescription>
+                  التجمع رقم {session.sessionNumber}
+                </CardDescription>
               </div>
-              <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200">
+              <Badge
+                variant="outline"
+                className="bg-green-500/10 text-green-600 border-green-200"
+              >
                 مفتوح للتسجيل
               </Badge>
             </div>
@@ -221,11 +251,15 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <p className="text-sm text-muted-foreground">التاريخ</p>
-                <p className="font-medium">{formatArabicDate(new Date(session.date))}</p>
+                <p className="font-medium">
+                  {formatArabicDate(new Date(session.date))}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">الوقت</p>
-                <p className="font-medium">{formatArabicTime(new Date(session.date))}</p>
+                <p className="font-medium">
+                  {formatArabicTime(new Date(session.date))}
+                </p>
               </div>
               {session.location && (
                 <div className="md:col-span-2">
@@ -248,9 +282,7 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
           <Card>
             <CardHeader>
               <CardTitle>التسجيل كزائر</CardTitle>
-              <CardDescription>
-                أدخل بياناتك للتسجيل في الحدث
-              </CardDescription>
+              <CardDescription>أدخل بياناتك للتسجيل في الحدث</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Basic Info */}
@@ -263,7 +295,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                     <Input
                       id="name"
                       value={formData.name}
-                      onChange={(e) => handleInputChange("name", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("name", e.target.value)
+                      }
                       placeholder="أدخل اسمك الكامل"
                       required
                     />
@@ -274,7 +308,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("email", e.target.value)
+                      }
                       placeholder="example@email.com"
                       required
                     />
@@ -288,7 +324,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                       id="phone"
                       type="tel"
                       value={formData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("phone", e.target.value)
+                      }
                       placeholder="05XXXXXXXX"
                       required
                     />
@@ -297,7 +335,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                     <Label htmlFor="gender">الجنس</Label>
                     <Select
                       value={formData.gender}
-                      onValueChange={(value) => handleInputChange("gender", value)}
+                      onValueChange={(value) =>
+                        handleInputChange("gender", value)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الجنس" />
@@ -323,7 +363,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                     <Input
                       id="companyName"
                       value={formData.companyName}
-                      onChange={(e) => handleInputChange("companyName", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("companyName", e.target.value)
+                      }
                       placeholder="اسم الشركة"
                     />
                   </div>
@@ -332,7 +374,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                     <Input
                       id="position"
                       value={formData.position}
-                      onChange={(e) => handleInputChange("position", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("position", e.target.value)
+                      }
                       placeholder="المنصب الوظيفي"
                     />
                   </div>
@@ -343,7 +387,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                   <Input
                     id="activityType"
                     value={formData.activityType}
-                    onChange={(e) => handleInputChange("activityType", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("activityType", e.target.value)
+                    }
                     placeholder="مثال: تجارة، تقنية، استشارات"
                   />
                 </div>
@@ -354,7 +400,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                     <Textarea
                       id="goal"
                       value={formData.goal}
-                      onChange={(e) => handleInputChange("goal", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("goal", e.target.value)
+                      }
                       placeholder="أخبرنا عن أهدافك من الانضمام للتجمع"
                       rows={3}
                     />
@@ -376,7 +424,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                         <Input
                           id="instagram"
                           value={formData.instagram}
-                          onChange={(e) => handleInputChange("instagram", e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange("instagram", e.target.value)
+                          }
                           placeholder="اسم المستخدم"
                         />
                       </div>
@@ -385,7 +435,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                         <Input
                           id="snapchat"
                           value={formData.snapchat}
-                          onChange={(e) => handleInputChange("snapchat", e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange("snapchat", e.target.value)
+                          }
                           placeholder="اسم المستخدم"
                         />
                       </div>
@@ -394,7 +446,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                         <Input
                           id="twitter"
                           value={formData.twitter}
-                          onChange={(e) => handleInputChange("twitter", e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange("twitter", e.target.value)
+                          }
                           placeholder="اسم المستخدم"
                         />
                       </div>
@@ -429,7 +483,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                       <Card key={index} className="bg-muted/50">
                         <CardContent className="pt-4 space-y-4">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium">مرافق {index + 1}</span>
+                            <span className="font-medium">
+                              مرافق {index + 1}
+                            </span>
                             <Button
                               type="button"
                               variant="ghost"
@@ -445,7 +501,13 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                               <Label>الاسم *</Label>
                               <Input
                                 value={companion.name}
-                                onChange={(e) => handleCompanionChange(index, "name", e.target.value)}
+                                onChange={(e) =>
+                                  handleCompanionChange(
+                                    index,
+                                    "name",
+                                    e.target.value
+                                  )
+                                }
                                 placeholder="اسم المرافق"
                                 required
                               />
@@ -454,7 +516,13 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                               <Label>الشركة</Label>
                               <Input
                                 value={companion.company}
-                                onChange={(e) => handleCompanionChange(index, "company", e.target.value)}
+                                onChange={(e) =>
+                                  handleCompanionChange(
+                                    index,
+                                    "company",
+                                    e.target.value
+                                  )
+                                }
                                 placeholder="اسم الشركة"
                               />
                             </div>
@@ -462,7 +530,13 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                               <Label>المنصب</Label>
                               <Input
                                 value={companion.title}
-                                onChange={(e) => handleCompanionChange(index, "title", e.target.value)}
+                                onChange={(e) =>
+                                  handleCompanionChange(
+                                    index,
+                                    "title",
+                                    e.target.value
+                                  )
+                                }
                                 placeholder="المنصب الوظيفي"
                               />
                             </div>
@@ -470,7 +544,13 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                               <Label>رقم الهاتف *</Label>
                               <Input
                                 value={companion.phone}
-                                onChange={(e) => handleCompanionChange(index, "phone", e.target.value)}
+                                onChange={(e) =>
+                                  handleCompanionChange(
+                                    index,
+                                    "phone",
+                                    e.target.value
+                                  )
+                                }
                                 placeholder="05XXXXXXXX"
                                 required
                               />
@@ -480,7 +560,13 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                               <Input
                                 type="email"
                                 value={companion.email}
-                                onChange={(e) => handleCompanionChange(index, "email", e.target.value)}
+                                onChange={(e) =>
+                                  handleCompanionChange(
+                                    index,
+                                    "email",
+                                    e.target.value
+                                  )
+                                }
                                 placeholder="example@email.com"
                               />
                             </div>
@@ -498,7 +584,7 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
               {session?.showCateringInterest && (
                 <>
                   <div className="space-y-4">
-                    <h3 className="font-semibold">تقديم الضيافة (اختياري)</h3>
+                    <h3 className="font-semibold">الرعاية</h3>
                     <div className="flex items-start space-x-3 space-x-reverse">
                       <Checkbox
                         id="wantsToHost"
@@ -513,8 +599,11 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                         className="mt-1"
                       />
                       <div className="space-y-1">
-                        <Label htmlFor="wantsToHost" className="cursor-pointer font-medium">
-                          هل تريد تقديم الضيافة في أحد أحداثنا القادمة؟
+                        <Label
+                          htmlFor="wantsToHost"
+                          className="cursor-pointer font-medium"
+                        >
+                          هل ترغب في رعاية الضيافة في احداثنا القادمة؟
                         </Label>
                         <p className="text-sm text-muted-foreground">
                           سوف يتم التواصل معكم لتحديد الاحتياج
@@ -527,15 +616,25 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                         <Label>نوع الضيافة</Label>
                         <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
                           {HOSTING_TYPES.map((type) => (
-                            <div key={type.value} className="flex items-center gap-2">
+                            <div
+                              key={type.value}
+                              className="flex items-center gap-2"
+                            >
                               <Checkbox
                                 id={`hosting-${type.value}`}
-                                checked={formData.hostingTypes.includes(type.value)}
+                                checked={formData.hostingTypes.includes(
+                                  type.value
+                                )}
                                 onCheckedChange={(checked) => {
                                   const types = checked
                                     ? [...formData.hostingTypes, type.value]
-                                    : formData.hostingTypes.filter((t) => t !== type.value);
-                                  setFormData({ ...formData, hostingTypes: types });
+                                    : formData.hostingTypes.filter(
+                                        (t) => t !== type.value
+                                      );
+                                  setFormData({
+                                    ...formData,
+                                    hostingTypes: types,
+                                  });
                                 }}
                               />
                               <Label
@@ -561,14 +660,17 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                   <Checkbox
                     id="createAccount"
                     checked={createAccount}
-                    onCheckedChange={(checked) => setCreateAccount(checked === true)}
+                    onCheckedChange={(checked) =>
+                      setCreateAccount(checked === true)
+                    }
                   />
                   <div className="space-y-1">
                     <Label htmlFor="createAccount" className="cursor-pointer">
                       إنشاء حساب جديد
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      أنشئ حساباً لتتمكن من تتبع تسجيلاتك والحصول على ميزات إضافية
+                      أنشئ حساباً لتتمكن من تتبع تسجيلاتك والحصول على ميزات
+                      إضافية
                     </p>
                   </div>
                 </div>
@@ -580,7 +682,9 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
                       id="password"
                       type="password"
                       value={formData.password}
-                      onChange={(e) => handleInputChange("password", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("password", e.target.value)
+                      }
                       placeholder="كلمة المرور (6 أحرف على الأقل)"
                       required={createAccount}
                       minLength={6}
@@ -593,16 +697,13 @@ export default function GuestRegisterPage({ params }: { params: Promise<{ id: st
               {session.requiresApproval && (
                 <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
                   <p className="text-sm text-amber-800">
-                    * هذا الحدث يتطلب موافقة على التسجيل. سيتم إرسال بريد إلكتروني عند الموافقة.
+                    * هذا الحدث يتطلب موافقة على التسجيل. سيتم إرسال بريد
+                    إلكتروني عند الموافقة.
                   </p>
                 </div>
               )}
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "جارٍ التسجيل..." : "تأكيد التسجيل"}
               </Button>
 

@@ -67,7 +67,9 @@ export default function MemberRegisterPage({
 
   // Redirect if not authenticated
   if (authStatus === "unauthenticated") {
-    router.push(`/user/login?callbackUrl=/session/${sessionId}/member-register`);
+    router.push(
+      `/user/login?callbackUrl=/session/${sessionId}/member-register`
+    );
     return null;
   }
 
@@ -140,7 +142,11 @@ export default function MemberRegisterPage({
         sessionId,
         companions: validCompanions,
         wantsToHost: userData?.wantsToHost ? undefined : wantsToHost,
-        hostingTypes: userData?.wantsToHost ? undefined : (wantsToHost ? hostingTypes : undefined),
+        hostingTypes: userData?.wantsToHost
+          ? undefined
+          : wantsToHost
+          ? hostingTypes
+          : undefined,
       });
     } finally {
       setIsSubmitting(false);
@@ -217,7 +223,9 @@ export default function MemberRegisterPage({
                       يمكنك إضافة ما يصل إلى {session.maxCompanions} مرافقين
                     </CardDescription>
                   </div>
-                  <Badge variant="outline">{companions.length} / {session.maxCompanions}</Badge>
+                  <Badge variant="outline">
+                    {companions.length} / {session.maxCompanions}
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -339,7 +347,7 @@ export default function MemberRegisterPage({
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <UtensilsCrossed className="w-5 h-5" />
-                    الضيافة (اختياري)
+                    الرعاية
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -354,7 +362,7 @@ export default function MemberRegisterPage({
                     />
                     <div className="space-y-1">
                       <Label htmlFor="wantsToHost" className="cursor-pointer">
-                        هل تريد تقديم الضيافة في أحد أحداثنا القادمة؟
+                        هل ترغب في رعاية الضيافة في احداثنا القادمة؟
                       </Label>
                       <p className="text-xs text-muted-foreground">
                         سوف يتم التواصل معكم لتحديد الاحتياج
@@ -367,14 +375,19 @@ export default function MemberRegisterPage({
                       <Label className="text-sm">نوع الضيافة</Label>
                       <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
                         {HOSTING_TYPES.map((type) => (
-                          <div key={type.value} className="flex items-center gap-2">
+                          <div
+                            key={type.value}
+                            className="flex items-center gap-2"
+                          >
                             <Checkbox
                               id={`hosting-${type.value}`}
                               checked={hostingTypes.includes(type.value)}
                               onCheckedChange={(checked) => {
                                 const types = checked
                                   ? [...hostingTypes, type.value]
-                                  : hostingTypes.filter((t) => t !== type.value);
+                                  : hostingTypes.filter(
+                                      (t) => t !== type.value
+                                    );
                                 setHostingTypes(types);
                               }}
                             />
@@ -404,11 +417,7 @@ export default function MemberRegisterPage({
               >
                 إلغاء
               </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex-1"
-              >
+              <Button type="submit" disabled={isSubmitting} className="flex-1">
                 {isSubmitting ? "جارٍ التسجيل..." : "تأكيد التسجيل"}
               </Button>
             </div>

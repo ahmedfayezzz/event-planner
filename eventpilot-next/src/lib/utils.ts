@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { randomBytes } from "crypto";
+import { toSaudiTime } from "./timezone";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -45,26 +46,34 @@ const ARABIC_DAYS: Record<number, string> = {
 };
 
 /**
- * Format date in Arabic
+ * Format date in Arabic (displays in Saudi Arabia timezone)
  */
 export function formatArabicDate(date: Date | null | undefined): string {
   if (!date) return "";
 
-  const dayName = ARABIC_DAYS[date.getDay()];
-  const monthName = ARABIC_MONTHS[date.getMonth() + 1];
+  // Convert UTC date to Saudi time for display
+  const saudiDate = toSaudiTime(date);
+  if (!saudiDate) return "";
 
-  return `${dayName} ${date.getDate()} ${monthName} ${date.getFullYear()}`;
+  const dayName = ARABIC_DAYS[saudiDate.getDay()];
+  const monthName = ARABIC_MONTHS[saudiDate.getMonth() + 1];
+
+  return `${dayName} ${saudiDate.getDate()} ${monthName} ${saudiDate.getFullYear()}`;
 }
 
 /**
- * Format time in Arabic (12-hour format)
+ * Format time in Arabic (12-hour format, displays in Saudi Arabia timezone)
  */
 export function formatArabicTime(date: Date | null | undefined): string {
   if (!date) return "";
 
-  const hours24 = date.getHours();
+  // Convert UTC date to Saudi time for display
+  const saudiDate = toSaudiTime(date);
+  if (!saudiDate) return "";
+
+  const hours24 = saudiDate.getHours();
   const hours12 = hours24 % 12 || 12;
-  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const minutes = saudiDate.getMinutes().toString().padStart(2, "0");
   const period = hours24 < 12 ? "ص" : "م";
 
   return `${hours12}:${minutes} ${period}`;
