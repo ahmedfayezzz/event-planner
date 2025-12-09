@@ -308,6 +308,9 @@ export const adminRouter = createTRPCRouter({
 
       if (input?.role) {
         where.role = input.role;
+      } else {
+        // By default, only show USER and GUEST roles (exclude ADMIN and SUPER_ADMIN)
+        where.role = { in: ["USER", "GUEST"] };
       }
 
       if (input?.isActive !== undefined) {
