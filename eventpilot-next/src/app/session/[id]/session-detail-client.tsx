@@ -104,12 +104,6 @@ export function SessionDetailClient({ id }: { id: string }) {
           >
             {statusLabels[session.status]}
           </Badge>
-          <Badge
-            variant="outline"
-            className="bg-black/30 text-white border-white/30 backdrop-blur-md text-xs md:text-base px-2.5 py-1 md:px-4 md:py-1.5"
-          >
-            لقاء #{session.sessionNumber}
-          </Badge>
         </div>
 
         {/* Share Button */}

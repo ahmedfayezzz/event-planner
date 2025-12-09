@@ -38,6 +38,7 @@ export const sessionRouter = createTRPCRouter({
       if (input?.upcoming) {
         where.date = { gt: new Date() };
         where.status = "open";
+        where.inviteOnly = false; // Don't show invite-only sessions in public listings
       }
 
       // Date range filtering for checkin page
@@ -122,6 +123,7 @@ export const sessionRouter = createTRPCRouter({
         where: {
           date: { gt: new Date() },
           status: "open",
+          inviteOnly: false, // Don't show invite-only sessions in public listings
         },
         orderBy: { date: "asc" },
         take: input?.limit ?? 5,
@@ -466,6 +468,25 @@ export const sessionRouter = createTRPCRouter({
         where: { id },
         data,
       });
+
+      // If registration deadline changed, update invite expirations
+      if (
+        data.registrationDeadline !== undefined &&
+        data.registrationDeadline !== existing.registrationDeadline
+      ) {
+        const newExpiresAt = data.registrationDeadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+        // Update all unused invites for this session
+        await db.invite.updateMany({
+          where: {
+            sessionId: id,
+            used: false,
+          },
+          data: {
+            expiresAt: newExpiresAt,
+          },
+        });
+      }
 
       return session;
     }),

@@ -76,7 +76,7 @@ export default function SessionEditPage({
 
     await updateMutation.mutateAsync({
       id,
-      sessionNumber: parseInt(formData.sessionNumber || "0"),
+      // sessionNumber is not editable - removed from mutation
       title: formData.title,
       description: formData.description || undefined,
       date: dateTime,
@@ -96,12 +96,11 @@ export default function SessionEditPage({
       showSocialMediaFields: formData.showSocialMediaFields,
       showRegistrationPurpose: formData.showRegistrationPurpose,
       showCateringInterest: formData.showCateringInterest,
-      slug: formData.slug || undefined,
+      // slug field is commented out in form - removed from mutation
       registrationDeadline: formData.registrationDeadline
         ? new Date(formData.registrationDeadline)
         : null,
-      customConfirmationMessage:
-        formData.customConfirmationMessage || undefined,
+      // customConfirmationMessage field is commented out in form - removed from mutation
       locationUrl: formData.locationUrl || undefined,
     });
   };

@@ -44,11 +44,11 @@ export default function NewSessionPage() {
       showSocialMediaFields: formData.showSocialMediaFields,
       showRegistrationPurpose: formData.showRegistrationPurpose,
       showCateringInterest: formData.showCateringInterest,
-      slug: formData.slug || undefined,
+      // slug field is commented out in form - removed from mutation
       registrationDeadline: formData.registrationDeadline
         ? new Date(formData.registrationDeadline)
         : undefined,
-      customConfirmationMessage: formData.customConfirmationMessage || undefined,
+      // customConfirmationMessage field is commented out in form - removed from mutation
       locationUrl: formData.locationUrl || undefined,
     });
   };

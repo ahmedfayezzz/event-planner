@@ -40,6 +40,8 @@ export const registrationRouter = createTRPCRouter({
         // Hosting preferences (only if user is not already a host)
         wantsToHost: z.boolean().optional(),
         hostingTypes: z.array(z.string()).optional(),
+        // Invitation token for invite-only sessions
+        inviteToken: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -89,6 +91,38 @@ export const registrationRouter = createTRPCRouter({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: `الحد الأقصى للمرافقين هو ${session.maxCompanions}`,
+        });
+      }
+
+      // Check invite-only sessions
+      if (session.inviteOnly) {
+        if (!input.inviteToken) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "هذا الحدث بدعوة فقط",
+          });
+        }
+
+        const invite = await db.invite.findFirst({
+          where: {
+            token: input.inviteToken,
+            sessionId: session.id,
+            used: false,
+            expiresAt: { gt: new Date() },
+          },
+        });
+
+        if (!invite) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "رابط الدعوة غير صالح أو منتهي الصلاحية",
+          });
+        }
+
+        // Mark invite as used
+        await db.invite.update({
+          where: { id: invite.id },
+          data: { used: true },
         });
       }
 

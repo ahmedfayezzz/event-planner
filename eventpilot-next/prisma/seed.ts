@@ -94,7 +94,8 @@ async function main() {
       activityType: "التقنية والبرمجة",
       gender: "male",
       goal: "تطوير تطبيقات ذكية للشركات السعودية وتوسيع شبكة العلاقات التجارية",
-      aiDescription: "رائد أعمال متخصص في مجال التقنية مع خبرة تتجاوز 10 سنوات في تطوير الحلول الرقمية للمؤسسات الكبرى.",
+      aiDescription:
+        "رائد أعمال متخصص في مجال التقنية مع خبرة تتجاوز 10 سنوات في تطوير الحلول الرقمية للمؤسسات الكبرى.",
       wantsToHost: true,
       hostingTypes: ["dinner", "beverage"],
     },
@@ -110,7 +111,8 @@ async function main() {
       activityType: "الاستشارات الإدارية",
       gender: "female",
       goal: "مساعدة الشركات الناشئة على النمو وتحقيق أهدافها التجارية",
-      aiDescription: "مستشارة إدارية متميزة تساعد الشركات الناشئة في بناء استراتيجيات نمو فعالة.",
+      aiDescription:
+        "مستشارة إدارية متميزة تساعد الشركات الناشئة في بناء استراتيجيات نمو فعالة.",
       wantsToHost: true,
       hostingTypes: ["dessert", "beverage"],
     },
@@ -126,7 +128,8 @@ async function main() {
       activityType: "التسويق الرقمي",
       gender: "male",
       goal: "بناء علامات تجارية قوية في العالم الرقمي وزيادة المبيعات",
-      aiDescription: "خبير في التسويق الرقمي وصناعة المحتوى مع سجل حافل في إدارة حملات إعلانية ناجحة.",
+      aiDescription:
+        "خبير في التسويق الرقمي وصناعة المحتوى مع سجل حافل في إدارة حملات إعلانية ناجحة.",
     },
     {
       name: "نورا سالم الحربي",
@@ -139,7 +142,8 @@ async function main() {
       activityType: "الاستشارات المالية",
       gender: "female",
       goal: "تقديم حلول مالية مبتكرة للأفراد والشركات",
-      aiDescription: "مستشارة مالية معتمدة تساعد العملاء في التخطيط المالي والاستثماري.",
+      aiDescription:
+        "مستشارة مالية معتمدة تساعد العملاء في التخطيط المالي والاستثماري.",
     },
     {
       name: "محمد صالح العثمان",
@@ -153,7 +157,8 @@ async function main() {
       activityType: "التجارة الإلكترونية",
       gender: "male",
       goal: "تطوير منصات تجارية إلكترونية تخدم السوق السعودي",
-      aiDescription: "رائد في التجارة الإلكترونية مع خبرة واسعة في إدارة المتاجر الرقمية.",
+      aiDescription:
+        "رائد في التجارة الإلكترونية مع خبرة واسعة في إدارة المتاجر الرقمية.",
     },
     {
       name: "ريم أحمد القحطاني",
@@ -167,7 +172,8 @@ async function main() {
       activityType: "إنتاج المحتوى",
       gender: "female",
       goal: "إنتاج محتوى عربي عالي الجودة يلهم جيل المؤثرين",
-      aiDescription: "مديرة إبداعية متخصصة في إنتاج محتوى بصري مبتكر للعلامات التجارية.",
+      aiDescription:
+        "مديرة إبداعية متخصصة في إنتاج محتوى بصري مبتكر للعلامات التجارية.",
     },
     {
       name: "عبدالرحمن طلال الشهري",
@@ -180,7 +186,8 @@ async function main() {
       activityType: "التطوير العقاري",
       gender: "male",
       goal: "تطوير مشاريع عقارية مبتكرة تواكب رؤية المملكة 2030",
-      aiDescription: "مطور عقاري يعمل على مشاريع سكنية وتجارية كبرى في المملكة.",
+      aiDescription:
+        "مطور عقاري يعمل على مشاريع سكنية وتجارية كبرى في المملكة.",
     },
     {
       name: "سارة عبدالله المطيري",
@@ -193,7 +200,8 @@ async function main() {
       activityType: "الصحة واللياقة",
       gender: "female",
       goal: "نشر الوعي الصحي وتقديم برامج تغذية متخصصة",
-      aiDescription: "أخصائية تغذية معتمدة تساعد الأفراد على تبني نمط حياة صحي.",
+      aiDescription:
+        "أخصائية تغذية معتمدة تساعد الأفراد على تبني نمط حياة صحي.",
     },
     {
       name: "يوسف مشعل الدوسري",
@@ -207,7 +215,8 @@ async function main() {
       activityType: "التدريب والتطوير",
       gender: "male",
       goal: "تطوير قادة المستقبل في المملكة العربية السعودية",
-      aiDescription: "مدرب قيادة معتمد دولياً مع خبرة في تطوير القدرات القيادية.",
+      aiDescription:
+        "مدرب قيادة معتمد دولياً مع خبرة في تطوير القدرات القيادية.",
     },
     {
       name: "هند فهد العنزي",
@@ -221,7 +230,8 @@ async function main() {
       activityType: "تصميم الأزياء",
       gender: "female",
       goal: "إحياء التراث السعودي من خلال تصاميم عصرية مبتكرة",
-      aiDescription: "مصممة أزياء مبدعة تمزج بين التراث السعودي والأناقة العصرية.",
+      aiDescription:
+        "مصممة أزياء مبدعة تمزج بين التراث السعودي والأناقة العصرية.",
     },
     {
       name: "عبدالله سعود الغامدي",
@@ -234,7 +244,8 @@ async function main() {
       activityType: "تقنية المعلومات",
       gender: "male",
       goal: "تقديم حلول تقنية متكاملة للشركات",
-      aiDescription: "خبير في تقنية المعلومات مع تخصص في الأمن السيبراني والبنية التحتية.",
+      aiDescription:
+        "خبير في تقنية المعلومات مع تخصص في الأمن السيبراني والبنية التحتية.",
     },
     {
       name: "منال عادل الزهراني",
@@ -273,7 +284,8 @@ async function main() {
       activityType: "تنظيم الفعاليات",
       gender: "female",
       goal: "تنظيم فعاليات استثنائية تترك أثراً إيجابياً",
-      aiDescription: "منظمة فعاليات محترفة مع خبرة في إدارة المؤتمرات والمعارض الكبرى.",
+      aiDescription:
+        "منظمة فعاليات محترفة مع خبرة في إدارة المؤتمرات والمعارض الكبرى.",
     },
     {
       name: "سلطان محمد الشمري",
@@ -302,7 +314,8 @@ async function main() {
       activityType: "العلاقات العامة",
       gender: "female",
       goal: "بناء صورة ذهنية إيجابية للعلامات التجارية",
-      aiDescription: "خبيرة في العلاقات العامة والتواصل المؤسسي مع خبرة إقليمية.",
+      aiDescription:
+        "خبيرة في العلاقات العامة والتواصل المؤسسي مع خبرة إقليمية.",
     },
     {
       name: "بدر عبدالرحمن السبيعي",
@@ -328,7 +341,8 @@ async function main() {
       activityType: "التصميم الداخلي",
       gender: "female",
       goal: "خلق مساحات معمارية ملهمة وعملية",
-      aiDescription: "مصممة داخلية مبدعة تجمع بين الجمال والوظيفية في تصاميمها.",
+      aiDescription:
+        "مصممة داخلية مبدعة تجمع بين الجمال والوظيفية في تصاميمها.",
     },
     {
       name: "راشد فهد المالكي",
@@ -354,7 +368,8 @@ async function main() {
       activityType: "التعليم والتدريب",
       gender: "female",
       goal: "تقديم برامج تعليمية مبتكرة للأطفال",
-      aiDescription: "رائدة في مجال التعليم مع شغف بتطوير أساليب التعلم الحديثة.",
+      aiDescription:
+        "رائدة في مجال التعليم مع شغف بتطوير أساليب التعلم الحديثة.",
     },
   ];
 
@@ -383,7 +398,8 @@ async function main() {
     {
       sessionNumber: 1,
       title: "التجمع التأسيسي - بناء شبكة المؤثرين",
-      description: "أول تجمع لمؤسسي ثلوثية الأعمال لوضع الأسس ومناقشة الرؤية والأهداف. جلسة تاريخية شهدت انطلاقة مجتمع رواد الأعمال.",
+      description:
+        "أول تجمع لمؤسسي ثلوثية الأعمال لوضع الأسس ومناقشة الرؤية والأهداف. جلسة تاريخية شهدت انطلاقة مجتمع رواد الأعمال.",
       date: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000), // 90 days ago
       guestName: "المهندس عبدالعزيز الراجحي",
       guestProfile: "رائد أعمال ومؤسس عدة شركات ناجحة في مجال التقنية",
@@ -396,12 +412,14 @@ async function main() {
     {
       sessionNumber: 2,
       title: "ريادة الأعمال في العصر الرقمي",
-      description: "مناقشة التحولات الرقمية وتأثيرها على ريادة الأعمال والاستثمار. تعرف على أحدث التوجهات في عالم التقنية.",
+      description:
+        "مناقشة التحولات الرقمية وتأثيرها على ريادة الأعمال والاستثمار. تعرف على أحدث التوجهات في عالم التقنية.",
       date: new Date(now.getTime() - 75 * 24 * 60 * 60 * 1000), // 75 days ago
       guestName: "المهندسة نورا الغامدي",
       guestProfile: "رئيسة تنفيذية لشركة تقنية ناشئة حققت نمواً بنسبة 300%",
       location: "مركز الملك عبدالعزيز للحوار الوطني",
-      locationUrl: "https://maps.google.com/?q=King+Abdulaziz+Center+for+National+Dialogue+Riyadh",
+      locationUrl:
+        "https://maps.google.com/?q=King+Abdulaziz+Center+for+National+Dialogue+Riyadh",
       status: "completed",
       maxParticipants: 50,
       maxCompanions: 5,
@@ -409,7 +427,8 @@ async function main() {
     {
       sessionNumber: 3,
       title: "التسويق الرقمي والوصول للعملاء",
-      description: "استراتيجيات التسويق الحديثة وكيفية بناء علاقات قوية مع العملاء في عالم رقمي متسارع.",
+      description:
+        "استراتيجيات التسويق الحديثة وكيفية بناء علاقات قوية مع العملاء في عالم رقمي متسارع.",
       date: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
       guestName: "الأستاذ خالد العمري",
       guestProfile: "خبير تسويق رقمي ومؤلف كتاب 'التسويق بالذكاء'",
@@ -421,7 +440,8 @@ async function main() {
     {
       sessionNumber: 4,
       title: "الاستثمار والتمويل للشركات الناشئة",
-      description: "كيفية الحصول على التمويل وجذب المستثمرين للمشاريع الناشئة. نصائح عملية من خبراء الاستثمار.",
+      description:
+        "كيفية الحصول على التمويل وجذب المستثمرين للمشاريع الناشئة. نصائح عملية من خبراء الاستثمار.",
       date: new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000), // 45 days ago
       guestName: "الدكتور أحمد المالكي",
       guestProfile: "خبير في الاستثمار ومدير صندوق رؤية الأعمال",
@@ -433,7 +453,8 @@ async function main() {
     {
       sessionNumber: 5,
       title: "القيادة والإدارة في المؤسسات الحديثة",
-      description: "تطوير مهارات القيادة وإدارة الفرق في بيئة العمل المعاصرة. كيف تكون قائداً ملهماً.",
+      description:
+        "تطوير مهارات القيادة وإدارة الفرق في بيئة العمل المعاصرة. كيف تكون قائداً ملهماً.",
       date: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
       guestName: "الدكتورة ريم الشمري",
       guestProfile: "استشارية قيادة ومدربة معتمدة دولياً",
@@ -445,7 +466,8 @@ async function main() {
     {
       sessionNumber: 6,
       title: "الابتكار والتطوير المستدام",
-      description: "كيفية تطوير حلول مبتكرة تساهم في التنمية المستدامة ورؤية المملكة 2030.",
+      description:
+        "كيفية تطوير حلول مبتكرة تساهم في التنمية المستدامة ورؤية المملكة 2030.",
       date: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
       guestName: "المهندس فهد الشهراني",
       guestProfile: "مدير الابتكار في أرامكو السعودية",
@@ -458,7 +480,8 @@ async function main() {
     {
       sessionNumber: 7,
       title: "الذكاء الاصطناعي في عالم الأعمال",
-      description: "استكشاف تطبيقات الذكاء الاصطناعي وكيفية الاستفادة منها في تطوير الأعمال وزيادة الإنتاجية.",
+      description:
+        "استكشاف تطبيقات الذكاء الاصطناعي وكيفية الاستفادة منها في تطوير الأعمال وزيادة الإنتاجية.",
       date: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       guestName: "الدكتور سامي العتيبي",
       guestProfile: "خبير في الذكاء الاصطناعي ومؤسس شركة AI Solutions",
@@ -472,12 +495,14 @@ async function main() {
     {
       sessionNumber: 8,
       title: "التجارة الإلكترونية والتوسع الإقليمي",
-      description: "فرص التوسع في أسواق الخليج والشرق الأوسط من خلال التجارة الإلكترونية.",
+      description:
+        "فرص التوسع في أسواق الخليج والشرق الأوسط من خلال التجارة الإلكترونية.",
       date: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
       guestName: "الأستاذة منى الدوسري",
       guestProfile: "مؤسسة منصة التسوق 'سوق الخليج'",
       location: "مركز الملك عبدالله المالي",
-      locationUrl: "https://maps.google.com/?q=King+Abdullah+Financial+District+Riyadh",
+      locationUrl:
+        "https://maps.google.com/?q=King+Abdullah+Financial+District+Riyadh",
       status: "open",
       maxParticipants: 45,
       maxCompanions: 4,
@@ -499,7 +524,8 @@ async function main() {
     {
       sessionNumber: 10,
       title: "الصحة النفسية لرواد الأعمال",
-      description: "التوازن بين العمل والحياة الشخصية وكيفية التعامل مع ضغوط ريادة الأعمال.",
+      description:
+        "التوازن بين العمل والحياة الشخصية وكيفية التعامل مع ضغوط ريادة الأعمال.",
       date: new Date(now.getTime() + 28 * 24 * 60 * 60 * 1000), // 28 days from now
       guestName: "الدكتورة هالة الحربي",
       guestProfile: "أخصائية نفسية متخصصة في ضغوط العمل",
@@ -531,16 +557,76 @@ async function main() {
 
   // ============== REGISTRATIONS & ATTENDANCE ==============
   const companionNames = [
-    { name: "عمر سعد الغامدي", company: "شركة الغامدي للتجارة", title: "مدير مبيعات", phone: "+966530123456", email: "omar.ghamdi@example.com" },
-    { name: "لينا محمد العتيبي", company: "مكتب العتيبي للمحاماة", title: "محامية", phone: "+966530234567", email: "lina.otaibi@example.com" },
-    { name: "ماجد خالد السبيعي", company: "مؤسسة السبيعي", title: "مدير عام", phone: "+966530345678", email: "majed.subaie@example.com" },
-    { name: "دانا عبدالله الحربي", company: "وكالة الحربي الإعلامية", title: "مديرة إبداعية", phone: "+966530456789", email: "dana.harbi@example.com" },
-    { name: "راشد فيصل المطيري", company: "شركة المطيري التقنية", title: "مهندس برمجيات", phone: "+966530567890", email: "rashed.mutairi@example.com" },
-    { name: "منى سالم القحطاني", company: "استشارات القحطاني", title: "مستشارة مالية", phone: "+966530678901", email: "mona.qahtani@example.com" },
-    { name: "بدر عبدالرحمن الزهراني", company: "مجموعة الزهراني", title: "مطور أعمال", phone: "+966530789012", email: "badr.zahrani@example.com" },
-    { name: "ريما حسن الشمري", company: "دار الشمري للتصميم", title: "مصممة", phone: "+966530890123", email: "rima.shamri@example.com" },
-    { name: "سعود محمد الدخيل", company: "شركة الدخيل العقارية", title: "مدير تطوير", phone: "+966530901234", email: "saud.dakhil@example.com" },
-    { name: "هيا فهد النصار", company: "مؤسسة النصار للتدريب", title: "مدربة معتمدة", phone: "+966531012345", email: "haya.nassar@example.com" },
+    {
+      name: "عمر سعد الغامدي",
+      company: "شركة الغامدي للتجارة",
+      title: "مدير مبيعات",
+      phone: "+966530123456",
+      email: "omar.ghamdi@example.com",
+    },
+    {
+      name: "لينا محمد العتيبي",
+      company: "مكتب العتيبي للمحاماة",
+      title: "محامية",
+      phone: "+966530234567",
+      email: "lina.otaibi@example.com",
+    },
+    {
+      name: "ماجد خالد السبيعي",
+      company: "مؤسسة السبيعي",
+      title: "مدير عام",
+      phone: "+966530345678",
+      email: "majed.subaie@example.com",
+    },
+    {
+      name: "دانا عبدالله الحربي",
+      company: "وكالة الحربي الإعلامية",
+      title: "مديرة إبداعية",
+      phone: "+966530456789",
+      email: "dana.harbi@example.com",
+    },
+    {
+      name: "راشد فيصل المطيري",
+      company: "شركة المطيري التقنية",
+      title: "مهندس برمجيات",
+      phone: "+966530567890",
+      email: "rashed.mutairi@example.com",
+    },
+    {
+      name: "منى سالم القحطاني",
+      company: "استشارات القحطاني",
+      title: "مستشارة مالية",
+      phone: "+966530678901",
+      email: "mona.qahtani@example.com",
+    },
+    {
+      name: "بدر عبدالرحمن الزهراني",
+      company: "مجموعة الزهراني",
+      title: "مطور أعمال",
+      phone: "+966530789012",
+      email: "badr.zahrani@example.com",
+    },
+    {
+      name: "ريما حسن الشمري",
+      company: "دار الشمري للتصميم",
+      title: "مصممة",
+      phone: "+966530890123",
+      email: "rima.shamri@example.com",
+    },
+    {
+      name: "سعود محمد الدخيل",
+      company: "شركة الدخيل العقارية",
+      title: "مدير تطوير",
+      phone: "+966530901234",
+      email: "saud.dakhil@example.com",
+    },
+    {
+      name: "هيا فهد النصار",
+      company: "مؤسسة النصار للتدريب",
+      title: "مدربة معتمدة",
+      phone: "+966531012345",
+      email: "haya.nassar@example.com",
+    },
   ];
 
   let totalRegistrations = 0;
@@ -553,7 +639,10 @@ async function main() {
     // Register users for each session (random selection)
     const numRegistrants = Math.floor(Math.random() * 10) + 8; // 8-17 registrants
     const shuffledUsers = [...users].sort(() => Math.random() - 0.5);
-    const selectedUsers = shuffledUsers.slice(0, Math.min(numRegistrants, users.length));
+    const selectedUsers = shuffledUsers.slice(
+      0,
+      Math.min(numRegistrants, users.length)
+    );
 
     for (let userIndex = 0; userIndex < selectedUsers.length; userIndex++) {
       const user = selectedUsers[userIndex];
@@ -570,7 +659,8 @@ async function main() {
 
       if (!existingReg) {
         // Mix of approved and pending registrations (90% approved, 10% pending for open sessions)
-        const isApproved = session.status === "completed" || Math.random() < 0.9;
+        const isApproved =
+          session.status === "completed" || Math.random() < 0.9;
 
         const registration = await prisma.registration.create({
           data: {
@@ -578,7 +668,9 @@ async function main() {
             sessionId: session.id,
             isApproved,
             approvalNotes: !isApproved ? "في انتظار مراجعة الإدارة" : null,
-            registeredAt: new Date(session.date.getTime() - Math.random() * 14 * 24 * 60 * 60 * 1000),
+            registeredAt: new Date(
+              session.date.getTime() - Math.random() * 14 * 24 * 60 * 60 * 1000
+            ),
           },
         });
         totalRegistrations++;
@@ -586,8 +678,11 @@ async function main() {
 
         // Add invited registrations (companions) - 40% chance for approved registrations
         if (isApproved && Math.random() < 0.4 && session.maxCompanions > 0) {
-          const numCompanions = Math.floor(Math.random() * Math.min(3, session.maxCompanions)) + 1;
-          const shuffledCompanions = [...companionNames].sort(() => Math.random() - 0.5);
+          const numCompanions =
+            Math.floor(Math.random() * Math.min(3, session.maxCompanions)) + 1;
+          const shuffledCompanions = [...companionNames].sort(
+            () => Math.random() - 0.5
+          );
 
           for (let i = 0; i < numCompanions; i++) {
             const comp = shuffledCompanions[i];
@@ -604,7 +699,9 @@ async function main() {
                 guestPhone: comp.phone,
                 guestEmail: comp.email,
                 isApproved: companionApproved,
-                approvalNotes: !companionApproved ? "في انتظار تأكيد المرافق" : null,
+                approvalNotes: !companionApproved
+                  ? "في انتظار تأكيد المرافق"
+                  : null,
                 registeredAt: registration.registeredAt,
               },
             });
@@ -619,7 +716,11 @@ async function main() {
                   registrationId: invitedReg.id,
                   sessionId: session.id,
                   attended,
-                  checkInTime: attended ? new Date(session.date.getTime() + Math.random() * 45 * 60 * 1000) : null,
+                  checkInTime: attended
+                    ? new Date(
+                        session.date.getTime() + Math.random() * 45 * 60 * 1000
+                      )
+                    : null,
                   qrVerified: attended && Math.random() < 0.8, // 80% QR verified
                 },
               });
@@ -636,7 +737,11 @@ async function main() {
               registrationId: registration.id,
               sessionId: session.id,
               attended,
-              checkInTime: attended ? new Date(session.date.getTime() + Math.random() * 30 * 60 * 1000) : null,
+              checkInTime: attended
+                ? new Date(
+                    session.date.getTime() + Math.random() * 30 * 60 * 1000
+                  )
+                : null,
               qrVerified: attended,
             },
           });
@@ -727,7 +832,7 @@ async function main() {
 
   // Create GUEST users and their registrations
   const guestUsers: User[] = [];
-  const openSessions = sessions.filter(s => s.status === "open");
+  const openSessions = sessions.filter((s) => s.status === "open");
 
   for (const guestData of guestUsersData) {
     const { isApproved, withCompanions, ...userData } = guestData;
@@ -748,7 +853,8 @@ async function main() {
     guestUsers.push(guestUser);
 
     // Create registration linked to the GUEST user
-    const randomSession = openSessions[Math.floor(Math.random() * openSessions.length)];
+    const randomSession =
+      openSessions[Math.floor(Math.random() * openSessions.length)];
     const guestReg = await prisma.registration.create({
       data: {
         userId: guestUser.id, // Link to GUEST user instead of using guest* fields
@@ -763,7 +869,9 @@ async function main() {
     // Add companions (companions still use guest* fields - no User record for them)
     if (withCompanions && isApproved) {
       const numCompanions = Math.floor(Math.random() * 2) + 1;
-      const shuffledCompanions = [...companionNames].sort(() => Math.random() - 0.5);
+      const shuffledCompanions = [...companionNames].sort(
+        () => Math.random() - 0.5
+      );
 
       for (let i = 0; i < numCompanions; i++) {
         const comp = shuffledCompanions[i];
@@ -795,7 +903,8 @@ async function main() {
 
   let totalInvites = 0;
   for (const email of inviteEmails) {
-    const randomSession = openSessions[Math.floor(Math.random() * openSessions.length)];
+    const randomSession =
+      openSessions[Math.floor(Math.random() * openSessions.length)];
     const token = `invite_${Math.random().toString(36).substring(2, 15)}`;
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
 
@@ -811,10 +920,16 @@ async function main() {
     totalInvites++;
   }
 
-  console.log(`✅ Created ${totalRegistrations} registrations (${totalPendingRegistrations} pending)`);
-  console.log(`✅ Created ${totalCompanions} invited registrations (companions)`);
+  console.log(
+    `✅ Created ${totalRegistrations} registrations (${totalPendingRegistrations} pending)`
+  );
+  console.log(
+    `✅ Created ${totalCompanions} invited registrations (companions)`
+  );
   console.log(`✅ Created ${totalAttendances} attendance records (direct)`);
-  console.log(`✅ Created ${totalInvitedAttendances} attendance records (invited/companions)`);
+  console.log(
+    `✅ Created ${totalInvitedAttendances} attendance records (invited/companions)`
+  );
   console.log(`✅ Created ${totalInvites} session invites`);
 
   // ============== EVENT CATERING ==============
@@ -822,10 +937,10 @@ async function main() {
   const cateringAssignments: EventCatering[] = [];
 
   // Find users who want to host
-  const hostsWhoWantToHost = users.filter(u => u.wantsToHost);
+  const hostsWhoWantToHost = users.filter((u) => u.wantsToHost);
 
   // Assign hosts to some completed sessions
-  const completedSessions = sessions.filter(s => s.status === "completed");
+  const completedSessions = sessions.filter((s) => s.status === "completed");
   for (let i = 0; i < Math.min(3, completedSessions.length); i++) {
     const session = completedSessions[i];
     const host = hostsWhoWantToHost[i % hostsWhoWantToHost.length];
@@ -845,7 +960,13 @@ async function main() {
           hostingType,
           isSelfCatering: !useHost,
           notes: useHost
-            ? `تم التنسيق مع ${host.name} لتقديم ${hostingType === "dinner" ? "العشاء" : hostingType === "beverage" ? "المشروبات" : "الحلويات"}`
+            ? `تم التنسيق مع ${host.name} لتقديم ${
+                hostingType === "dinner"
+                  ? "العشاء"
+                  : hostingType === "beverage"
+                  ? "المشروبات"
+                  : "الحلويات"
+              }`
             : "سيتم التوفير من قبل الإدارة",
         },
       });
@@ -854,7 +975,7 @@ async function main() {
   }
 
   // Add some catering for upcoming sessions
-  const upcomingSessions = sessions.filter(s => s.status === "open");
+  const upcomingSessions = sessions.filter((s) => s.status === "open");
   for (let i = 0; i < Math.min(2, upcomingSessions.length); i++) {
     const session = upcomingSessions[i];
     const host = hostsWhoWantToHost[(i + 3) % hostsWhoWantToHost.length];
@@ -880,17 +1001,29 @@ async function main() {
   console.log(`👑 Super Admin user: 1`);
   console.log(`👤 Admin user (limited): 1`);
   console.log(`👥 Regular users: ${users.length}`);
-  console.log(`📅 Sessions: ${sessions.length} (${sessions.filter(s => s.status === "completed").length} completed, ${sessions.filter(s => s.status === "open").length} open)`);
-  console.log(`📝 Registrations: ${totalRegistrations} (${totalPendingRegistrations} pending approval)`);
+  console.log(
+    `📅 Sessions: ${sessions.length} (${
+      sessions.filter((s) => s.status === "completed").length
+    } completed, ${sessions.filter((s) => s.status === "open").length} open)`
+  );
+  console.log(
+    `📝 Registrations: ${totalRegistrations} (${totalPendingRegistrations} pending approval)`
+  );
   console.log(`👥 Invited registrations (companions): ${totalCompanions}`);
-  console.log(`✅ Attendance records: ${totalAttendances + totalInvitedAttendances} (${totalAttendances} direct, ${totalInvitedAttendances} companions)`);
+  console.log(
+    `✅ Attendance records: ${
+      totalAttendances + totalInvitedAttendances
+    } (${totalAttendances} direct, ${totalInvitedAttendances} companions)`
+  );
   console.log(`📧 Session invites: ${totalInvites}`);
   console.log(`🍽️  Event catering assignments: ${cateringAssignments.length}`);
   console.log("=".repeat(50));
   console.log("\n📋 Login Credentials:");
   console.log("─".repeat(50));
   console.log("Super Admin:  admin@example.com / admin123 (full access)");
-  console.log("Admin:        moderator@example.com / admin123 (limited: dashboard, sessions, checkin)");
+  console.log(
+    "Admin:        moderator@example.com / admin123 (limited: dashboard, sessions, checkin)"
+  );
   console.log("Users:        [any user email] / password123");
   console.log("─".repeat(50));
   console.log("\n🎉 Seeding completed successfully!");
