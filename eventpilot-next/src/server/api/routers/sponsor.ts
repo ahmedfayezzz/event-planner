@@ -626,6 +626,67 @@ export const sponsorRouter = createTRPCRouter({
   }),
 
   /**
+   * Get available sessions for linking a sponsor to (dropdown list)
+   */
+  getAvailableSessions: adminProcedure
+    .input(
+      z.object({
+        search: z.string().optional(),
+        sponsorId: z.string().optional(), // To exclude sessions already linked
+        limit: z.number().min(1).max(50).default(20),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Get sessions that the sponsor is already linked to (if sponsorId provided)
+      let excludeSessionIds: string[] = [];
+      if (input.sponsorId) {
+        const existingSponsorships = await db.eventSponsorship.findMany({
+          where: { sponsorId: input.sponsorId },
+          select: { sessionId: true },
+        });
+        excludeSessionIds = existingSponsorships.map((es) => es.sessionId);
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: Record<string, any> = {};
+
+      // Exclude already-linked sessions
+      if (excludeSessionIds.length > 0) {
+        where.id = { notIn: excludeSessionIds };
+      }
+
+      // Search by title or session number
+      if (input.search) {
+        const searchNum = parseInt(input.search);
+        if (!isNaN(searchNum)) {
+          where.OR = [
+            { title: { contains: input.search } },
+            { sessionNumber: searchNum },
+          ];
+        } else {
+          where.title = { contains: input.search };
+        }
+      }
+
+      const sessions = await db.session.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          sessionNumber: true,
+          date: true,
+          status: true,
+        },
+        take: input.limit,
+        orderBy: { date: "desc" },
+      });
+
+      return sessions;
+    }),
+
+  /**
    * Get available sponsors for linking to session (dropdown list)
    */
   getAvailableForSession: adminProcedure

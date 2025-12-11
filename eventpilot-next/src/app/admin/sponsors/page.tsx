@@ -63,6 +63,9 @@ import {
   X,
   ImageIcon,
   Eye,
+  CalendarPlus,
+  Calendar,
+  Search,
 } from "lucide-react";
 import {
   Tooltip,
@@ -99,9 +102,20 @@ export default function AdminSponsorsPage() {
   const [sponsorshipTypeFilter, setSponsorshipTypeFilter] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddToEventDialogOpen, setIsAddToEventDialogOpen] = useState(false);
   const [editingSponsor, setEditingSponsor] = useState<string | null>(null);
+  const [selectedSponsorForEvent, setSelectedSponsorForEvent] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const { isExpanded, toggleRow } = useExpandableRows();
   const [formData, setFormData] = useState<SponsorFormData>(initialFormData);
+
+  // Add to Event dialog state
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedSponsorshipType, setSelectedSponsorshipType] = useState("");
+  const [eventNotes, setEventNotes] = useState("");
+  const [sessionSearchQuery, setSessionSearchQuery] = useState("");
 
   const utils = api.useUtils();
 
@@ -147,6 +161,30 @@ export default function AdminSponsorsPage() {
     },
   });
 
+  // Fetch available sessions for Add to Event dialog
+  const { data: availableSessions } = api.sponsor.getAvailableSessions.useQuery(
+    {
+      search: sessionSearchQuery || undefined,
+      sponsorId: selectedSponsorForEvent?.id,
+      limit: 20,
+    },
+    { enabled: isAddToEventDialogOpen && !!selectedSponsorForEvent }
+  );
+
+  // Add to event mutation
+  const addToEvent = api.sponsor.linkToSession.useMutation({
+    onSuccess: () => {
+      toast.success("تمت إضافة الرعاية بنجاح");
+      utils.sponsor.getAll.invalidate();
+      utils.sponsor.getAvailableSessions.invalidate();
+      resetAddToEventForm();
+      setIsAddToEventDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء إضافة الرعاية");
+    },
+  });
+
   const allSponsors = data?.pages.flatMap((page) => page.sponsors) ?? [];
 
   // Filter by sponsorship type on client side
@@ -160,6 +198,39 @@ export default function AdminSponsorsPage() {
 
   const resetForm = () => {
     setFormData(initialFormData);
+  };
+
+  const resetAddToEventForm = () => {
+    setSelectedSessionId(null);
+    setSelectedSponsorshipType("");
+    setEventNotes("");
+    setSessionSearchQuery("");
+    setSelectedSponsorForEvent(null);
+  };
+
+  const handleOpenAddToEventDialog = (sponsor: { id: string; name: string }) => {
+    setSelectedSponsorForEvent(sponsor);
+    setIsAddToEventDialogOpen(true);
+  };
+
+  const handleAddToEvent = () => {
+    if (!selectedSponsorForEvent) return;
+    if (!selectedSessionId) {
+      toast.error("يرجى اختيار حدث");
+      return;
+    }
+    if (!selectedSponsorshipType) {
+      toast.error("يرجى اختيار نوع الرعاية");
+      return;
+    }
+
+    addToEvent.mutate({
+      sessionId: selectedSessionId,
+      sponsorId: selectedSponsorForEvent.id,
+      sponsorshipType: selectedSponsorshipType,
+      isSelfSponsored: false,
+      notes: eventNotes || undefined,
+    });
   };
 
   const handleOpenAddDialog = () => {
@@ -549,6 +620,19 @@ export default function AdminSponsorsPage() {
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  handleOpenAddToEventDialog({
+                                    id: sponsor.id,
+                                    name: sponsor.name,
+                                  })
+                                }
+                                title="إضافة إلى حدث"
+                              >
+                                <CalendarPlus className="h-4 w-4" />
+                              </Button>
                               {sponsor.phone && (
                                 <Button
                                   variant="ghost"
@@ -650,6 +734,19 @@ export default function AdminSponsorsPage() {
                                       <Pencil className="ml-1 h-3 w-3" />
                                       تعديل
                                     </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleOpenAddToEventDialog({
+                                          id: sponsor.id,
+                                          name: sponsor.name,
+                                        })
+                                      }
+                                    >
+                                      <CalendarPlus className="ml-1 h-3 w-3" />
+                                      إضافة إلى حدث
+                                    </Button>
                                     {sponsor.phone && (
                                       <Button
                                         variant="outline"
@@ -743,6 +840,154 @@ export default function AdminSponsorsPage() {
             }}
             submitLabel="حفظ التعديلات"
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Add to Event Dialog */}
+      <Dialog
+        open={isAddToEventDialogOpen}
+        onOpenChange={(open) => {
+          setIsAddToEventDialogOpen(open);
+          if (!open) resetAddToEventForm();
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>إضافة راعي إلى حدث</DialogTitle>
+            <DialogDescription>
+              اختر الحدث ونوع الرعاية لإضافة {selectedSponsorForEvent?.name} كراعي
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Session Selection */}
+            <div className="space-y-2">
+              <Label>الحدث *</Label>
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="بحث عن حدث..."
+                  value={sessionSearchQuery}
+                  onChange={(e) => setSessionSearchQuery(e.target.value)}
+                  className="pr-9"
+                />
+              </div>
+
+              {availableSessions && availableSessions.length > 0 && (
+                <div className="max-h-48 overflow-y-auto border rounded-md">
+                  {availableSessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className={cn(
+                        "p-3 cursor-pointer hover:bg-muted/50 border-b last:border-b-0",
+                        selectedSessionId === session.id && "bg-primary/10"
+                      )}
+                      onClick={() => setSelectedSessionId(session.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Calendar className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{session.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            #{session.sessionNumber} •{" "}
+                            {formatArabicDate(session.date)}
+                          </p>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "flex-shrink-0",
+                            session.status === "active" &&
+                              "bg-green-500/10 text-green-600 border-green-200",
+                            session.status === "upcoming" &&
+                              "bg-blue-500/10 text-blue-600 border-blue-200",
+                            session.status === "completed" &&
+                              "bg-gray-500/10 text-gray-600 border-gray-200"
+                          )}
+                        >
+                          {session.status === "active"
+                            ? "نشط"
+                            : session.status === "upcoming"
+                              ? "قادم"
+                              : session.status === "completed"
+                                ? "مكتمل"
+                                : session.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {availableSessions && availableSessions.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  لا توجد أحداث متاحة
+                </p>
+              )}
+
+              {selectedSessionId && availableSessions && (
+                <p className="text-sm text-primary">
+                  تم اختيار:{" "}
+                  {availableSessions.find((s) => s.id === selectedSessionId)?.title}
+                </p>
+              )}
+            </div>
+
+            {/* Sponsorship Type Selection */}
+            <div className="space-y-2">
+              <Label>نوع الرعاية *</Label>
+              <Select
+                value={selectedSponsorshipType}
+                onValueChange={setSelectedSponsorshipType}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر نوع الرعاية" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPONSORSHIP_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label>ملاحظات (اختياري)</Label>
+              <Textarea
+                placeholder="أي ملاحظات إضافية..."
+                value={eventNotes}
+                onChange={(e) => setEventNotes(e.target.value)}
+                rows={2}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetAddToEventForm();
+                setIsAddToEventDialogOpen(false);
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button onClick={handleAddToEvent} disabled={addToEvent.isPending}>
+              {addToEvent.isPending ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  جارٍ الإضافة...
+                </>
+              ) : (
+                "إضافة"
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
