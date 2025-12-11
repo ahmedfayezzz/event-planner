@@ -67,6 +67,9 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // Profile image
+  avatarUrl     String?
+
   // Relations
   registrations Registration[]
   eventCaterings EventCatering[]
@@ -113,6 +116,9 @@ model Session {
   showRegistrationPurpose Boolean  @default(true)
   showCateringInterest  Boolean  @default(true)
   locationUrl           String?
+
+  // Banner image
+  bannerUrl             String?
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -202,6 +208,10 @@ model EventCatering {
   hostingType    String   // dinner, beverage, dessert, other
   isSelfCatering Boolean  @default(false)
   notes          String?
+
+  // Sponsor/host logo
+  logoUrl        String?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
