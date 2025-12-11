@@ -2,17 +2,7 @@ import sharp from "sharp";
 import path from "path";
 import fs from "fs/promises";
 import { generateQRCodeBuffer } from "./qr";
-
-// Brand colors matching email.ts
-const BRAND = {
-  primary: "#166534",
-  primaryLight: "#22c55e",
-  accent: "#D4A853",
-  accentLight: "#E8D5A8",
-  background: "#FAF8F5",
-  textDark: "#1a2e1a",
-  textMuted: "#4B5563",
-};
+import { BRAND } from "./brand";
 
 // Template dimensions
 const TEMPLATE_WIDTH = 400;

@@ -99,32 +99,32 @@ export function Footer() {
 
           {/* Quick Links */}
           <div className="space-y-6">
-            <h4 className="font-bold text-lg text-secondary">روابط سريعة</h4>
+            <h4 className="font-bold text-lg text-accent">روابط سريعة</h4>
             <ul className="space-y-3 text-sm">
               <li>
                 <Link
                   href="/sessions"
-                  className="text-white/80 hover:text-secondary transition-colors flex items-center gap-2"
+                  className="text-white/80 hover:text-accent transition-colors flex items-center gap-2"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-secondary/50"></span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent/50"></span>
                   الأحداث
                 </Link>
               </li>
               <li>
                 <Link
                   href="/register"
-                  className="text-white/80 hover:text-secondary transition-colors flex items-center gap-2"
+                  className="text-white/80 hover:text-accent transition-colors flex items-center gap-2"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-secondary/50"></span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent/50"></span>
                   عضوية جديدة
                 </Link>
               </li>
               <li>
                 <Link
                   href="/user/login"
-                  className="text-white/80 hover:text-secondary transition-colors flex items-center gap-2"
+                  className="text-white/80 hover:text-accent transition-colors flex items-center gap-2"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-secondary/50"></span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent/50"></span>
                   تسجيل الدخول
                 </Link>
               </li>
@@ -133,12 +133,12 @@ export function Footer() {
 
           {/* Contact */}
           <div className="space-y-6">
-            <h4 className="font-bold text-lg text-secondary">تواصل معنا</h4>
+            <h4 className="font-bold text-lg text-accent">تواصل معنا</h4>
             <div className="space-y-3 text-white/80">
               {settings?.contactEmail && (
                 <a
                   href={`mailto:${settings.contactEmail}`}
-                  className="flex items-center gap-2 hover:text-secondary transition-colors"
+                  className="flex items-center gap-2 hover:text-accent transition-colors"
                 >
                   <Mail className="h-4 w-4" />
                   <span dir="ltr">{settings.contactEmail}</span>
@@ -147,7 +147,7 @@ export function Footer() {
               {settings?.contactPhone && (
                 <a
                   href={`tel:${settings.contactPhone}`}
-                  className="flex items-center gap-2 hover:text-secondary transition-colors"
+                  className="flex items-center gap-2 hover:text-accent transition-colors"
                 >
                   <Phone className="h-4 w-4" />
                   <span dir="ltr">{settings.contactPhone}</span>

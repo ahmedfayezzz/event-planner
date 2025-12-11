@@ -21,14 +21,14 @@ interface UserLabelManagerProps {
 }
 
 const PRESET_COLORS = [
-  "#3b82f6", // blue
+  "#001421", // Midnight Blue (primary)
+  "#B27F59", // Sand (accent)
+  "#8C684A", // Dark Sand
+  "#CDA991", // Dune
+  "#333F48", // Pantone 7546
   "#10b981", // green
-  "#f59e0b", // amber
   "#ef4444", // red
   "#8b5cf6", // purple
-  "#ec4899", // pink
-  "#06b6d4", // cyan
-  "#84cc16", // lime
 ];
 
 export function UserLabelManager({

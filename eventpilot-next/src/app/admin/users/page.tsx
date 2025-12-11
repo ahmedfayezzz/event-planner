@@ -359,7 +359,7 @@ export default function AdminUsersPage() {
                         onClick={() => {
                           createLabelMutation.mutate({
                             name: labelSearchValue.trim(),
-                            color: "#3b82f6",
+                            color: "#001421",
                           });
                         }}
                         className="w-full flex items-center gap-2 px-2 py-2.5 rounded hover:bg-accent text-sm text-primary border-t mt-1"

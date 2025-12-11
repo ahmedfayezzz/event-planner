@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { generateBrandedQRCode } from "./qr-branded";
 import { db } from "@/server/db";
 import { toSaudiTime } from "./timezone";
+import { BRAND } from "./brand";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -125,32 +126,12 @@ interface EmailTemplateOptions {
   settings?: EmailSettings;
 }
 
-// =============================================================================
-// BRAND COLORS (matching website theme)
-// =============================================================================
-const BRAND = {
-  // Primary: Deep Emerald Green
-  primary: "#166534",
-  primaryDark: "#14532d",
-  // Accent: Gold/Bronze
-  accent: "#D4A853",
-  accentLight: "#E8D5A8",
-  // Backgrounds
-  background: "#FAF8F5", // Cream
-  cardBg: "#ffffff",
-  footerBg: "#F5F3EF", // Light cream
-  // Text
-  textDark: "#1a2e1a", // Dark emerald-tinted
-  textMuted: "#4B5563",
-  textLight: "#6B7280",
-  // Borders
-  border: "#E8E4DC",
-} as const;
+// Brand colors imported from ./brand.ts
 
 /**
  * Create a unified branded email template
  * Uses table-based layout for maximum email client compatibility
- * Colors match the website's Emerald Green + Gold theme
+ * Colors match the website's Midnight Blue + Sand theme
  */
 function createEmailTemplate({
   content,

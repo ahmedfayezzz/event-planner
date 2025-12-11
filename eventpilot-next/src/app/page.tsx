@@ -81,7 +81,7 @@ export default function HomePage() {
           ) : nextSession ? (
             <Card className="bg-white/10 backdrop-blur-md border border-white/20 max-w-3xl mx-auto animate-slide-up rounded-xl md:rounded-2xl">
               <CardContent className="py-6 md:py-10 px-4 md:px-6">
-                <p className="text-secondary mb-4 md:mb-6 text-sm md:text-lg font-medium">
+                <p className="text-accent mb-4 md:mb-6 text-sm md:text-lg font-medium">
                   {nextSession.title}
                 </p>
                 <CountdownTimer
@@ -111,7 +111,7 @@ export default function HomePage() {
             {/* Primary CTA */}
             <Button
               size="lg"
-              className="bg-gradient-to-r from-secondary/90 to-secondary text-primary hover:from-secondary hover:to-secondary/90 text-base md:text-xl px-8 md:px-12 py-5 md:py-8 h-auto font-bold shadow-[0_8px_32px_rgba(212,175,55,0.4)] hover:shadow-[0_12px_48px_rgba(212,175,55,0.5)] transition-all hover:scale-[1.02] border-0 rounded-xl md:rounded-2xl backdrop-blur-sm group w-full sm:w-auto"
+              className="bg-gradient-to-r from-accent/90 to-accent text-white hover:from-accent hover:to-accent/90 text-base md:text-xl px-8 md:px-12 py-5 md:py-8 h-auto font-bold shadow-[0_8px_32px_rgba(178,127,89,0.4)] hover:shadow-[0_12px_48px_rgba(178,127,89,0.5)] transition-all hover:scale-[1.02] border-0 rounded-xl md:rounded-2xl backdrop-blur-sm group w-full sm:w-auto"
               asChild
             >
               <Link
@@ -134,9 +134,9 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Decorative elements - Golden Glows */}
+        {/* Decorative elements - Sand Glows */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-secondary/20 rounded-full blur-[100px]" />
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent/20 rounded-full blur-[100px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/40 rounded-full blur-[100px]" />
         </div>
       </section>
@@ -147,7 +147,7 @@ export default function HomePage() {
         <div className="container relative z-10 px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 text-center animate-fade-in">
             <div className="space-y-1 md:space-y-2 py-4 md:py-0 hover:scale-105 transition-transform duration-300">
-              <div className="text-secondary text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">
+              <div className="text-accent text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">
                 50+
               </div>
               <div className="text-white/90 text-sm md:text-lg font-medium">
@@ -155,7 +155,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="space-y-1 md:space-y-2 py-4 md:py-0 hover:scale-105 transition-transform duration-300">
-              <div className="text-secondary text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">
+              <div className="text-accent text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">
                 500+
               </div>
               <div className="text-white/90 text-sm md:text-lg font-medium">
@@ -163,7 +163,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="space-y-1 md:space-y-2 py-4 md:py-0 hover:scale-105 transition-transform duration-300">
-              <div className="text-secondary text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">
+              <div className="text-accent text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">
                 1000+
               </div>
               <div className="text-white/90 text-sm md:text-lg font-medium">
@@ -171,7 +171,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="space-y-1 md:space-y-2 py-4 md:py-0 hover:scale-105 transition-transform duration-300">
-              <div className="text-secondary text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">
+              <div className="text-accent text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-sm">
                 100+
               </div>
               <div className="text-white/90 text-sm md:text-lg font-medium">

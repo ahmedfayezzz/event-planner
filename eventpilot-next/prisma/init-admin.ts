@@ -24,9 +24,9 @@ async function main() {
   console.log("🔐 Initializing Super Admin User...\n");
 
   // Get credentials from environment variables
-  const email = "admin@thlothyah.com";
+  const email = "support@tda.sa";
   const username = "admin";
-  const password = "w";
+  const password = "@dm!n@thlothyah";
   const name = "مدير النظام";
   const phone = "+966500000000";
 

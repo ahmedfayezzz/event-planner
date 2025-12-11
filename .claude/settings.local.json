@@ -11,7 +11,9 @@
       "Bash(npx tsc:*)",
       "Bash(npx shadcn@latest add:*)",
       "Bash(find:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "mcp__playwright__*",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

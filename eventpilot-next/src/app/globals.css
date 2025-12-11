@@ -83,106 +83,118 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ============================= */
+/* NEW PALETTE — LIGHT MODE       */
+/* ============================= */
+
 :root {
   --radius: 0.5rem;
-  /* Light theme: Cream background, Emerald primary, Gold accent */
-  --background: oklch(0.98 0.02 95);
-  /* Creamy white */
-  --foreground: oklch(0.15 0.05 150);
-  /* Dark Emerald/Charcoal */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.05 150);
+
+  /* Backgrounds */
+  --background: oklch(0.985 0.005 55); /* Warm off-white */
+  --foreground: oklch(0.181 0.04 237); /* Midnight Blue text */
+
+  --card: oklch(1 0 0); /* White cards */
+  --card-foreground: oklch(0.181 0.04 237);
+
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.05 150);
+  --popover-foreground: oklch(0.181 0.04 237);
 
-  /* Primary: Deep Emerald Green */
-  --primary: oklch(0.35 0.10 150);
-  --primary-foreground: oklch(0.98 0.02 95);
+  /* Primary — Midnight Blue (main brand) */
+  --primary: oklch(0.181 0.04 237);
+  --primary-foreground: oklch(1 0 0);
 
-  /* Secondary: Gold/Bronze */
-  --secondary: oklch(0.95 0.05 85);
-  /* Light Gold background */
-  --secondary-foreground: oklch(0.35 0.10 150);
+  /* Secondary — Light Sand tint for soft backgrounds */
+  --secondary: oklch(0.94 0.02 55); /* Very light Sand */
+  --secondary-foreground: oklch(0.181 0.04 237);
 
-  --muted: oklch(0.96 0.01 150);
-  --muted-foreground: oklch(0.45 0.05 150);
+  /* Muted — Neutral for disabled states */
+  --muted: oklch(0.95 0.008 55);
+  --muted-foreground: oklch(0.45 0.015 240);
 
-  /* Accent: Gold */
-  --accent: oklch(0.85 0.15 85);
-  --accent-foreground: oklch(0.20 0.05 150);
+  /* Accent — Sand (complementary highlight color) */
+  --accent: oklch(0.639 0.082 57.3); /* Sand */
+  --accent-foreground: oklch(1 0 0);
 
+  /* Destructive */
   --destructive: oklch(0.55 0.22 25);
-  --border: oklch(0.90 0.02 95);
-  --input: oklch(0.90 0.02 95);
-  --ring: oklch(0.35 0.10 150);
 
-  /* Chart colors - Adapted for the theme */
-  --chart-1: oklch(0.35 0.10 150);
-  /* Emerald */
-  --chart-2: oklch(0.75 0.15 85);
-  /* Gold */
-  --chart-3: oklch(0.25 0.05 150);
-  /* Darker Emerald */
-  --chart-4: oklch(0.60 0.10 85);
-  /* Bronze */
-  --chart-5: oklch(0.85 0.10 95);
-  /* Sand */
+  /* Borders — Sand-tinted for warmth */
+  --border: oklch(0.88 0.025 55);
+  --input: oklch(0.97 0.01 55);
+  --ring: oklch(0.181 0.04 237); /* Midnight Blue focus */
 
-  /* Sidebar */
-  --sidebar: oklch(0.98 0.02 95);
-  --sidebar-foreground: oklch(0.15 0.05 150);
-  --sidebar-primary: oklch(0.35 0.10 150);
-  --sidebar-primary-foreground: oklch(0.98 0.02 95);
-  --sidebar-accent: oklch(0.95 0.05 85);
-  --sidebar-accent-foreground: oklch(0.35 0.10 150);
-  --sidebar-border: oklch(0.90 0.02 95);
-  --sidebar-ring: oklch(0.35 0.10 150);
+  /* Charts — Midnight Blue + Sand palette */
+  --chart-1: oklch(0.181 0.04 237); /* Midnight Blue */
+  --chart-2: oklch(0.639 0.082 57.3); /* Sand */
+  --chart-3: oklch(0.546 0.063 60.7); /* Dark Sand */
+  --chart-4: oklch(0.761 0.054 55.4); /* Dune */
+  --chart-5: oklch(0.3606 0.022 240.7); /* Pantone 7546 */
+
+  /* Sidebar — Midnight Blue with Sand highlights */
+  --sidebar: oklch(0.181 0.04 237);
+  --sidebar-foreground: oklch(0.95 0.01 55);
+  --sidebar-primary: oklch(0.639 0.082 57.3); /* Sand for active item */
+  --sidebar-primary-foreground: oklch(0.181 0.04 237);
+  --sidebar-accent: oklch(0.22 0.035 237); /* Lighter Midnight Blue */
+  --sidebar-accent-foreground: oklch(0.95 0.01 55);
+  --sidebar-border: oklch(0.25 0.03 237);
+  --sidebar-ring: oklch(0.639 0.082 57.3);
 }
 
+/* ============================= */
+/* NEW PALETTE — DARK MODE       */
+/* ============================= */
+
 .dark {
-  /* Dark theme: Deep Charcoal background, Emerald/Gold accents */
-  --background: oklch(0.12 0.02 150);
-  /* Deep Charcoal/Green tint */
-  --foreground: oklch(0.95 0.02 95);
-  --card: oklch(0.15 0.02 150);
-  --card-foreground: oklch(0.95 0.02 95);
-  --popover: oklch(0.15 0.02 150);
-  --popover-foreground: oklch(0.95 0.02 95);
+  /* Deep Midnight Blue / Pantone 7546 environment */
+  --background: oklch(0.181 0.04 237); /* Midnight Blue */
+  --foreground: oklch(1 0 89.9); /* Pearl */
 
-  /* Primary: Lighter Emerald for dark mode */
-  --primary: oklch(0.50 0.12 150);
-  --primary-foreground: oklch(0.98 0.02 95);
+  --card: oklch(0.3606 0.022 240.7); /* Pantone 7546 */
+  --card-foreground: oklch(1 0 89.9);
 
-  /* Secondary: Darker Gold/Bronze */
-  --secondary: oklch(0.20 0.05 150);
-  --secondary-foreground: oklch(0.90 0.05 85);
+  --popover: oklch(0.3606 0.022 240.7);
+  --popover-foreground: oklch(1 0 89.9);
 
-  --muted: oklch(0.20 0.02 150);
-  --muted-foreground: oklch(0.70 0.05 150);
+  /* Primary — lighter Midnight Blue */
+  --primary: oklch(0.3 0.05 237);
+  --primary-foreground: oklch(1 0 89.9);
 
-  /* Accent: Gold */
-  --accent: oklch(0.30 0.10 85);
-  --accent-foreground: oklch(0.95 0.05 85);
+  /* Secondary — Sand */
+  --secondary: oklch(0.639 0.082 57.3);
+  --secondary-foreground: oklch(0 0 0);
 
-  --destructive: oklch(0.60 0.20 25);
-  --border: oklch(0.25 0.02 150);
-  --input: oklch(0.25 0.02 150);
-  --ring: oklch(0.50 0.12 150);
+  /* Muted */
+  --muted: oklch(0.25 0.02 240.7);
+  --muted-foreground: oklch(0.85 0.04 90);
 
-  --chart-1: oklch(0.50 0.12 150);
-  --chart-2: oklch(0.75 0.15 85);
-  --chart-3: oklch(0.40 0.10 150);
-  --chart-4: oklch(0.60 0.10 85);
-  --chart-5: oklch(0.85 0.10 95);
+  /* Accent — Dark Sand */
+  --accent: oklch(0.546 0.063 60.7);
+  --accent-foreground: oklch(0 0 0);
 
-  --sidebar: oklch(0.12 0.02 150);
-  --sidebar-foreground: oklch(0.95 0.02 95);
-  --sidebar-primary: oklch(0.50 0.12 150);
-  --sidebar-primary-foreground: oklch(0.98 0.02 95);
-  --sidebar-accent: oklch(0.20 0.05 150);
-  --sidebar-accent-foreground: oklch(0.90 0.05 85);
-  --sidebar-border: oklch(0.25 0.02 150);
-  --sidebar-ring: oklch(0.50 0.12 150);
+  --destructive: oklch(0.6 0.2 25);
+
+  --border: oklch(0.25 0.02 240.7);
+  --input: oklch(0.25 0.02 240.7);
+  --ring: oklch(0.3 0.05 237);
+
+  /* Charts */
+  --chart-1: oklch(0.3 0.05 237);
+  --chart-2: oklch(0.639 0.082 57.3);
+  --chart-3: oklch(0.85 0.1 95);
+  --chart-4: oklch(0.546 0.063 60.7);
+  --chart-5: oklch(0.761 0.054 55.4);
+
+  /* Sidebar */
+  --sidebar: oklch(0.181 0.04 237);
+  --sidebar-foreground: oklch(1 0 89.9);
+  --sidebar-primary: oklch(0.3 0.05 237);
+  --sidebar-primary-foreground: oklch(1 0 89.9);
+  --sidebar-accent: oklch(0.639 0.082 57.3);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(0.25 0.02 240.7);
+  --sidebar-ring: oklch(0.3 0.05 237);
 }
 
 @layer base {
@@ -195,26 +207,37 @@
   }
 }
 
-/* Custom utility classes */
-@layer utilities {
+/* ============================= */
+/* Utility Classes (unchanged)   */
+/* ============================= */
 
-  /* Gradient backgrounds */
-  /* Gradient backgrounds */
+/* Gradient backgrounds updated to new palette */
+@layer utilities {
   .bg-gradient-primary {
-    background: linear-gradient(135deg, oklch(0.35 0.10 150) 0%, oklch(0.25 0.05 150) 100%);
+    background: linear-gradient(
+      135deg,
+      oklch(0.181 0.04 237) 0%,
+      oklch(0.3606 0.022 240.7) 100%
+    );
   }
 
   .bg-gradient-hero {
-    background: linear-gradient(135deg, oklch(0.35 0.10 150) 0%, oklch(0.20 0.05 150) 100%);
+    background: linear-gradient(
+      135deg,
+      oklch(0.181 0.04 237) 0%,
+      oklch(0.3606 0.022 240.7) 100%
+    );
     position: relative;
   }
 
   .bg-gradient-hero::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
-    /* Subtle geometric pattern */
-    background-image: radial-gradient(oklch(0.75 0.15 85 / 0.1) 1px, transparent 1px);
+    background-image: radial-gradient(
+      oklch(0.639 0.082 57.3 / 0.1) 1px,
+      transparent 1px
+    );
     background-size: 24px 24px;
     opacity: 0.5;
     pointer-events: none;
@@ -292,38 +315,21 @@
 
   /* Saudi Pattern Utilities */
   .bg-pattern-sadu {
-    background-image: url('/pattern.svg');
+    background-image: url("/pattern.svg");
     background-repeat: repeat;
     background-size: 48px 48px;
   }
 
   .bg-pattern-sadu-chain {
-    background-image: url('/pattern-sadu.svg');
+    background-image: url("/pattern-sadu.svg");
     background-repeat: repeat;
     background-size: 48px 24px;
   }
 
   .bg-pattern-dots {
-    background-image: url('/pattern-dots.svg');
+    background-image: url("/pattern-dots.svg");
     background-repeat: repeat;
     background-size: 24px 24px;
-  }
-
-  /* Pattern border - horizontal decorative divider */
-  .pattern-border {
-    background-image: url('/pattern-border.svg');
-    background-repeat: repeat-x;
-    background-position: center;
-    background-size: 120px 12px;
-    height: 12px;
-  }
-
-  .pattern-border-lg {
-    background-image: url('/pattern-border.svg');
-    background-repeat: repeat-x;
-    background-position: center;
-    background-size: 180px 18px;
-    height: 18px;
   }
 
   /* Animations */
@@ -365,10 +371,9 @@
 }
 
 /* RTL specific styles */
-[dir="rtl"] .space-x-reverse> :not([hidden])~ :not([hidden]) {
+[dir="rtl"] .space-x-reverse > :not([hidden]) ~ :not([hidden]) {
   --tw-space-x-reverse: 1;
 }
-
 
 /* Focus styles for accessibility */
 .focus-visible-ring:focus-visible {

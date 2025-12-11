@@ -49,7 +49,7 @@ export const labelRouter = createTRPCRouter({
       const label = await db.userLabel.create({
         data: {
           name: input.name,
-          color: input.color || "#3b82f6",
+          color: input.color || "#001421",
         },
       });
 
@@ -156,7 +156,7 @@ export const labelRouter = createTRPCRouter({
         label = await db.userLabel.create({
           data: {
             name: input.name,
-            color: input.color || "#3b82f6",
+            color: input.color || "#001421",
           },
         });
       }

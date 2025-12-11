@@ -126,7 +126,7 @@ export default function RegisterPage() {
               {/* Basic Info */}
               <div className="space-y-3 md:space-y-4">
                 <h3 className="font-semibold text-primary border-b border-primary/10 pb-2 flex items-center gap-2 text-sm md:text-base">
-                  <span className="w-1.5 md:w-2 h-5 md:h-6 bg-secondary rounded-full inline-block"></span>
+                  <span className="w-1.5 md:w-2 h-5 md:h-6 bg-accent rounded-full inline-block"></span>
                   المعلومات الأساسية
                 </h3>
                 <div className="grid gap-3 md:gap-4 md:grid-cols-2">
@@ -207,7 +207,7 @@ export default function RegisterPage() {
               {/* Password */}
               <div className="space-y-3 md:space-y-4">
                 <h3 className="font-semibold text-primary border-b border-primary/10 pb-2 flex items-center gap-2 text-sm md:text-base">
-                  <span className="w-1.5 md:w-2 h-5 md:h-6 bg-secondary rounded-full inline-block"></span>
+                  <span className="w-1.5 md:w-2 h-5 md:h-6 bg-accent rounded-full inline-block"></span>
                   كلمة المرور
                 </h3>
                 <div className="grid gap-3 md:gap-4 md:grid-cols-2">
@@ -286,7 +286,7 @@ export default function RegisterPage() {
               {/* Professional Info */}
               <div className="space-y-3 md:space-y-4">
                 <h3 className="font-semibold text-primary border-b border-primary/10 pb-2 flex items-center gap-2 text-sm md:text-base">
-                  <span className="w-1.5 md:w-2 h-5 md:h-6 bg-secondary rounded-full inline-block"></span>
+                  <span className="w-1.5 md:w-2 h-5 md:h-6 bg-accent rounded-full inline-block"></span>
                   المعلومات المهنية
                 </h3>
                 <div className="grid gap-3 md:gap-4 md:grid-cols-2">
@@ -347,7 +347,7 @@ export default function RegisterPage() {
               {settings?.showSocialMediaFields && (
                 <div className="space-y-3 md:space-y-4">
                   <h3 className="font-semibold text-primary border-b border-primary/10 pb-2 flex items-center gap-2 text-sm md:text-base">
-                    <span className="w-1.5 md:w-2 h-5 md:h-6 bg-secondary rounded-full inline-block"></span>
+                    <span className="w-1.5 md:w-2 h-5 md:h-6 bg-accent rounded-full inline-block"></span>
                     وسائل التواصل (اختياري)
                   </h3>
                   <div className="grid gap-3 md:gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -430,7 +430,7 @@ export default function RegisterPage() {
               {settings?.showCateringInterest && (
                 <div className="space-y-3 md:space-y-4">
                   <h3 className="font-semibold text-primary border-b border-primary/10 pb-2 flex items-center gap-2 text-sm md:text-base">
-                    <span className="w-1.5 md:w-2 h-5 md:h-6 bg-secondary rounded-full inline-block"></span>
+                    <span className="w-1.5 md:w-2 h-5 md:h-6 bg-accent rounded-full inline-block"></span>
                     الرعاية
                   </h3>
                   <div className="flex items-start space-x-3 space-x-reverse">

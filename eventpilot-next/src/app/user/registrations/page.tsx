@@ -52,7 +52,7 @@ export default function UserRegistrationsPage() {
         <div className="container relative z-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <div className="h-20 w-20 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-3xl font-bold text-secondary shadow-xl">
+              <div className="h-20 w-20 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-3xl font-bold text-accent shadow-xl">
                 {dashboard?.user.name?.charAt(0).toUpperCase()}
               </div>
               <div>
@@ -84,7 +84,7 @@ export default function UserRegistrationsPage() {
           <Card className="border-none shadow-lg bg-white/80 backdrop-blur-md hover:transform hover:-translate-y-1 transition-all duration-300">
             <CardHeader className="pb-2">
               <CardDescription className="text-primary/60 font-medium">الأحداث القادمة</CardDescription>
-              <CardTitle className="text-4xl font-bold text-secondary">{dashboard?.stats.upcomingEvents ?? 0}</CardTitle>
+              <CardTitle className="text-4xl font-bold text-accent">{dashboard?.stats.upcomingEvents ?? 0}</CardTitle>
             </CardHeader>
           </Card>
           <Card className="border-none shadow-lg bg-white/80 backdrop-blur-md hover:transform hover:-translate-y-1 transition-all duration-300">
@@ -261,7 +261,7 @@ function RegistrationCard({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <CardTitle className="text-xl text-primary group-hover:text-secondary transition-colors">{registration.session.title}</CardTitle>
+            <CardTitle className="text-xl text-primary group-hover:text-accent transition-colors">{registration.session.title}</CardTitle>
             <CardDescription className="font-medium">التجمع رقم {registration.session.sessionNumber}</CardDescription>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
               <CalendarCheck className="w-3.5 h-3.5" />
