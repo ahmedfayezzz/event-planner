@@ -261,8 +261,11 @@ export default function SponsorProfilePage({
     deleteSponsor.mutate({ id });
   };
 
-  const handleWhatsApp = (phone: string, name: string) => {
-    const message = `مرحباً ${name}،\n\nنشكرك على رغبتك في رعاية ثلوثية الأعمال.\n\nنود التواصل معك لتنسيق تفاصيل الرعاية.`;
+  const handleWhatsApp = (phone: string, name: string, sponsorshipTypes: string[]) => {
+    const typesText = sponsorshipTypes.length > 0
+      ? sponsorshipTypes.map(getSponsorshipTypeLabel).join(" و ")
+      : "الثلوثية";
+    const message = `مرحباً ${name}،\n\nنشكرك على عرضك لرعاية (${typesText}) للثلوثية.\n\nنود التواصل معك...`;
     const url = getWhatsAppUrl(phone, message);
     window.open(url, "_blank");
   };
@@ -492,7 +495,7 @@ export default function SponsorProfilePage({
                       size="icon"
                       className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
                       onClick={() =>
-                        handleWhatsApp(sponsor.phone!, sponsor.name)
+                        handleWhatsApp(sponsor.phone!, sponsor.name, sponsor.sponsorshipTypes)
                       }
                     >
                       <MessageCircle className="h-4 w-4" />
@@ -626,7 +629,7 @@ export default function SponsorProfilePage({
                   <Button
                     variant="outline"
                     className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                    onClick={() => handleWhatsApp(sponsor.phone!, sponsor.name)}
+                    onClick={() => handleWhatsApp(sponsor.phone!, sponsor.name, sponsor.sponsorshipTypes)}
                   >
                     <MessageCircle className="ml-2 h-4 w-4" />
                     واتساب
