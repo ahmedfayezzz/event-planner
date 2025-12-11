@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import { FormSectionHeader } from "@/components/forms";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -132,10 +133,7 @@ export default function RegisterPage() {
             <CardContent className="space-y-4 md:space-y-6 px-4 md:px-6">
               {/* Basic Info */}
               <div className="space-y-3 md:space-y-4">
-                <h3 className="font-semibold text-primary border-b border-primary/10 pb-2 flex items-center gap-2 text-sm md:text-base">
-                  <span className="w-1.5 md:w-2 h-5 md:h-6 bg-accent rounded-full inline-block"></span>
-                  المعلومات الأساسية
-                </h3>
+                <FormSectionHeader title="المعلومات الأساسية" />
                 <div className="grid gap-3 md:gap-4 md:grid-cols-2">
                   <div className="space-y-1.5 md:space-y-2">
                     <Label htmlFor="name" className="text-sm">
@@ -213,10 +211,7 @@ export default function RegisterPage() {
 
               {/* Password */}
               <div className="space-y-3 md:space-y-4">
-                <h3 className="font-semibold text-primary border-b border-primary/10 pb-2 flex items-center gap-2 text-sm md:text-base">
-                  <span className="w-1.5 md:w-2 h-5 md:h-6 bg-accent rounded-full inline-block"></span>
-                  كلمة المرور
-                </h3>
+                <FormSectionHeader title="كلمة المرور" />
                 <div className="grid gap-3 md:gap-4 md:grid-cols-2">
                   <div className="space-y-1.5 md:space-y-2">
                     <Label htmlFor="password" className="text-sm">
@@ -292,10 +287,7 @@ export default function RegisterPage() {
 
               {/* Professional Info */}
               <div className="space-y-3 md:space-y-4">
-                <h3 className="font-semibold text-primary border-b border-primary/10 pb-2 flex items-center gap-2 text-sm md:text-base">
-                  <span className="w-1.5 md:w-2 h-5 md:h-6 bg-accent rounded-full inline-block"></span>
-                  المعلومات المهنية
-                </h3>
+                <FormSectionHeader title="المعلومات المهنية" />
                 <div className="grid gap-3 md:gap-4 md:grid-cols-2">
                   <div className="space-y-1.5 md:space-y-2">
                     <Label htmlFor="companyName" className="text-sm">
@@ -353,10 +345,7 @@ export default function RegisterPage() {
               {/* Social Media */}
               {settings?.showSocialMediaFields && (
                 <div className="space-y-3 md:space-y-4">
-                  <h3 className="font-semibold text-primary border-b border-primary/10 pb-2 flex items-center gap-2 text-sm md:text-base">
-                    <span className="w-1.5 md:w-2 h-5 md:h-6 bg-accent rounded-full inline-block"></span>
-                    وسائل التواصل (اختياري)
-                  </h3>
+                  <FormSectionHeader title="وسائل التواصل (اختياري)" />
                   <div className="grid gap-3 md:gap-4 sm:grid-cols-2 md:grid-cols-3">
                     <div className="space-y-1.5 md:space-y-2">
                       <Label htmlFor="instagram" className="text-sm">
@@ -436,10 +425,7 @@ export default function RegisterPage() {
               {/* Sponsorship Section */}
               {settings?.showCateringInterest && (
                 <div className="space-y-3 md:space-y-4">
-                  <h3 className="font-semibold text-primary border-b border-primary/10 pb-2 flex items-center gap-2 text-sm md:text-base">
-                    <span className="w-1.5 md:w-2 h-5 md:h-6 bg-accent rounded-full inline-block"></span>
-                    الرعاية
-                  </h3>
+                  <FormSectionHeader title="الرعاية" />
                   <SponsorshipSection
                     data={{
                       wantsToSponsor: formData.wantsToSponsor,

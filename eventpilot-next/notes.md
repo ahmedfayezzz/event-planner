@@ -72,13 +72,15 @@ change to الوصف
 
 _____________________________________________________
 
-- sponsor instead of host
+sponsors:
+- rename host to sponsor
 - when user chooses other in hosting options while in all registration types, we should show a text area to specify, then in admin we can see what they wrote
 - add a way to link sponsor to event in admin (in sponsors table)
 - give admin a way to update sponsor details (like hosting type)
 - add a way attach image to sponsor
 - add an option in host form to select if it's company or a person
 - remove company field
+- add sponsor profile page showing their details and events they sponsored
 
 admins:
 - when promoting a user to admin, give option to select which admin role (super admin, event admin, analytics admin)
@@ -89,10 +91,12 @@ admins:
 footer:
 - add tda rights
 
-auth:
-- login by google
 
 
 deployment for tda.sa landing page:
 - setup domain tda.sa
 - delete social media links from footer
+
+
+auth:
+- login by google
