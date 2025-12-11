@@ -199,7 +199,14 @@ export const invitationRouter = createTRPCRouter({
     .input(
       z.object({
         sessionId: z.string(),
-        phones: z.array(z.string()).max(100),
+        contacts: z
+          .array(
+            z.object({
+              phone: z.string(),
+              name: z.string().optional(),
+            })
+          )
+          .max(100),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -219,17 +226,19 @@ export const invitationRouter = createTRPCRouter({
       const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 
       // Use session's registration deadline or 7 days if not set
-      const expiresAt = session.registrationDeadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const expiresAt =
+        session.registrationDeadline ||
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
       const links = await Promise.all(
-        input.phones.map(async (phone) => {
+        input.contacts.map(async (contact) => {
           // Create invite token for each phone
           const token = generateInviteToken();
 
           await db.invite.create({
             data: {
               sessionId: input.sessionId,
-              email: `whatsapp-${phone}@placeholder.local`, // Placeholder for WhatsApp invites
+              email: `whatsapp-${contact.phone}@placeholder.local`, // Placeholder for WhatsApp invites
               token,
               expiresAt,
             },
@@ -238,16 +247,23 @@ export const invitationRouter = createTRPCRouter({
           const registrationUrl = `${baseUrl}/event/${session.slug || session.id}/register?token=${token}`;
 
           const saudiDate = toSaudiTime(session.date);
+
+          // Build greeting with name if available
+          const greeting = contact.name
+            ? `مرحباً، ${contact.name}`
+            : "مرحباً";
+
           const message = session.inviteMessage
             ? session.inviteMessage.replace("[رابط التسجيل]", registrationUrl)
-            : `مرحباً،\n\nندعوك للتسجيل في حدث "${session.title}" في ثلوثية الأعمال.\n\n📅 التاريخ: ${saudiDate?.toLocaleDateString("ar-SA") ?? ""}\n\nسجل الآن:\n${registrationUrl}`;
+            : `${greeting}\n\nندعوك للتسجيل في حدث "${session.title}" في ثلوثية الأعمال.\n\n📅 التاريخ: ${saudiDate?.toLocaleDateString("ar-SA") ?? ""}\n\nسجل الآن:\n${registrationUrl}`;
 
           // Format phone for WhatsApp (remove + and spaces)
-          const cleanPhone = phone.replace(/\D/g, "");
+          const cleanPhone = contact.phone.replace(/\D/g, "");
           const waLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
 
           return {
-            phone,
+            phone: contact.phone,
+            name: contact.name,
             link: waLink,
             token,
           };

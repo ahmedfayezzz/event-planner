@@ -95,7 +95,9 @@ export default function InvitationsPage({
 
   // WhatsApp tab state
   const [whatsappSearch, setWhatsappSearch] = useState("");
-  const [selectedPhones, setSelectedPhones] = useState<string[]>([]);
+  const [selectedContacts, setSelectedContacts] = useState<
+    { phone: string; name?: string }[]
+  >([]);
   const [manualPhones, setManualPhones] = useState<string[]>([""]);
   const [manualOpen, setManualOpen] = useState(false);
 
@@ -113,7 +115,9 @@ export default function InvitationsPage({
     updated[index] = value;
     setManualPhones(updated);
   };
-  const [whatsappLinks, setWhatsappLinks] = useState<{ phone: string; link: string }[]>([]);
+  const [whatsappLinks, setWhatsappLinks] = useState<
+    { phone: string; name?: string; link: string }[]
+  >([]);
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
 
   // Manage tab state
@@ -170,7 +174,7 @@ export default function InvitationsPage({
     onSuccess: (data) => {
       setWhatsappLinks(data.links);
       toast.success(`تم إنشاء ${data.links.length} رابط`);
-      setSelectedPhones([]);
+      setSelectedContacts([]);
       setManualPhones([""]);
       utils.invitation.getUsersForInvite.invalidate({ sessionId });
       utils.invitation.getSessionInvites.invalidate({ sessionId });
@@ -239,20 +243,21 @@ export default function InvitationsPage({
   };
 
   const handleGenerateWhatsApp = () => {
-    const phonesFromUsers = selectedPhones;
     // PhoneInput returns E.164 format like +966500000000
     // Remove + prefix for consistency with existing API
-    const phonesFromManual = manualPhones
+    const contactsFromManual = manualPhones
       .filter((p) => p.trim())
-      .map((p) => (p.startsWith("+") ? p.substring(1) : p));
-    const allPhones = [...phonesFromUsers, ...phonesFromManual];
+      .map((p) => ({
+        phone: p.startsWith("+") ? p.substring(1) : p,
+      }));
+    const allContacts = [...selectedContacts, ...contactsFromManual];
 
-    if (allPhones.length === 0) {
+    if (allContacts.length === 0) {
       toast.error("الرجاء اختيار مستخدمين أو إدخال أرقام الهواتف");
       return;
     }
 
-    generateWhatsAppMutation.mutate({ sessionId, phones: allPhones });
+    generateWhatsAppMutation.mutate({ sessionId, contacts: allContacts });
   };
 
   const handleCopyLink = async (phone: string, link: string) => {
@@ -279,10 +284,16 @@ export default function InvitationsPage({
     );
   };
 
-  const togglePhone = (phone: string, isRegistered: boolean) => {
+  const toggleContact = (
+    phone: string,
+    name: string | undefined,
+    isRegistered: boolean
+  ) => {
     if (isRegistered) return;
-    setSelectedPhones((prev) =>
-      prev.includes(phone) ? prev.filter((p) => p !== phone) : [...prev, phone]
+    setSelectedContacts((prev) =>
+      prev.some((c) => c.phone === phone)
+        ? prev.filter((c) => c.phone !== phone)
+        : [...prev, { phone, name }]
     );
   };
 
@@ -303,14 +314,18 @@ export default function InvitationsPage({
     }
   };
 
-  const selectAllPhones = () => {
+  const selectAllContacts = () => {
     if (!whatsappUsers) return;
-    const selectablePhones = whatsappUsers.filter((u) => !u.isRegistered && u.phone).map((u) => u.phone!);
-    const allSelected = selectablePhones.every((p) => selectedPhones.includes(p));
+    const selectableContacts = whatsappUsers
+      .filter((u) => !u.isRegistered && u.phone)
+      .map((u) => ({ phone: u.phone!, name: u.name }));
+    const allSelected = selectableContacts.every((c) =>
+      selectedContacts.some((sc) => sc.phone === c.phone)
+    );
     if (allSelected) {
-      setSelectedPhones([]);
+      setSelectedContacts([]);
     } else {
-      setSelectedPhones(selectablePhones);
+      setSelectedContacts(selectableContacts);
     }
   };
 
@@ -605,14 +620,14 @@ export default function InvitationsPage({
                     {/* Select All */}
                     <div
                       className="flex items-center gap-3 p-2 rounded-md bg-muted/50 cursor-pointer border-b mb-2"
-                      onClick={selectAllPhones}
+                      onClick={selectAllContacts}
                     >
                       <Checkbox
                         checked={
                           whatsappUsers.filter((u) => !u.isRegistered && u.phone).length > 0 &&
                           whatsappUsers
                             .filter((u) => !u.isRegistered && u.phone)
-                            .every((u) => selectedPhones.includes(u.phone!))
+                            .every((u) => selectedContacts.some((c) => c.phone === u.phone))
                         }
                       />
                       <span className="font-medium">تحديد الكل</span>
@@ -627,10 +642,10 @@ export default function InvitationsPage({
                         className={`flex items-center gap-3 p-2 rounded-md hover:bg-muted ${
                           user.isRegistered || !user.phone ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
                         }`}
-                        onClick={() => user.phone && togglePhone(user.phone, user.isRegistered)}
+                        onClick={() => user.phone && toggleContact(user.phone, user.name, user.isRegistered)}
                       >
                         <Checkbox
-                          checked={user.phone ? selectedPhones.includes(user.phone) : false}
+                          checked={user.phone ? selectedContacts.some((c) => c.phone === user.phone) : false}
                           disabled={user.isRegistered || !user.phone}
                         />
                         <div className="flex-1 min-w-0">
@@ -662,16 +677,16 @@ export default function InvitationsPage({
                 )}
               </ScrollArea>
 
-              {selectedPhones.length > 0 && (
+              {selectedContacts.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {selectedPhones.map((phone) => (
+                  {selectedContacts.map((contact) => (
                     <Badge
-                      key={phone}
+                      key={contact.phone}
                       variant="secondary"
-                      className="cursor-pointer font-mono"
-                      onClick={() => togglePhone(phone, false)}
+                      className="cursor-pointer"
+                      onClick={() => toggleContact(contact.phone, contact.name, false)}
                     >
-                      {phone} ×
+                      {contact.name || contact.phone} ×
                     </Badge>
                   ))}
                 </div>
@@ -727,7 +742,7 @@ export default function InvitationsPage({
               <Button
                 onClick={handleGenerateWhatsApp}
                 disabled={
-                  (selectedPhones.length === 0 && !manualPhones.some((p) => p.trim())) ||
+                  (selectedContacts.length === 0 && !manualPhones.some((p) => p.trim())) ||
                   generateWhatsAppMutation.isPending
                 }
                 className="w-full"
@@ -751,14 +766,17 @@ export default function InvitationsPage({
                   </div>
                   <ScrollArea className="h-48 border rounded-md">
                     <div className="p-2 space-y-2">
-                      {whatsappLinks.map(({ phone, link }) => (
+                      {whatsappLinks.map(({ phone, name, link }) => (
                         <div
                           key={phone}
                           className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50"
                         >
-                          <span className="font-mono text-sm" dir="ltr">
-                            {phone}
-                          </span>
+                          <div className="flex flex-col">
+                            {name && <span className="text-sm font-medium">{name}</span>}
+                            <span className="font-mono text-sm text-muted-foreground" dir="ltr">
+                              {phone}
+                            </span>
+                          </div>
                           <div className="flex gap-2">
                             <Button size="sm" variant="outline" onClick={() => handleCopyLink(phone, link)}>
                               {copiedPhone === phone ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { api } from "@/trpc/react";
 import { useExpandableRows } from "@/hooks/use-expandable-rows";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,7 @@ import {
   Upload,
   X,
   ImageIcon,
+  Eye,
 } from "lucide-react";
 import {
   Tooltip,
@@ -410,20 +412,25 @@ export default function AdminSponsorsPage() {
                     return (
                       <React.Fragment key={sponsor.id}>
                         <TableRow>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
+                          <TableCell className="p-0">
+                            <Link
+                              href={`/admin/sponsors/${sponsor.id}`}
+                              className="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors"
+                            >
                               <SponsorLogo
                                 logoUrl={sponsor.logoUrl}
                                 name={sponsor.name}
                                 type={sponsor.type}
                               />
                               <div>
-                                <p className="font-medium">{sponsor.name}</p>
+                                <p className="font-medium hover:underline">
+                                  {sponsor.name}
+                                </p>
                                 <p className="text-xs text-muted-foreground">
                                   {getSponsorTypeLabel(sponsor.type)}
                                 </p>
                               </div>
-                            </div>
+                            </Link>
                           </TableCell>
                           <TableCell dir="ltr" className="hidden md:table-cell">
                             <div>
@@ -527,6 +534,16 @@ export default function AdminSponsorsPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                asChild
+                                title="عرض"
+                              >
+                                <Link href={`/admin/sponsors/${sponsor.id}`}>
+                                  <Eye className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => handleEditClick(sponsor)}
                                 title="تعديل"
                               >
@@ -614,7 +631,17 @@ export default function AdminSponsorsPage() {
                                       </div>
                                     )}
                                   </div>
-                                  <div className="pt-2 flex gap-2">
+                                  <div className="pt-2 flex gap-2 flex-wrap">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      asChild
+                                    >
+                                      <Link href={`/admin/sponsors/${sponsor.id}`}>
+                                        <Eye className="ml-1 h-3 w-3" />
+                                        عرض
+                                      </Link>
+                                    </Button>
                                     <Button
                                       variant="outline"
                                       size="sm"
