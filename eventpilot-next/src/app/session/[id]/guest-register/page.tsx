@@ -28,7 +28,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { CountdownTimer } from "@/components/countdown-timer";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
-import { HOSTING_TYPES } from "@/lib/constants";
+import {
+  SponsorshipSection,
+  type SponsorshipData,
+} from "@/components/registration/sponsorship-section";
 import { toast } from "sonner";
 
 interface Companion {
@@ -67,8 +70,10 @@ export default function GuestRegisterPage({
     activityType: "",
     gender: "" as "male" | "female" | "",
     goal: "",
-    wantsToHost: false,
-    hostingTypes: [] as string[],
+    wantsToSponsor: false,
+    sponsorshipTypes: [] as string[],
+    sponsorshipOtherText: "",
+    sponsorType: "" as "person" | "company" | "",
   });
 
   const { data: session, isLoading } = api.session.getById.useQuery({ id });
@@ -162,8 +167,10 @@ export default function GuestRegisterPage({
         activityType: formData.activityType || undefined,
         gender: formData.gender || undefined,
         goal: formData.goal || undefined,
-        wantsToHost: formData.wantsToHost,
-        hostingTypes: formData.hostingTypes,
+        wantsToSponsor: formData.wantsToSponsor,
+        sponsorshipTypes: formData.sponsorshipTypes,
+        sponsorshipOtherText: formData.sponsorshipOtherText || undefined,
+        sponsorType: formData.sponsorType || undefined,
         inviteToken,
         companions: validCompanions,
       });
@@ -580,74 +587,25 @@ export default function GuestRegisterPage({
                 </>
               )}
 
-              {/* Hosting Section */}
+              {/* Sponsorship Section */}
               {session?.showCateringInterest && (
                 <>
                   <div className="space-y-4">
                     <h3 className="font-semibold">الرعاية</h3>
-                    <div className="flex items-start space-x-3 space-x-reverse">
-                      <Checkbox
-                        id="wantsToHost"
-                        checked={formData.wantsToHost}
-                        onCheckedChange={(checked) =>
-                          setFormData({
-                            ...formData,
-                            wantsToHost: checked === true,
-                            hostingTypes: checked ? formData.hostingTypes : [],
-                          })
-                        }
-                        className="mt-1"
-                      />
-                      <div className="space-y-1">
-                        <Label
-                          htmlFor="wantsToHost"
-                          className="cursor-pointer font-medium"
-                        >
-                          هل ترغب في رعاية الضيافة في احداثنا القادمة؟
-                        </Label>
-                        <p className="text-sm text-muted-foreground">
-                          سوف يتم التواصل معكم لتحديد الاحتياج
-                        </p>
-                      </div>
-                    </div>
-
-                    {formData.wantsToHost && (
-                      <div className="pe-7 space-y-2">
-                        <Label>نوع الضيافة</Label>
-                        <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
-                          {HOSTING_TYPES.map((type) => (
-                            <div
-                              key={type.value}
-                              className="flex items-center gap-2"
-                            >
-                              <Checkbox
-                                id={`hosting-${type.value}`}
-                                checked={formData.hostingTypes.includes(
-                                  type.value
-                                )}
-                                onCheckedChange={(checked) => {
-                                  const types = checked
-                                    ? [...formData.hostingTypes, type.value]
-                                    : formData.hostingTypes.filter(
-                                        (t) => t !== type.value
-                                      );
-                                  setFormData({
-                                    ...formData,
-                                    hostingTypes: types,
-                                  });
-                                }}
-                              />
-                              <Label
-                                htmlFor={`hosting-${type.value}`}
-                                className="cursor-pointer text-sm"
-                              >
-                                {type.label}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <SponsorshipSection
+                      data={{
+                        wantsToSponsor: formData.wantsToSponsor,
+                        sponsorshipTypes: formData.sponsorshipTypes,
+                        sponsorshipOtherText: formData.sponsorshipOtherText,
+                        sponsorType: formData.sponsorType,
+                      }}
+                      onChange={(sponsorship: SponsorshipData) =>
+                        setFormData({
+                          ...formData,
+                          ...sponsorship,
+                        })
+                      }
+                    />
                   </div>
 
                   <Separator />

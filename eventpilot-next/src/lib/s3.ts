@@ -2,6 +2,7 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -11,26 +12,36 @@ let s3Client: S3Client | null = null;
 function getS3Client(): S3Client {
   if (!s3Client) {
     if (
-      !process.env.AWS_REGION ||
       !process.env.AWS_ACCESS_KEY_ID ||
       !process.env.AWS_SECRET_ACCESS_KEY
     ) {
       throw new Error("AWS credentials not configured");
     }
 
-    s3Client = new S3Client({
-      region: process.env.AWS_REGION,
+    const config: ConstructorParameters<typeof S3Client>[0] = {
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
       },
-    });
+    };
+
+    // Support custom S3-compatible endpoints (Railway, MinIO, etc.)
+    if (process.env.AWS_ENDPOINT_URL) {
+      config.endpoint = process.env.AWS_ENDPOINT_URL;
+      config.forcePathStyle = true; // Required for S3-compatible services
+      config.region = process.env.AWS_REGION ?? "auto";
+    } else if (process.env.AWS_REGION) {
+      config.region = process.env.AWS_REGION;
+    }
+
+    s3Client = new S3Client(config);
   }
   return s3Client;
 }
 
 export const S3_BUCKET = process.env.AWS_S3_BUCKET ?? "";
 export const S3_REGION = process.env.AWS_REGION ?? "";
+export const S3_ENDPOINT = process.env.AWS_ENDPOINT_URL;
 export const CLOUDFRONT_URL = process.env.AWS_CLOUDFRONT_URL;
 
 // Image type configurations
@@ -48,7 +59,7 @@ export const IMAGE_TYPES = {
     dimensions: { width: 1200, height: 630 },
   },
   logo: {
-    folder: "sponsors/logos",
+    folder: "catering/logos",
     maxSizeBytes: 2 * 1024 * 1024, // 2MB
     allowedContentTypes: [
       "image/jpeg",
@@ -58,6 +69,17 @@ export const IMAGE_TYPES = {
     ],
     dimensions: { width: 300, height: 300 },
   },
+  sponsorLogo: {
+    folder: "sponsors/logos",
+    maxSizeBytes: 2 * 1024 * 1024, // 2MB
+    allowedContentTypes: [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/svg+xml",
+    ],
+    dimensions: { width: 400, height: 400 },
+  },
 } as const;
 
 export type ImageType = keyof typeof IMAGE_TYPES;
@@ -66,12 +88,16 @@ export type ImageType = keyof typeof IMAGE_TYPES;
  * Check if S3 is configured
  */
 export function isS3Configured(): boolean {
-  return !!(
-    process.env.AWS_REGION &&
+  const hasCredentials = !!(
     process.env.AWS_ACCESS_KEY_ID &&
     process.env.AWS_SECRET_ACCESS_KEY &&
     process.env.AWS_S3_BUCKET
   );
+
+  // Either custom endpoint OR AWS region is required
+  const hasEndpoint = !!(process.env.AWS_ENDPOINT_URL || process.env.AWS_REGION);
+
+  return hasCredentials && hasEndpoint;
 }
 
 /**
@@ -117,10 +143,17 @@ export async function generatePresignedUploadUrl(params: {
     expiresIn: 600,
   });
 
-  // Generate public URL (either CloudFront or direct S3)
-  const publicUrl = CLOUDFRONT_URL
-    ? `${CLOUDFRONT_URL}/${key}`
-    : `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${key}`;
+  // Generate public URL (CloudFront > Custom Endpoint > AWS S3)
+  let publicUrl: string;
+  if (CLOUDFRONT_URL) {
+    publicUrl = `${CLOUDFRONT_URL}/${key}`;
+  } else if (S3_ENDPOINT) {
+    // For S3-compatible services (Railway, MinIO), use path-style URLs
+    publicUrl = `${S3_ENDPOINT}/${S3_BUCKET}/${key}`;
+  } else {
+    // Standard AWS S3 virtual-hosted style URL
+    publicUrl = `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${key}`;
+  }
 
   return { uploadUrl, publicUrl, key };
 }
@@ -138,6 +171,32 @@ export async function deleteImage(key: string): Promise<void> {
 }
 
 /**
+ * Generate a presigned GET URL for reading private objects
+ * Railway buckets are private by default - use presigned URLs for access
+ * @param key - S3 object key
+ * @param expiresIn - URL expiration in seconds (default 7 days, max 90 days on Railway)
+ */
+export async function generatePresignedReadUrl(
+  key: string,
+  expiresIn = 604800 // 7 days default
+): Promise<string> {
+  const command = new GetObjectCommand({
+    Bucket: S3_BUCKET,
+    Key: key,
+  });
+
+  return getSignedUrl(getS3Client(), command, { expiresIn });
+}
+
+/**
+ * Check if we need presigned URLs for reading (Railway/private buckets)
+ * Returns true if using S3_ENDPOINT without CloudFront
+ */
+export function needsPresignedReadUrl(): boolean {
+  return !!(S3_ENDPOINT && !CLOUDFRONT_URL);
+}
+
+/**
  * Extract S3 key from public URL
  */
 export function extractKeyFromUrl(url: string): string | null {
@@ -147,7 +206,17 @@ export function extractKeyFromUrl(url: string): string | null {
       return url.replace(`${CLOUDFRONT_URL}/`, "");
     }
 
-    // Handle direct S3 URLs
+    // Handle S3-compatible endpoint URLs (Railway, MinIO)
+    if (S3_ENDPOINT && url.startsWith(S3_ENDPOINT)) {
+      const pathAfterEndpoint = url.replace(`${S3_ENDPOINT}/`, "");
+      // Remove bucket name from path (path-style URLs: endpoint/bucket/key)
+      if (pathAfterEndpoint.startsWith(`${S3_BUCKET}/`)) {
+        return pathAfterEndpoint.replace(`${S3_BUCKET}/`, "");
+      }
+      return pathAfterEndpoint;
+    }
+
+    // Handle direct AWS S3 URLs (virtual-hosted style)
     const s3Pattern = new RegExp(
       `https://${S3_BUCKET}\\.s3\\.${S3_REGION}\\.amazonaws\\.com/(.+)`
     );

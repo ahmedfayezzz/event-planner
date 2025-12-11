@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -36,7 +38,12 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { formatArabicDate, getWhatsAppUrl } from "@/lib/utils";
-import { HOSTING_TYPES, getHostingTypeLabel } from "@/lib/constants";
+import {
+  SPONSORSHIP_TYPES,
+  SPONSOR_TYPES,
+  getSponsorshipTypeLabel,
+  getSponsorTypeLabel,
+} from "@/lib/constants";
 import {
   UtensilsCrossed,
   Download,
@@ -44,33 +51,55 @@ import {
   ChevronDown,
   ChevronUp,
   User,
-  UserCheck,
+  Building2,
   Plus,
   MessageCircle,
+  Pencil,
+  Link2,
+  UserCircle,
+  Info,
+  Upload,
+  X,
+  ImageIcon,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
+import { usePresignedUrl } from "@/hooks/use-presigned-url";
 
-interface HostItem {
-  id: string;
-  name: string | null;
-  email: string | null;
-  phone: string | null;
-  companyName: string | null;
-  hostingTypes: string[];
-  createdAt: Date;
-  isGuest: boolean;
+interface SponsorFormData {
+  name: string;
+  email: string;
+  phone: string;
+  type: "person" | "company";
+  sponsorshipTypes: string[];
+  sponsorshipOtherText: string;
+  logoUrl: string;
 }
 
+const initialFormData: SponsorFormData = {
+  name: "",
+  email: "",
+  phone: "",
+  type: "person",
+  sponsorshipTypes: [],
+  sponsorshipOtherText: "",
+  logoUrl: "",
+};
+
 export default function AdminSponsorsPage() {
-  const [hostingTypeFilter, setHostingTypeFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [sponsorshipTypeFilter, setSponsorshipTypeFilter] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingSponsor, setEditingSponsor] = useState<string | null>(null);
   const { isExpanded, toggleRow } = useExpandableRows();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    companyName: "",
-    hostingTypes: [] as string[],
-  });
+  const [formData, setFormData] = useState<SponsorFormData>(initialFormData);
 
   const utils = api.useUtils();
 
@@ -81,9 +110,9 @@ export default function AdminSponsorsPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = api.admin.getHosts.useInfiniteQuery(
+  } = api.sponsor.getAll.useInfiniteQuery(
     {
-      hostingType: hostingTypeFilter !== "all" ? hostingTypeFilter : undefined,
+      type: typeFilter !== "all" ? (typeFilter as "person" | "company") : undefined,
       limit: 50,
     },
     {
@@ -91,14 +120,10 @@ export default function AdminSponsorsPage() {
     }
   );
 
-  const createHost = api.admin.createHost.useMutation({
-    onSuccess: (data) => {
-      if (data.isNew) {
-        toast.success("تم إضافة الراعي بنجاح");
-      } else {
-        toast.success("تم تحديث بيانات الراعي الموجود");
-      }
-      utils.admin.getHosts.invalidate();
+  const createSponsor = api.sponsor.create.useMutation({
+    onSuccess: () => {
+      toast.success("تم إضافة الراعي بنجاح");
+      utils.sponsor.getAll.invalidate();
       setIsAddDialogOpen(false);
       resetForm();
     },
@@ -107,44 +132,100 @@ export default function AdminSponsorsPage() {
     },
   });
 
-  const allHosts: HostItem[] =
-    data?.pages.flatMap((page) => [...page.users, ...page.guestHosts]) ?? [];
+  const updateSponsor = api.sponsor.update.useMutation({
+    onSuccess: () => {
+      toast.success("تم تحديث بيانات الراعي بنجاح");
+      utils.sponsor.getAll.invalidate();
+      setIsEditDialogOpen(false);
+      setEditingSponsor(null);
+      resetForm();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء تحديث الراعي");
+    },
+  });
 
-  const { refetch: fetchCsv } = api.admin.exportHosts.useQuery(undefined, {
+  const allSponsors = data?.pages.flatMap((page) => page.sponsors) ?? [];
+
+  // Filter by sponsorship type on client side
+  const filteredSponsors = sponsorshipTypeFilter === "all"
+    ? allSponsors
+    : allSponsors.filter((s) => s.sponsorshipTypes.includes(sponsorshipTypeFilter));
+
+  const { refetch: fetchCsv } = api.sponsor.export.useQuery(undefined, {
     enabled: false,
   });
 
   const resetForm = () => {
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      companyName: "",
-      hostingTypes: [],
-    });
+    setFormData(initialFormData);
   };
 
-  const handleAddHost = () => {
+  const handleOpenAddDialog = () => {
+    resetForm();
+    setEditingSponsor(null);
+    setIsAddDialogOpen(true);
+  };
+
+  const handleAddSponsor = () => {
     if (!formData.name.trim()) {
       toast.error("الاسم مطلوب");
       return;
     }
-    if (!formData.phone.trim()) {
-      toast.error("رقم الهاتف مطلوب");
+    if (formData.sponsorshipTypes.length === 0) {
+      toast.error("يجب اختيار نوع رعاية واحد على الأقل");
       return;
     }
-    if (formData.hostingTypes.length === 0) {
-      toast.error("يجب اختيار نوع ضيافة واحد على الأقل");
+    if (formData.sponsorshipTypes.includes("other") && !formData.sponsorshipOtherText.trim()) {
+      toast.error("يرجى تحديد نوع الرعاية الأخرى");
       return;
     }
 
-    createHost.mutate({
+    createSponsor.mutate({
       name: formData.name,
       email: formData.email || undefined,
-      phone: formData.phone,
-      companyName: formData.companyName || undefined,
-      hostingTypes: formData.hostingTypes,
+      phone: formData.phone || undefined,
+      type: formData.type,
+      sponsorshipTypes: formData.sponsorshipTypes,
+      sponsorshipOtherText: formData.sponsorshipOtherText || undefined,
+      logoUrl: formData.logoUrl || undefined,
     });
+  };
+
+  const handleUpdateSponsor = () => {
+    if (!editingSponsor) return;
+    if (!formData.name.trim()) {
+      toast.error("الاسم مطلوب");
+      return;
+    }
+    if (formData.sponsorshipTypes.includes("other") && !formData.sponsorshipOtherText.trim()) {
+      toast.error("يرجى تحديد نوع الرعاية الأخرى");
+      return;
+    }
+
+    updateSponsor.mutate({
+      id: editingSponsor,
+      name: formData.name,
+      email: formData.email || null,
+      phone: formData.phone || null,
+      type: formData.type,
+      sponsorshipTypes: formData.sponsorshipTypes,
+      sponsorshipOtherText: formData.sponsorshipOtherText || null,
+      logoUrl: formData.logoUrl || null,
+    });
+  };
+
+  const handleEditClick = (sponsor: typeof allSponsors[0]) => {
+    setEditingSponsor(sponsor.id);
+    setFormData({
+      name: sponsor.name,
+      email: sponsor.email || "",
+      phone: sponsor.phone || "",
+      type: sponsor.type as "person" | "company",
+      sponsorshipTypes: sponsor.sponsorshipTypes,
+      sponsorshipOtherText: sponsor.sponsorshipOtherText || "",
+      logoUrl: sponsor.logoUrl || "",
+    });
+    setIsEditDialogOpen(true);
   };
 
   const handleExport = async () => {
@@ -162,15 +243,59 @@ export default function AdminSponsorsPage() {
   };
 
   const handleWhatsApp = (phone: string, name: string) => {
-    const message = `مرحباً ${name}،\n\nنشكرك على تطوعك لتقديم الضيافة في ثلوثية الأعمال.\n\nنود التواصل معك لتنسيق تفاصيل الضيافة.`;
+    const message = `مرحباً ${name}،\n\nنشكرك على رغبتك في رعاية ثلوثية الأعمال.\n\nنود التواصل معك لتنسيق تفاصيل الرعاية.`;
     const url = getWhatsAppUrl(phone, message);
     window.open(url, "_blank");
   };
 
   // Show skeleton only on initial load
-  const showTableSkeleton = isLoading && allHosts.length === 0;
+  const showTableSkeleton = isLoading && allSponsors.length === 0;
   // Show inline loading indicator when filtering
   const showInlineLoading = isFetching && !isLoading;
+
+  const SponsorTypeIcon = ({ type }: { type: string }) => {
+    if (type === "company") {
+      return <Building2 className="h-4 w-4" />;
+    }
+    return <User className="h-4 w-4" />;
+  };
+
+  // Component to display sponsor logo with presigned URL support
+  const SponsorLogo = ({ logoUrl, name, type }: { logoUrl: string | null; name: string; type: string }) => {
+    const { url: presignedUrl, isLoading } = usePresignedUrl(logoUrl);
+
+    if (logoUrl && presignedUrl) {
+      return (
+        <div className="relative h-10 w-10 rounded-full overflow-hidden border bg-muted flex-shrink-0">
+          {isLoading ? (
+            <Skeleton className="h-full w-full" />
+          ) : (
+            <img
+              src={presignedUrl}
+              alt={name}
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                // Fallback to icon on error
+                e.currentTarget.style.display = "none";
+                e.currentTarget.parentElement?.classList.add("fallback");
+              }}
+            />
+          )}
+          <div className="hidden fallback:flex h-full w-full items-center justify-center">
+            <SponsorTypeIcon type={type} />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <Avatar className="h-10 w-10">
+        <AvatarFallback>
+          <SponsorTypeIcon type={type} />
+        </AvatarFallback>
+      </Avatar>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -179,11 +304,11 @@ export default function AdminSponsorsPage() {
         <div>
           <h1 className="text-2xl font-bold">الرعاة</h1>
           <p className="text-muted-foreground">
-            قائمة المتطوعين لتقديم الضيافة
+            قائمة الرعاة المتطوعين لتقديم الرعاية
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => setIsAddDialogOpen(true)}>
+          <Button onClick={handleOpenAddDialog}>
             <Plus className="me-2 h-4 w-4" />
             إضافة راعي
           </Button>
@@ -199,16 +324,31 @@ export default function AdminSponsorsPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="flex-1">
-              <Select
-                value={hostingTypeFilter}
-                onValueChange={setHostingTypeFilter}
-              >
-                <SelectTrigger className="w-full md:w-60">
-                  <SelectValue placeholder="نوع الضيافة" />
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="نوع الراعي" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">جميع الأنواع</SelectItem>
-                  {HOSTING_TYPES.map((type) => (
+                  {SPONSOR_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <Select
+                value={sponsorshipTypeFilter}
+                onValueChange={setSponsorshipTypeFilter}
+              >
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="نوع الرعاية" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع أنواع الرعاية</SelectItem>
+                  {SPONSORSHIP_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
                     </SelectItem>
@@ -220,7 +360,7 @@ export default function AdminSponsorsPage() {
         </CardContent>
       </Card>
 
-      {/* Hosts Table */}
+      {/* Sponsors Table */}
       <Card>
         <CardContent className="p-0">
           {showTableSkeleton ? (
@@ -229,14 +369,14 @@ export default function AdminSponsorsPage() {
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>
-          ) : allHosts.length === 0 ? (
+          ) : filteredSponsors.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
               <UtensilsCrossed className="mx-auto h-12 w-12 mb-4 opacity-50" />
               <p>لا يوجد رعاة</p>
               <Button
                 variant="outline"
                 className="mt-4"
-                onClick={() => setIsAddDialogOpen(true)}
+                onClick={handleOpenAddDialog}
               >
                 <Plus className="me-2 h-4 w-4" />
                 إضافة راعي
@@ -256,102 +396,162 @@ export default function AdminSponsorsPage() {
                   <TableRow>
                     <TableHead>الراعي</TableHead>
                     <TableHead className="hidden md:table-cell">التواصل</TableHead>
-                    <TableHead className="hidden lg:table-cell">الشركة</TableHead>
-                    <TableHead>أنواع الضيافة</TableHead>
+                    <TableHead>أنواع الرعاية</TableHead>
                     <TableHead className="hidden md:table-cell">النوع</TableHead>
-                    <TableHead className="hidden lg:table-cell">تاريخ التسجيل</TableHead>
+                    <TableHead className="hidden lg:table-cell">مرتبط بعضو</TableHead>
+                    <TableHead className="hidden lg:table-cell">الفعاليات</TableHead>
                     <TableHead className="hidden md:table-cell text-left">إجراءات</TableHead>
                     <TableHead className="md:hidden w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {allHosts.map((host) => {
-                    const expanded = isExpanded(host.id);
+                  {filteredSponsors.map((sponsor) => {
+                    const expanded = isExpanded(sponsor.id);
                     return (
-                      <React.Fragment key={host.id}>
+                      <React.Fragment key={sponsor.id}>
                         <TableRow>
                           <TableCell>
-                            <p className="font-medium">{host.name || "-"}</p>
+                            <div className="flex items-center gap-3">
+                              <SponsorLogo
+                                logoUrl={sponsor.logoUrl}
+                                name={sponsor.name}
+                                type={sponsor.type}
+                              />
+                              <div>
+                                <p className="font-medium">{sponsor.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {getSponsorTypeLabel(sponsor.type)}
+                                </p>
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell dir="ltr" className="hidden md:table-cell">
                             <div>
-                              {host.email && !host.email.includes("@placeholder.local") ? (
+                              {sponsor.email ? (
                                 <a
-                                  href={`mailto:${host.email}`}
+                                  href={`mailto:${sponsor.email}`}
                                   className="text-sm hover:underline underline"
                                 >
-                                  {host.email}
+                                  {sponsor.email}
                                 </a>
                               ) : (
                                 <p className="text-sm">-</p>
                               )}
-                              {host.phone ? (
+                              {sponsor.phone ? (
                                 <a
-                                  href={`tel:${host.phone}`}
+                                  href={`tel:${sponsor.phone}`}
                                   className="text-xs text-muted-foreground hover:underline underline block"
                                 >
-                                  {host.phone}
+                                  {sponsor.phone}
                                 </a>
                               ) : (
                                 <p className="text-xs text-muted-foreground">-</p>
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="hidden lg:table-cell">{host.companyName || "-"}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
-                              {host.hostingTypes.map((type) => (
-                                <Badge
-                                  key={type}
-                                  variant="outline"
-                                  className="bg-primary/10 text-primary border-primary/20"
-                                >
-                                  {getHostingTypeLabel(type)}
-                                </Badge>
+                              {sponsor.sponsorshipTypes.map((type) => (
+                                <TooltipProvider key={type}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "bg-primary/10 text-primary border-primary/20",
+                                          type === "other" && sponsor.sponsorshipOtherText && "cursor-help"
+                                        )}
+                                      >
+                                        {getSponsorshipTypeLabel(type)}
+                                        {type === "other" && sponsor.sponsorshipOtherText && (
+                                          <Info className="h-3 w-3 mr-1" />
+                                        )}
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    {type === "other" && sponsor.sponsorshipOtherText && (
+                                      <TooltipContent>
+                                        <p>{sponsor.sponsorshipOtherText}</p>
+                                      </TooltipContent>
+                                    )}
+                                  </Tooltip>
+                                </TooltipProvider>
                               ))}
                             </div>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             <Badge
-                              variant={host.isGuest ? "secondary" : "default"}
+                              variant={sponsor.type === "company" ? "default" : "secondary"}
                               className="gap-1"
                             >
-                              {host.isGuest ? (
-                                <>
-                                  <User className="h-3 w-3" />
-                                  زائر
-                                </>
-                              ) : (
-                                <>
-                                  <UserCheck className="h-3 w-3" />
-                                  عضو
-                                </>
-                              )}
+                              <SponsorTypeIcon type={sponsor.type} />
+                              {getSponsorTypeLabel(sponsor.type)}
                             </Badge>
                           </TableCell>
                           <TableCell className="hidden lg:table-cell">
-                            {formatArabicDate(new Date(host.createdAt))}
+                            {sponsor.user ? (
+                              <div className="flex items-center gap-1 text-sm">
+                                <UserCircle className="h-4 w-4 text-green-600" />
+                                <span>{sponsor.user.name}</span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {sponsor.eventSponsorships.length > 0 ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="outline" className="cursor-help">
+                                      <Link2 className="h-3 w-3 me-1" />
+                                      {sponsor.eventSponsorships.length} فعالية
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <ul className="text-sm space-y-1">
+                                      {sponsor.eventSponsorships.map((es) => (
+                                        <li key={es.id}>
+                                          {es.session.title} - {getSponsorshipTypeLabel(es.sponsorshipType)}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">-</span>
+                            )}
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
-                            {host.phone && (
+                            <div className="flex items-center gap-1">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                onClick={() =>
-                                  handleWhatsApp(host.phone!, host.name || "")
-                                }
-                                title="إرسال رسالة واتساب"
+                                onClick={() => handleEditClick(sponsor)}
+                                title="تعديل"
                               >
-                                <MessageCircle className="h-4 w-4" />
+                                <Pencil className="h-4 w-4" />
                               </Button>
-                            )}
+                              {sponsor.phone && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  onClick={() =>
+                                    handleWhatsApp(sponsor.phone!, sponsor.name)
+                                  }
+                                  title="إرسال رسالة واتساب"
+                                >
+                                  <MessageCircle className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="md:hidden">
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => toggleRow(host.id)}
+                              onClick={() => toggleRow(sponsor.id)}
                             >
                               {expanded ? (
                                 <ChevronUp className="h-4 w-4" />
@@ -362,7 +562,7 @@ export default function AdminSponsorsPage() {
                           </TableCell>
                         </TableRow>
                         <tr className="md:hidden">
-                          <td colSpan={3} className="p-0">
+                          <td colSpan={4} className="p-0">
                             <div
                               className={cn(
                                 "grid transition-all duration-300 ease-in-out",
@@ -376,51 +576,67 @@ export default function AdminSponsorsPage() {
                                   <div className="text-sm space-y-2">
                                     <div dir="ltr">
                                       <span className="text-muted-foreground">البريد:</span>
-                                      <span className="mr-1">
-                                        {host.email && !host.email.includes("@placeholder.local")
-                                          ? host.email
-                                          : "-"}
-                                      </span>
+                                      <span className="mr-1">{sponsor.email || "-"}</span>
                                     </div>
                                     <div dir="ltr">
                                       <span className="text-muted-foreground">الهاتف:</span>
-                                      <span className="mr-1">{host.phone || "-"}</span>
-                                    </div>
-                                    <div>
-                                      <span className="text-muted-foreground">الشركة:</span>
-                                      <span className="mr-1">{host.companyName || "-"}</span>
+                                      <span className="mr-1">{sponsor.phone || "-"}</span>
                                     </div>
                                     <div>
                                       <span className="text-muted-foreground">النوع:</span>
                                       <span className="mr-1">
                                         <Badge
-                                          variant={host.isGuest ? "secondary" : "default"}
+                                          variant={sponsor.type === "company" ? "default" : "secondary"}
                                           className="gap-1"
                                         >
-                                          {host.isGuest ? "زائر" : "عضو"}
+                                          {getSponsorTypeLabel(sponsor.type)}
                                         </Badge>
                                       </span>
                                     </div>
-                                    <div>
-                                      <span className="text-muted-foreground">تاريخ التسجيل:</span>
-                                      <span className="mr-1">{formatArabicDate(new Date(host.createdAt))}</span>
-                                    </div>
+                                    {sponsor.user && (
+                                      <div>
+                                        <span className="text-muted-foreground">مرتبط بعضو:</span>
+                                        <span className="mr-1">{sponsor.user.name}</span>
+                                      </div>
+                                    )}
+                                    {sponsor.eventSponsorships.length > 0 && (
+                                      <div>
+                                        <span className="text-muted-foreground">الفعاليات:</span>
+                                        <span className="mr-1">
+                                          {sponsor.eventSponsorships.length} فعالية
+                                        </span>
+                                      </div>
+                                    )}
+                                    {sponsor.sponsorshipOtherText && (
+                                      <div>
+                                        <span className="text-muted-foreground">تفاصيل أخرى:</span>
+                                        <span className="mr-1">{sponsor.sponsorshipOtherText}</span>
+                                      </div>
+                                    )}
                                   </div>
-                                  {host.phone && (
-                                    <div className="pt-2">
+                                  <div className="pt-2 flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleEditClick(sponsor)}
+                                    >
+                                      <Pencil className="ml-1 h-3 w-3" />
+                                      تعديل
+                                    </Button>
+                                    {sponsor.phone && (
                                       <Button
                                         variant="outline"
                                         size="sm"
                                         className="text-green-600 hover:text-green-700"
                                         onClick={() =>
-                                          handleWhatsApp(host.phone!, host.name || "")
+                                          handleWhatsApp(sponsor.phone!, sponsor.name)
                                         }
                                       >
                                         <MessageCircle className="ml-1 h-3 w-3" />
                                         واتساب
                                       </Button>
-                                    </div>
-                                  )}
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -454,122 +670,358 @@ export default function AdminSponsorsPage() {
         </CardContent>
       </Card>
 
-      {/* Add Host Dialog */}
+      {/* Add Sponsor Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>إضافة راعي جديد</DialogTitle>
             <DialogDescription>
-              أضف راعي جديد يدوياً لقائمة المتطوعين للضيافة
+              أضف راعي جديد لقائمة الرعاة
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="hostName">الاسم *</Label>
-                <Input
-                  id="hostName"
-                  placeholder="اسم الراعي"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hostPhone">رقم الهاتف *</Label>
-                <Input
-                  id="hostPhone"
-                  placeholder="05XXXXXXXX"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                  dir="ltr"
-                />
-              </div>
-            </div>
+          <SponsorForm
+            formData={formData}
+            setFormData={setFormData}
+            isPending={createSponsor.isPending}
+            onSubmit={handleAddSponsor}
+            onCancel={() => {
+              resetForm();
+              setIsAddDialogOpen(false);
+            }}
+            submitLabel="إضافة الراعي"
+          />
+        </DialogContent>
+      </Dialog>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="hostEmail">البريد الإلكتروني (اختياري)</Label>
-                <Input
-                  id="hostEmail"
-                  type="email"
-                  placeholder="email@example.com"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  dir="ltr"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hostCompany">الشركة (اختياري)</Label>
-                <Input
-                  id="hostCompany"
-                  placeholder="اسم الشركة"
-                  value={formData.companyName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, companyName: e.target.value })
-                  }
-                />
-              </div>
-            </div>
+      {/* Edit Sponsor Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>تعديل بيانات الراعي</DialogTitle>
+            <DialogDescription>
+              قم بتعديل بيانات الراعي
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="space-y-2">
-              <Label>أنواع الضيافة *</Label>
-              <div className="grid gap-2 grid-cols-2">
-                {HOSTING_TYPES.map((type) => (
-                  <div key={type.value} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`add-hosting-${type.value}`}
-                      checked={formData.hostingTypes.includes(type.value)}
-                      onCheckedChange={(checked) => {
-                        const types = checked
-                          ? [...formData.hostingTypes, type.value]
-                          : formData.hostingTypes.filter(
-                              (t) => t !== type.value
-                            );
-                        setFormData({ ...formData, hostingTypes: types });
-                      }}
-                    />
-                    <Label
-                      htmlFor={`add-hosting-${type.value}`}
-                      className="cursor-pointer text-sm"
-                    >
-                      {type.label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                resetForm();
-                setIsAddDialogOpen(false);
-              }}
-            >
-              إلغاء
-            </Button>
-            <Button onClick={handleAddHost} disabled={createHost.isPending}>
-              {createHost.isPending ? (
-                <>
-                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  جارٍ الإضافة...
-                </>
-              ) : (
-                "إضافة الراعي"
-              )}
-            </Button>
-          </DialogFooter>
+          <SponsorForm
+            formData={formData}
+            setFormData={setFormData}
+            isPending={updateSponsor.isPending}
+            onSubmit={handleUpdateSponsor}
+            onCancel={() => {
+              resetForm();
+              setEditingSponsor(null);
+              setIsEditDialogOpen(false);
+            }}
+            submitLabel="حفظ التعديلات"
+          />
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Logo preview component with presigned URL support
+function LogoPreview({ logoUrl, onRemove, disabled }: {
+  logoUrl: string;
+  onRemove: () => void;
+  disabled: boolean;
+}) {
+  const { url: presignedUrl, isLoading } = usePresignedUrl(logoUrl);
+
+  return (
+    <div className="relative w-20 h-20 rounded-lg border overflow-hidden bg-muted">
+      {isLoading ? (
+        <Skeleton className="w-full h-full" />
+      ) : (
+        <img
+          src={presignedUrl}
+          alt="شعار الراعي"
+          className="w-full h-full object-cover"
+        />
+      )}
+      <Button
+        type="button"
+        variant="destructive"
+        size="icon"
+        className="absolute -top-2 -right-2 h-6 w-6"
+        onClick={onRemove}
+        disabled={disabled}
+      >
+        <X className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
+// Separate form component for reuse
+function SponsorForm({
+  formData,
+  setFormData,
+  isPending,
+  onSubmit,
+  onCancel,
+  submitLabel,
+}: {
+  formData: SponsorFormData;
+  setFormData: React.Dispatch<React.SetStateAction<SponsorFormData>>;
+  isPending: boolean;
+  onSubmit: () => void;
+  onCancel: () => void;
+  submitLabel: string;
+}) {
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const getPresignedUrl = api.upload.getPresignedUrl.useMutation();
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("نوع الملف غير مدعوم. الأنواع المدعومة: JPEG, PNG, WebP, SVG");
+      return;
+    }
+
+    // Validate file size (2MB max)
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error("حجم الملف يتجاوز الحد المسموح (2 ميجابايت)");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Generate a temporary ID for new sponsors, use timestamp
+      const tempId = `temp-${Date.now()}`;
+
+      // Get presigned URL
+      const { uploadUrl, publicUrl } = await getPresignedUrl.mutateAsync({
+        imageType: "sponsorLogo",
+        fileName: file.name,
+        contentType: file.type,
+        fileSize: file.size,
+        entityId: tempId,
+      });
+
+      // Upload directly to S3
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("فشل رفع الصورة");
+      }
+
+      // Update form with the public URL
+      setFormData({ ...formData, logoUrl: publicUrl });
+      toast.success("تم رفع الشعار بنجاح");
+    } catch (error) {
+      console.error("Logo upload error:", error);
+      toast.error("حدث خطأ أثناء رفع الشعار");
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setFormData({ ...formData, logoUrl: "" });
+  };
+
+  return (
+    <>
+      <div className="space-y-4">
+        {/* Logo Upload Section */}
+        <div className="space-y-2">
+          <Label>الشعار (اختياري)</Label>
+          <div className="flex items-start gap-4">
+            {/* Logo Preview */}
+            <div className="relative">
+              {formData.logoUrl ? (
+                <LogoPreview
+                  logoUrl={formData.logoUrl}
+                  onRemove={handleRemoveLogo}
+                  disabled={isPending}
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-lg border border-dashed flex items-center justify-center bg-muted/50">
+                  <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+
+            {/* Upload Button */}
+            <div className="flex-1 space-y-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                onChange={handleLogoUpload}
+                className="hidden"
+                disabled={isUploading || isPending}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading || isPending}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                    جاري الرفع...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="me-2 h-4 w-4" />
+                    {formData.logoUrl ? "تغيير الشعار" : "رفع شعار"}
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                PNG, JPG, WebP أو SVG (حد أقصى 2 ميجابايت)
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="sponsorName">الاسم *</Label>
+            <Input
+              id="sponsorName"
+              placeholder="اسم الراعي"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="sponsorType">نوع الراعي *</Label>
+            <Select
+              value={formData.type}
+              onValueChange={(value: "person" | "company") =>
+                setFormData({ ...formData, type: value })
+              }
+            >
+              <SelectTrigger id="sponsorType">
+                <SelectValue placeholder="اختر النوع" />
+              </SelectTrigger>
+              <SelectContent>
+                {SPONSOR_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="sponsorPhone">رقم الهاتف (اختياري)</Label>
+            <PhoneInput
+              id="sponsorPhone"
+              international
+              defaultCountry="SA"
+              value={formData.phone}
+              onChange={(value) =>
+                setFormData({ ...formData, phone: value || "" })
+              }
+              className="phone-input-container flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-within:outline-none focus-within:ring-1 focus-within:ring-ring md:text-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="sponsorEmail">البريد الإلكتروني (اختياري)</Label>
+            <Input
+              id="sponsorEmail"
+              type="email"
+              placeholder="email@example.com"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+              dir="ltr"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>أنواع الرعاية *</Label>
+          <div className="grid gap-2 grid-cols-2">
+            {SPONSORSHIP_TYPES.map((type) => (
+              <div key={type.value} className="flex items-center gap-2">
+                <Checkbox
+                  id={`sponsorship-${type.value}`}
+                  checked={formData.sponsorshipTypes.includes(type.value)}
+                  onCheckedChange={(checked) => {
+                    const types = checked
+                      ? [...formData.sponsorshipTypes, type.value]
+                      : formData.sponsorshipTypes.filter(
+                          (t) => t !== type.value
+                        );
+                    setFormData({ ...formData, sponsorshipTypes: types });
+                  }}
+                />
+                <Label
+                  htmlFor={`sponsorship-${type.value}`}
+                  className="cursor-pointer text-sm"
+                >
+                  {type.label}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Show "Other" text area when "other" is selected */}
+        {formData.sponsorshipTypes.includes("other") && (
+          <div className="space-y-2">
+            <Label htmlFor="sponsorOtherText">حدد نوع الرعاية الأخرى *</Label>
+            <Textarea
+              id="sponsorOtherText"
+              placeholder="اكتب تفاصيل نوع الرعاية..."
+              value={formData.sponsorshipOtherText}
+              onChange={(e) =>
+                setFormData({ ...formData, sponsorshipOtherText: e.target.value })
+              }
+              rows={3}
+            />
+          </div>
+        )}
+      </div>
+
+      <DialogFooter>
+        <Button variant="outline" onClick={onCancel}>
+          إلغاء
+        </Button>
+        <Button onClick={onSubmit} disabled={isPending}>
+          {isPending ? (
+            <>
+              <Loader2 className="me-2 h-4 w-4 animate-spin" />
+              جارٍ الحفظ...
+            </>
+          ) : (
+            submitLabel
+          )}
+        </Button>
+      </DialogFooter>
+    </>
   );
 }

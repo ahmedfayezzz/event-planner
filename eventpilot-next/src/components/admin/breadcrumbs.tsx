@@ -19,6 +19,7 @@ const pathLabels: Record<string, string> = {
   edit: "تعديل",
   invitations: "الدعوات",
   catering: "الضيافة",
+  sponsorship: "الرعاية",
 };
 
 export function Breadcrumbs() {

@@ -1,17 +1,19 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, adminProcedure } from "../trpc";
+import { createTRPCRouter, adminProcedure, publicProcedure } from "../trpc";
 import {
   generatePresignedUploadUrl,
+  generatePresignedReadUrl,
   deleteImage,
   extractKeyFromUrl,
   IMAGE_TYPES,
   isS3Configured,
+  needsPresignedReadUrl,
   type ImageType,
 } from "@/lib/s3";
 
 // Zod schema for image types
-const imageTypeSchema = z.enum(["avatar", "banner", "logo"]);
+const imageTypeSchema = z.enum(["avatar", "banner", "logo", "sponsorLogo"]);
 
 export const uploadRouter = createTRPCRouter({
   /**
@@ -122,6 +124,13 @@ export const uploadRouter = createTRPCRouter({
               data: { logoUrl: imageUrl },
             });
             break;
+
+          case "sponsorLogo":
+            await db.sponsor.update({
+              where: { id: entityId },
+              data: { logoUrl: imageUrl },
+            });
+            break;
         }
 
         // Delete old image if provided
@@ -196,6 +205,13 @@ export const uploadRouter = createTRPCRouter({
               data: { logoUrl: null },
             });
             break;
+
+          case "sponsorLogo":
+            await db.sponsor.update({
+              where: { id: entityId },
+              data: { logoUrl: null },
+            });
+            break;
         }
 
         return { success: true };
@@ -223,4 +239,58 @@ export const uploadRouter = createTRPCRouter({
         isConfigured: isS3Configured(),
       };
     }),
+
+  /**
+   * Get presigned read URL for displaying images (Railway private buckets)
+   * Public endpoint - anyone can request a read URL for stored images
+   */
+  getReadUrl: publicProcedure
+    .input(
+      z.object({
+        // The stored URL or S3 key
+        url: z.string().min(1),
+      })
+    )
+    .query(async ({ input }) => {
+      const { url } = input;
+
+      // If we don't need presigned URLs (CloudFront or public bucket), return original
+      if (!needsPresignedReadUrl()) {
+        return { url, presigned: false };
+      }
+
+      // Extract key from stored URL
+      const key = extractKeyFromUrl(url);
+      if (!key) {
+        // If it's already a key (not a full URL), use it directly
+        // This handles cases where we store just the key
+        if (!url.startsWith("http")) {
+          try {
+            const presignedUrl = await generatePresignedReadUrl(url);
+            return { url: presignedUrl, presigned: true };
+          } catch {
+            return { url, presigned: false };
+          }
+        }
+        return { url, presigned: false };
+      }
+
+      try {
+        const presignedUrl = await generatePresignedReadUrl(key);
+        return { url: presignedUrl, presigned: true };
+      } catch (error) {
+        console.error("Failed to generate presigned read URL:", error);
+        return { url, presigned: false };
+      }
+    }),
+
+  /**
+   * Check if presigned URLs are needed for this deployment
+   */
+  needsPresignedUrls: publicProcedure.query(() => {
+    return {
+      needsPresigned: needsPresignedReadUrl(),
+      isConfigured: isS3Configured(),
+    };
+  }),
 });

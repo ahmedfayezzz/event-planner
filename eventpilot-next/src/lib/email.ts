@@ -296,6 +296,14 @@ function createEmailTemplate({
                     </p>
                   </td>
                 </tr>
+                <!-- Copyright -->
+                <tr>
+                  <td align="center" style="padding-top: 16px;">
+                    <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 12px;">
+                      جميع الحقوق محفوظة لـ <a href="https://tda.sa" style="color: ${BRAND.primary}; text-decoration: none;">TDA</a>
+                    </p>
+                  </td>
+                </tr>
               </table>
             </td>
           </tr>
@@ -352,6 +360,8 @@ ${contactEmail}
 ${contactPhone}
 
 تابعونا على: ${socialText}
+
+جميع الحقوق محفوظة لـ TDA - https://tda.sa
 `;
 
   return plainContent + buttonSection + footer;

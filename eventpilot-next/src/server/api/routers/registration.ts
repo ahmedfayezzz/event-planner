@@ -37,9 +37,11 @@ export const registrationRouter = createTRPCRouter({
           )
           .optional()
           .default([]),
-        // Hosting preferences (only if user is not already a host)
-        wantsToHost: z.boolean().optional(),
-        hostingTypes: z.array(z.string()).optional(),
+        // Sponsorship preferences (only if user is not already a sponsor)
+        wantsToSponsor: z.boolean().optional(),
+        sponsorshipTypes: z.array(z.string()).optional(),
+        sponsorshipOtherText: z.string().optional(),
+        sponsorType: z.enum(["person", "company"]).optional(),
         // Invitation token for invite-only sessions
         inviteToken: z.string().optional(),
       })
@@ -153,15 +155,25 @@ export const registrationRouter = createTRPCRouter({
         });
       }
 
-      // Update hosting preferences if user is not already a host
-      if (input.wantsToHost && !user.wantsToHost) {
-        await db.user.update({
-          where: { id: user.id },
-          data: {
-            wantsToHost: true,
-            hostingTypes: input.hostingTypes || [],
-          },
+      // Create sponsor record if user wants to sponsor and doesn't have one yet
+      if (input.wantsToSponsor) {
+        const existingSponsor = await db.sponsor.findUnique({
+          where: { userId: user.id },
         });
+
+        if (!existingSponsor) {
+          await db.sponsor.create({
+            data: {
+              name: user.name,
+              email: user.email,
+              phone: user.phone,
+              type: input.sponsorType || "person",
+              userId: user.id,
+              sponsorshipTypes: input.sponsorshipTypes || [],
+              sponsorshipOtherText: input.sponsorshipOtherText || null,
+            },
+          });
+        }
       }
 
       // Determine approval status
@@ -266,9 +278,11 @@ export const registrationRouter = createTRPCRouter({
         password: z.string().min(6).optional(),
         // Invitation token for invite-only sessions
         inviteToken: z.string().optional(),
-        // Hosting preferences
-        wantsToHost: z.boolean().default(false),
-        hostingTypes: z.array(z.string()).default([]),
+        // Sponsorship preferences
+        wantsToSponsor: z.boolean().default(false),
+        sponsorshipTypes: z.array(z.string()).default([]),
+        sponsorshipOtherText: z.string().optional(),
+        sponsorType: z.enum(["person", "company"]).optional(),
         // Companions
         companions: z
           .array(
@@ -423,8 +437,6 @@ export const registrationRouter = createTRPCRouter({
               activityType: input.activityType || existingUser.activityType,
               gender: input.gender || existingUser.gender,
               goal: input.goal || existingUser.goal,
-              wantsToHost: input.wantsToHost || existingUser.wantsToHost,
-              hostingTypes: input.wantsToHost ? input.hostingTypes : existingUser.hostingTypes,
               isActive: isApproved ? true : existingUser.isActive, // Activate if registration approved
             },
           });
@@ -450,8 +462,6 @@ export const registrationRouter = createTRPCRouter({
             activityType: input.activityType || null,
             gender: input.gender || null,
             goal: input.goal || null,
-            wantsToHost: input.wantsToHost,
-            hostingTypes: input.wantsToHost ? input.hostingTypes : [],
           },
         });
 
@@ -482,8 +492,6 @@ export const registrationRouter = createTRPCRouter({
             activityType: input.activityType || null,
             gender: input.gender || null,
             goal: input.goal || null,
-            wantsToHost: input.wantsToHost,
-            hostingTypes: input.wantsToHost ? input.hostingTypes : [],
           },
         });
 
@@ -496,6 +504,11 @@ export const registrationRouter = createTRPCRouter({
           userId,
           sessionId: input.sessionId,
           isApproved,
+          // Sponsorship interest
+          wantsToSponsor: input.wantsToSponsor,
+          sponsorshipTypes: input.wantsToSponsor ? input.sponsorshipTypes : [],
+          sponsorshipOtherText: input.wantsToSponsor ? input.sponsorshipOtherText || null : null,
+          sponsorType: input.wantsToSponsor ? input.sponsorType || null : null,
         },
       });
 

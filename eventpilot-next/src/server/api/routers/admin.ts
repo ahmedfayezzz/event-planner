@@ -515,6 +515,19 @@ export const adminRouter = createTRPCRouter({
       z.object({
         userId: z.string(),
         role: z.enum(["USER", "ADMIN"]),
+        permissions: z
+          .array(
+            z.enum([
+              "dashboard",
+              "sessions",
+              "users",
+              "hosts",
+              "analytics",
+              "checkin",
+              "settings",
+            ])
+          )
+          .optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -547,27 +560,33 @@ export const adminRouter = createTRPCRouter({
         });
       }
 
-      // When promoting to ADMIN, give default permissions (all true)
+      // When promoting to ADMIN, use provided permissions or default to all true
       // When demoting to USER, reset all permissions to false
-      const permissionData = input.role === "ADMIN"
-        ? {
-            canAccessDashboard: true,
-            canAccessSessions: true,
-            canAccessUsers: true,
-            canAccessHosts: true,
-            canAccessAnalytics: true,
-            canAccessCheckin: true,
-            canAccessSettings: true,
-          }
-        : {
-            canAccessDashboard: false,
-            canAccessSessions: false,
-            canAccessUsers: false,
-            canAccessHosts: false,
-            canAccessAnalytics: false,
-            canAccessCheckin: false,
-            canAccessSettings: false,
-          };
+      const permissionData =
+        input.role === "ADMIN"
+          ? {
+              canAccessDashboard:
+                input.permissions?.includes("dashboard") ?? true,
+              canAccessSessions:
+                input.permissions?.includes("sessions") ?? true,
+              canAccessUsers: input.permissions?.includes("users") ?? true,
+              canAccessHosts: input.permissions?.includes("hosts") ?? true,
+              canAccessAnalytics:
+                input.permissions?.includes("analytics") ?? true,
+              canAccessCheckin:
+                input.permissions?.includes("checkin") ?? true,
+              canAccessSettings:
+                input.permissions?.includes("settings") ?? true,
+            }
+          : {
+              canAccessDashboard: false,
+              canAccessSessions: false,
+              canAccessUsers: false,
+              canAccessHosts: false,
+              canAccessAnalytics: false,
+              canAccessCheckin: false,
+              canAccessSettings: false,
+            };
 
       const updated = await db.user.update({
         where: { id: input.userId },

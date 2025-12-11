@@ -29,6 +29,12 @@ export const authRouter = createTRPCRouter({
         activityType: z.string().optional(),
         gender: z.enum(["male", "female"]).optional(),
         goal: z.string().optional(),
+        // Sponsorship fields (new)
+        wantsToSponsor: z.boolean().default(false),
+        sponsorshipTypes: z.array(z.string()).default([]),
+        sponsorshipOtherText: z.string().optional(),
+        sponsorType: z.enum(["person", "company"]).optional(),
+        // Backward compatibility (deprecated)
         wantsToHost: z.boolean().default(false),
         hostingTypes: z.array(z.string()).default([]),
       })
@@ -79,11 +85,40 @@ export const authRouter = createTRPCRouter({
               activityType: input.activityType || null,
               gender: input.gender || null,
               goal: input.goal || null,
-              wantsToHost: input.wantsToHost,
-              hostingTypes: input.wantsToHost ? input.hostingTypes : [],
+              // Backward compat - keep synced with sponsorship
+              wantsToHost: input.wantsToSponsor || input.wantsToHost,
+              hostingTypes: input.wantsToSponsor
+                ? input.sponsorshipTypes
+                : input.wantsToHost
+                ? input.hostingTypes
+                : [],
             },
           });
           isUpgrade = true;
+
+          // Create Sponsor record if user wants to sponsor
+          if (input.wantsToSponsor) {
+            await db.sponsor.upsert({
+              where: { userId: user.id },
+              create: {
+                userId: user.id,
+                name: input.name,
+                email,
+                phone: formattedPhone,
+                type: input.sponsorType || "person",
+                sponsorshipTypes: input.sponsorshipTypes,
+                sponsorshipOtherText: input.sponsorshipOtherText || null,
+              },
+              update: {
+                name: input.name,
+                email,
+                phone: formattedPhone,
+                type: input.sponsorType || "person",
+                sponsorshipTypes: input.sponsorshipTypes,
+                sponsorshipOtherText: input.sponsorshipOtherText || null,
+              },
+            });
+          }
         } else {
           // USER, ADMIN, or SUPER_ADMIN - account already exists
           throw new TRPCError({
@@ -112,10 +147,30 @@ export const authRouter = createTRPCRouter({
             activityType: input.activityType || null,
             gender: input.gender || null,
             goal: input.goal || null,
-            wantsToHost: input.wantsToHost,
-            hostingTypes: input.wantsToHost ? input.hostingTypes : [],
+            // Backward compat - keep synced with sponsorship
+            wantsToHost: input.wantsToSponsor || input.wantsToHost,
+            hostingTypes: input.wantsToSponsor
+              ? input.sponsorshipTypes
+              : input.wantsToHost
+              ? input.hostingTypes
+              : [],
           },
         });
+
+        // Create Sponsor record if user wants to sponsor
+        if (input.wantsToSponsor) {
+          await db.sponsor.create({
+            data: {
+              userId: user.id,
+              name: input.name,
+              email,
+              phone: formattedPhone,
+              type: input.sponsorType || "person",
+              sponsorshipTypes: input.sponsorshipTypes,
+              sponsorshipOtherText: input.sponsorshipOtherText || null,
+            },
+          });
+        }
       }
 
       // Send welcome email

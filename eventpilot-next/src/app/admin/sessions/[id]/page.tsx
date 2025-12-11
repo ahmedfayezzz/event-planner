@@ -52,7 +52,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
-import { getHostingTypeLabel } from "@/lib/constants";
+import { getSponsorshipTypeLabel, getSponsorTypeLabel } from "@/lib/constants";
 
 export default function SessionDetailPage({
   params,
@@ -65,7 +65,7 @@ export default function SessionDetailPage({
   const { isExpanded, toggleRow } = useExpandableRows();
 
   const { data: session, isLoading } = api.session.getAdminDetails.useQuery({ id });
-  const { data: caterings } = api.catering.getSessionCatering.useQuery({ sessionId: id });
+  const { data: sponsorships } = api.sponsor.getSessionSponsorshipsAdmin.useQuery({ sessionId: id });
 
   const deleteMutation = api.session.delete.useMutation({
     onSuccess: () => {
@@ -325,36 +325,36 @@ export default function SessionDetailPage({
               </Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href={`/admin/sessions/${id}/catering`}>
+              <Link href={`/admin/sessions/${id}/sponsorship`}>
                 <UtensilsCrossed className="ml-2 h-4 w-4" />
-                إدارة الضيافة
+                إدارة الرعاية
               </Link>
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Catering Section */}
-      {caterings && caterings.caterings.length > 0 && (
+      {/* Sponsorship Section */}
+      {sponsorships && sponsorships.sponsorships.length > 0 && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>الضيافة</CardTitle>
-                <CardDescription>{caterings.caterings.length} عنصر ضيافة</CardDescription>
+                <CardTitle>الرعاية</CardTitle>
+                <CardDescription>{sponsorships.sponsorships.length} عنصر رعاية</CardDescription>
               </div>
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/admin/sessions/${id}/catering`}>
-                  إدارة الضيافة
+                <Link href={`/admin/sessions/${id}/sponsorship`}>
+                  إدارة الرعاية
                 </Link>
               </Button>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {caterings.caterings.map((catering) => (
+              {sponsorships.sponsorships.map((sponsorship) => (
                 <div
-                  key={catering.id}
+                  key={sponsorship.id}
                   className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border"
                 >
                   <div className="p-2 rounded-lg bg-primary/10">
@@ -363,27 +363,24 @@ export default function SessionDetailPage({
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="secondary">
-                        {getHostingTypeLabel(catering.hostingType)}
+                        {getSponsorshipTypeLabel(sponsorship.sponsorshipType)}
                       </Badge>
-                      {catering.isSelfCatering ? (
+                      {sponsorship.isSelfSponsored ? (
                         <span className="text-sm text-muted-foreground">
-                          ضيافة ذاتية
+                          رعاية ذاتية
                         </span>
-                      ) : catering.host ? (
+                      ) : sponsorship.sponsor ? (
                         <span className="text-sm font-medium">
-                          {catering.host.name}
-                          {catering.host.companyName && (
-                            <span className="text-muted-foreground font-normal">
-                              {" "}
-                              - {catering.host.companyName}
-                            </span>
-                          )}
+                          {sponsorship.sponsor.name}
+                          <span className="text-muted-foreground font-normal text-xs mr-1">
+                            ({getSponsorTypeLabel(sponsorship.sponsor.type)})
+                          </span>
                         </span>
                       ) : null}
                     </div>
-                    {catering.notes && (
+                    {sponsorship.notes && (
                       <p className="text-sm text-muted-foreground mt-1">
-                        {catering.notes}
+                        {sponsorship.notes}
                       </p>
                     )}
                   </div>

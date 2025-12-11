@@ -8,6 +8,7 @@ import { attendanceRouter } from "./routers/attendance";
 import { invitationRouter } from "./routers/invitation";
 import { adminRouter } from "./routers/admin";
 import { cateringRouter } from "./routers/catering";
+import { sponsorRouter } from "./routers/sponsor";
 import { settingsRouter } from "./routers/settings";
 import { labelRouter } from "./routers/label";
 import { noteRouter } from "./routers/note";
@@ -23,6 +24,7 @@ export const appRouter = createTRPCRouter({
   invitation: invitationRouter,
   admin: adminRouter,
   catering: cateringRouter,
+  sponsor: sponsorRouter,
   settings: settingsRouter,
   label: labelRouter,
   note: noteRouter,

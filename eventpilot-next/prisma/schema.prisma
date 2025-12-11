@@ -76,6 +76,7 @@ model User {
   labels UserLabel[]
   notes         UserNote[] @relation("UserNotes")
   notesCreated  UserNote[] @relation("NotesCreated")
+  sponsor       Sponsor?
 }
 
 model Session {
@@ -124,10 +125,11 @@ model Session {
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  registrations  Registration[]
-  attendances    Attendance[]
-  invites        Invite[]
-  eventCaterings EventCatering[]
+  registrations     Registration[]
+  attendances       Attendance[]
+  invites           Invite[]
+  eventCaterings    EventCatering[]
+  eventSponsorships EventSponsorship[]
 }
 
 model Registration {
@@ -151,9 +153,15 @@ model Registration {
   guestGender       String?
   guestGoal         String?
 
-  // Guest hosting preferences
+  // Guest hosting preferences (DEPRECATED - use sponsor fields below)
   guestWantsToHost    Boolean   @default(false)
   guestHostingTypes   String[]  @default([])
+
+  // NEW: Sponsor interest fields (for both guests and members)
+  wantsToSponsor        Boolean   @default(false)
+  sponsorshipTypes      String[]  @default([])
+  sponsorshipOtherText  String?
+  sponsorType           String?   // "person" | "company"
 
   // Companion/Invited relationship (self-referential)
   invitedByRegistrationId  String?
@@ -201,6 +209,7 @@ model Invite {
   @@index([sessionId])
 }
 
+// DEPRECATED - kept for migration, use EventSponsorship instead
 model EventCatering {
   id             String   @id @default(cuid())
   sessionId      String
@@ -220,6 +229,52 @@ model EventCatering {
   host    User?   @relation(fields: [hostId], references: [id])
 
   @@index([sessionId])
+}
+
+// NEW: Sponsor entity - can be linked to a User or standalone
+model Sponsor {
+  id                   String    @id @default(cuid())
+  name                 String
+  email                String?
+  phone                String?
+  type                 String    @default("person") // "person" | "company"
+  logoUrl              String?
+  sponsorshipTypes     String[]  @default([])
+  sponsorshipOtherText String?
+
+  // Optional link to user (member who wants to sponsor)
+  userId               String?   @unique
+  user                 User?     @relation(fields: [userId], references: [id])
+
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Event sponsorships
+  eventSponsorships    EventSponsorship[]
+
+  @@index([userId])
+  @@index([type])
+}
+
+// NEW: Links sponsors to events (replaces EventCatering)
+model EventSponsorship {
+  id              String    @id @default(cuid())
+  sessionId       String
+  sponsorId       String?
+  sponsorshipType String    // dinner, beverage, dessert, other
+  isSelfSponsored Boolean   @default(false)
+  notes           String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  session         Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sponsor         Sponsor?  @relation(fields: [sponsorId], references: [id])
+
+  @@index([sessionId])
+  @@index([sponsorId])
 }
 
 model Settings {

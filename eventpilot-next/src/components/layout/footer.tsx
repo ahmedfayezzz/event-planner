@@ -180,7 +180,15 @@ export function Footer() {
         <div className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-white/60">
           <p>
             © {new Date().getFullYear()} {settings?.siteName ?? "ثلوثية الأعمال"}
-            . جميع الحقوق محفوظة.
+            . جميع الحقوق محفوظة لـ{" "}
+            <a
+              href="https://tda.sa"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent hover:text-accent/80 transition-colors"
+            >
+              TDA
+            </a>
           </p>
         </div>
       </div>

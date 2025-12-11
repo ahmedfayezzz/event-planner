@@ -8,7 +8,6 @@ import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -21,7 +20,10 @@ import { toast } from "sonner";
 import { ArrowLeft, UserPlus, X, UtensilsCrossed } from "lucide-react";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
-import { HOSTING_TYPES } from "@/lib/constants";
+import {
+  SponsorshipSection,
+  type SponsorshipData,
+} from "@/components/registration/sponsorship-section";
 
 interface Companion {
   name: string;
@@ -42,8 +44,10 @@ export default function MemberRegisterPage({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [companions, setCompanions] = useState<Companion[]>([]);
-  const [wantsToHost, setWantsToHost] = useState(false);
-  const [hostingTypes, setHostingTypes] = useState<string[]>([]);
+  const [wantsToSponsor, setWantsToSponsor] = useState(false);
+  const [sponsorshipTypes, setSponsorshipTypes] = useState<string[]>([]);
+  const [sponsorshipOtherText, setSponsorshipOtherText] = useState("");
+  const [sponsorType, setSponsorType] = useState<"person" | "company" | "">("");
 
   // Fetch session data
   const { data: session, isLoading } = api.session.getById.useQuery({
@@ -141,11 +145,21 @@ export default function MemberRegisterPage({
       await registerMutation.mutateAsync({
         sessionId,
         companions: validCompanions,
-        wantsToHost: userData?.wantsToHost ? undefined : wantsToHost,
-        hostingTypes: userData?.wantsToHost
+        wantsToSponsor: isAlreadySponsor ? undefined : wantsToSponsor,
+        sponsorshipTypes: isAlreadySponsor
           ? undefined
-          : wantsToHost
-          ? hostingTypes
+          : wantsToSponsor
+          ? sponsorshipTypes
+          : undefined,
+        sponsorshipOtherText: isAlreadySponsor
+          ? undefined
+          : wantsToSponsor && sponsorshipTypes.includes("other")
+          ? sponsorshipOtherText
+          : undefined,
+        sponsorType: isAlreadySponsor
+          ? undefined
+          : wantsToSponsor
+          ? sponsorType || undefined
           : undefined,
       });
     } finally {
@@ -153,7 +167,7 @@ export default function MemberRegisterPage({
     }
   };
 
-  const isAlreadyHost = userData?.wantsToHost || false;
+  const isAlreadySponsor = userData?.sponsor != null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-muted/30 to-accent/5 py-8 md:py-12 px-4">
@@ -341,8 +355,8 @@ export default function MemberRegisterPage({
               </CardContent>
             </Card>
 
-            {/* Hosting Section - Only show if user is not already a host and session allows it */}
-            {!isAlreadyHost && session?.showCateringInterest && (
+            {/* Sponsorship Section - Only show if user is not already a sponsor and session allows it */}
+            {!isAlreadySponsor && session?.showCateringInterest && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -350,58 +364,21 @@ export default function MemberRegisterPage({
                     الرعاية
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-start space-x-3 space-x-reverse">
-                    <Checkbox
-                      id="wantsToHost"
-                      checked={wantsToHost}
-                      onCheckedChange={(checked) =>
-                        setWantsToHost(checked === true)
-                      }
-                      className="mt-1"
-                    />
-                    <div className="space-y-1">
-                      <Label htmlFor="wantsToHost" className="cursor-pointer">
-                        هل ترغب في رعاية الضيافة في احداثنا القادمة؟
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        سوف يتم التواصل معكم لتحديد الاحتياج
-                      </p>
-                    </div>
-                  </div>
-
-                  {wantsToHost && (
-                    <div className="pe-7 space-y-2 animate-in fade-in-0">
-                      <Label className="text-sm">نوع الضيافة</Label>
-                      <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
-                        {HOSTING_TYPES.map((type) => (
-                          <div
-                            key={type.value}
-                            className="flex items-center gap-2"
-                          >
-                            <Checkbox
-                              id={`hosting-${type.value}`}
-                              checked={hostingTypes.includes(type.value)}
-                              onCheckedChange={(checked) => {
-                                const types = checked
-                                  ? [...hostingTypes, type.value]
-                                  : hostingTypes.filter(
-                                      (t) => t !== type.value
-                                    );
-                                setHostingTypes(types);
-                              }}
-                            />
-                            <Label
-                              htmlFor={`hosting-${type.value}`}
-                              className="cursor-pointer text-sm"
-                            >
-                              {type.label}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                <CardContent>
+                  <SponsorshipSection
+                    data={{
+                      wantsToSponsor,
+                      sponsorshipTypes,
+                      sponsorshipOtherText,
+                      sponsorType,
+                    }}
+                    onChange={(sponsorship: SponsorshipData) => {
+                      setWantsToSponsor(sponsorship.wantsToSponsor);
+                      setSponsorshipTypes(sponsorship.sponsorshipTypes);
+                      setSponsorshipOtherText(sponsorship.sponsorshipOtherText);
+                      setSponsorType(sponsorship.sponsorType);
+                    }}
+                  />
                 </CardContent>
               </Card>
             )}

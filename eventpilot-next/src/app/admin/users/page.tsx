@@ -9,6 +9,8 @@ import { useExpandableRows } from "@/hooks/use-expandable-rows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -37,6 +39,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -56,6 +59,7 @@ import { UserNotes } from "@/components/admin/user-notes";
 import { toast } from "sonner";
 import { formatArabicDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { PERMISSION_LABELS, type PermissionKey } from "@/lib/permissions";
 import {
   Search,
   Users,
@@ -99,6 +103,17 @@ interface UserItem {
 
 const PAGE_SIZE = 20;
 
+// All available permissions
+const ALL_PERMISSIONS: PermissionKey[] = [
+  "dashboard",
+  "sessions",
+  "users",
+  "hosts",
+  "analytics",
+  "checkin",
+  "settings",
+];
+
 export default function AdminUsersPage() {
   const { data: session } = useSession();
   const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
@@ -111,10 +126,19 @@ export default function AdminUsersPage() {
   const [labelSearchValue, setLabelSearchValue] = useState("");
   const { isExpanded, toggleRow } = useExpandableRows();
   const [confirmAction, setConfirmAction] = useState<{
-    type: "activate" | "deactivate" | "promote";
+    type: "activate" | "deactivate";
     userId: string;
     userName: string;
   } | null>(null);
+
+  // Promotion dialog state
+  const [promotionDialogOpen, setPromotionDialogOpen] = useState(false);
+  const [promotionUser, setPromotionUser] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [promotionPermissions, setPromotionPermissions] =
+    useState<PermissionKey[]>(ALL_PERMISSIONS);
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -181,6 +205,9 @@ export default function AdminUsersPage() {
     onSuccess: () => {
       toast.success("تم ترقية المستخدم لمدير");
       refetch();
+      setPromotionDialogOpen(false);
+      setPromotionUser(null);
+      setPromotionPermissions(ALL_PERMISSIONS);
     },
     onError: (error) => {
       toast.error(error.message || "حدث خطأ");
@@ -219,16 +246,34 @@ export default function AdminUsersPage() {
   // Handle confirmed action
   const handleConfirmedAction = () => {
     if (!confirmAction) return;
-
-    if (confirmAction.type === "promote") {
-      updateRoleMutation.mutate({
-        userId: confirmAction.userId,
-        role: "ADMIN",
-      });
-    } else {
-      toggleActiveMutation.mutate({ userId: confirmAction.userId });
-    }
+    toggleActiveMutation.mutate({ userId: confirmAction.userId });
     setConfirmAction(null);
+  };
+
+  // Open promotion dialog
+  const openPromotionDialog = (userId: string, userName: string) => {
+    setPromotionUser({ id: userId, name: userName });
+    setPromotionPermissions(ALL_PERMISSIONS);
+    setPromotionDialogOpen(true);
+  };
+
+  // Toggle promotion permission
+  const handlePromotionPermissionToggle = (permission: PermissionKey) => {
+    setPromotionPermissions((prev) =>
+      prev.includes(permission)
+        ? prev.filter((p) => p !== permission)
+        : [...prev, permission]
+    );
+  };
+
+  // Handle promotion submit
+  const handlePromotionSubmit = () => {
+    if (!promotionUser) return;
+    updateRoleMutation.mutate({
+      userId: promotionUser.id,
+      role: "ADMIN",
+      permissions: promotionPermissions,
+    });
   };
 
   // Show skeleton only on initial load
@@ -551,11 +596,7 @@ export default function AdminUsersPage() {
                                     <>
                                       <DropdownMenuItem
                                         onClick={() =>
-                                          setConfirmAction({
-                                            type: "promote",
-                                            userId: user.id,
-                                            userName: user.name,
-                                          })
+                                          openPromotionDialog(user.id, user.name)
                                         }
                                       >
                                         <Shield className="me-2 h-4 w-4" />
@@ -709,11 +750,7 @@ export default function AdminUsersPage() {
                                       variant="outline"
                                       size="sm"
                                       onClick={() =>
-                                        setConfirmAction({
-                                          type: "promote",
-                                          userId: user.id,
-                                          userName: user.name,
-                                        })
+                                        openPromotionDialog(user.id, user.name)
                                       }
                                     >
                                       <Shield className="me-2 h-4 w-4" />
@@ -785,15 +822,12 @@ export default function AdminUsersPage() {
             <AlertDialogTitle>
               {confirmAction?.type === "deactivate" && "تأكيد تعطيل الحساب"}
               {confirmAction?.type === "activate" && "تأكيد تفعيل الحساب"}
-              {confirmAction?.type === "promote" && "تأكيد الترقية لمدير"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction?.type === "deactivate" &&
                 `هل أنت متأكد من تعطيل حساب "${confirmAction.userName}"؟ لن يتمكن من تسجيل الدخول.`}
               {confirmAction?.type === "activate" &&
                 `هل أنت متأكد من تفعيل حساب "${confirmAction?.userName}"؟`}
-              {confirmAction?.type === "promote" &&
-                `هل أنت متأكد من ترقية "${confirmAction?.userName}" إلى مدير؟ سيتمكن من الوصول إلى لوحة التحكم.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -811,6 +845,84 @@ export default function AdminUsersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Promotion Dialog */}
+      <Dialog
+        open={promotionDialogOpen}
+        onOpenChange={(open) => {
+          setPromotionDialogOpen(open);
+          if (!open) {
+            setPromotionUser(null);
+            setPromotionPermissions(ALL_PERMISSIONS);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>ترقية لمدير: {promotionUser?.name}</DialogTitle>
+            <DialogDescription>
+              اختر الصلاحيات التي تريد منحها لهذا المدير
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-muted-foreground">
+                {promotionPermissions.length} من {ALL_PERMISSIONS.length} صلاحيات
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPromotionPermissions(ALL_PERMISSIONS)}
+                >
+                  تحديد الكل
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPromotionPermissions([])}
+                >
+                  إلغاء الكل
+                </Button>
+              </div>
+            </div>
+            {ALL_PERMISSIONS.map((permission) => (
+              <div
+                key={permission}
+                className="flex items-center justify-between py-2 border-b last:border-0"
+              >
+                <Label htmlFor={`promo-${permission}`} className="cursor-pointer flex-1">
+                  {PERMISSION_LABELS[permission]}
+                </Label>
+                <Switch
+                  id={`promo-${permission}`}
+                  checked={promotionPermissions.includes(permission)}
+                  onCheckedChange={() => handlePromotionPermissionToggle(permission)}
+                />
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setPromotionDialogOpen(false)}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handlePromotionSubmit}
+              disabled={updateRoleMutation.isPending || promotionPermissions.length === 0}
+            >
+              {updateRoleMutation.isPending ? (
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Shield className="me-2 h-4 w-4" />
+              )}
+              ترقية لمدير
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
