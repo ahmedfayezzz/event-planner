@@ -9,7 +9,7 @@ const pathLabels: Record<string, string> = {
   admin: "لوحة التحكم",
   sessions: "الأحداث",
   users: "المستخدمين",
-  hosts: "المضيفين",
+  sponsors: "الرعاة",
   checkin: "تسجيل الحضور",
   settings: "الإعدادات",
   analytics: "الإحصائيات",

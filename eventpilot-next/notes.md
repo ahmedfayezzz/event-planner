@@ -72,8 +72,8 @@ change to الوصف
 
 _____________________________________________________
 
-- when user chooses other in hosting, we should show a text area to specify
 - sponsor instead of host
+- when user chooses other in hosting options while in all registration types, we should show a text area to specify, then in admin we can see what they wrote
 - add a way to link sponsor to event in admin (in sponsors table)
 - give admin a way to update sponsor details (like hosting type)
 - add a way attach image to sponsor

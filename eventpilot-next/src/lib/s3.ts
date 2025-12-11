@@ -87,11 +87,8 @@ export async function generatePresignedUploadUrl(params: {
   const config = IMAGE_TYPES[imageType];
 
   // Validate content type
-  if (
-    !config.allowedContentTypes.includes(
-      contentType as (typeof config.allowedContentTypes)[number]
-    )
-  ) {
+  const allowedTypes: readonly string[] = config.allowedContentTypes;
+  if (!allowedTypes.includes(contentType)) {
     throw new Error(
       `Invalid content type: ${contentType}. Allowed: ${config.allowedContentTypes.join(", ")}`
     );

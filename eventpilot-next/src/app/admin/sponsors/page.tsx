@@ -60,7 +60,7 @@ interface HostItem {
   isGuest: boolean;
 }
 
-export default function AdminHostsPage() {
+export default function AdminSponsorsPage() {
   const [hostingTypeFilter, setHostingTypeFilter] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { isExpanded, toggleRow } = useExpandableRows();
@@ -94,16 +94,16 @@ export default function AdminHostsPage() {
   const createHost = api.admin.createHost.useMutation({
     onSuccess: (data) => {
       if (data.isNew) {
-        toast.success("تم إضافة المضيف بنجاح");
+        toast.success("تم إضافة الراعي بنجاح");
       } else {
-        toast.success("تم تحديث بيانات المضيف الموجود");
+        toast.success("تم تحديث بيانات الراعي الموجود");
       }
       utils.admin.getHosts.invalidate();
       setIsAddDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      toast.error(error.message || "حدث خطأ أثناء إضافة المضيف");
+      toast.error(error.message || "حدث خطأ أثناء إضافة الراعي");
     },
   });
 
@@ -155,9 +155,9 @@ export default function AdminHostsPage() {
       });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = `hosts-${new Date().toISOString().split("T")[0]}.csv`;
+      link.download = `sponsors-${new Date().toISOString().split("T")[0]}.csv`;
       link.click();
-      toast.success(`تم تصدير ${result.data.count} مضيف`);
+      toast.success(`تم تصدير ${result.data.count} راعي`);
     }
   };
 
@@ -177,7 +177,7 @@ export default function AdminHostsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">المضيفين</h1>
+          <h1 className="text-2xl font-bold">الرعاة</h1>
           <p className="text-muted-foreground">
             قائمة المتطوعين لتقديم الضيافة
           </p>
@@ -185,7 +185,7 @@ export default function AdminHostsPage() {
         <div className="flex items-center gap-2">
           <Button onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="me-2 h-4 w-4" />
-            إضافة مضيف
+            إضافة راعي
           </Button>
           <Button variant="outline" onClick={handleExport}>
             <Download className="me-2 h-4 w-4" />
@@ -232,14 +232,14 @@ export default function AdminHostsPage() {
           ) : allHosts.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
               <UtensilsCrossed className="mx-auto h-12 w-12 mb-4 opacity-50" />
-              <p>لا يوجد مضيفين</p>
+              <p>لا يوجد رعاة</p>
               <Button
                 variant="outline"
                 className="mt-4"
                 onClick={() => setIsAddDialogOpen(true)}
               >
                 <Plus className="me-2 h-4 w-4" />
-                إضافة مضيف
+                إضافة راعي
               </Button>
             </div>
           ) : (
@@ -254,7 +254,7 @@ export default function AdminHostsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>المضيف</TableHead>
+                    <TableHead>الراعي</TableHead>
                     <TableHead className="hidden md:table-cell">التواصل</TableHead>
                     <TableHead className="hidden lg:table-cell">الشركة</TableHead>
                     <TableHead>أنواع الضيافة</TableHead>
@@ -458,9 +458,9 @@ export default function AdminHostsPage() {
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>إضافة مضيف جديد</DialogTitle>
+            <DialogTitle>إضافة راعي جديد</DialogTitle>
             <DialogDescription>
-              أضف مضيف جديد يدوياً لقائمة المتطوعين للضيافة
+              أضف راعي جديد يدوياً لقائمة المتطوعين للضيافة
             </DialogDescription>
           </DialogHeader>
 
@@ -470,7 +470,7 @@ export default function AdminHostsPage() {
                 <Label htmlFor="hostName">الاسم *</Label>
                 <Input
                   id="hostName"
-                  placeholder="اسم المضيف"
+                  placeholder="اسم الراعي"
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
@@ -564,7 +564,7 @@ export default function AdminHostsPage() {
                   جارٍ الإضافة...
                 </>
               ) : (
-                "إضافة المضيف"
+                "إضافة الراعي"
               )}
             </Button>
           </DialogFooter>

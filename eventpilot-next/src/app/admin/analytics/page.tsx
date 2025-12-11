@@ -157,7 +157,7 @@ export default function AnalyticsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المضيفين</CardTitle>
+            <CardTitle className="text-sm font-medium">إجمالي الرعاة</CardTitle>
             <UtensilsCrossed className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
@@ -330,7 +330,7 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>أنواع الضيافة المتطوع لها</CardTitle>
-            <CardDescription>توزيع المضيفين حسب نوع الضيافة</CardDescription>
+            <CardDescription>توزيع الرعاة حسب نوع الضيافة</CardDescription>
           </CardHeader>
           <CardContent className="h-80">
             {analytics.hosting?.breakdown &&
@@ -357,12 +357,12 @@ export default function AnalyticsPage() {
                       />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [`${value} مضيف`, "العدد"]} />
+                  <Tooltip formatter={(value) => [`${value} راعي`, "العدد"]} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">
-                لا يوجد مضيفين بعد
+                لا يوجد رعاة بعد
               </div>
             )}
           </CardContent>

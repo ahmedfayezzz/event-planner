@@ -24,7 +24,7 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   dashboard: 'لوحة التحكم',
   sessions: 'إدارة الأحداث',
   users: 'إدارة المستخدمين',
-  hosts: 'إدارة المضيفين',
+  hosts: 'إدارة الرعاة',
   analytics: 'الإحصائيات',
   checkin: 'تسجيل الحضور',
   settings: 'الإعدادات',

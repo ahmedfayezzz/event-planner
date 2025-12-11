@@ -86,8 +86,8 @@ const allSidebarLinks: SidebarLink[] = [
     superAdminOnly: true,
   },
   {
-    href: "/admin/hosts",
-    label: "المضيفين",
+    href: "/admin/sponsors",
+    label: "الرعاة",
     icon: UtensilsCrossed,
     permission: "hosts",
   },

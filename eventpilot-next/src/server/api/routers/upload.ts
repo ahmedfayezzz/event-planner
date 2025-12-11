@@ -50,11 +50,8 @@ export const uploadRouter = createTRPCRouter({
       }
 
       // Validate content type
-      if (
-        !config.allowedContentTypes.includes(
-          contentType as (typeof config.allowedContentTypes)[number]
-        )
-      ) {
+      const allowedTypes: readonly string[] = config.allowedContentTypes;
+      if (!allowedTypes.includes(contentType)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: `نوع الملف غير مدعوم. الأنواع المدعومة: ${config.allowedContentTypes.join(", ")}`,

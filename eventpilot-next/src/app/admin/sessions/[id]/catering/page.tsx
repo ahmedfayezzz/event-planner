@@ -158,7 +158,7 @@ export default function CateringPage({ params }: PageProps) {
     }
 
     if (!isSelfCatering && !selectedHostId) {
-      toast.error("يرجى اختيار مضيف أو تحديد الضيافة ذاتية");
+      toast.error("يرجى اختيار راعي أو تحديد الضيافة ذاتية");
       return;
     }
 
@@ -268,7 +268,7 @@ export default function CateringPage({ params }: PageProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>نوع الضيافة</TableHead>
-                  <TableHead>المضيف</TableHead>
+                  <TableHead>الراعي</TableHead>
                   <TableHead className="hidden md:table-cell">الهاتف</TableHead>
                   <TableHead className="hidden lg:table-cell">الشركة</TableHead>
                   <TableHead className="hidden lg:table-cell">ملاحظات</TableHead>
@@ -476,17 +476,17 @@ export default function CateringPage({ params }: PageProps) {
                 }
               />
               <Label htmlFor="selfCatering" className="cursor-pointer">
-                ضيافة ذاتية (بدون مضيف خارجي)
+                ضيافة ذاتية (بدون راعي خارجي)
               </Label>
             </div>
 
             {!isSelfCatering && (
               <div className="space-y-2">
-                <Label>اختيار المضيف</Label>
+                <Label>اختيار الراعي</Label>
                 <div className="relative">
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="بحث عن مضيف..."
+                    placeholder="بحث عن راعي..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pr-9"
@@ -608,17 +608,17 @@ export default function CateringPage({ params }: PageProps) {
                 }
               />
               <Label htmlFor="selfCateringEdit" className="cursor-pointer">
-                ضيافة ذاتية (بدون مضيف خارجي)
+                ضيافة ذاتية (بدون راعي خارجي)
               </Label>
             </div>
 
             {!isSelfCatering && (
               <div className="space-y-2">
-                <Label>اختيار المضيف</Label>
+                <Label>اختيار الراعي</Label>
                 <div className="relative">
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="بحث عن مضيف..."
+                    placeholder="بحث عن راعي..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pr-9"
