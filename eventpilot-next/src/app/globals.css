@@ -121,7 +121,7 @@
 
   /* Borders — Sand-tinted for warmth */
   --border: oklch(0.88 0.025 55);
-  --input: oklch(0.97 0.01 55);
+  --input: oklch(0.82 0.03 55); /* Visible sand-tinted border */
   --ring: oklch(0.181 0.04 237); /* Midnight Blue focus */
 
   /* Charts — Midnight Blue + Sand palette */
