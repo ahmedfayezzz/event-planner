@@ -710,34 +710,29 @@ export const registrationRouter = createTRPCRouter({
           sessionId: registration.session.id,
         });
 
-        await sendConfirmedEmail(email, name, registration.session, qrData);
-      }
-
-      // Approve and send emails to invited registrations (companions)
-      for (const invitedReg of registration.invitedRegistrations) {
-        // Approve the invited registration
-        await db.registration.update({
-          where: { id: invitedReg.id },
-          data: { isApproved: true },
-        });
-
-        if (invitedReg.guestEmail) {
-          const companionQrData = createQRCheckInData({
-            type: "attendance",
-            registrationId: invitedReg.id,
-            sessionId: registration.session.id,
+        // Check if this is a companion registration
+        if (registration.invitedByRegistrationId) {
+          // Get parent name for companion email
+          const parentReg = await db.registration.findUnique({
+            where: { id: registration.invitedByRegistrationId },
+            include: { user: true },
           });
-
+          const parentName = parentReg?.user?.name || parentReg?.guestName || "المسجل";
           await sendCompanionEmail(
-            invitedReg.guestEmail,
-            invitedReg.guestName || "المرافق",
-            name || "المسجل",
+            email,
+            name,
+            parentName,
             registration.session,
             true,
-            companionQrData
+            qrData
           );
+        } else {
+          await sendConfirmedEmail(email, name, registration.session, qrData);
         }
       }
+
+      // Note: Companions are NOT auto-approved when parent is approved
+      // They need to be approved separately by admin
 
       return { success: true };
     }),
@@ -784,17 +779,10 @@ export const registrationRouter = createTRPCRouter({
         data: { isApproved: true },
       });
 
-      // Also approve all invited registrations
-      await db.registration.updateMany({
-        where: {
-          sessionId: input.sessionId,
-          isApproved: false,
-          invitedByRegistrationId: { not: null },
-        },
-        data: { isApproved: true },
-      });
+      // Note: Companions are NOT auto-approved when parent is approved
+      // They need to be approved separately by admin
 
-      // Send confirmation emails
+      // Send confirmation emails to parent registrations only
       for (const registration of pendingRegistrations) {
         const email = registration.user?.email || registration.guestEmail;
         const name = registration.user?.name || registration.guestName;
@@ -807,26 +795,6 @@ export const registrationRouter = createTRPCRouter({
           });
 
           await sendConfirmedEmail(email, name, session, qrData);
-        }
-
-        // Send companion emails
-        for (const invitedReg of registration.invitedRegistrations) {
-          if (invitedReg.guestEmail) {
-            const companionQrData = createQRCheckInData({
-              type: "attendance",
-              registrationId: invitedReg.id,
-              sessionId: session.id,
-            });
-
-            await sendCompanionEmail(
-              invitedReg.guestEmail,
-              invitedReg.guestName || "المرافق",
-              name || "المسجل",
-              session,
-              true,
-              companionQrData
-            );
-          }
         }
       }
 
@@ -873,53 +841,42 @@ export const registrationRouter = createTRPCRouter({
         data: { isApproved: true },
       });
 
-      // Also approve all companions of selected parent registrations
-      const parentIds = pendingRegistrations
-        .filter((r) => r.invitedByRegistrationId === null)
-        .map((r) => r.id);
+      // Note: Companions are NOT auto-approved when parent is approved
+      // They need to be approved separately by admin
 
-      if (parentIds.length > 0) {
-        await db.registration.updateMany({
-          where: {
-            invitedByRegistrationId: { in: parentIds },
-            isApproved: false,
-          },
-          data: { isApproved: true },
-        });
-      }
-
-      // Send confirmation emails for parent registrations only
-      for (const registration of pendingRegistrations.filter(
-        (r) => r.invitedByRegistrationId === null
-      )) {
+      // Send confirmation emails for approved registrations
+      for (const registration of pendingRegistrations) {
         const email = registration.user?.email || registration.guestEmail;
         const name = registration.user?.name || registration.guestName;
         const session = registration.session;
 
         if (email && name && session) {
-          const qrData = createQRCheckInData({
-            type: "attendance",
-            registrationId: registration.id,
-            sessionId: session.id,
-          });
-
-          await sendConfirmedEmail(email, name, session, qrData);
-        }
-
-        // Send companion emails
-        for (const invitedReg of registration.invitedRegistrations) {
-          if (invitedReg.guestEmail && registration.session) {
+          // For parent registrations, send confirmed email
+          if (registration.invitedByRegistrationId === null) {
+            const qrData = createQRCheckInData({
+              type: "attendance",
+              registrationId: registration.id,
+              sessionId: session.id,
+            });
+            await sendConfirmedEmail(email, name, session, qrData);
+          } else {
+            // For companion registrations being directly approved, send companion confirmation
             const companionQrData = createQRCheckInData({
               type: "attendance",
-              registrationId: invitedReg.id,
-              sessionId: registration.session.id,
+              registrationId: registration.id,
+              sessionId: session.id,
             });
-
+            // Get parent name for companion email
+            const parentReg = await db.registration.findUnique({
+              where: { id: registration.invitedByRegistrationId },
+              include: { user: true },
+            });
+            const parentName = parentReg?.user?.name || parentReg?.guestName || "المسجل";
             await sendCompanionEmail(
-              invitedReg.guestEmail,
-              invitedReg.guestName || "المرافق",
-              name || "المسجل",
-              registration.session,
+              email,
+              name,
+              parentName,
+              session,
               true,
               companionQrData
             );
