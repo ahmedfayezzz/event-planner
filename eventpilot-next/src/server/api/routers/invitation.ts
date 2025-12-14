@@ -158,11 +158,12 @@ export const invitationRouter = createTRPCRouter({
           });
 
           // Send email
+          const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+          const registrationLink = `${baseUrl}/event/${session.slug}/register?token=${token}`;
           const sent = await sendInvitationEmail(
             email,
             session,
-            token,
-            input.customMessage
+            registrationLink
           );
 
           results.push({

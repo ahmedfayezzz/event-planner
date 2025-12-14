@@ -281,7 +281,7 @@ export async function sendConfirmedEmail(
   emailAddress: string,
   name: string,
   session: SessionInfo,
-  qrCheckInData?: { id: string }
+  qrData?: string
 ): Promise<boolean> {
   const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
@@ -290,9 +290,9 @@ export async function sendConfirmedEmail(
   let qrSection = "";
   let attachments: EmailAttachment[] | undefined;
 
-  if (qrCheckInData && session.sendQrInEmail) {
+  if (qrData && session.sendQrInEmail) {
     try {
-      const qrBuffer = await generateBrandedQRCode(qrCheckInData.id, {
+      const qrBuffer = await generateBrandedQRCode(qrData, {
         sessionTitle: session.title,
         sessionDate: formatDateOnly(session.date),
         sessionTime: formatTimeOnly(session.date),
@@ -315,7 +315,7 @@ export async function sendConfirmedEmail(
     }
   }
 
-  const showQrInstructions = !!qrCheckInData && !!session.sendQrInEmail;
+  const showQrInstructions = !!qrData && !!session.sendQrInEmail;
   const content = generateConfirmedContent(
     name,
     session.title,
@@ -345,7 +345,7 @@ export async function sendCompanionEmail(
   registrantName: string,
   session: SessionInfo,
   isApproved: boolean,
-  qrCheckInData?: { id: string }
+  qrData?: string
 ): Promise<boolean> {
   const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
@@ -353,9 +353,9 @@ export async function sendCompanionEmail(
   let qrSection = "";
   let attachments: EmailAttachment[] | undefined;
 
-  if (isApproved && qrCheckInData && session.sendQrInEmail) {
+  if (isApproved && qrData && session.sendQrInEmail) {
     try {
-      const qrBuffer = await generateBrandedQRCode(qrCheckInData.id, {
+      const qrBuffer = await generateBrandedQRCode(qrData, {
         sessionTitle: session.title,
         sessionDate: formatDateOnly(session.date),
         sessionTime: formatTimeOnly(session.date),
@@ -378,7 +378,7 @@ export async function sendCompanionEmail(
     }
   }
 
-  const showQrInstructions = isApproved && !!qrCheckInData && !!session.sendQrInEmail;
+  const showQrInstructions = isApproved && !!qrData && !!session.sendQrInEmail;
   const content = generateCompanionContent(
     companionName,
     registrantName,
