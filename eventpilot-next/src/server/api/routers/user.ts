@@ -89,7 +89,7 @@ export const userRouter = createTRPCRouter({
         wantsToHost: true,
         hostingTypes: true,
         createdAt: true,
-        sponsor: {
+        sponsors: {
           select: {
             id: true,
             sponsorshipTypes: true,

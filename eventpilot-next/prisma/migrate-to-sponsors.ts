@@ -29,7 +29,7 @@ async function migrateUserHostsToSponsors() {
   const usersWhoWantToHost = await prisma.user.findMany({
     where: {
       wantsToHost: true,
-      sponsor: null, // Don't create duplicate sponsors
+      sponsors: { none: {} }, // Don't create duplicate sponsors
     },
     select: {
       id: true,
@@ -118,7 +118,7 @@ async function migrateEventCateringToSponsorship() {
     include: {
       host: {
         include: {
-          sponsor: true,
+          sponsors: true,
         },
       },
       session: true,
@@ -133,13 +133,14 @@ async function migrateEventCateringToSponsorship() {
   for (const catering of caterings) {
     try {
       // Check if this sponsorship already exists
+      const hostSponsor = catering.host?.sponsors?.[0]; // Get first sponsor if exists
       const existingSponsorship = await prisma.eventSponsorship.findFirst({
         where: {
           sessionId: catering.sessionId,
           sponsorshipType: catering.hostingType,
           // Match either by sponsorId or self-sponsored flag
           OR: [
-            { sponsorId: catering.host?.sponsor?.id || null },
+            { sponsorId: hostSponsor?.id || null },
             { isSelfSponsored: catering.isSelfCatering },
           ],
         },
@@ -155,9 +156,9 @@ async function migrateEventCateringToSponsorship() {
       let sponsorId: string | null = null;
 
       if (catering.host && !catering.isSelfCatering) {
-        // Check if user already has a sponsor
-        if (catering.host.sponsor) {
-          sponsorId = catering.host.sponsor.id;
+        // Check if user already has a sponsor (use first one if exists)
+        if (catering.host.sponsors && catering.host.sponsors.length > 0) {
+          sponsorId = catering.host.sponsors[0].id;
         } else {
           // Create sponsor record for the host
           const newSponsor = await prisma.sponsor.create({

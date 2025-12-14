@@ -164,7 +164,7 @@ export default function MemberRegisterPage({
     }
   };
 
-  const isAlreadySponsor = userData?.sponsor != null;
+  const isAlreadySponsor = userData?.sponsors && userData.sponsors.length > 0;
 
   return (
     <RegistrationPageLayout>

@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { QRCodeImage } from "@/components/qr-display";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
-import { Download, MapPin, Calendar, ArrowRight, Loader2 } from "lucide-react";
+import { Download, MapPin, Calendar, ArrowRight, Loader2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PublicQRPage({ params }: { params: Promise<{ id: string }> }) {
@@ -124,7 +124,19 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
               {qrData.session.location && (
                 <div className="flex items-center gap-3 text-sm">
                   <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span>{qrData.session.location}</span>
+                  {qrData.session.locationUrl ? (
+                    <a
+                      href={qrData.session.locationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      {qrData.session.location}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  ) : (
+                    <span>{qrData.session.location}</span>
+                  )}
                 </div>
               )}
             </div>

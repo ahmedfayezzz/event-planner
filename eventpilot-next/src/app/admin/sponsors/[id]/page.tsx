@@ -79,9 +79,11 @@ import {
   Phone,
   Search,
   Trash2,
+  Unlink,
   Upload,
   User,
   UserCircle,
+  UserPlus,
   UtensilsCrossed,
   X,
 } from "lucide-react";
@@ -121,6 +123,7 @@ export default function SponsorProfilePage({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAddToEventDialogOpen, setIsAddToEventDialogOpen] = useState(false);
+  const [isLinkUserDialogOpen, setIsLinkUserDialogOpen] = useState(false);
   const [formData, setFormData] = useState<SponsorFormData>(initialFormData);
 
   // Add to Event dialog state
@@ -128,6 +131,10 @@ export default function SponsorProfilePage({
   const [selectedSponsorshipType, setSelectedSponsorshipType] = useState("");
   const [eventNotes, setEventNotes] = useState("");
   const [sessionSearchQuery, setSessionSearchQuery] = useState("");
+
+  // Link to User dialog state
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const utils = api.useUtils();
 
@@ -192,11 +199,57 @@ export default function SponsorProfilePage({
     },
   });
 
+  // Search users for linking
+  const { data: searchedUsers, isLoading: isSearchingUsers } = api.sponsor.searchUsersForLinking.useQuery(
+    { search: userSearchQuery, limit: 10 },
+    { enabled: isLinkUserDialogOpen && userSearchQuery.length >= 2 }
+  );
+
+  // Link to user mutation
+  const linkToUser = api.sponsor.linkToUser.useMutation({
+    onSuccess: () => {
+      toast.success("تم ربط الراعي بالمستخدم بنجاح");
+      utils.sponsor.getById.invalidate({ id });
+      resetLinkUserForm();
+      setIsLinkUserDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء ربط الراعي");
+    },
+  });
+
+  // Unlink from user mutation
+  const unlinkFromUser = api.sponsor.unlinkFromUser.useMutation({
+    onSuccess: () => {
+      toast.success("تم إلغاء ربط الراعي بالمستخدم بنجاح");
+      utils.sponsor.getById.invalidate({ id });
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء إلغاء الربط");
+    },
+  });
+
   const resetAddToEventForm = () => {
     setSelectedSessionId(null);
     setSelectedSponsorshipType("");
     setEventNotes("");
     setSessionSearchQuery("");
+  };
+
+  const resetLinkUserForm = () => {
+    setUserSearchQuery("");
+    setSelectedUserId(null);
+  };
+
+  const handleLinkToUser = () => {
+    if (!selectedUserId) {
+      toast.error("يرجى اختيار مستخدم");
+      return;
+    }
+    linkToUser.mutate({
+      sponsorId: id,
+      userId: selectedUserId,
+    });
   };
 
   const handleAddToEvent = () => {
@@ -581,11 +634,25 @@ export default function SponsorProfilePage({
           {/* Linked User Card */}
           {sponsor.user && (
             <Card className="border-blue-200 bg-blue-50/30">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <UserCircle className="h-5 w-5 text-blue-600" />
                   المستخدم المرتبط
                 </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                  onClick={() => unlinkFromUser.mutate({ sponsorId: id })}
+                  disabled={unlinkFromUser.isPending}
+                  title="إلغاء الربط"
+                >
+                  {unlinkFromUser.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Unlink className="h-4 w-4" />
+                  )}
+                </Button>
               </CardHeader>
               <CardContent>
                 <Link
@@ -650,6 +717,29 @@ export default function SponsorProfilePage({
                   <CalendarPlus className="ml-2 h-4 w-4" />
                   إضافة إلى حدث
                 </Button>
+                {sponsor.user ? (
+                  <Button
+                    variant="outline"
+                    className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                    onClick={() => unlinkFromUser.mutate({ sponsorId: id })}
+                    disabled={unlinkFromUser.isPending}
+                  >
+                    {unlinkFromUser.isPending ? (
+                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Unlink className="ml-2 h-4 w-4" />
+                    )}
+                    إلغاء ربط المستخدم
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsLinkUserDialogOpen(true)}
+                  >
+                    <UserPlus className="ml-2 h-4 w-4" />
+                    ربط بمستخدم
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1066,6 +1156,133 @@ export default function SponsorProfilePage({
                 </>
               ) : (
                 "إضافة"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link to User Dialog */}
+      <Dialog
+        open={isLinkUserDialogOpen}
+        onOpenChange={(open) => {
+          setIsLinkUserDialogOpen(open);
+          if (!open) resetLinkUserForm();
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>ربط الراعي بمستخدم</DialogTitle>
+            <DialogDescription>
+              ابحث عن مستخدم (عضو أو ضيف) لربط الراعي {sponsor.name} به
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* User Search */}
+            <div className="space-y-2">
+              <Label>بحث عن مستخدم</Label>
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="ابحث بالاسم أو البريد أو رقم الهاتف..."
+                  value={userSearchQuery}
+                  onChange={(e) => setUserSearchQuery(e.target.value)}
+                  className="pr-9"
+                />
+              </div>
+            </div>
+
+            {/* Search Results */}
+            {userSearchQuery.length >= 2 && (
+              <div className="space-y-2">
+                {isSearchingUsers ? (
+                  <div className="py-4 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                  </div>
+                ) : searchedUsers && searchedUsers.length > 0 ? (
+                  <div className="max-h-60 overflow-y-auto border rounded-md">
+                    {searchedUsers.map((user) => (
+                      <div
+                        key={user.id}
+                        className={cn(
+                          "p-3 cursor-pointer hover:bg-muted/50 border-b last:border-b-0",
+                          selectedUserId === user.id && "bg-primary/10"
+                        )}
+                        onClick={() => setSelectedUserId(user.id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <User className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{user.name}</p>
+                            <p className="text-sm text-muted-foreground" dir="ltr">
+                              {user.email}
+                            </p>
+                            {user.phone && (
+                              <p className="text-xs text-muted-foreground" dir="ltr">
+                                {user.phone}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-left flex-shrink-0">
+                            <Badge variant="outline">{user.role}</Badge>
+                            {user.sponsorCount > 0 && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {user.sponsorCount} راعي مرتبط
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    لا توجد نتائج
+                  </p>
+                )}
+              </div>
+            )}
+
+            {userSearchQuery.length < 2 && userSearchQuery.length > 0 && (
+              <p className="text-sm text-muted-foreground text-center py-2">
+                أدخل حرفين على الأقل للبحث
+              </p>
+            )}
+
+            {selectedUserId && searchedUsers && (
+              <p className="text-sm text-primary">
+                تم اختيار: {searchedUsers.find((u) => u.id === selectedUserId)?.name}
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetLinkUserForm();
+                setIsLinkUserDialogOpen(false);
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleLinkToUser}
+              disabled={linkToUser.isPending || !selectedUserId}
+            >
+              {linkToUser.isPending ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  جارٍ الربط...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="ml-2 h-4 w-4" />
+                  ربط
+                </>
               )}
             </Button>
           </DialogFooter>

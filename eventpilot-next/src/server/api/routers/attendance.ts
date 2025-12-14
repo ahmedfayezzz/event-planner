@@ -287,6 +287,7 @@ export const attendanceRouter = createTRPCRouter({
           title: registration.session.title,
           date: registration.session.date,
           location: registration.session.location,
+          locationUrl: registration.session.locationUrl,
         },
       };
     }),
@@ -424,6 +425,7 @@ export const attendanceRouter = createTRPCRouter({
           title: registration.session.title,
           date: registration.session.date,
           location: registration.session.location,
+          locationUrl: registration.session.locationUrl,
         },
       };
     }),

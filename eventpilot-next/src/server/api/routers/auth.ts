@@ -98,26 +98,38 @@ export const authRouter = createTRPCRouter({
 
           // Create Sponsor record if user wants to sponsor
           if (input.wantsToSponsor) {
-            await db.sponsor.upsert({
+            // Check if user already has a sponsor record
+            const existingSponsor = await db.sponsor.findFirst({
               where: { userId: user.id },
-              create: {
-                userId: user.id,
-                name: input.name,
-                email,
-                phone: formattedPhone,
-                type: input.sponsorType || "person",
-                sponsorshipTypes: input.sponsorshipTypes,
-                sponsorshipOtherText: input.sponsorshipOtherText || null,
-              },
-              update: {
-                name: input.name,
-                email,
-                phone: formattedPhone,
-                type: input.sponsorType || "person",
-                sponsorshipTypes: input.sponsorshipTypes,
-                sponsorshipOtherText: input.sponsorshipOtherText || null,
-              },
             });
+
+            if (existingSponsor) {
+              // Update existing sponsor
+              await db.sponsor.update({
+                where: { id: existingSponsor.id },
+                data: {
+                  name: input.name,
+                  email,
+                  phone: formattedPhone,
+                  type: input.sponsorType || "person",
+                  sponsorshipTypes: input.sponsorshipTypes,
+                  sponsorshipOtherText: input.sponsorshipOtherText || null,
+                },
+              });
+            } else {
+              // Create new sponsor
+              await db.sponsor.create({
+                data: {
+                  userId: user.id,
+                  name: input.name,
+                  email,
+                  phone: formattedPhone,
+                  type: input.sponsorType || "person",
+                  sponsorshipTypes: input.sponsorshipTypes,
+                  sponsorshipOtherText: input.sponsorshipOtherText || null,
+                },
+              });
+            }
           }
         } else {
           // USER, ADMIN, or SUPER_ADMIN - account already exists

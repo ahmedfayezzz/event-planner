@@ -140,15 +140,15 @@ export const sponsorRouter = createTRPCRouter({
     }),
 
   /**
-   * Get sponsor by user ID (admin or user themselves)
+   * Get sponsors by user ID (admin or user themselves) - returns array since multiple sponsors can be linked to one user
    */
   getByUserId: adminProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      const sponsor = await db.sponsor.findUnique({
-        where: { userId: input.userId },
+      const sponsors = await db.sponsor.findMany({
+        where: { userId: input.userId, isActive: true },
         include: {
           eventSponsorships: {
             include: {
@@ -164,7 +164,7 @@ export const sponsorRouter = createTRPCRouter({
         },
       });
 
-      return sponsor;
+      return sponsors;
     }),
 
   /**
@@ -186,20 +186,8 @@ export const sponsorRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      // If linking to a user, check they don't already have a sponsor record
+      // Verify user exists if linking to a user
       if (input.userId) {
-        const existingSponsor = await db.sponsor.findUnique({
-          where: { userId: input.userId },
-        });
-
-        if (existingSponsor) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "هذا المستخدم لديه سجل راعي بالفعل",
-          });
-        }
-
-        // Verify user exists
         const user = await db.user.findUnique({
           where: { id: input.userId },
         });
@@ -734,5 +722,143 @@ export const sponsorRouter = createTRPCRouter({
       });
 
       return sponsors;
+    }),
+
+  /**
+   * Link a sponsor to a user (admin only)
+   */
+  linkToUser: adminProcedure
+    .input(
+      z.object({
+        sponsorId: z.string(),
+        userId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Verify sponsor exists
+      const sponsor = await db.sponsor.findUnique({
+        where: { id: input.sponsorId },
+      });
+
+      if (!sponsor) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الراعي غير موجود",
+        });
+      }
+
+      // Verify user exists
+      const user = await db.user.findUnique({
+        where: { id: input.userId },
+      });
+
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "المستخدم غير موجود",
+        });
+      }
+
+      // Update sponsor with user link
+      const updatedSponsor = await db.sponsor.update({
+        where: { id: input.sponsorId },
+        data: { userId: input.userId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              role: true,
+            },
+          },
+        },
+      });
+
+      return updatedSponsor;
+    }),
+
+  /**
+   * Unlink a sponsor from a user (admin only)
+   */
+  unlinkFromUser: adminProcedure
+    .input(z.object({ sponsorId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Verify sponsor exists
+      const sponsor = await db.sponsor.findUnique({
+        where: { id: input.sponsorId },
+      });
+
+      if (!sponsor) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الراعي غير موجود",
+        });
+      }
+
+      if (!sponsor.userId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "هذا الراعي غير مرتبط بأي مستخدم",
+        });
+      }
+
+      // Update sponsor to remove user link
+      const updatedSponsor = await db.sponsor.update({
+        where: { id: input.sponsorId },
+        data: { userId: null },
+      });
+
+      return updatedSponsor;
+    }),
+
+  /**
+   * Search users for linking to a sponsor (admin only)
+   */
+  searchUsersForLinking: adminProcedure
+    .input(
+      z.object({
+        search: z.string().min(1),
+        limit: z.number().min(1).max(20).default(10),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const users = await db.user.findMany({
+        where: {
+          isActive: true,
+          OR: [
+            { name: { contains: input.search, mode: "insensitive" } },
+            { email: { contains: input.search, mode: "insensitive" } },
+            { phone: { contains: input.search } },
+            { username: { contains: input.search, mode: "insensitive" } },
+          ],
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+          companyName: true,
+          _count: {
+            select: { sponsors: true },
+          },
+        },
+        take: input.limit,
+        orderBy: { name: "asc" },
+      });
+
+      return users.map((u) => ({
+        ...u,
+        sponsorCount: u._count.sponsors,
+        _count: undefined,
+      }));
     }),
 });

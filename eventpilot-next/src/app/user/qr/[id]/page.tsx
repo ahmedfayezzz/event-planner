@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { QRCodeImage } from "@/components/qr-display";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
-import { ArrowRight, Download, Loader2 } from "lucide-react";
+import { ArrowRight, Download, Loader2, ExternalLink } from "lucide-react";
 
 export default function UserQRPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -128,7 +128,19 @@ export default function UserQRPage({ params }: { params: Promise<{ id: string }>
             {qrData.session.location && (
               <div className="text-center pt-4 border-t">
                 <p className="text-sm text-muted-foreground">المكان</p>
-                <p className="font-medium">{qrData.session.location}</p>
+                {qrData.session.locationUrl ? (
+                  <a
+                    href={qrData.session.locationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary hover:underline inline-flex items-center justify-center gap-1"
+                  >
+                    {qrData.session.location}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                ) : (
+                  <p className="font-medium">{qrData.session.location}</p>
+                )}
               </div>
             )}
           </CardContent>

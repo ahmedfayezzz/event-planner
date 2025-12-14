@@ -80,7 +80,7 @@ model User {
   labels UserLabel[]
   notes         UserNote[] @relation("UserNotes")
   notesCreated  UserNote[] @relation("NotesCreated")
-  sponsor       Sponsor?
+  sponsors      Sponsor[]
 }
 
 model Session {
@@ -251,8 +251,8 @@ model Sponsor {
   sponsorshipTypes     String[]  @default([])
   sponsorshipOtherText String?
 
-  // Optional link to user (member who wants to sponsor)
-  userId               String?   @unique
+  // Optional link to user (member who wants to sponsor) - multiple sponsors can link to one user
+  userId               String?
   user                 User?     @relation(fields: [userId], references: [id])
 
   isActive             Boolean   @default(true)

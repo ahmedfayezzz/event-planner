@@ -157,7 +157,7 @@ export const registrationRouter = createTRPCRouter({
 
       // Create sponsor record if user wants to sponsor and doesn't have one yet
       if (input.wantsToSponsor) {
-        const existingSponsor = await db.sponsor.findUnique({
+        const existingSponsor = await db.sponsor.findFirst({
           where: { userId: user.id },
         });
 

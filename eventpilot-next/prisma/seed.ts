@@ -1029,7 +1029,7 @@ async function main() {
     { name: "جديد", color: "#6366f1" },
   ];
 
-  const labels = [];
+  const labels: { id: string; name: string; createdAt: Date; updatedAt: Date; color: string; }[] = [];
   for (const labelData of labelsData) {
     const label = await prisma.userLabel.upsert({
       where: { name: labelData.name },
