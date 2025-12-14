@@ -3,6 +3,20 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/brand";
+import {
+  createEmailTemplate,
+  generateConfirmationContent,
+  generatePendingContent,
+  generateConfirmedContent,
+  generateCompanionContent,
+  generateWelcomeContent,
+  generatePasswordResetContent,
+  generateInvitationContent,
+  formatSessionDatePreview,
+  formatDateOnlyPreview,
+  formatTimeOnlyPreview,
+  type EmailSettings,
+} from "@/lib/email-templates";
 
 // Sample data for email previews
 const SAMPLE_SESSION = {
@@ -15,9 +29,20 @@ const SAMPLE_SESSION = {
 };
 
 const SAMPLE_NAME = "أحمد محمد";
-const SAMPLE_EMAIL = "ahmed@example.com";
 const SAMPLE_COMPANION_NAME = "خالد علي";
 const SAMPLE_REGISTRANT_NAME = "سارة أحمد";
+
+// Sample settings for preview (simulates admin settings)
+const SAMPLE_SETTINGS: EmailSettings = {
+  siteName: "ثلوثية الأعمال",
+  contactEmail: "thlothyah@tda.sa",
+  contactPhone: "+966 50 000 0000",
+  instagramHandle: "thlothyah",
+  twitterHandle: "thlothyah",
+  snapchatHandle: "thlothyah",
+  linkedinUrl: null,
+  whatsappNumber: null,
+};
 
 // Email template types
 const EMAIL_TYPES = [
@@ -34,506 +59,139 @@ const EMAIL_TYPES = [
 
 type EmailType = typeof EMAIL_TYPES[number]["id"];
 
-// Generate email HTML based on type
+// Generate QR placeholder for preview
+function generateQrPlaceholder(): string {
+  const dateOnly = formatDateOnlyPreview(SAMPLE_SESSION.date);
+  const timeOnly = formatTimeOnlyPreview(SAMPLE_SESSION.date);
+
+  return `
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px auto; text-align: center;" align="center">
+      <tr>
+        <td align="center" style="padding: 20px; background: linear-gradient(135deg, ${BRAND.primary} 0%, ${BRAND.primaryDark} 100%); border-radius: 12px;">
+          <div style="width: 200px; height: 200px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+            <div style="padding: 20px; text-align: center;">
+              <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px;">رمز QR</p>
+              <p style="margin: 8px 0 0 0; color: ${BRAND.textLight}; font-size: 12px;">${SAMPLE_SESSION.title}</p>
+              <p style="margin: 4px 0 0 0; color: ${BRAND.textLight}; font-size: 12px;">${dateOnly} - ${timeOnly}</p>
+              <p style="margin: 4px 0 0 0; color: ${BRAND.primary}; font-size: 12px; font-weight: bold;">${SAMPLE_NAME}</p>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+// Generate email HTML based on type using shared templates
 function generateEmailHtml(type: EmailType): string {
-  const siteName = "ثلوثية الأعمال";
-  const contactEmail = "thlothyah@tda.sa";
-  const contactPhone = "+966 50 000 0000";
+  const siteName = SAMPLE_SETTINGS.siteName ?? "ثلوثية الأعمال";
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
 
-  const dateStr = SAMPLE_SESSION.date.toLocaleDateString("ar-SA", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const dateStr = formatSessionDatePreview(SAMPLE_SESSION.date);
+  const dateOnly = formatDateOnlyPreview(SAMPLE_SESSION.date);
+  const timeOnly = formatTimeOnlyPreview(SAMPLE_SESSION.date);
 
-  const dateOnly = SAMPLE_SESSION.date.toLocaleDateString("ar-SA", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-
-  const timeOnly = SAMPLE_SESSION.date.toLocaleTimeString("ar-SA", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  // Content based on email type
   let content = "";
-  let buttonText = "";
-  let buttonUrl = "";
-  let extraContent = "";
+  let buttonText: string | undefined;
+  let buttonUrl: string | undefined;
+  let extraContent: string | undefined;
 
   switch (type) {
     case "confirmation":
-      content = `
-        <p style="margin: 0 0 16px 0;">مرحباً <strong>${SAMPLE_NAME}</strong>,</p>
-        <p style="margin: 0 0 16px 0; line-height: 1.7;">
-          يسعدنا إبلاغك بأن تسجيلك قد تم بنجاح. أنت الآن مسجّل رسمياً في الحدث القادم، ونحن متحمسون لاستقبالك.
-        </p>
-        <p style="margin: 16px 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${SAMPLE_SESSION.title}</strong></p>
-
-        <!-- Event Details Box -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
-          <tr>
-            <td style="background-color: ${BRAND.primary}; width: 4px;"></td>
-            <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
-              <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
-              <p style="margin: 0;"><strong>المكان:</strong> ${SAMPLE_SESSION.location}</p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Decorative Divider -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
-          <tr>
-            <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
-          </tr>
-        </table>
-
-        <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">نتطلع لرؤيتك معنا .. خلك جاهز لجلسة ملهمة!</p>
-      `;
+      content = generateConfirmationContent(
+        SAMPLE_NAME,
+        SAMPLE_SESSION.title,
+        dateStr,
+        SAMPLE_SESSION.location
+      );
       break;
 
     case "pending":
-      content = `
-        <p style="margin: 0 0 16px 0;">مرحباً <strong>${SAMPLE_NAME}</strong>,</p>
-        <p style="margin: 16px 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${SAMPLE_SESSION.title}</strong></p>
-
-        <!-- Event Details Box -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
-          <tr>
-            <td style="background-color: ${BRAND.accent}; width: 4px;"></td>
-            <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
-              <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
-              <p style="margin: 0;"><strong>المكان:</strong> ${SAMPLE_SESSION.location}</p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Status Message -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0 0 0; width: 100%; border-radius: 8px; overflow: hidden;">
-          <tr>
-            <td style="background-color: ${BRAND.accentLight}; width: 4px;"></td>
-            <td style="padding: 16px; background-color: ${BRAND.highlightBg};">
-              <p style="margin: 0 0 8px 0; font-weight: bold; color: ${BRAND.accent};">طلبك قيد المراجعة</p>
-              <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px; line-height: 1.6;">
-                سعدنا باهتمامك بالتسجيل في ${SAMPLE_SESSION.title}.<br/>
-                تم استلام تسجيلك بنجاح، وحاليًا الطلب قيد المراجعة، وبنرجع لك قريب نأكد لك حالة التسجيل.
-              </p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Decorative Divider -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
-          <tr>
-            <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
-          </tr>
-        </table>
-
-        <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">خلّك جاهز للجلسة مع الناس الملهمين ..</p>
-      `;
+      content = generatePendingContent(
+        SAMPLE_NAME,
+        SAMPLE_SESSION.title,
+        dateStr,
+        SAMPLE_SESSION.location
+      );
       break;
 
     case "confirmed":
-      content = `
-        <p style="margin: 0 0 16px 0;">مرحباً <strong>${SAMPLE_NAME}</strong>,</p>
-        <p style="margin: 0 0 8px 0; padding: 12px 16px; background-color: #E8F5E9; border-radius: 8px; color: #2E7D32; border: 1px solid #C8E6C9;">
-          تم تأكيد تسجيلك بنجاح!
-        </p>
-        <p style="margin: 0 0 16px 0; line-height: 1.7;">
-          يسرّنا إبلاغك بأنه تمت الموافقة على طلب تسجيلك. أنت الآن مؤكد للحضور، ونتطلع لرؤيتك في الحدث.
-        </p>
-        <p style="margin: 16px 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${SAMPLE_SESSION.title}</strong></p>
-
-        <!-- Event Details Box -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
-          <tr>
-            <td style="background-color: ${BRAND.primary}; width: 4px;"></td>
-            <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
-              <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
-              <p style="margin: 0;"><strong>المكان:</strong> ${SAMPLE_SESSION.location}</p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Decorative Divider -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
-          <tr>
-            <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
-          </tr>
-        </table>
-
-        <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">نتطلع لرؤيتك معنا .. خلك جاهز لجلسة ملهمة!</p>
-      `;
+      content = generateConfirmedContent(
+        SAMPLE_NAME,
+        SAMPLE_SESSION.title,
+        dateStr,
+        SAMPLE_SESSION.location,
+        false
+      );
       break;
 
     case "confirmed-qr":
-      content = `
-        <p style="margin: 0 0 16px 0;">مرحباً <strong>${SAMPLE_NAME}</strong>,</p>
-        <p style="margin: 0 0 8px 0; padding: 12px 16px; background-color: #E8F5E9; border-radius: 8px; color: #2E7D32; border: 1px solid #C8E6C9;">
-          تم تأكيد تسجيلك بنجاح!
-        </p>
-        <p style="margin: 0 0 16px 0; line-height: 1.7;">
-          يسرّنا إبلاغك بأنه تمت الموافقة على طلب تسجيلك. أنت الآن مؤكد للحضور، ونتطلع لرؤيتك في الحدث.
-        </p>
-        <p style="margin: 16px 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${SAMPLE_SESSION.title}</strong></p>
-
-        <!-- Event Details Box -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
-          <tr>
-            <td style="background-color: ${BRAND.primary}; width: 4px;"></td>
-            <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
-              <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
-              <p style="margin: 0;"><strong>المكان:</strong> ${SAMPLE_SESSION.location}</p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- QR Instructions -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0 0 0; width: 100%;">
-          <tr>
-            <td style="padding: 16px; background-color: ${BRAND.highlightBg}; border-radius: 8px; border-right: 4px solid ${BRAND.accent};">
-              <p style="margin: 0 0 8px 0; font-weight: bold; color: ${BRAND.primary};">رمز الدخول</p>
-              <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px;">أظهر رمز QR أدناه عند الوصول للدخول السريع</p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Decorative Divider -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
-          <tr>
-            <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
-          </tr>
-        </table>
-
-        <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">نتطلع لرؤيتك معنا .. خلك جاهز لجلسة ملهمة!</p>
-      `;
-      // QR placeholder for preview
-      extraContent = `
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px auto; text-align: center;" align="center">
-          <tr>
-            <td align="center" style="padding: 20px; background: linear-gradient(135deg, ${BRAND.primary} 0%, ${BRAND.primaryDark} 100%); border-radius: 12px;">
-              <div style="width: 200px; height: 200px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-                <div style="padding: 20px; text-align: center;">
-                  <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px;">رمز QR</p>
-                  <p style="margin: 8px 0 0 0; color: ${BRAND.textLight}; font-size: 12px;">${SAMPLE_SESSION.title}</p>
-                  <p style="margin: 4px 0 0 0; color: ${BRAND.textLight}; font-size: 12px;">${dateOnly} - ${timeOnly}</p>
-                  <p style="margin: 4px 0 0 0; color: ${BRAND.primary}; font-size: 12px; font-weight: bold;">${SAMPLE_NAME}</p>
-                </div>
-              </div>
-            </td>
-          </tr>
-        </table>
-      `;
+      content = generateConfirmedContent(
+        SAMPLE_NAME,
+        SAMPLE_SESSION.title,
+        dateStr,
+        SAMPLE_SESSION.location,
+        true
+      );
+      extraContent = generateQrPlaceholder();
       break;
 
     case "companion":
-      content = `
-        <p style="margin: 0 0 16px 0;">مرحباً <strong>${SAMPLE_COMPANION_NAME}</strong>,</p>
-        <p style="margin: 0 0 16px 0;">تم تسجيلك كمرافق للأستاذ/ة <strong>${SAMPLE_REGISTRANT_NAME}</strong> في:</p>
-        <p style="margin: 16px 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${SAMPLE_SESSION.title}</strong></p>
-
-        <!-- Event Details Box -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
-          <tr>
-            <td style="background-color: ${BRAND.accent}; width: 4px;"></td>
-            <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
-              <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
-              <p style="margin: 0;"><strong>المكان:</strong> ${SAMPLE_SESSION.location}</p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Status Message -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0 0 0; width: 100%; border-radius: 8px; overflow: hidden;">
-          <tr>
-            <td style="background-color: ${BRAND.accentLight}; width: 4px;"></td>
-            <td style="padding: 16px; background-color: ${BRAND.highlightBg};">
-              <p style="margin: 0 0 8px 0; font-weight: bold; color: ${BRAND.accent};">طلبك قيد المراجعة</p>
-              <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px; line-height: 1.6;">
-                سعدنا باهتمامك بالتسجيل في ${SAMPLE_SESSION.title}.<br/>
-                تم استلام تسجيلك بنجاح، وحاليًا الطلب قيد المراجعة، وبنرجع لك قريب نأكد لك حالة التسجيل.
-              </p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Decorative Divider -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
-          <tr>
-            <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
-          </tr>
-        </table>
-
-        <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">خلّك جاهز للجلسة مع الناس الملهمين ..</p>
-      `;
+      content = generateCompanionContent(
+        SAMPLE_COMPANION_NAME,
+        SAMPLE_REGISTRANT_NAME,
+        SAMPLE_SESSION.title,
+        dateStr,
+        SAMPLE_SESSION.location,
+        false,
+        false
+      );
       break;
 
     case "companion-approved":
-      content = `
-        <p style="margin: 0 0 16px 0;">مرحباً <strong>${SAMPLE_COMPANION_NAME}</strong>,</p>
-        <p style="margin: 0 0 16px 0;">تم تسجيلك كمرافق للأستاذ/ة <strong>${SAMPLE_REGISTRANT_NAME}</strong> في:</p>
-        <p style="margin: 0 0 8px 0; padding: 12px 16px; background-color: #E8F5E9; border-radius: 8px; color: #2E7D32; border: 1px solid #C8E6C9;">
-          تم تأكيد تسجيلك بنجاح!
-        </p>
-        <p style="margin: 16px 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${SAMPLE_SESSION.title}</strong></p>
-
-        <!-- Event Details Box -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
-          <tr>
-            <td style="background-color: ${BRAND.primary}; width: 4px;"></td>
-            <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
-              <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
-              <p style="margin: 0;"><strong>المكان:</strong> ${SAMPLE_SESSION.location}</p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Decorative Divider -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
-          <tr>
-            <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
-          </tr>
-        </table>
-
-        <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">نتطلع لرؤيتك معنا .. خلك جاهز لجلسة ملهمة!</p>
-      `;
+      content = generateCompanionContent(
+        SAMPLE_COMPANION_NAME,
+        SAMPLE_REGISTRANT_NAME,
+        SAMPLE_SESSION.title,
+        dateStr,
+        SAMPLE_SESSION.location,
+        true,
+        false
+      );
       break;
 
     case "welcome":
-      content = `
-        <p style="margin: 0 0 16px 0;">مرحباً <strong>${SAMPLE_NAME}</strong>,</p>
-        <p style="margin: 0 0 16px 0; line-height: 1.7;">
-          أهلاً وسهلاً بك في <strong style="color: ${BRAND.primary};">${siteName}</strong>! تم إنشاء حسابك بنجاح، وأنت الآن جزء من مجتمعنا المميز من رواد الأعمال والمهتمين.
-        </p>
-
-        <!-- Features Box -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
-          <tr>
-            <td style="background-color: ${BRAND.primary}; width: 4px;"></td>
-            <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
-              <p style="margin: 0 0 12px 0; font-weight: bold; color: ${BRAND.primary};">يمكنك الآن:</p>
-              <ul style="margin: 0; padding-right: 20px; color: ${BRAND.textMuted};">
-                <li style="margin-bottom: 8px;">التسجيل في الأحداث القادمة</li>
-                <li style="margin-bottom: 8px;">متابعة حالة تسجيلاتك</li>
-                <li>استعراض سجل حضورك</li>
-              </ul>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Decorative Divider -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
-          <tr>
-            <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
-          </tr>
-        </table>
-
-        <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">نتطلع لرؤيتك في أحداثنا القادمة!</p>
-      `;
+      content = generateWelcomeContent(SAMPLE_NAME, siteName);
       buttonText = "تسجيل الدخول";
       buttonUrl = `${baseUrl}/user/login`;
       break;
 
     case "password-reset":
-      content = `
-        <p style="margin: 0 0 16px 0;">مرحباً <strong>${SAMPLE_NAME}</strong>,</p>
-        <p style="margin: 0 0 16px 0; line-height: 1.7;">
-          وصلنا طلب لإعادة تعيين كلمة المرور الخاصة بحسابك. إذا كنت أنت من قدّم هذا الطلب، اضغط على الزر أدناه لإنشاء كلمة مرور جديدة.
-        </p>
-
-        <!-- Warning Box -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
-          <tr>
-            <td style="background-color: ${BRAND.accent}; width: 4px;"></td>
-            <td style="padding: 16px; background-color: ${BRAND.highlightBg};">
-              <p style="margin: 0 0 8px 0; font-weight: bold; color: ${BRAND.accent};">ملاحظة مهمة</p>
-              <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px;">هذا الرابط صالح لمدة ساعة واحدة فقط.</p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Decorative Divider -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
-          <tr>
-            <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
-          </tr>
-        </table>
-
-        <p style="margin: 0; color: ${BRAND.textLight}; font-size: 14px;">
-          إذا لم تطلب إعادة تعيين كلمة المرور، يمكنك تجاهل هذه الرسالة بأمان.
-        </p>
-      `;
+      content = generatePasswordResetContent(SAMPLE_NAME);
       buttonText = "إعادة تعيين كلمة المرور";
       buttonUrl = `${baseUrl}/user/reset-password/sample-token`;
       break;
 
     case "invitation":
-      content = `
-        <p style="margin: 0 0 16px 0;">مرحباً،</p>
-        <p style="margin: 0 0 16px 0; line-height: 1.7;">
-          يسرّنا دعوتك لحضور <strong style="color: ${BRAND.primary};">"${SAMPLE_SESSION.title}"</strong> ضمن فعاليات ${siteName}. هذه دعوة خاصة مقدّمة لك، ونتشرف بحضورك.
-        </p>
-
-        <!-- Event Details Box -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
-          <tr>
-            <td style="background-color: ${BRAND.primary}; width: 4px;"></td>
-            <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
-              <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateOnly}</p>
-              <p style="margin: 0 0 8px 0;"><strong>الوقت:</strong> ${timeOnly}</p>
-              <p style="margin: 0;"><strong>المكان:</strong> ${SAMPLE_SESSION.location}</p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Invitation Note -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
-          <tr>
-            <td style="background-color: ${BRAND.accent}; width: 4px;"></td>
-            <td style="padding: 16px; background-color: ${BRAND.highlightBg};">
-              <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px;">هذه دعوة خاصة. استخدم الزر أدناه للتسجيل.</p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Decorative Divider -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
-          <tr>
-            <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
-          </tr>
-        </table>
-
-        <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">نتطلع لرؤيتك معنا!</p>
-      `;
+      content = generateInvitationContent(
+        SAMPLE_SESSION.title,
+        siteName,
+        dateOnly,
+        timeOnly,
+        SAMPLE_SESSION.location
+      );
       buttonText = "التسجيل الآن";
       buttonUrl = `${baseUrl}/event/${SAMPLE_SESSION.slug}/register?token=sample-invitation-token`;
       break;
   }
 
-  // Build button HTML
-  const buttonHtml = buttonText && buttonUrl
-    ? `
-    <tr>
-      <td align="center" style="padding: 24px 0 8px 0;">
-        <table border="0" cellpadding="0" cellspacing="0" role="presentation">
-          <tr>
-            <td align="center" style="background-color: ${BRAND.primary}; border-radius: 8px;">
-              <a href="${buttonUrl}" target="_blank" style="display: inline-block; padding: 14px 32px; font-size: 16px; font-weight: bold; color: #ffffff; text-decoration: none;">
-                ${buttonText}
-              </a>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-    `
-    : "";
-
-  const extraContentHtml = extraContent
-    ? `<tr><td style="padding: 16px 0 0 0;">${extraContent}</td></tr>`
-    : "";
-
-  // Social links
-  const socialLinksHtml = `
-    <a href="https://instagram.com/thlothyah" style="color: ${BRAND.primary}; text-decoration: none; font-weight: 500;">Instagram</a> &nbsp;|&nbsp;
-    <a href="https://twitter.com/thlothyah" style="color: ${BRAND.primary}; text-decoration: none; font-weight: 500;">X</a> &nbsp;|&nbsp;
-    <a href="https://snapchat.com/add/thlothyah" style="color: ${BRAND.primary}; text-decoration: none; font-weight: 500;">Snapchat</a>
-  `;
-
-  return `
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ثلوثية الأعمال</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: ${BRAND.background}; font-family: 'Cairo', Arial, Helvetica, sans-serif;">
-  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${BRAND.background};">
-    <tr>
-      <td align="center" style="padding: 32px 16px;">
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; width: 100%;">
-          <!-- Header -->
-          <tr>
-            <td align="center" style="background: linear-gradient(135deg, ${BRAND.primary} 0%, ${BRAND.primaryDark} 100%); padding: 28px 24px; border-radius: 12px 12px 0 0;">
-              <div style="width: 60px; height: 3px; background-color: ${BRAND.accent}; margin: 0 auto 16px auto; border-radius: 2px;"></div>
-              <img
-                src="${baseUrl}/logo.png"
-                alt="${siteName}"
-                width="80"
-                height="80"
-                style="display: block; margin: 0 auto 12px auto; border-radius: 50%; max-width: 80px; background: white;"
-              />
-              <h1 style="margin: 0; font-size: 24px; font-weight: bold; color: #ffffff;">
-                ${siteName}
-              </h1>
-              <div style="width: 60px; height: 3px; background-color: ${BRAND.accent}; margin: 16px auto 0 auto; border-radius: 2px;"></div>
-            </td>
-          </tr>
-          <!-- Accent Bar -->
-          <tr>
-            <td style="background: linear-gradient(90deg, ${BRAND.accent} 0%, ${BRAND.accentLight} 50%, ${BRAND.accent} 100%); height: 4px; font-size: 0; line-height: 0;">&nbsp;</td>
-          </tr>
-          <!-- Content -->
-          <tr>
-            <td style="background-color: ${BRAND.cardBg}; padding: 32px 28px; border-left: 1px solid ${BRAND.border}; border-right: 1px solid ${BRAND.border};">
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td style="color: ${BRAND.textDark}; font-size: 16px; line-height: 1.7; text-align: right;">
-                    ${content}
-                  </td>
-                </tr>
-                ${buttonHtml}
-                ${extraContentHtml}
-              </table>
-            </td>
-          </tr>
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: ${BRAND.footerBg}; padding: 24px 28px; border-radius: 0 0 12px 12px; border: 1px solid ${BRAND.border}; border-top: none;">
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td align="center" style="padding-bottom: 16px;">
-                    <p style="margin: 0 0 8px 0; color: ${BRAND.textLight}; font-size: 14px;">
-                      للتواصل والاستفسارات
-                    </p>
-                    <p style="margin: 0 0 4px 0; color: ${BRAND.textMuted}; font-size: 14px;">
-                      ${contactEmail}
-                    </p>
-                    <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px; direction: ltr;">
-                      ${contactPhone}
-                    </p>
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center" style="padding-top: 12px; border-top: 1px solid ${BRAND.border};">
-                    <p style="margin: 12px 0 0 0; color: ${BRAND.textLight}; font-size: 13px;">
-                      تابعونا: ${socialLinksHtml}
-                    </p>
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center" style="padding-top: 16px;">
-                    <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 12px;">
-                      جميع الحقوق محفوظة لـ <a href="https://tda.sa" style="color: ${BRAND.primary}; text-decoration: none;">TDA</a>
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-  `.trim();
+  return createEmailTemplate({
+    content,
+    buttonText,
+    buttonUrl,
+    extraContent,
+    settings: SAMPLE_SETTINGS,
+  });
 }
 
 export default function EmailPreviewPage() {
@@ -649,10 +307,10 @@ export default function EmailPreviewPage() {
                 {selectedEmail === "pending" && `استلام التسجيل - ${SAMPLE_SESSION.title}`}
                 {selectedEmail === "confirmed" && `تأكيد التسجيل - ${SAMPLE_SESSION.title}`}
                 {selectedEmail === "confirmed-qr" && `تأكيد التسجيل - ${SAMPLE_SESSION.title}`}
-                {selectedEmail === "companion" && `تم تسجيلك كمرافق - ${SAMPLE_SESSION.title}`}
-                {selectedEmail === "companion-approved" && `تم تسجيلك كمرافق - ${SAMPLE_SESSION.title}`}
-                {selectedEmail === "welcome" && "مرحباً بك في ثلوثية الأعمال"}
-                {selectedEmail === "password-reset" && "إعادة تعيين كلمة المرور - ثلوثية الأعمال"}
+                {selectedEmail === "companion" && `استلام التسجيل كمرافق - ${SAMPLE_SESSION.title}`}
+                {selectedEmail === "companion-approved" && `تأكيد التسجيل كمرافق - ${SAMPLE_SESSION.title}`}
+                {selectedEmail === "welcome" && `مرحباً بك في ${SAMPLE_SETTINGS.siteName}`}
+                {selectedEmail === "password-reset" && "إعادة تعيين كلمة المرور"}
                 {selectedEmail === "invitation" && `دعوة خاصة - ${SAMPLE_SESSION.title}`}
               </p>
             </div>
