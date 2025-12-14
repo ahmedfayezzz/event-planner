@@ -21,7 +21,7 @@ export async function generateMetadata({
   }
 
   const saudiDate = toSaudiTime(new Date(session.date));
-  const dateStr = saudiDate?.toLocaleDateString("ar-SA") ?? "";
+  const dateStr = saudiDate?.toLocaleDateString("ar-SA", { numberingSystem: "latn" }) ?? "";
   const metaDescription = session.description
     ? session.description.length > 150
       ? `${session.description.substring(0, 150)}...`

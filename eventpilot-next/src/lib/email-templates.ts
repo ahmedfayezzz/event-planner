@@ -49,6 +49,7 @@ export function formatSessionDatePreview(date: Date): string {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    numberingSystem: "latn",
   });
 }
 
@@ -57,6 +58,7 @@ export function formatDateOnlyPreview(date: Date): string {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+    numberingSystem: "latn",
   });
 }
 
@@ -64,6 +66,7 @@ export function formatTimeOnlyPreview(date: Date): string {
   return date.toLocaleTimeString("ar-SA", {
     hour: "2-digit",
     minute: "2-digit",
+    numberingSystem: "latn",
   });
 }
 

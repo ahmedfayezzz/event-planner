@@ -336,10 +336,12 @@ export const attendanceRouter = createTRPCRouter({
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
+        numberingSystem: "latn",
       }) ?? "";
       const sessionTime = saudiSessionDate?.toLocaleTimeString("ar-SA", {
         hour: "2-digit",
         minute: "2-digit",
+        numberingSystem: "latn",
       }) ?? "";
 
       // Get attendee name
@@ -473,10 +475,12 @@ export const attendanceRouter = createTRPCRouter({
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
+        numberingSystem: "latn",
       }) ?? "";
       const sessionTime = saudiSessionDate?.toLocaleTimeString("ar-SA", {
         hour: "2-digit",
         minute: "2-digit",
+        numberingSystem: "latn",
       }) ?? "";
 
       // Get attendee name

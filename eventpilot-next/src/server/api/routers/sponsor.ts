@@ -618,7 +618,7 @@ export const sponsorRouter = createTRPCRouter({
       "مرتبط بمستخدم": s.user ? "نعم" : "لا",
       "عدد الرعايات": s.eventSponsorships.length,
       "الفعاليات": s.eventSponsorships.map((e) => e.session.title).join(", "),
-      "تاريخ الإنشاء": toSaudiTime(s.createdAt)?.toLocaleDateString("ar-SA") ?? "",
+      "تاريخ الإنشاء": toSaudiTime(s.createdAt)?.toLocaleDateString("ar-SA", { numberingSystem: "latn" }) ?? "",
     }));
 
     const csv = exportToCSV(data);

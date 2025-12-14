@@ -185,7 +185,7 @@ export const adminRouter = createTRPCRouter({
         تويتر: u.twitter || "",
         "عدد التسجيلات": u._count.registrations,
         "عدد الحضور": u.registrations.length,
-        "تاريخ الانضمام": toSaudiTime(u.createdAt)?.toLocaleDateString("ar-SA") ?? "",
+        "تاريخ الانضمام": toSaudiTime(u.createdAt)?.toLocaleDateString("ar-SA", { numberingSystem: "latn" }) ?? "",
       }));
 
       const csv = exportToCSV(data);
@@ -231,7 +231,7 @@ export const adminRouter = createTRPCRouter({
         "الحالة": r.isApproved ? "مؤكد" : "معلق",
         "عدد المرافقين": r.invitedRegistrations.length,
         "أسماء المرافقين": r.invitedRegistrations.map((c) => c.guestName).join(", "),
-        "تاريخ التسجيل": toSaudiTime(r.registeredAt)?.toLocaleDateString("ar-SA") ?? "",
+        "تاريخ التسجيل": toSaudiTime(r.registeredAt)?.toLocaleDateString("ar-SA", { numberingSystem: "latn" }) ?? "",
       }));
 
       const csv = exportToCSV(data);

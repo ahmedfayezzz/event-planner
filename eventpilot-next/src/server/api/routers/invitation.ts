@@ -256,7 +256,7 @@ export const invitationRouter = createTRPCRouter({
 
           const message = session.inviteMessage
             ? session.inviteMessage.replace("[رابط التسجيل]", registrationUrl)
-            : `${greeting}\n\nندعوك للتسجيل في حدث "${session.title}" في ثلوثية الأعمال.\n\n📅 التاريخ: ${saudiDate?.toLocaleDateString("ar-SA") ?? ""}\n\nسجل الآن:\n${registrationUrl}`;
+            : `${greeting}\n\nندعوك للتسجيل في حدث "${session.title}" في ثلوثية الأعمال.\n\n📅 التاريخ: ${saudiDate?.toLocaleDateString("ar-SA", { numberingSystem: "latn" }) ?? ""}\n\nسجل الآن:\n${registrationUrl}`;
 
           // Format phone for WhatsApp (remove + and spaces)
           const cleanPhone = contact.phone.replace(/\D/g, "");

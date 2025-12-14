@@ -187,6 +187,7 @@ function formatSessionDate(date: Date): string {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    numberingSystem: "latn",
   });
 }
 
@@ -198,6 +199,7 @@ function formatDateOnly(date: Date): string {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+    numberingSystem: "latn",
   });
 }
 
@@ -208,6 +210,7 @@ function formatTimeOnly(date: Date): string {
   return saudiDate.toLocaleTimeString("ar-SA", {
     hour: "2-digit",
     minute: "2-digit",
+    numberingSystem: "latn",
   });
 }
 

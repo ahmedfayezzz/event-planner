@@ -74,8 +74,8 @@ export function SessionDetailClient({ id }: { id: string }) {
   const saudiDate = toSaudiTime(sessionDate);
   const day = saudiDate?.getDate() ?? sessionDate.getDate();
   const month =
-    saudiDate?.toLocaleDateString("ar-SA", { month: "long" }) ??
-    sessionDate.toLocaleDateString("ar-SA", { month: "long" });
+    saudiDate?.toLocaleDateString("ar-SA", { month: "long", numberingSystem: "latn" }) ??
+    sessionDate.toLocaleDateString("ar-SA", { month: "long", numberingSystem: "latn" });
 
   const statusColors: Record<string, string> = {
     open: "bg-emerald-100 text-emerald-800 border-emerald-200",
