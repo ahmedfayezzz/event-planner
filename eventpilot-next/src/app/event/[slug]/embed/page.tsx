@@ -152,7 +152,7 @@ export default function EventEmbedPage({ params }: { params: Promise<{ slug: str
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                سجل الآن
+                {displaySession.requiresApproval ? "سجل طلبك" : "سجل الآن"}
               </a>
             </Button>
           ) : (

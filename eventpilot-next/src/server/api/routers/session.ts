@@ -93,8 +93,14 @@ export const sessionRouter = createTRPCRouter({
       return {
         sessions: sessions.map((s) => ({
           ...s,
-          registrationCount: s._count.registrations,
+          registrationCount: s.showParticipantCount
+            ? s._count.registrations
+            : null,
           isFull: s._count.registrations >= s.maxParticipants,
+          canRegister:
+            s.status === "open" &&
+            s._count.registrations < s.maxParticipants &&
+            (!s.registrationDeadline || new Date() < s.registrationDeadline),
         })),
         nextCursor,
       };

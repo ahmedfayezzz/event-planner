@@ -18,6 +18,7 @@ interface SessionCardProps {
     maxParticipants: number;
     isFull?: boolean;
     canRegister?: boolean;
+    requiresApproval?: boolean;
   };
   showRegisterButton?: boolean;
 }
@@ -130,7 +131,9 @@ export function SessionCard({
               {session.isFull
                 ? "الحدث مكتمل"
                 : session.canRegister
-                ? "سجل الآن"
+                ? session.requiresApproval
+                  ? "سجل طلبك"
+                  : "سجل الآن"
                 : "عرض التفاصيل"}
               <ArrowLeft className="w-4 h-4" />
             </Link>

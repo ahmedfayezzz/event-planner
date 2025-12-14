@@ -12,10 +12,12 @@ interface SessionItem {
   date: Date;
   status: string;
   maxParticipants: number;
-  registrationCount: number;
+  registrationCount: number | null;
   isFull: boolean;
   guestName: string | null;
   location: string | null;
+  canRegister?: boolean;
+  requiresApproval?: boolean;
 }
 
 export default function SessionsPage() {

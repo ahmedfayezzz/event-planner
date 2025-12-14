@@ -73,7 +73,9 @@ export function SessionDetailClient({ id }: { id: string }) {
   const sessionDate = new Date(session.date);
   const saudiDate = toSaudiTime(sessionDate);
   const day = saudiDate?.getDate() ?? sessionDate.getDate();
-  const month = saudiDate?.toLocaleDateString("ar-SA", { month: "long" }) ?? sessionDate.toLocaleDateString("ar-SA", { month: "long" });
+  const month =
+    saudiDate?.toLocaleDateString("ar-SA", { month: "long" }) ??
+    sessionDate.toLocaleDateString("ar-SA", { month: "long" });
 
   const statusColors: Record<string, string> = {
     open: "bg-emerald-100 text-emerald-800 border-emerald-200",
@@ -259,7 +261,9 @@ export function SessionDetailClient({ id }: { id: string }) {
                                     : `/user/login?callbackUrl=/session/${id}/member-register`
                                 }
                               >
-                                {authStatus !== "authenticated"
+                                {session.requiresApproval
+                                  ? "سجل طلبك كعضو"
+                                  : authStatus !== "authenticated"
                                   ? "سجيل كعضو"
                                   : "احجز مكانك"}
                               </Link>
@@ -272,7 +276,9 @@ export function SessionDetailClient({ id }: { id: string }) {
                                 className="w-full sm:w-auto"
                               >
                                 <Link href={`/session/${id}/guest-register`}>
-                                  سجل كزائر
+                                  {session.requiresApproval
+                                    ? "سجل طلبك كزائر"
+                                    : "سجل كزائر"}
                                 </Link>
                               </Button>
                             )}

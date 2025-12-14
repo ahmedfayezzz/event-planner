@@ -59,7 +59,8 @@ interface SessionItem {
   date: Date;
   status: string;
   maxParticipants: number;
-  registrationCount: number;
+  registrationCount: number | null;
+  _count: { registrations: number };
 }
 
 export default function AdminSessionsPage() {
@@ -215,7 +216,7 @@ export default function AdminSessionsPage() {
                               </TableCell>
                               <TableCell className="hidden md:table-cell">
                                 <span className="font-medium">
-                                  {session.registrationCount}
+                                  {session._count.registrations}
                                 </span>
                                 <span className="text-muted-foreground">
                                   {" "}
@@ -305,7 +306,7 @@ export default function AdminSessionsPage() {
                                         <div>
                                           <span className="text-muted-foreground">التسجيلات:</span>
                                           <span className="mr-1 font-medium">
-                                            {session.registrationCount} / {session.maxParticipants}
+                                            {session._count.registrations} / {session.maxParticipants}
                                           </span>
                                         </div>
                                       </div>

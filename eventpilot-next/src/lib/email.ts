@@ -255,6 +255,11 @@ function createEmailTemplate({
             </td>
           </tr>
 
+          <!-- Accent Bar -->
+          <tr>
+            <td style="background: linear-gradient(90deg, ${BRAND.accent} 0%, ${BRAND.accentLight} 50%, ${BRAND.accent} 100%); height: 4px; font-size: 0; line-height: 0;">&nbsp;</td>
+          </tr>
+
           <!-- Content -->
           <tr>
             <td style="background-color: ${BRAND.cardBg}; padding: 32px 28px; border-left: 1px solid ${BRAND.border}; border-right: 1px solid ${BRAND.border};">
@@ -432,18 +437,30 @@ export async function sendConfirmationEmail(
 
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
-    <p style="margin: 0 0 16px 0;">تم تأكيد تسجيلك في:</p>
-    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${session.title}</strong></p>
-    <p style="margin: 0 0 16px 0; color: ${BRAND.textLight};">التجمع رقم ${session.sessionNumber}</p>
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: ${BRAND.footerBg}; border-radius: 8px; width: 100%; border: 1px solid ${BRAND.border};">
+    <p style="margin: 0 0 16px 0; line-height: 1.7;">
+      يسعدنا إبلاغك بأن تسجيلك قد تم بنجاح. أنت الآن مسجّل رسمياً في الحدث القادم، ونحن متحمسون لاستقبالك.
+    </p>
+    <p style="margin: 16px 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${session.title}</strong></p>
+
+    <!-- Event Details Box -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
       <tr>
-        <td style="padding: 16px;">
+        <td style="background-color: ${BRAND.primary}; width: 4px;"></td>
+        <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
           <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
           <p style="margin: 0;"><strong>المكان:</strong> ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
         </td>
       </tr>
     </table>
-    <p style="margin: 16px 0 0 0;">نتطلع لرؤيتك معنا!</p>
+
+    <!-- Decorative Divider -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
+      <tr>
+        <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
+      </tr>
+    </table>
+
+    <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">نتطلع لرؤيتك معنا .. خلك جاهز لجلسة ملهمة!</p>
   `;
 
   const html = createEmailTemplate({ content, settings });
@@ -470,20 +487,41 @@ export async function sendPendingEmail(
 
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
-    <p style="margin: 0 0 16px 0;">شكراً لتسجيلك في:</p>
-    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${session.title}</strong></p>
-    <p style="margin: 0 0 16px 0; color: ${BRAND.textLight};">التجمع رقم ${session.sessionNumber}</p>
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: ${BRAND.footerBg}; border-radius: 8px; width: 100%; border: 1px solid ${BRAND.border};">
+    <p style="margin: 16px 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${session.title}</strong></p>
+
+    <!-- Event Details Box -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
       <tr>
-        <td style="padding: 16px;">
+        <td style="background-color: ${BRAND.accent}; width: 4px;"></td>
+        <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
           <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
           <p style="margin: 0;"><strong>المكان:</strong> ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
         </td>
       </tr>
     </table>
-    <p style="margin: 16px 0 0 0; padding: 12px 16px; background-color: ${BRAND.accentLight}; border-radius: 8px; color: #78621f; border: 1px solid ${BRAND.accent};">
-      تسجيلك قيد المراجعة وسيتم إخطارك بالموافقة قريباً.
-    </p>
+
+    <!-- Status Message -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0 0 0; width: 100%; border-radius: 8px; overflow: hidden;">
+      <tr>
+        <td style="background-color: ${BRAND.accentLight}; width: 4px;"></td>
+        <td style="padding: 16px; background-color: ${BRAND.highlightBg};">
+          <p style="margin: 0 0 8px 0; font-weight: bold; color: ${BRAND.accent};">طلبك قيد المراجعة</p>
+          <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px; line-height: 1.6;">
+            سعدنا باهتمامك بالتسجيل في ${session.title}.<br/>
+            تم استلام تسجيلك بنجاح، وحاليًا الطلب قيد المراجعة، وبنرجع لك قريب نأكد لك حالة التسجيل.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Decorative Divider -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
+      <tr>
+        <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
+      </tr>
+    </table>
+
+    <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">خلّك جاهز للجلسة مع الناس الملهمين ..</p>
   `;
 
   const html = createEmailTemplate({ content, settings });
@@ -542,20 +580,48 @@ export async function sendConfirmedEmail(
     }
   }
 
+  const qrInstructions = qrCheckInData && session.sendQrInEmail ? `
+    <!-- QR Instructions -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0 0 0; width: 100%;">
+      <tr>
+        <td style="padding: 16px; background-color: ${BRAND.highlightBg}; border-radius: 8px; border-right: 4px solid ${BRAND.accent};">
+          <p style="margin: 0 0 8px 0; font-weight: bold; color: ${BRAND.primary};">رمز الدخول</p>
+          <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px;">أظهر رمز QR أدناه عند الوصول للدخول السريع</p>
+        </td>
+      </tr>
+    </table>
+  ` : "";
+
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
-    <p style="margin: 0 0 16px 0;">تم تأكيد تسجيلك في:</p>
-    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${session.title}</strong></p>
-    <p style="margin: 0 0 16px 0; color: ${BRAND.textLight};">التجمع رقم ${session.sessionNumber}</p>
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: ${BRAND.footerBg}; border-radius: 8px; width: 100%; border: 1px solid ${BRAND.border};">
+    <p style="margin: 0 0 8px 0; padding: 12px 16px; background-color: #E8F5E9; border-radius: 8px; color: #2E7D32; border: 1px solid #C8E6C9;">
+      تم تأكيد تسجيلك بنجاح!
+    </p>
+    <p style="margin: 0 0 16px 0; line-height: 1.7;">
+      يسرّنا إبلاغك بأنه تمت الموافقة على طلب تسجيلك. أنت الآن مؤكد للحضور، ونتطلع لرؤيتك في الحدث.
+    </p>
+    <p style="margin: 16px 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${session.title}</strong></p>
+
+    <!-- Event Details Box -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
       <tr>
-        <td style="padding: 16px;">
+        <td style="background-color: ${BRAND.primary}; width: 4px;"></td>
+        <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
           <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
           <p style="margin: 0;"><strong>المكان:</strong> ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
         </td>
       </tr>
     </table>
-    <p style="margin: 16px 0 0 0;">نتطلع لرؤيتك معنا!</p>
+    ${qrInstructions}
+
+    <!-- Decorative Divider -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
+      <tr>
+        <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
+      </tr>
+    </table>
+
+    <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">نتطلع لرؤيتك معنا .. خلك جاهز لجلسة ملهمة!</p>
   `;
 
   const html = createEmailTemplate({ content, extraContent: qrSection, settings });
@@ -590,7 +656,32 @@ export async function sendCompanionEmail(
   let attachments: EmailAttachment[] | undefined;
 
   if (isApproved) {
-    statusMessage = `<p style="margin: 16px 0 0 0;">نتطلع لرؤيتك معنا!</p>`;
+    statusMessage = `
+      <p style="margin: 0 0 8px 0; padding: 12px 16px; background-color: #E8F5E9; border-radius: 8px; color: #2E7D32; border: 1px solid #C8E6C9;">
+        تم تأكيد تسجيلك بنجاح!
+      </p>
+
+      <!-- QR Instructions -->
+      ${qrCheckInData && session.sendQrInEmail ? `
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0 0 0; width: 100%;">
+        <tr>
+          <td style="padding: 16px; background-color: ${BRAND.highlightBg}; border-radius: 8px; border-right: 4px solid ${BRAND.accent};">
+            <p style="margin: 0 0 8px 0; font-weight: bold; color: ${BRAND.primary};">رمز الدخول</p>
+            <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px;">أظهر رمز QR أدناه عند الوصول للدخول السريع</p>
+          </td>
+        </tr>
+      </table>
+      ` : ""}
+
+      <!-- Decorative Divider -->
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
+        <tr>
+          <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
+        </tr>
+      </table>
+
+      <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">نتطلع لرؤيتك معنا .. خلك جاهز لجلسة ملهمة!</p>
+    `;
 
     // Generate branded QR code if data provided and enabled
     if (qrCheckInData && session.sendQrInEmail) {
@@ -622,20 +713,41 @@ export async function sendCompanionEmail(
     }
   } else {
     statusMessage = `
-      <p style="margin: 16px 0 0 0; padding: 12px 16px; background-color: ${BRAND.accentLight}; border-radius: 8px; color: #78621f; border: 1px solid ${BRAND.accent};">
-        تسجيلك قيد المراجعة وسيتم إخطارك بالموافقة قريباً.
-      </p>
+      <!-- Status Message -->
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0 0 0; width: 100%; border-radius: 8px; overflow: hidden;">
+        <tr>
+          <td style="background-color: ${BRAND.accentLight}; width: 4px;"></td>
+          <td style="padding: 16px; background-color: ${BRAND.highlightBg};">
+            <p style="margin: 0 0 8px 0; font-weight: bold; color: ${BRAND.accent};">طلبك قيد المراجعة</p>
+            <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px; line-height: 1.6;">
+              سعدنا باهتمامك بالتسجيل في ${session.title}.<br/>
+              تم استلام تسجيلك بنجاح، وحاليًا الطلب قيد المراجعة، وبنرجع لك قريب نأكد لك حالة التسجيل.
+            </p>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Decorative Divider -->
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
+        <tr>
+          <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
+        </tr>
+      </table>
+
+      <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">خلّك جاهز للجلسة مع الناس الملهمين ..</p>
     `;
   }
 
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${companionName}</strong>,</p>
     <p style="margin: 0 0 16px 0;">تم تسجيلك كمرافق للأستاذ/ة <strong>${registrantName}</strong> في:</p>
-    <p style="margin: 0 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${session.title}</strong></p>
-    <p style="margin: 0 0 16px 0; color: ${BRAND.textLight};">التجمع رقم ${session.sessionNumber}</p>
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: ${BRAND.footerBg}; border-radius: 8px; width: 100%; border: 1px solid ${BRAND.border};">
+    <p style="margin: 16px 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${session.title}</strong></p>
+
+    <!-- Event Details Box -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
       <tr>
-        <td style="padding: 16px;">
+        <td style="background-color: ${BRAND.accent}; width: 4px;"></td>
+        <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
           <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
           <p style="margin: 0;"><strong>المكان:</strong> ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
         </td>
@@ -670,14 +782,33 @@ export async function sendWelcomeEmail(
 
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
-    <p style="margin: 0 0 16px 0;">أهلاً بك في <strong style="color: ${BRAND.primary};">${siteName}</strong>!</p>
-    <p style="margin: 0 0 12px 0;">تم إنشاء حسابك بنجاح. يمكنك الآن:</p>
-    <ul style="margin: 0 0 16px 0; padding-right: 20px; color: ${BRAND.textMuted};">
-      <li style="margin-bottom: 8px;">التسجيل في الأحداث القادمة</li>
-      <li style="margin-bottom: 8px;">متابعة حالة تسجيلاتك</li>
-      <li>استعراض سجل حضورك</li>
-    </ul>
-    <p style="margin: 16px 0 0 0;">نتطلع لرؤيتك في أحداثنا القادمة!</p>
+    <p style="margin: 0 0 16px 0; line-height: 1.7;">
+      أهلاً وسهلاً بك في <strong style="color: ${BRAND.primary};">${siteName}</strong>! تم إنشاء حسابك بنجاح، وأنت الآن جزء من مجتمعنا المميز من رواد الأعمال والمهتمين.
+    </p>
+
+    <!-- Features Box -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
+      <tr>
+        <td style="background-color: ${BRAND.primary}; width: 4px;"></td>
+        <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
+          <p style="margin: 0 0 12px 0; font-weight: bold; color: ${BRAND.primary};">يمكنك الآن:</p>
+          <ul style="margin: 0; padding-right: 20px; color: ${BRAND.textMuted};">
+            <li style="margin-bottom: 8px;">التسجيل في الأحداث القادمة</li>
+            <li style="margin-bottom: 8px;">متابعة حالة تسجيلاتك</li>
+            <li>استعراض سجل حضورك</li>
+          </ul>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Decorative Divider -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
+      <tr>
+        <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
+      </tr>
+    </table>
+
+    <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">نتطلع لرؤيتك في أحداثنا القادمة!</p>
   `;
 
   const html = createEmailTemplate({
@@ -709,13 +840,30 @@ export async function sendPasswordResetEmail(
 
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
-    <p style="margin: 0 0 16px 0;">لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.</p>
-    <p style="margin: 0 0 16px 0;">اضغط على الزر أدناه لإعادة تعيين كلمة المرور:</p>
-    <p style="margin: 24px 0; padding: 12px 16px; background-color: ${BRAND.accentLight}; border-radius: 8px; color: #78621f; font-size: 14px; border: 1px solid ${BRAND.accent};">
-      هذا الرابط صالح لمدة ساعة واحدة فقط.
+    <p style="margin: 0 0 16px 0; line-height: 1.7;">
+      وصلنا طلب لإعادة تعيين كلمة المرور الخاصة بحسابك. إذا كنت أنت من قدّم هذا الطلب، اضغط على الزر أدناه لإنشاء كلمة مرور جديدة.
     </p>
-    <p style="margin: 16px 0 0 0; color: ${BRAND.textLight}; font-size: 14px;">
-      إذا لم تطلب إعادة تعيين كلمة المرور، يمكنك تجاهل هذه الرسالة.
+
+    <!-- Warning Box -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
+      <tr>
+        <td style="background-color: ${BRAND.accent}; width: 4px;"></td>
+        <td style="padding: 16px; background-color: ${BRAND.highlightBg};">
+          <p style="margin: 0 0 8px 0; font-weight: bold; color: ${BRAND.accent};">ملاحظة مهمة</p>
+          <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px;">هذا الرابط صالح لمدة ساعة واحدة فقط.</p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Decorative Divider -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
+      <tr>
+        <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
+      </tr>
+    </table>
+
+    <p style="margin: 0; color: ${BRAND.textLight}; font-size: 14px;">
+      إذا لم تطلب إعادة تعيين كلمة المرور، يمكنك تجاهل هذه الرسالة بأمان.
     </p>
   `;
 
@@ -772,21 +920,40 @@ export async function sendInvitationEmail(
 
   const content = `
     <p style="margin: 0 0 16px 0;">مرحباً،</p>
-    <p style="margin: 0 0 16px 0;">نود دعوتك لحضور حدث <strong style="color: ${BRAND.primary};">"${session.title}"</strong> في ${siteName}.</p>
-    <p style="margin: 0 0 12px 0; font-weight: bold;">تفاصيل الحدث:</p>
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 0 16px 0; background-color: ${BRAND.footerBg}; border-radius: 8px; width: 100%; border: 1px solid ${BRAND.border};">
+    <p style="margin: 0 0 16px 0; line-height: 1.7;">
+      يسرّنا دعوتك لحضور <strong style="color: ${BRAND.primary};">"${session.title}"</strong> ضمن فعاليات ${siteName}. هذه دعوة خاصة مقدّمة لك، ونتشرف بحضورك.
+    </p>
+
+    <!-- Event Details Box -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
       <tr>
-        <td style="padding: 16px;">
+        <td style="background-color: ${BRAND.primary}; width: 4px;"></td>
+        <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
           <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
           <p style="margin: 0 0 8px 0;"><strong>الوقت:</strong> ${timeStr}</p>
           <p style="margin: 0;"><strong>المكان:</strong> ${session.location || "سيتم الإعلان عنه لاحقاً"}</p>
         </td>
       </tr>
     </table>
-    <p style="margin: 0 0 16px 0; padding: 12px 16px; background-color: #e8f5e9; border-radius: 8px; color: ${BRAND.primaryDark}; border: 1px solid ${BRAND.primary};">
-      هذه دعوة خاصة. استخدم الزر أدناه للتسجيل.
-    </p>
-    <p style="margin: 16px 0 0 0;">نتطلع لرؤيتك معنا!</p>
+
+    <!-- Invitation Note -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
+      <tr>
+        <td style="background-color: ${BRAND.accent}; width: 4px;"></td>
+        <td style="padding: 16px; background-color: ${BRAND.highlightBg};">
+          <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px;">هذه دعوة خاصة. استخدم الزر أدناه للتسجيل.</p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Decorative Divider -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
+      <tr>
+        <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
+      </tr>
+    </table>
+
+    <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">نتطلع لرؤيتك معنا!</p>
   `;
 
   const html = createEmailTemplate({

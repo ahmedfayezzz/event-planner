@@ -24,8 +24,9 @@ interface SessionItem {
   title: string;
   sessionNumber: number;
   date: Date;
-  registrationCount: number;
+  registrationCount: number | null;
   status: string;
+  _count: { registrations: number };
 }
 
 const dateRangeTabs: { value: DateRange; label: string; icon: React.ReactNode }[] = [
@@ -109,7 +110,7 @@ export default function CheckInSelectPage() {
                     </CardDescription>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <Badge variant="outline">{session.registrationCount} مسجل</Badge>
+                    <Badge variant="outline">{session._count.registrations} مسجل</Badge>
                     {session.status === "completed" && (
                       <Badge variant="secondary">مكتملة</Badge>
                     )}

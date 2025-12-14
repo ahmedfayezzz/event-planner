@@ -15,6 +15,8 @@ export const BRAND = {
   background: "#FFFFFF", // Pearl
   cardBg: "#FFFFFF", // Clean white card
   footerBg: "#CDA991", // Dune
+  infoBoxBg: "#F8F5F1", // Light warm cream for info boxes
+  highlightBg: "#FDF9F5", // Very light highlight background
 
   // Text Colors
   textDark: "#000000", // Black

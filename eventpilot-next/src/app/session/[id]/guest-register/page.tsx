@@ -620,7 +620,11 @@ export default function GuestRegisterPage({
                     className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg transition-all hover:shadow-xl h-11 md:h-12 text-base md:text-lg"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? "جارٍ التسجيل..." : "تأكيد التسجيل"}
+                    {isSubmitting
+                      ? "جارٍ التسجيل..."
+                      : session.requiresApproval
+                      ? "تأكيد الطلب"
+                      : "تأكيد التسجيل"}
                   </Button>
 
                   <div className="text-center text-xs md:text-sm text-foreground/70">

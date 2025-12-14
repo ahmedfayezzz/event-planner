@@ -292,7 +292,11 @@ export default function MemberRegisterPage({
                   disabled={isSubmitting}
                   className="flex-1 bg-primary hover:bg-primary/90 text-white shadow-lg transition-all hover:shadow-xl h-11 md:h-12 text-base md:text-lg"
                 >
-                  {isSubmitting ? "جارٍ التسجيل..." : "تأكيد التسجيل"}
+                  {isSubmitting
+                    ? "جارٍ التسجيل..."
+                    : session.requiresApproval
+                    ? "تأكيد الطلب"
+                    : "تأكيد التسجيل"}
                 </Button>
               </div>
             </div>
