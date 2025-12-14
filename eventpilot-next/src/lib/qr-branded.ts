@@ -12,6 +12,36 @@ const LOGO_SIZE = 55;
 const BORDER_WIDTH = 3;
 const PADDING = 28;
 
+// Cache for font data
+let cairoFontBase64: string | null = null;
+let cairoBoldFontBase64: string | null = null;
+
+/**
+ * Load and cache the Cairo font as base64
+ */
+async function loadFonts(): Promise<{ regular: string; bold: string }> {
+  if (cairoFontBase64 && cairoBoldFontBase64) {
+    return { regular: cairoFontBase64, bold: cairoBoldFontBase64 };
+  }
+
+  const regularFontPath = path.join(process.cwd(), "public", "fonts", "Cairo-Regular.ttf");
+  const boldFontPath = path.join(process.cwd(), "public", "fonts", "Cairo-Bold.ttf");
+
+  try {
+    const [regularData, boldData] = await Promise.all([
+      fs.readFile(regularFontPath),
+      fs.readFile(boldFontPath),
+    ]);
+    cairoFontBase64 = regularData.toString("base64");
+    cairoBoldFontBase64 = boldData.toString("base64");
+    return { regular: cairoFontBase64, bold: cairoBoldFontBase64 };
+  } catch (error) {
+    console.error("Failed to load Cairo fonts:", error);
+    // Return empty strings if fonts not found
+    return { regular: "", bold: "" };
+  }
+}
+
 interface BrandedQROptions {
   sessionTitle: string;
   sessionDate: string;
@@ -20,22 +50,29 @@ interface BrandedQROptions {
 }
 
 /**
- * Creates an SVG text element for Arabic text rendering
+ * Creates an SVG text element for Arabic text rendering with embedded font
  */
 function createTextSVG(
   text: string,
   fontSize: number,
   color: string,
   width: number,
-  fontWeight: "normal" | "bold" = "normal"
+  fontWeight: "normal" | "bold" = "normal",
+  fonts: { regular: string; bold: string }
 ): Buffer {
-  // Cairo font with RTL direction for Arabic
+  // Select the appropriate font based on weight
+  const fontBase64 = fontWeight === "bold" ? fonts.bold : fonts.regular;
+  const fontDataUri = fontBase64 ? `data:font/truetype;base64,${fontBase64}` : "";
+
+  // Cairo font with RTL direction for Arabic - embedded as base64
   const svg = `
-    <svg width="${width}" height="${
-    fontSize + 10
-  }" xmlns="http://www.w3.org/2000/svg">
+    <svg width="${width}" height="${fontSize + 10}" xmlns="http://www.w3.org/2000/svg">
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&amp;display=swap');
+        @font-face {
+          font-family: 'Cairo';
+          src: url('${fontDataUri}') format('truetype');
+          font-weight: ${fontWeight === "bold" ? 700 : 400};
+        }
         text {
           font-family: 'Cairo', 'Arial', sans-serif;
           font-size: ${fontSize}px;
@@ -45,9 +82,7 @@ function createTextSVG(
           text-anchor: middle;
         }
       </style>
-      <text x="${
-        width / 2
-      }" y="${fontSize}" dominant-baseline="middle">${escapeXml(text)}</text>
+      <text x="${width / 2}" y="${fontSize}" dominant-baseline="middle">${escapeXml(text)}</text>
     </svg>
   `;
   return Buffer.from(svg);
@@ -108,7 +143,9 @@ export async function generateBrandedQRCode(
         .toBuffer();
     }
 
-    // 3. Create text SVGs
+    // 3. Load fonts and create text SVGs
+    const fonts = await loadFonts();
+
     const titleText = "ثلوثية الأعمال";
     const welcomeText = "مرحباً";
     const scanText = "امسح للتحقق من الحضور";
@@ -122,10 +159,11 @@ export async function generateBrandedQRCode(
       20,
       BRAND.primary,
       contentWidth,
-      "bold"
+      "bold",
+      fonts
     );
     const welcomeSvg = options.attendeeName
-      ? createTextSVG(welcomeText, 14, BRAND.textMuted, contentWidth)
+      ? createTextSVG(welcomeText, 14, BRAND.textMuted, contentWidth, "normal", fonts)
       : null;
     const attendeeNameSvg = options.attendeeName
       ? createTextSVG(
@@ -133,22 +171,26 @@ export async function generateBrandedQRCode(
           18,
           BRAND.textDark,
           contentWidth,
-          "bold"
+          "bold",
+          fonts
         )
       : null;
-    const scanSvg = createTextSVG(scanText, 12, BRAND.textMuted, contentWidth);
+    const scanSvg = createTextSVG(scanText, 12, BRAND.textMuted, contentWidth, "normal", fonts);
     const sessionTitleSvg = createTextSVG(
       options.sessionTitle,
       14,
       BRAND.primary,
       contentWidth,
-      "bold"
+      "bold",
+      fonts
     );
     const dateTimeSvg = createTextSVG(
       dateTimeText,
       13,
       BRAND.textMuted,
-      contentWidth
+      contentWidth,
+      "normal",
+      fonts
     );
 
     // 4. Create background

@@ -12,7 +12,6 @@ import {
   generatePasswordResetContent,
   generateInvitationContent,
   generateQrOnlyContent,
-  generateQrSection,
   type EmailSettings,
   type SessionInfo,
 } from "./email-templates";
@@ -56,7 +55,6 @@ async function getEmailSettings(): Promise<EmailSettings> {
 interface EmailAttachment {
   filename: string;
   content: string; // base64 encoded
-  content_id?: string;
 }
 
 interface SendEmailParams {
@@ -287,8 +285,7 @@ export async function sendConfirmedEmail(
   const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
 
-  // Generate QR code if provided and enabled
-  let qrSection = "";
+  // Generate QR code as attachment only (not embedded)
   let attachments: EmailAttachment[] | undefined;
 
   if (qrData && session.sendQrInEmail) {
@@ -301,13 +298,10 @@ export async function sendConfirmedEmail(
       });
       if (qrBuffer) {
         const qrBase64 = qrBuffer.toString("base64");
-        const qrDataUrl = `data:image/png;base64,${qrBase64}`;
-        qrSection = generateQrSection(qrDataUrl);
         attachments = [
           {
             filename: "qr-code.png",
             content: qrBase64,
-            content_id: "qrcode",
           },
         ];
       }
@@ -325,7 +319,7 @@ export async function sendConfirmedEmail(
     showQrInstructions
   );
 
-  const html = createEmailTemplate({ content, extraContent: qrSection, settings });
+  const html = createEmailTemplate({ content, settings });
   const text = createPlainText(content, undefined, undefined, settings);
 
   return sendEmail({
@@ -351,7 +345,7 @@ export async function sendCompanionEmail(
   const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
 
-  let qrSection = "";
+  // Generate QR code as attachment only (not embedded)
   let attachments: EmailAttachment[] | undefined;
 
   if (isApproved && qrData && session.sendQrInEmail) {
@@ -364,13 +358,10 @@ export async function sendCompanionEmail(
       });
       if (qrBuffer) {
         const qrBase64 = qrBuffer.toString("base64");
-        const qrDataUrl = `data:image/png;base64,${qrBase64}`;
-        qrSection = generateQrSection(qrDataUrl);
         attachments = [
           {
             filename: "qr-code.png",
             content: qrBase64,
-            content_id: "qrcode",
           },
         ];
       }
@@ -390,7 +381,7 @@ export async function sendCompanionEmail(
     showQrInstructions
   );
 
-  const html = createEmailTemplate({ content, extraContent: qrSection, settings });
+  const html = createEmailTemplate({ content, settings });
   const text = createPlainText(content, undefined, undefined, settings);
 
   const subject = isApproved
@@ -537,8 +528,7 @@ export async function sendQrOnlyEmail(
   const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
 
-  // Generate QR code
-  let qrSection = "";
+  // Generate QR code as attachment only (not embedded)
   let attachments: EmailAttachment[] | undefined;
 
   try {
@@ -550,13 +540,10 @@ export async function sendQrOnlyEmail(
     });
     if (qrBuffer) {
       const qrBase64 = qrBuffer.toString("base64");
-      const qrDataUrl = `data:image/png;base64,${qrBase64}`;
-      qrSection = generateQrSection(qrDataUrl);
       attachments = [
         {
           filename: "qr-code.png",
           content: qrBase64,
-          content_id: "qrcode",
         },
       ];
     }
@@ -573,7 +560,6 @@ export async function sendQrOnlyEmail(
 
   const html = createEmailTemplate({
     content,
-    extraContent: qrSection,
     settings,
   });
   const text = `مرحباً ${name}،\n\nتم تأكيد حضورك في ${session.title}.\n\nالتاريخ: ${dateStr}\nالمكان: ${session.location || "سيتم الإعلان عنه لاحقاً"}\n\nيرجى إظهار رمز QR المرفق عند الوصول.`;
