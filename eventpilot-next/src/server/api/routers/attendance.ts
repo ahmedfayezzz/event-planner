@@ -7,7 +7,8 @@ import {
   adminProcedure,
 } from "../trpc";
 import { parseQRData, generateQRCode, createQRCheckInData } from "@/lib/qr";
-import { generateBrandedQRCode } from "@/lib/qr-branded";
+// PNG generation kept for future use: import { generateBrandedQRCode } from "@/lib/qr-branded";
+import { generateBrandedQRPdf } from "@/lib/qr-pdf";
 import { toSaudiTime } from "@/lib/timezone";
 
 export const attendanceRouter = createTRPCRouter({
@@ -138,12 +139,13 @@ export const attendanceRouter = createTRPCRouter({
       // Determine display info based on registration type
       const isInvited = !!registration.invitedByRegistrationId;
       const name = registration.user?.name || registration.guestName;
-      const inviterName = registration.invitedByRegistration?.user?.name ||
-                          registration.invitedByRegistration?.guestName;
+      const inviterName =
+        registration.invitedByRegistration?.user?.name ||
+        registration.invitedByRegistration?.guestName;
 
       return {
         success: true,
-        type: isInvited ? "companion" : (registration.user ? "user" : "guest"),
+        type: isInvited ? "companion" : registration.user ? "user" : "guest",
         name,
         registrantName: isInvited ? inviterName : undefined,
         sessionTitle: registration.session.title,
@@ -211,7 +213,9 @@ export const attendanceRouter = createTRPCRouter({
           phone: r.user?.phone || r.guestPhone,
           isGuest: !r.user,
           isInvited,
-          invitedByName: r.invitedByRegistration?.user?.name || r.invitedByRegistration?.guestName,
+          invitedByName:
+            r.invitedByRegistration?.user?.name ||
+            r.invitedByRegistration?.guestName,
           attended: r.attendance?.attended || false,
           checkInTime: r.attendance?.checkInTime || null,
           qrVerified: r.attendance?.qrVerified || false,
@@ -220,15 +224,23 @@ export const attendanceRouter = createTRPCRouter({
       });
 
       // Calculate stats
-      const directRegistrations = registrations.filter(r => !r.invitedByRegistrationId);
-      const invitedRegistrations = registrations.filter(r => !!r.invitedByRegistrationId);
+      const directRegistrations = registrations.filter(
+        (r) => !r.invitedByRegistrationId
+      );
+      const invitedRegistrations = registrations.filter(
+        (r) => !!r.invitedByRegistrationId
+      );
 
       const stats = {
         totalDirect: directRegistrations.length,
         totalInvited: invitedRegistrations.length,
         total: registrations.length,
-        attendedDirect: directRegistrations.filter((r) => r.attendance?.attended).length,
-        attendedInvited: invitedRegistrations.filter((r) => r.attendance?.attended).length,
+        attendedDirect: directRegistrations.filter(
+          (r) => r.attendance?.attended
+        ).length,
+        attendedInvited: invitedRegistrations.filter(
+          (r) => r.attendance?.attended
+        ).length,
         attended: registrations.filter((r) => r.attendance?.attended).length,
         pending: registrations.filter((r) => !r.attendance?.attended).length,
       };
@@ -332,31 +344,36 @@ export const attendanceRouter = createTRPCRouter({
       });
 
       // Format date and time for the branded QR (in Saudi timezone)
+      // Arabic format: "الأحد 21 ديسمبر 2025 • 10:52 م"
       const saudiSessionDate = toSaudiTime(registration.session.date);
-      const sessionDate = saudiSessionDate?.toLocaleDateString("ar-SA", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        numberingSystem: "latn",
-      }) ?? "";
-      const sessionTime = saudiSessionDate?.toLocaleTimeString("ar-SA", {
-        hour: "2-digit",
-        minute: "2-digit",
-        numberingSystem: "latn",
-      }) ?? "";
+      const sessionDate =
+        saudiSessionDate?.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "numeric",
+          year: "numeric",
+        }) ?? "";
+      const sessionTime =
+        saudiSessionDate?.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }) ?? "";
 
       // Get attendee name
-      const attendeeName = registration.user?.name || registration.guestName || undefined;
+      const attendeeName =
+        registration.user?.name || registration.guestName || undefined;
 
-      // Generate branded QR
-      const brandedQrBuffer = await generateBrandedQRCode(qrData, {
+      // Generate branded QR as PDF
+      const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionTitle: registration.session.title,
         sessionDate,
         sessionTime,
         attendeeName,
+        location: registration.session.location ?? undefined,
+        locationUrl: registration.session.locationUrl ?? undefined,
       });
 
-      if (!brandedQrBuffer) {
+      if (!pdfBuffer) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "فشل في إنشاء رمز QR",
@@ -364,12 +381,13 @@ export const attendanceRouter = createTRPCRouter({
       }
 
       return {
-        qrCode: `data:image/png;base64,${brandedQrBuffer.toString("base64")}`,
+        qrCode: `data:application/pdf;base64,${pdfBuffer.toString("base64")}`,
         session: {
           id: registration.session.id,
           title: registration.session.title,
           date: registration.session.date,
           location: registration.session.location,
+          locationUrl: registration.session.locationUrl,
         },
       };
     }),
@@ -472,31 +490,36 @@ export const attendanceRouter = createTRPCRouter({
       });
 
       // Format date and time for the branded QR (in Saudi timezone)
+      // Arabic format: "الأحد 21 ديسمبر 2025 • 10:52 م"
       const saudiSessionDate = toSaudiTime(registration.session.date);
-      const sessionDate = saudiSessionDate?.toLocaleDateString("ar-SA", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        numberingSystem: "latn",
-      }) ?? "";
-      const sessionTime = saudiSessionDate?.toLocaleTimeString("ar-SA", {
-        hour: "2-digit",
-        minute: "2-digit",
-        numberingSystem: "latn",
-      }) ?? "";
+      const sessionDate =
+        saudiSessionDate?.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "numeric",
+          year: "numeric",
+        }) ?? "";
+      const sessionTime =
+        saudiSessionDate?.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }) ?? "";
 
       // Get attendee name
-      const attendeeName = registration.user?.name || registration.guestName || undefined;
+      const attendeeName =
+        registration.user?.name || registration.guestName || undefined;
 
-      // Generate branded QR
-      const brandedQrBuffer = await generateBrandedQRCode(qrData, {
+      // Generate branded QR as PDF
+      const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionTitle: registration.session.title,
         sessionDate,
         sessionTime,
         attendeeName,
+        location: registration.session.location ?? undefined,
+        locationUrl: registration.session.locationUrl ?? undefined,
       });
 
-      if (!brandedQrBuffer) {
+      if (!pdfBuffer) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "فشل في إنشاء رمز QR",
@@ -504,13 +527,14 @@ export const attendanceRouter = createTRPCRouter({
       }
 
       return {
-        qrCode: `data:image/png;base64,${brandedQrBuffer.toString("base64")}`,
+        qrCode: `data:application/pdf;base64,${pdfBuffer.toString("base64")}`,
         attendeeName,
         session: {
           id: registration.session.id,
           title: registration.session.title,
           date: registration.session.date,
           location: registration.session.location,
+          locationUrl: registration.session.locationUrl,
         },
       };
     }),

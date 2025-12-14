@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { QRCodeImage } from "@/components/qr-display";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
-import { Download, MapPin, Calendar, ArrowRight, Loader2, ExternalLink } from "lucide-react";
+import { Download, MapPin, Calendar, ArrowRight, Loader2, ExternalLink, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PublicQRPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,10 +28,10 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
       const brandedQR = await utils.attendance.getPublicBrandedQR.fetch({ registrationId: id });
 
       if (brandedQR?.qrCode) {
-        // Create a link to download the branded QR code image
+        // Create a link to download the branded QR code PDF
         const link = document.createElement("a");
         link.href = brandedQR.qrCode;
-        link.download = `qr-${brandedQR.session.title.replace(/\s+/g, "-")}.png`;
+        link.download = `qr-${brandedQR.session.title.replace(/\s+/g, "-")}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -141,20 +141,28 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
               )}
             </div>
 
-            {/* Download Button */}
-            <Button onClick={handleDownload} className="w-full" size="lg" disabled={isDownloading}>
-              {isDownloading ? (
-                <>
-                  <Loader2 className="h-4 w-4 me-2 animate-spin" />
-                  جاري التحميل...
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4 me-2" />
-                  تحميل رمز QR
-                </>
-              )}
-            </Button>
+            {/* Download & Preview Buttons */}
+            <div className="flex gap-2">
+              <Button onClick={handleDownload} className="flex-1" size="lg" disabled={isDownloading}>
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                    جاري التحميل...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 me-2" />
+                    تحميل PDF
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" size="lg" asChild>
+                <Link href={`/qr/${id}/pdf-preview`}>
+                  <Eye className="h-4 w-4 me-2" />
+                  معاينة
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

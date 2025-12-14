@@ -31,10 +31,10 @@ export default function UserQRPage({ params }: { params: Promise<{ id: string }>
       const brandedQR = await utils.attendance.getBrandedQR.fetch({ sessionId: id });
 
       if (brandedQR?.qrCode) {
-        // Create download link
+        // Create download link for PDF
         const link = document.createElement("a");
         link.href = brandedQR.qrCode;
-        link.download = `qr-${brandedQR.session.title.replace(/\s+/g, "-")}.png`;
+        link.download = `qr-${brandedQR.session.title.replace(/\s+/g, "-")}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

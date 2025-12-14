@@ -25,6 +25,7 @@ export interface SessionInfo {
   sessionNumber: number;
   date: Date;
   location: string | null;
+  locationUrl?: string | null;
   slug: string | null;
   id: string;
   sendQrInEmail?: boolean;

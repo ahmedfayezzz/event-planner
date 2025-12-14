@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
-import { Mail, Phone, Building2, Briefcase, Instagram, Twitter, Edit, Calendar, Clock, MapPin, Users, CalendarCheck } from "lucide-react";
+import { Mail, Phone, Building2, Briefcase, Instagram, Twitter, Edit, Calendar, Clock, MapPin, Users, CalendarCheck, ExternalLink } from "lucide-react";
 
 interface RegistrationItem {
   id: string;
@@ -21,6 +21,7 @@ interface RegistrationItem {
     title: string;
     date: Date;
     location: string | null;
+    locationUrl: string | null;
     sessionNumber: number;
   };
   companions: { id: string; name: string }[];
@@ -250,6 +251,7 @@ function RegistrationCard({
       title: string;
       date: Date;
       location: string | null;
+      locationUrl: string | null;
       sessionNumber: number;
     };
     companions: { id: string; name: string }[];
@@ -304,7 +306,19 @@ function RegistrationCard({
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">المكان</p>
-                  <p className="font-medium">{registration.session.location}</p>
+                  {registration.session.locationUrl ? (
+                    <a
+                      href={registration.session.locationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      {registration.session.location}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  ) : (
+                    <p className="font-medium">{registration.session.location}</p>
+                  )}
                 </div>
               </div>
             )}

@@ -37,6 +37,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatArabicDate, getWhatsAppUrl } from "@/lib/utils";
 import {
@@ -128,6 +138,14 @@ export default function AdminSponsorsPage() {
   } | null>(null);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+
+  // Unlink from User confirmation dialog state
+  const [isUnlinkUserDialogOpen, setIsUnlinkUserDialogOpen] = useState(false);
+  const [sponsorToUnlink, setSponsorToUnlink] = useState<{
+    id: string;
+    name: string;
+    userName: string;
+  } | null>(null);
 
   const utils = api.useUtils();
 
@@ -221,6 +239,8 @@ export default function AdminSponsorsPage() {
     onSuccess: () => {
       toast.success("تم إلغاء ربط الراعي بالمستخدم بنجاح");
       utils.sponsor.getAll.invalidate();
+      setIsUnlinkUserDialogOpen(false);
+      setSponsorToUnlink(null);
     },
     onError: (error) => {
       toast.error(error.message || "حدث خطأ أثناء إلغاء الربط");
@@ -282,8 +302,14 @@ export default function AdminSponsorsPage() {
     });
   };
 
-  const handleUnlinkFromUser = (sponsorId: string) => {
-    unlinkFromUser.mutate({ sponsorId });
+  const handleOpenUnlinkDialog = (sponsor: { id: string; name: string; userName: string }) => {
+    setSponsorToUnlink(sponsor);
+    setIsUnlinkUserDialogOpen(true);
+  };
+
+  const handleConfirmUnlink = () => {
+    if (!sponsorToUnlink) return;
+    unlinkFromUser.mutate({ sponsorId: sponsorToUnlink.id });
   };
 
   const handleAddToEvent = () => {
@@ -713,9 +739,12 @@ export default function AdminSponsorsPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => handleUnlinkFromUser(sponsor.id)}
+                                  onClick={() => handleOpenUnlinkDialog({
+                                    id: sponsor.id,
+                                    name: sponsor.name,
+                                    userName: sponsor.user!.name,
+                                  })}
                                   title="إلغاء ربط المستخدم"
-                                  disabled={unlinkFromUser.isPending}
                                 >
                                   <Unlink className="h-4 w-4 text-orange-500" />
                                 </Button>
@@ -854,8 +883,11 @@ export default function AdminSponsorsPage() {
                                         variant="outline"
                                         size="sm"
                                         className="text-orange-500 hover:text-orange-600"
-                                        onClick={() => handleUnlinkFromUser(sponsor.id)}
-                                        disabled={unlinkFromUser.isPending}
+                                        onClick={() => handleOpenUnlinkDialog({
+                                          id: sponsor.id,
+                                          name: sponsor.name,
+                                          userName: sponsor.user!.name,
+                                        })}
                                       >
                                         <Unlink className="ml-1 h-3 w-3" />
                                         إلغاء الربط
@@ -1238,6 +1270,42 @@ export default function AdminSponsorsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Unlink User Confirmation Dialog */}
+      <AlertDialog
+        open={isUnlinkUserDialogOpen}
+        onOpenChange={setIsUnlinkUserDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>إلغاء ربط المستخدم</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من إلغاء ربط الراعي &quot;{sponsorToUnlink?.name}&quot; بالمستخدم &quot;{sponsorToUnlink?.userName}&quot;؟
+              <br />
+              <span className="text-muted-foreground">
+                يمكنك إعادة ربط الراعي بمستخدم آخر لاحقاً.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSponsorToUnlink(null)}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmUnlink}
+              className="bg-amber-600 text-white hover:bg-amber-700"
+              disabled={unlinkFromUser.isPending}
+            >
+              {unlinkFromUser.isPending ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  جارٍ الإلغاء...
+                </>
+              ) : (
+                "تأكيد الإلغاء"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

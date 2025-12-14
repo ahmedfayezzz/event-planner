@@ -1,5 +1,6 @@
 import { Resend } from "resend";
-import { generateBrandedQRCode } from "./qr-branded";
+// PNG generation kept for future use: import { generateBrandedQRCode } from "./qr-branded";
+import { generateBrandedQRPdf } from "./qr-pdf";
 import { db } from "@/server/db";
 import { toSaudiTime } from "./timezone";
 import {
@@ -293,23 +294,25 @@ export async function sendConfirmedEmail(
 
   if (qrData && session.sendQrInEmail) {
     try {
-      const qrBuffer = await generateBrandedQRCode(qrData, {
+      const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionTitle: session.title,
         sessionDate: formatDateOnly(session.date),
         sessionTime: formatTimeOnly(session.date),
         attendeeName: name,
+        location: session.location ?? undefined,
+        locationUrl: session.locationUrl ?? undefined,
       });
-      if (qrBuffer) {
-        const qrBase64 = qrBuffer.toString("base64");
+      if (pdfBuffer) {
+        const pdfBase64 = pdfBuffer.toString("base64");
         attachments = [
           {
-            filename: "qr-code.png",
-            content: qrBase64,
+            filename: "qr-code.pdf",
+            content: pdfBase64,
           },
         ];
       }
     } catch (err) {
-      console.error("Failed to generate QR code:", err);
+      console.error("Failed to generate QR PDF:", err);
     }
   }
 
@@ -353,23 +356,25 @@ export async function sendCompanionEmail(
 
   if (isApproved && qrData && session.sendQrInEmail) {
     try {
-      const qrBuffer = await generateBrandedQRCode(qrData, {
+      const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionTitle: session.title,
         sessionDate: formatDateOnly(session.date),
         sessionTime: formatTimeOnly(session.date),
         attendeeName: companionName,
+        location: session.location ?? undefined,
+        locationUrl: session.locationUrl ?? undefined,
       });
-      if (qrBuffer) {
-        const qrBase64 = qrBuffer.toString("base64");
+      if (pdfBuffer) {
+        const pdfBase64 = pdfBuffer.toString("base64");
         attachments = [
           {
-            filename: "qr-code.png",
-            content: qrBase64,
+            filename: "qr-code.pdf",
+            content: pdfBase64,
           },
         ];
       }
     } catch (err) {
-      console.error("Failed to generate companion QR code:", err);
+      console.error("Failed to generate companion QR PDF:", err);
     }
   }
 
@@ -535,23 +540,25 @@ export async function sendQrOnlyEmail(
   let attachments: EmailAttachment[] | undefined;
 
   try {
-    const qrBuffer = await generateBrandedQRCode(qrData, {
+    const pdfBuffer = await generateBrandedQRPdf(qrData, {
       sessionTitle: session.title,
       sessionDate: formatDateOnly(session.date),
       sessionTime: formatTimeOnly(session.date),
       attendeeName: name,
+      location: session.location ?? undefined,
+      locationUrl: session.locationUrl ?? undefined,
     });
-    if (qrBuffer) {
-      const qrBase64 = qrBuffer.toString("base64");
+    if (pdfBuffer) {
+      const pdfBase64 = pdfBuffer.toString("base64");
       attachments = [
         {
-          filename: "qr-code.png",
-          content: qrBase64,
+          filename: "qr-code.pdf",
+          content: pdfBase64,
         },
       ];
     }
   } catch (err) {
-    console.error("Failed to generate QR code for guest:", err);
+    console.error("Failed to generate QR PDF for guest:", err);
   }
 
   const content = generateQrOnlyContent(

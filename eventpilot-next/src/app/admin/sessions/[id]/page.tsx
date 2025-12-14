@@ -203,7 +203,19 @@ export default function SessionDetailPage({
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">المكان</p>
-                  <p className="font-medium">{session.location}</p>
+                  {session.locationUrl ? (
+                    <a
+                      href={session.locationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      {session.location}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  ) : (
+                    <p className="font-medium">{session.location}</p>
+                  )}
                 </div>
               </div>
             )}

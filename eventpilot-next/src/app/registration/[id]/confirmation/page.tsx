@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
+import { ExternalLink } from "lucide-react";
 
 interface CompanionItem {
   id: string;
@@ -144,7 +145,19 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
                 <Separator />
                 <div>
                   <p className="text-sm text-muted-foreground">المكان</p>
-                  <p className="font-medium">{registration.session.location}</p>
+                  {registration.session.locationUrl ? (
+                    <a
+                      href={registration.session.locationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      {registration.session.location}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  ) : (
+                    <p className="font-medium">{registration.session.location}</p>
+                  )}
                 </div>
               </>
             )}
