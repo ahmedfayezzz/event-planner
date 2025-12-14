@@ -1,4 +1,11 @@
-import { PrismaClient, User, Session, EventCatering } from "@prisma/client";
+import {
+  PrismaClient,
+  User,
+  Session,
+  EventCatering,
+  Sponsor,
+  EventSponsorship,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -994,6 +1001,161 @@ async function main() {
 
   console.log(`✅ Created ${cateringAssignments.length} catering assignments`);
 
+  // ============== SETTINGS ==============
+  const settings = await prisma.settings.upsert({
+    where: { key: "global" },
+    update: {},
+    create: {
+      key: "global",
+      siteName: "ثلوثية الأعمال",
+      contactEmail: "info@business-tuesdays.com",
+      contactPhone: "+966500000000",
+      showSocialMediaFields: true,
+      showRegistrationPurpose: true,
+      showCateringInterest: true,
+      twitterHandle: "business_tuesdays",
+      instagramHandle: "business.tuesdays",
+      whatsappNumber: "+966500000000",
+    },
+  });
+  console.log(`✅ Created settings: ${settings.key}`);
+
+  // ============== USER LABELS ==============
+  const labelsData = [
+    { name: "VIP", color: "#f59e0b" },
+    { name: "متحدث سابق", color: "#8b5cf6" },
+    { name: "داعم", color: "#10b981" },
+    { name: "عضو مؤسس", color: "#3b82f6" },
+    { name: "جديد", color: "#6366f1" },
+  ];
+
+  const labels = [];
+  for (const labelData of labelsData) {
+    const label = await prisma.userLabel.upsert({
+      where: { name: labelData.name },
+      update: {},
+      create: labelData,
+    });
+    labels.push(label);
+  }
+  console.log(`✅ Created ${labels.length} user labels`);
+
+  // Assign some labels to users
+  const vipLabel = labels.find((l) => l.name === "VIP");
+  const founderLabel = labels.find((l) => l.name === "عضو مؤسس");
+  if (vipLabel && founderLabel && users.length >= 3) {
+    await prisma.user.update({
+      where: { id: users[0].id },
+      data: { labels: { connect: [{ id: vipLabel.id }, { id: founderLabel.id }] } },
+    });
+    await prisma.user.update({
+      where: { id: users[1].id },
+      data: { labels: { connect: [{ id: vipLabel.id }] } },
+    });
+  }
+  console.log(`✅ Assigned labels to sample users`);
+
+  // ============== USER NOTES ==============
+  let totalNotes = 0;
+  if (users.length >= 3) {
+    const notesData = [
+      { userId: users[0].id, content: "عضو نشط جداً، حضر جميع الفعاليات السابقة" },
+      { userId: users[1].id, content: "مهتم بالرعاية للفعاليات القادمة" },
+      { userId: users[2].id, content: "يفضل الجلوس في المقدمة" },
+    ];
+
+    for (const noteData of notesData) {
+      await prisma.userNote.create({
+        data: {
+          content: noteData.content,
+          userId: noteData.userId,
+          createdById: superAdmin.id,
+        },
+      });
+      totalNotes++;
+    }
+  }
+  console.log(`✅ Created ${totalNotes} user notes`);
+
+  // ============== SPONSORS ==============
+  const sponsorsData = [
+    {
+      name: "شركة السعيد للتقنية",
+      email: "sponsor@alsaeed-tech.com",
+      phone: "+966550001111",
+      type: "company",
+      sponsorshipTypes: ["dinner", "beverage"],
+    },
+    {
+      name: "مجموعة الشمري للمطاعم",
+      email: "sponsor@shamri-group.com",
+      phone: "+966550002222",
+      type: "company",
+      sponsorshipTypes: ["dinner", "dessert"],
+    },
+    {
+      name: "أحمد محمد السعيد",
+      type: "person",
+      sponsorshipTypes: ["beverage"],
+      userId: users[0]?.id, // Link to first user if available
+    },
+  ];
+
+  const sponsors: Sponsor[] = [];
+  for (const sponsorData of sponsorsData) {
+    // Check if sponsor with this email or userId already exists
+    const existingSponsor = sponsorData.email
+      ? await prisma.sponsor.findFirst({ where: { email: sponsorData.email } })
+      : sponsorData.userId
+      ? await prisma.sponsor.findFirst({ where: { userId: sponsorData.userId } })
+      : null;
+
+    if (!existingSponsor) {
+      const sponsor = await prisma.sponsor.create({
+        data: sponsorData,
+      });
+      sponsors.push(sponsor);
+    }
+  }
+  console.log(`✅ Created ${sponsors.length} sponsors`);
+
+  // ============== EVENT SPONSORSHIPS ==============
+  const eventSponsorships: EventSponsorship[] = [];
+
+  // Add sponsorships for some completed sessions
+  for (let i = 0; i < Math.min(2, completedSessions.length); i++) {
+    const session = completedSessions[i];
+    const sponsor = sponsors[i % sponsors.length];
+
+    if (sponsor) {
+      const sponsorship = await prisma.eventSponsorship.create({
+        data: {
+          sessionId: session.id,
+          sponsorId: sponsor.id,
+          sponsorshipType: sponsor.sponsorshipTypes[0] || "dinner",
+          isSelfSponsored: false,
+          notes: `رعاية مقدمة من ${sponsor.name}`,
+        },
+      });
+      eventSponsorships.push(sponsorship);
+    }
+  }
+
+  // Add a self-sponsored event
+  if (upcomingSessions.length > 0) {
+    const sponsorship = await prisma.eventSponsorship.create({
+      data: {
+        sessionId: upcomingSessions[0].id,
+        sponsorId: null,
+        sponsorshipType: "beverage",
+        isSelfSponsored: true,
+        notes: "سيتم توفير المشروبات من قبل الإدارة",
+      },
+    });
+    eventSponsorships.push(sponsorship);
+  }
+  console.log(`✅ Created ${eventSponsorships.length} event sponsorships`);
+
   // ============== SUMMARY ==============
   console.log("\n" + "=".repeat(50));
   console.log("📊 Database Seeding Summary:");
@@ -1016,7 +1178,12 @@ async function main() {
     } (${totalAttendances} direct, ${totalInvitedAttendances} companions)`
   );
   console.log(`📧 Session invites: ${totalInvites}`);
-  console.log(`🍽️  Event catering assignments: ${cateringAssignments.length}`);
+  console.log(`🍽️  Event catering (deprecated): ${cateringAssignments.length}`);
+  console.log(`⚙️  Settings: 1`);
+  console.log(`🏷️  User labels: ${labels.length}`);
+  console.log(`📝 User notes: ${totalNotes}`);
+  console.log(`🤝 Sponsors: ${sponsors.length}`);
+  console.log(`🎪 Event sponsorships: ${eventSponsorships.length}`);
   console.log("=".repeat(50));
   console.log("\n📋 Login Credentials:");
   console.log("─".repeat(50));

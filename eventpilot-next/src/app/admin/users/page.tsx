@@ -92,6 +92,7 @@ interface UserItem {
   username: string;
   role: string;
   isActive: boolean;
+  isManuallyCreated?: boolean;
   createdAt: Date;
   companyName?: string | null;
   position?: string | null;
@@ -487,16 +488,23 @@ export default function AdminUsersPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={
-                                  user.role === "USER"
-                                    ? "bg-blue-500/10 text-blue-600 border-blue-200"
-                                    : "bg-orange-500/10 text-orange-600 border-orange-200"
-                                }
-                              >
-                                {user.role === "USER" ? "عضو" : "زائر"}
-                              </Badge>
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    user.role === "USER"
+                                      ? "bg-blue-500/10 text-blue-600 border-blue-200"
+                                      : "bg-orange-500/10 text-orange-600 border-orange-200"
+                                  }
+                                >
+                                  {user.role === "USER" ? "عضو" : "زائر"}
+                                </Badge>
+                                {user.isManuallyCreated && (
+                                  <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200">
+                                    يدوي
+                                  </Badge>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                               <div>
@@ -687,6 +695,26 @@ export default function AdminUsersPage() {
                                   <div className="flex items-center gap-4">
                                     <span className="text-muted-foreground">التسجيلات: {user.registrationCount}</span>
                                     <span className="text-muted-foreground">الحضور: {user.attendanceCount}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 col-span-2">
+                                    <span className="text-muted-foreground">النوع:</span>
+                                    <div className="flex items-center gap-1">
+                                      <Badge
+                                        variant="outline"
+                                        className={
+                                          user.role === "USER"
+                                            ? "bg-blue-500/10 text-blue-600 border-blue-200"
+                                            : "bg-orange-500/10 text-orange-600 border-orange-200"
+                                        }
+                                      >
+                                        {user.role === "USER" ? "عضو" : "زائر"}
+                                      </Badge>
+                                      {user.isManuallyCreated && (
+                                        <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200">
+                                          يدوي
+                                        </Badge>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                                 {/* Labels */}

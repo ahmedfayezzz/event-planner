@@ -620,6 +620,45 @@ export function generateInvitationContent(
   `;
 }
 
+/**
+ * Generate QR-only email content (minimal - for manually registered guests)
+ */
+export function generateQrOnlyContent(
+  name: string,
+  sessionTitle: string,
+  dateStr: string,
+  location: string | null
+): string {
+  return `
+    <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 8px 0; padding: 12px 16px; background-color: #E8F5E9; border-radius: 8px; color: #2E7D32; border: 1px solid #C8E6C9;">
+      تم تأكيد حضورك!
+    </p>
+    <p style="margin: 16px 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${sessionTitle}</strong></p>
+
+    <!-- Event Details Box -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
+      <tr>
+        <td style="background-color: ${BRAND.primary}; width: 4px;"></td>
+        <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
+          <p style="margin: 0 0 8px 0;"><strong>📅 التاريخ:</strong> ${dateStr}</p>
+          <p style="margin: 0;"><strong>📍 المكان:</strong> ${location || "سيتم الإعلان عنه لاحقاً"}</p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- QR Instructions -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0 0 0; width: 100%;">
+      <tr>
+        <td style="padding: 16px; background-color: ${BRAND.highlightBg}; border-radius: 8px; border-right: 4px solid ${BRAND.accent};">
+          <p style="margin: 0 0 8px 0; font-weight: bold; color: ${BRAND.primary};">رمز الدخول</p>
+          <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px;">امسح رمز QR أدناه عند الوصول للتسجيل</p>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
 // =============================================================================
 // QR CODE SECTION
 // =============================================================================

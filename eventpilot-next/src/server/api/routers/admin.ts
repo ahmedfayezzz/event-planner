@@ -343,6 +343,7 @@ export const adminRouter = createTRPCRouter({
           position: true,
           role: true,
           isActive: true,
+          isManuallyCreated: true,
           createdAt: true,
           labels: {
             select: {

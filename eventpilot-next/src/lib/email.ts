@@ -11,6 +11,7 @@ import {
   generateWelcomeContent,
   generatePasswordResetContent,
   generateInvitationContent,
+  generateQrOnlyContent,
   generateQrSection,
   type EmailSettings,
   type SessionInfo,
@@ -521,5 +522,67 @@ export async function sendInvitationEmail(
     subject: `دعوة خاصة - ${session.title}`,
     html,
     text,
+  });
+}
+
+/**
+ * Send QR-only email (minimal - for manually registered guests)
+ */
+export async function sendQrOnlyEmail(
+  emailAddress: string,
+  name: string,
+  session: SessionInfo,
+  qrData: string
+): Promise<boolean> {
+  const settings = await getEmailSettings();
+  const dateStr = formatSessionDate(session.date);
+
+  // Generate QR code
+  let qrSection = "";
+  let attachments: EmailAttachment[] | undefined;
+
+  try {
+    const qrBuffer = await generateBrandedQRCode(qrData, {
+      sessionTitle: session.title,
+      sessionDate: formatDateOnly(session.date),
+      sessionTime: formatTimeOnly(session.date),
+      attendeeName: name,
+    });
+    if (qrBuffer) {
+      const qrBase64 = qrBuffer.toString("base64");
+      const qrDataUrl = `data:image/png;base64,${qrBase64}`;
+      qrSection = generateQrSection(qrDataUrl);
+      attachments = [
+        {
+          filename: "qr-code.png",
+          content: qrBase64,
+          content_id: "qrcode",
+        },
+      ];
+    }
+  } catch (err) {
+    console.error("Failed to generate QR code for guest:", err);
+  }
+
+  const content = generateQrOnlyContent(
+    name,
+    session.title,
+    dateStr,
+    session.location
+  );
+
+  const html = createEmailTemplate({
+    content,
+    extraContent: qrSection,
+    settings,
+  });
+  const text = `مرحباً ${name}،\n\nتم تأكيد حضورك في ${session.title}.\n\nالتاريخ: ${dateStr}\nالمكان: ${session.location || "سيتم الإعلان عنه لاحقاً"}\n\nيرجى إظهار رمز QR المرفق عند الوصول.`;
+
+  return sendEmail({
+    to: emailAddress,
+    subject: `تأكيد الحضور - ${session.title}`,
+    html,
+    text,
+    attachments,
   });
 }

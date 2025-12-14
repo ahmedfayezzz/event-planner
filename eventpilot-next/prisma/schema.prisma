@@ -64,6 +64,10 @@ model User {
   wantsToHost      Boolean   @default(false)
   hostingTypes     String[]  @default([])
 
+  // Manual creation tracking
+  isManuallyCreated  Boolean   @default(false)  // true if created via manual registration
+  createdByAdminId   String?                    // Admin who created the user
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -162,6 +166,11 @@ model Registration {
   sponsorshipTypes      String[]  @default([])
   sponsorshipOtherText  String?
   sponsorType           String?   // "person" | "company"
+
+  // Manual registration tracking
+  isManual       Boolean   @default(false)  // true if created via manual registration
+  manualAddedBy  String?                    // Admin user ID who added it manually
+  manualAddedAt  DateTime?                  // When it was manually added
 
   // Companion/Invited relationship (self-referential)
   invitedByRegistrationId  String?

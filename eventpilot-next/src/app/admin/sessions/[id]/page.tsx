@@ -330,6 +330,12 @@ export default function SessionDetailPage({
                 إدارة الرعاية
               </Link>
             </Button>
+            <Button variant="outline" asChild>
+              <Link href={`/admin/sessions/${id}/manual-registration`}>
+                <UserPlus className="ml-2 h-4 w-4" />
+                تسجيل يدوي
+              </Link>
+            </Button>
           </div>
         </CardContent>
       </Card>
