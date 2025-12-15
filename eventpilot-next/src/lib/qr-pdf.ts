@@ -51,7 +51,7 @@ async function loadAssets(): Promise<{
     "fonts",
     "AbarLow-Regular.ttf"
   );
-  const templatePath = path.join(process.cwd(), "public", "دعوة خاصة.pdf");
+  const templatePath = path.join(process.cwd(), "public", "دعوة خاصة (1).pdf");
 
   const [boldData, regularData, templateData] = await Promise.all([
     fs.readFile(boldFontPath),
@@ -127,13 +127,13 @@ export async function generateBrandedQRPdf(
     // ====================================
 
     // Attendee name position (below "دعوة خاصة" title, ~38% from top)
-    const nameY = height * 0.62; // 62% from bottom = 38% from top
-    const nameFontSize = 42;
+    const nameY = height * 0.6; // 62% from bottom = 38% from top
+    const nameFontSize = 25;
 
     // QR Code position and size (~center of page)
-    const qrSize = 300;
+    const qrSize = 150;
     const qrX = (width - qrSize) / 2;
-    const qrY = height * 0.32; // 32% from bottom
+    const qrY = height * 0.3; // 30% from bottom
 
     // Footer info positions (date, location, time from right to left)
     // The icons are at ~10% from bottom, text should be below them
@@ -172,159 +172,198 @@ export async function generateBrandedQRPdf(
     });
 
     // Draw date (right column, centered) - two lines: date+month on top, day name below
-    if (options.sessionDate) {
-      const lineSpacing = 40; // Space between the two lines
-      // When we have two lines, center them vertically around footerY
-      const dateY = options.sessionDayName
-        ? footerY + lineSpacing * 0.6
-        : footerY;
+    // if (options.sessionDate) {
+    //   const lineSpacing = 40; // Space between the two lines
+    //   // When we have two lines, center them vertically around footerY
+    //   const dateY = options.sessionDayName
+    //     ? footerY + lineSpacing * 0.6
+    //     : footerY;
 
-      // Draw date (e.g., "١٦ ديسمبر")
-      const dateTextWidth = abarRegular.widthOfTextAtSize(
-        options.sessionDate,
-        footerFontSize
-      );
-      page.drawText(options.sessionDate, {
-        x: dateX - dateTextWidth / 2,
-        y: dateY,
-        size: footerFontSize,
-        font: abarRegular,
-        color: NAVY,
-      });
+    //   // Draw date (e.g., "١٦ ديسمبر")
+    //   const dateTextWidth = abarRegular.widthOfTextAtSize(
+    //     options.sessionDate,
+    //     footerFontSize
+    //   );
+    //   page.drawText(options.sessionDate, {
+    //     x: dateX - dateTextWidth / 2,
+    //     y: dateY,
+    //     size: footerFontSize,
+    //     font: abarRegular,
+    //     color: NAVY,
+    //   });
 
-      // Draw day name below (e.g., "الثلاثاء")
-      if (options.sessionDayName) {
-        const dayNameWidth = abarRegular.widthOfTextAtSize(
-          options.sessionDayName,
-          footerFontSize
-        );
-        page.drawText(options.sessionDayName, {
-          x: dateX - dayNameWidth / 2,
-          y: dateY - lineSpacing,
-          size: footerFontSize,
-          font: abarRegular,
-          color: NAVY,
-        });
-      }
-    }
+    //   // Draw day name below (e.g., "الثلاثاء")
+    //   if (options.sessionDayName) {
+    //     const dayNameWidth = abarRegular.widthOfTextAtSize(
+    //       options.sessionDayName,
+    //       footerFontSize
+    //     );
+    //     page.drawText(options.sessionDayName, {
+    //       x: dateX - dayNameWidth / 2,
+    //       y: dateY - lineSpacing,
+    //       size: footerFontSize,
+    //       font: abarRegular,
+    //       color: NAVY,
+    //     });
+    //   }
+    // }
 
     // Draw location (middle column, centered) - two lines like date
-    if (options.location) {
-      const lineSpacingLoc = 40;
-      // When we have two lines, center them vertically around footerY
-      const locY = options.locationLine2
-        ? footerY + lineSpacingLoc * 0.6
-        : footerY;
+    // if (options.location) {
+    //   const lineSpacingLoc = 40;
+    //   // When we have two lines, center them vertically around footerY
+    //   const locY = options.locationLine2
+    //     ? footerY + lineSpacingLoc * 0.6
+    //     : footerY;
 
-      // Draw location line 1 (e.g., "منابت")
-      const locationTextWidth = abarRegular.widthOfTextAtSize(
-        options.location,
-        footerFontSize
-      );
-      const loc1X = locationX - locationTextWidth / 2;
-      page.drawText(options.location, {
-        x: loc1X,
-        y: locY,
-        size: footerFontSize,
-        font: abarRegular,
-        color: NAVY,
+    //   // Draw location line 1 (e.g., "منابت")
+    //   const locationTextWidth = abarRegular.widthOfTextAtSize(
+    //     options.location,
+    //     footerFontSize
+    //   );
+    //   const loc1X = locationX - locationTextWidth / 2;
+    //   page.drawText(options.location, {
+    //     x: loc1X,
+    //     y: locY,
+    //     size: footerFontSize,
+    //     font: abarRegular,
+    //     color: NAVY,
+    //   });
+
+    //   // Track bounds for link annotation
+    //   let linkMinX = loc1X;
+    //   let linkMaxX = loc1X + locationTextWidth;
+    //   let linkMinY = locY;
+    //   const linkMaxY = locY + footerFontSize;
+
+    //   // Draw location line 2 below (e.g., "العمارية")
+    //   if (options.locationLine2) {
+    //     const loc2Width = abarRegular.widthOfTextAtSize(
+    //       options.locationLine2,
+    //       footerFontSize
+    //     );
+    //     const loc2X = locationX - loc2Width / 2;
+    //     page.drawText(options.locationLine2, {
+    //       x: loc2X,
+    //       y: locY - lineSpacingLoc,
+    //       size: footerFontSize,
+    //       font: abarRegular,
+    //       color: NAVY,
+    //     });
+
+    //     // Expand link bounds to include second line
+    //     linkMinX = Math.min(linkMinX, loc2X);
+    //     linkMaxX = Math.max(linkMaxX, loc2X + loc2Width);
+    //     linkMinY = locY - lineSpacingLoc;
+    //   }
+
+    //   // Add clickable link annotation if locationUrl is provided
+    //   if (options.locationUrl) {
+    //     // Create the action dictionary
+    //     const actionDict = pdfDoc.context.obj({
+    //       Type: "Action",
+    //       S: "URI",
+    //       URI: PDFString.of(options.locationUrl),
+    //     });
+
+    //     // Create the link annotation
+    //     const linkAnnotation = pdfDoc.context.obj({
+    //       Type: "Annot",
+    //       Subtype: "Link",
+    //       Rect: [linkMinX - 10, linkMinY - 5, linkMaxX + 10, linkMaxY + 5],
+    //       Border: [0, 0, 0],
+    //       A: actionDict,
+    //     });
+
+    //     // Add annotation to page
+    //     const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+    //     if (existingAnnots) {
+    //       existingAnnots.push(linkAnnotation);
+    //     } else {
+    //       page.node.set(
+    //         PDFName.of("Annots"),
+    //         pdfDoc.context.obj([linkAnnotation])
+    //       );
+    //     }
+    //   }
+    // }
+
+    // Add clickable link annotation over existing location text in template
+    if (options.locationUrl) {
+      // Define clickable area over the location section (middle column)
+      const linkWidth = 150;
+      const linkHeight = 80;
+      const linkX = locationX - linkWidth / 2;
+      const linkY = footerY - 20;
+
+      // Create the action dictionary
+      const actionDict = pdfDoc.context.obj({
+        Type: "Action",
+        S: "URI",
+        URI: PDFString.of(options.locationUrl),
       });
 
-      // Track bounds for link annotation
-      let linkMinX = loc1X;
-      let linkMaxX = loc1X + locationTextWidth;
-      let linkMinY = locY;
-      const linkMaxY = locY + footerFontSize;
+      // Create the link annotation
+      const linkAnnotation = pdfDoc.context.obj({
+        Type: "Annot",
+        Subtype: "Link",
+        Rect: [linkX, linkY, linkX + linkWidth, linkY + linkHeight],
+        Border: [0, 0, 0],
+        A: actionDict,
+      });
 
-      // Draw location line 2 below (e.g., "العمارية")
-      if (options.locationLine2) {
-        const loc2Width = abarRegular.widthOfTextAtSize(
-          options.locationLine2,
-          footerFontSize
+      // Add annotation to page
+      const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+      if (existingAnnots) {
+        existingAnnots.push(linkAnnotation);
+      } else {
+        page.node.set(
+          PDFName.of("Annots"),
+          pdfDoc.context.obj([linkAnnotation])
         );
-        const loc2X = locationX - loc2Width / 2;
-        page.drawText(options.locationLine2, {
-          x: loc2X,
-          y: locY - lineSpacingLoc,
-          size: footerFontSize,
-          font: abarRegular,
-          color: NAVY,
-        });
-
-        // Expand link bounds to include second line
-        linkMinX = Math.min(linkMinX, loc2X);
-        linkMaxX = Math.max(linkMaxX, loc2X + loc2Width);
-        linkMinY = locY - lineSpacingLoc;
-      }
-
-      // Add clickable link annotation if locationUrl is provided
-      if (options.locationUrl) {
-        // Create the action dictionary
-        const actionDict = pdfDoc.context.obj({
-          Type: "Action",
-          S: "URI",
-          URI: PDFString.of(options.locationUrl),
-        });
-
-        // Create the link annotation
-        const linkAnnotation = pdfDoc.context.obj({
-          Type: "Annot",
-          Subtype: "Link",
-          Rect: [linkMinX - 10, linkMinY - 5, linkMaxX + 10, linkMaxY + 5],
-          Border: [0, 0, 0],
-          A: actionDict,
-        });
-
-        // Add annotation to page
-        const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
-        if (existingAnnots) {
-          existingAnnots.push(linkAnnotation);
-        } else {
-          page.node.set(PDFName.of("Annots"), pdfDoc.context.obj([linkAnnotation]));
-        }
       }
     }
 
     // Draw time (left column, centered)
-    if (options.sessionTime) {
-      const timeTextWidth = abarRegular.widthOfTextAtSize(
-        options.sessionTime,
-        footerFontSize
-      );
-      const reversedTime = options.sessionTime.split("").reverse().join(""); // Simple reversal for Arabic time display
-      // remove م or ص characters from reversedTime before drawing
-      const cleanedTime = reversedTime.replace(/[مص]/g, "");
-      page.drawText(cleanedTime, {
-        x: timeX - timeTextWidth / 2,
-        y: footerY,
-        size: footerFontSize,
-        font: abarRegular,
-        color: NAVY,
-      });
-      // add ً after مساء or صباح
-      // if it includes م or ص
-      if (reversedTime.includes("م")) {
-        const ampmX =
-          timeX - abarRegular.widthOfTextAtSize("م", footerFontSize) - 45;
-        page.drawText("م", {
-          x: ampmX,
-          y: footerY,
-          size: footerFontSize,
-          font: abarRegular,
-          color: NAVY,
-        });
-      } else if (reversedTime.includes("ص")) {
-        const ampmX =
-          timeX - abarRegular.widthOfTextAtSize("ص", footerFontSize) - 45;
-        page.drawText("ص", {
-          x: ampmX,
-          y: footerY,
-          size: footerFontSize,
-          font: abarRegular,
-          color: NAVY,
-        });
-      }
-    }
+    // if (options.sessionTime) {
+    //   const timeTextWidth = abarRegular.widthOfTextAtSize(
+    //     options.sessionTime,
+    //     footerFontSize
+    //   );
+    //   const reversedTime = options.sessionTime.split("").reverse().join(""); // Simple reversal for Arabic time display
+    //   // remove م or ص characters from reversedTime before drawing
+    //   const cleanedTime = reversedTime.replace(/[مص]/g, "");
+    //   page.drawText(cleanedTime, {
+    //     x: timeX - timeTextWidth / 2,
+    //     y: footerY,
+    //     size: footerFontSize,
+    //     font: abarRegular,
+    //     color: NAVY,
+    //   });
+    //   // add ً after مساء or صباح
+    //   // if it includes م or ص
+    //   if (reversedTime.includes("م")) {
+    //     const ampmX =
+    //       timeX - abarRegular.widthOfTextAtSize("م", footerFontSize) - 45;
+    //     page.drawText("م", {
+    //       x: ampmX,
+    //       y: footerY,
+    //       size: footerFontSize,
+    //       font: abarRegular,
+    //       color: NAVY,
+    //     });
+    //   } else if (reversedTime.includes("ص")) {
+    //     const ampmX =
+    //       timeX - abarRegular.widthOfTextAtSize("ص", footerFontSize) - 45;
+    //     page.drawText("ص", {
+    //       x: ampmX,
+    //       y: footerY,
+    //       size: footerFontSize,
+    //       font: abarRegular,
+    //       color: NAVY,
+    //     });
+    //   }
+    // }
 
     // 8. Save and return
     const pdfBytes = await pdfDoc.save();
