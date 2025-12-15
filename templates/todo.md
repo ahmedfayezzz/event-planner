@@ -1,19 +1,5 @@
-- ~~add action to login in registration page (session or account)~~ ✅
-- ~~fix session registration copy and icon~~ ✅
-- ~~share icon (whatsapp, telegram, x)~~ ✅
-- ~~login via email and password with forget password option~~ ✅
-- ~~phone number should be unique globally~~ ✅
-- ~~history of attended sessions in user profile when registered and have previous guest sessions~~ ✅
-- ~~email flow for registration confirmation and reminders~~ ✅
-- ~~add deadline for session registration~~ ✅
-- provide a way to mark user/registrar as the host
-- remove label above title in session card
-- whatsapp message to welcome and send session invitation card to confirmed registrars
-- barcode option in session creation form and barcode generation and validation logic for each user (only when approved)
-- barcode scanner
-- invitation pdf attachement
-- show next sessions in hero section
-- send email announcements about new sessions to all registered users manually from admin panel (see if it can be done automatically later)
-- registration invitation for closed sessions
-- headless CMS for content management
-- UI optimizations
+- fix image display for logo
+- update qr code pdf according to latest design
+- issue when inviting a companion that already exists
+- check if companion is auto approved
+- make companion approval seprate from main attendee

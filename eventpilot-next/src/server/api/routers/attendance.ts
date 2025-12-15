@@ -11,6 +11,32 @@ import { parseQRData, generateQRCode, createQRCheckInData } from "@/lib/qr";
 import { generateBrandedQRPdf } from "@/lib/qr-pdf";
 import { toSaudiTime } from "@/lib/timezone";
 
+// Helper to split location into two lines for PDF
+function splitLocationForPdf(location: string | null | undefined): {
+  line1: string | undefined;
+  line2: string | undefined;
+} {
+  if (!location) return { line1: undefined, line2: undefined };
+
+  // check by string length instead of words
+  if (location.length <= 20) {
+    return { line1: location, line2: undefined };
+  }
+
+  // If it's a short location (2 words or less), keep it on one line
+  const words = location.trim().split(/\s+/);
+  if (words.length <= 2) {
+    return { line1: location, line2: undefined };
+  }
+
+  // For longer locations, split roughly in half
+  const midPoint = 2;
+  return {
+    line1: words.slice(0, midPoint).join(" "),
+    line2: words.slice(midPoint).join(" "),
+  };
+}
+
 export const attendanceRouter = createTRPCRouter({
   /**
    * Mark registration as attended (admin only)
@@ -344,19 +370,24 @@ export const attendanceRouter = createTRPCRouter({
       });
 
       // Format date and time for the branded QR (in Saudi timezone)
-      // Arabic format: "الأحد 21 ديسمبر 2025 • 10:52 م"
       const saudiSessionDate = toSaudiTime(registration.session.date);
+      // Arabic format: "١٦ ديسمبر" (day + month)
       const sessionDate =
-        saudiSessionDate?.toLocaleDateString("en-GB", {
+        saudiSessionDate?.toLocaleDateString("ar-SA", {
           day: "numeric",
-          month: "numeric",
-          year: "numeric",
+          month: "long",
+          numberingSystem: "arab",
+        }) ?? "";
+      // Arabic format: "الثلاثاء" (day name)
+      const sessionDayName =
+        saudiSessionDate?.toLocaleDateString("ar-SA", {
+          weekday: "long",
         }) ?? "";
       const sessionTime =
-        saudiSessionDate?.toLocaleTimeString("en-US", {
-          hour: "numeric",
+        saudiSessionDate?.toLocaleTimeString("ar-SA", {
+          hour: "2-digit",
           minute: "2-digit",
-          hour12: true,
+          numberingSystem: "arab",
         }) ?? "";
 
       // Get attendee name
@@ -364,12 +395,15 @@ export const attendanceRouter = createTRPCRouter({
         registration.user?.name || registration.guestName || undefined;
 
       // Generate branded QR as PDF
+      const locationParts = splitLocationForPdf(registration.session.location);
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionTitle: registration.session.title,
         sessionDate,
+        sessionDayName,
         sessionTime,
         attendeeName,
-        location: registration.session.location ?? undefined,
+        location: locationParts.line1,
+        locationLine2: locationParts.line2,
         locationUrl: registration.session.locationUrl ?? undefined,
       });
 
@@ -490,19 +524,24 @@ export const attendanceRouter = createTRPCRouter({
       });
 
       // Format date and time for the branded QR (in Saudi timezone)
-      // Arabic format: "الأحد 21 ديسمبر 2025 • 10:52 م"
       const saudiSessionDate = toSaudiTime(registration.session.date);
+      // Arabic format: "١٦ ديسمبر" (day + month)
       const sessionDate =
-        saudiSessionDate?.toLocaleDateString("en-GB", {
+        saudiSessionDate?.toLocaleDateString("ar-SA", {
           day: "numeric",
-          month: "numeric",
-          year: "numeric",
+          month: "long",
+          numberingSystem: "arab",
+        }) ?? "";
+      // Arabic format: "الثلاثاء" (day name)
+      const sessionDayName =
+        saudiSessionDate?.toLocaleDateString("ar-SA", {
+          weekday: "long",
         }) ?? "";
       const sessionTime =
-        saudiSessionDate?.toLocaleTimeString("en-US", {
-          hour: "numeric",
+        saudiSessionDate?.toLocaleTimeString("ar-SA", {
+          hour: "2-digit",
           minute: "2-digit",
-          hour12: true,
+          numberingSystem: "arab",
         }) ?? "";
 
       // Get attendee name
@@ -510,12 +549,15 @@ export const attendanceRouter = createTRPCRouter({
         registration.user?.name || registration.guestName || undefined;
 
       // Generate branded QR as PDF
+      const locationParts = splitLocationForPdf(registration.session.location);
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionTitle: registration.session.title,
         sessionDate,
+        sessionDayName,
         sessionTime,
         attendeeName,
-        location: registration.session.location ?? undefined,
+        location: locationParts.line1,
+        locationLine2: locationParts.line2,
         locationUrl: registration.session.locationUrl ?? undefined,
       });
 

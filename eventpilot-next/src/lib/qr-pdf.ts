@@ -1,103 +1,90 @@
-import PDFDocument from "pdfkit";
-import path from "path";
+import { PDFDocument, rgb, PDFName, PDFArray, PDFString } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 import fs from "fs/promises";
+import path from "path";
 import { generateQRCodeBuffer } from "./qr";
-import { BRAND } from "./brand";
 
-// RTL text options for PDFKit - enables Arabic text shaping
-const RTL_OPTIONS: PDFKit.Mixins.TextOptions = { features: ["rtla"] };
+// Colors matching the design
+const NAVY = rgb(0, 0.078, 0.129); // #001421
 
-/**
- * Check if text contains Arabic characters
- */
-function containsArabic(text: string): boolean {
-  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(text);
+export interface BrandedQRPdfOptions {
+  sessionTitle: string;
+  sessionDate: string; // "١٦ ديسمبر" (date + month only)
+  sessionDayName?: string; // "الثلاثاء" (day name, displayed below date)
+  sessionTime?: string; // "٨:٣٠ مساءً"
+  attendeeName?: string; // "أ.محمد الكلبي"
+  location?: string; // "منابت" (line 1 - venue name)
+  locationLine2?: string; // "العمارية" (line 2 - area/city)
+  locationUrl?: string; // Keep for API compatibility (not used in template)
 }
 
-/**
- * Get text options based on content - only apply RTL for Arabic text
- */
-function getTextOptions(text: string): PDFKit.Mixins.TextOptions {
-  return containsArabic(text) ? RTL_OPTIONS : {};
-}
-
-// PDF dimensions (matching the branded image)
-const PAGE_WIDTH = 400;
-const PAGE_HEIGHT = 540;
-const QR_SIZE = 180;
-const LOGO_SIZE = 55;
-const BORDER_WIDTH = 3;
-const CORNER_RADIUS = 16;
-
-// Cache for font buffers
-let cairoRegularBuffer: Buffer | null = null;
-let cairoBoldBuffer: Buffer | null = null;
-let logoBuffer: Buffer | null = null;
+// Cache for fonts
+let abarBoldBuffer: Buffer | null = null;
+let abarRegularBuffer: Buffer | null = null;
+let templateBuffer: Buffer | null = null;
 
 /**
- * Load and cache fonts and logo (fonts are required, logo is optional)
+ * Load and cache fonts and template
  */
 async function loadAssets(): Promise<{
-  regular: Buffer;
   bold: Buffer;
-  logo: Buffer | null;
+  regular: Buffer;
+  template: Buffer;
 }> {
-  if (cairoRegularBuffer && cairoBoldBuffer) {
+  if (abarBoldBuffer && abarRegularBuffer && templateBuffer) {
     return {
-      regular: cairoRegularBuffer,
-      bold: cairoBoldBuffer,
-      logo: logoBuffer,
+      bold: abarBoldBuffer,
+      regular: abarRegularBuffer,
+      template: templateBuffer,
     };
   }
 
-  const regularFontPath = path.join(
-    process.cwd(),
-    "public",
-    "fonts",
-    "Cairo-Regular.ttf"
-  );
   const boldFontPath = path.join(
     process.cwd(),
     "public",
     "fonts",
-    "Cairo-Bold.ttf"
+    "AbarHigh-Bold.ttf"
   );
-  const logoPath = path.join(process.cwd(), "public", "logo.png");
+  const regularFontPath = path.join(
+    process.cwd(),
+    "public",
+    "fonts",
+    "AbarLow-Regular.ttf"
+  );
+  const templatePath = path.join(process.cwd(), "public", "دعوة خاصة.pdf");
 
-  // Cairo fonts are required - throw if not found
-  const [regularData, boldData] = await Promise.all([
-    fs.readFile(regularFontPath),
+  const [boldData, regularData, templateData] = await Promise.all([
     fs.readFile(boldFontPath),
+    fs.readFile(regularFontPath),
+    fs.readFile(templatePath),
   ]);
-  cairoRegularBuffer = regularData;
-  cairoBoldBuffer = boldData;
 
-  // Try to load logo (optional)
-  try {
-    logoBuffer = await fs.readFile(logoPath);
-  } catch {
-    console.warn("Logo not found for PDF");
-    logoBuffer = null;
-  }
+  abarBoldBuffer = boldData;
+  abarRegularBuffer = regularData;
+  templateBuffer = templateData;
 
   return {
-    regular: cairoRegularBuffer,
-    bold: cairoBoldBuffer,
-    logo: logoBuffer,
+    bold: abarBoldBuffer,
+    regular: abarRegularBuffer,
+    template: templateBuffer,
   };
 }
 
-export interface BrandedQRPdfOptions {
-  sessionTitle: string;
-  sessionDate: string;
-  sessionTime?: string;
-  attendeeName?: string;
-  location?: string;
-  locationUrl?: string;
+/**
+ * Calculate centered X position for text
+ */
+function centerText(
+  text: string,
+  font: Awaited<ReturnType<typeof PDFDocument.prototype.embedFont>>,
+  fontSize: number,
+  pageWidth: number
+): number {
+  const textWidth = font.widthOfTextAtSize(text, fontSize);
+  return (pageWidth - textWidth) / 2;
 }
 
 /**
- * Generate branded QR code as PDF with clickable location link
+ * Generate branded QR code PDF using template overlay
  */
 export async function generateBrandedQRPdf(
   qrData: string,
@@ -111,253 +98,237 @@ export async function generateBrandedQRPdf(
       return null;
     }
 
-    // 2. Load fonts and assets
+    // 2. Load assets
     const assets = await loadAssets();
 
-    // 3. Create PDF document with autoFirstPage: false to prevent Helvetica initialization
-    const doc = new PDFDocument({
-      size: [PAGE_WIDTH, PAGE_HEIGHT],
-      margin: 0,
-      autoFirstPage: false, // Prevent pdfkit from initializing with Helvetica
-      info: {
-        Title: `QR - ${options.sessionTitle}`,
-        Author: "TDA - ثلوثية الأعمال",
-        Subject: "QR Code for Event Attendance",
-      },
-    });
+    // 3. Load template PDF
+    const pdfDoc = await PDFDocument.load(assets.template);
 
-    // Collect PDF chunks
-    const chunks: Buffer[] = [];
-    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+    // 4. Register fontkit for custom fonts
+    pdfDoc.registerFontkit(fontkit);
 
-    // Register Cairo fonts BEFORE adding any page
-    doc.registerFont("Cairo", assets.regular);
-    doc.registerFont("Cairo-Bold", assets.bold);
+    // 5. Embed fonts
+    const abarBold = await pdfDoc.embedFont(assets.bold);
+    const abarRegular = await pdfDoc.embedFont(assets.regular);
 
-    // Now add the first page manually
-    doc.addPage();
+    // 6. Get first page and dimensions
+    const page = pdfDoc.getPages()[0];
+    if (!page) {
+      console.error("No pages found in template PDF");
+      return null;
+    }
+    const { width, height } = page.getSize();
 
-    // Set font AFTER page is added (avoids Helvetica.afm loading)
-    doc.font("Cairo");
+    // 7. Embed QR code image
+    const qrImage = await pdfDoc.embedPng(qrBuffer);
 
-    // Always use Cairo fonts
-    const fontRegular = "Cairo";
-    const fontBold = "Cairo-Bold";
+    // ====================================
+    // POSITION CALIBRATION (Template: 1080x1920 points)
+    // ====================================
 
-    // Background color (cream)
-    doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT).fill("#FAF8F5");
+    // Attendee name position (below "دعوة خاصة" title, ~38% from top)
+    const nameY = height * 0.62; // 62% from bottom = 38% from top
+    const nameFontSize = 42;
 
-    // Main border with rounded corners (accent color)
-    doc
-      .roundedRect(
-        BORDER_WIDTH / 2,
-        BORDER_WIDTH / 2,
-        PAGE_WIDTH - BORDER_WIDTH,
-        PAGE_HEIGHT - BORDER_WIDTH,
-        CORNER_RADIUS
-      )
-      .lineWidth(BORDER_WIDTH)
-      .stroke(BRAND.accent);
+    // QR Code position and size (~center of page)
+    const qrSize = 300;
+    const qrX = (width - qrSize) / 2;
+    const qrY = height * 0.32; // 32% from bottom
 
-    // Inner decorative border
-    doc
-      .roundedRect(8, 8, PAGE_WIDTH - 16, PAGE_HEIGHT - 16, 12)
-      .lineWidth(1)
-      .strokeOpacity(0.15)
-      .stroke(BRAND.primary);
+    // Footer info positions (date, location, time from right to left)
+    // The icons are at ~10% from bottom, text should be below them
+    const footerY = height * 0.14; // ~10% from bottom (below icons)
+    const footerFontSize = 30;
 
-    // Corner decorations
-    const cornerSize = 18;
-    doc.strokeOpacity(1).lineWidth(2).strokeColor(BRAND.accent);
+    // Three columns for footer (right to left: date, location, time)
+    // Adjusted to match icon positions in template
+    const dateX = width * 0.68; // Right column (date - under calendar icon)
+    const locationX = width * 0.5; // Middle column (location - under pin icon)
+    const timeX = width * 0.35; // Left column (time - under clock icon)
 
-    // Top-left corner
-    doc
-      .moveTo(12, 12 + cornerSize)
-      .lineTo(12, 12)
-      .lineTo(12 + cornerSize, 12)
-      .stroke();
-    // Top-right corner
-    doc
-      .moveTo(PAGE_WIDTH - 12 - cornerSize, 12)
-      .lineTo(PAGE_WIDTH - 12, 12)
-      .lineTo(PAGE_WIDTH - 12, 12 + cornerSize)
-      .stroke();
-    // Bottom-left corner
-    doc
-      .moveTo(12, PAGE_HEIGHT - 12 - cornerSize)
-      .lineTo(12, PAGE_HEIGHT - 12)
-      .lineTo(12 + cornerSize, PAGE_HEIGHT - 12)
-      .stroke();
-    // Bottom-right corner
-    doc
-      .moveTo(PAGE_WIDTH - 12 - cornerSize, PAGE_HEIGHT - 12)
-      .lineTo(PAGE_WIDTH - 12, PAGE_HEIGHT - 12)
-      .lineTo(PAGE_WIDTH - 12, PAGE_HEIGHT - 12 - cornerSize)
-      .stroke();
+    // ====================================
+    // DRAW DYNAMIC CONTENT (with Arabic text processing)
+    // ====================================
 
-    // Corner decoration dots
-    doc.fillOpacity(0.4).circle(22, 22, 2).fill(BRAND.accent);
-    doc.circle(PAGE_WIDTH - 22, 22, 2).fill(BRAND.accent);
-    doc.circle(22, PAGE_HEIGHT - 22, 2).fill(BRAND.accent);
-    doc.circle(PAGE_WIDTH - 22, PAGE_HEIGHT - 22, 2).fill(BRAND.accent);
-    doc.fillOpacity(1);
-
-    // Calculate positions (matching branded image)
-    const logoY = 24;
-    const titleY = logoY + LOGO_SIZE + 8;
-    let currentY = titleY;
-
-    // Logo (if available)
-    if (assets.logo) {
-      const logoX = (PAGE_WIDTH - LOGO_SIZE) / 2;
-      doc.image(assets.logo, logoX, logoY, {
-        width: LOGO_SIZE,
-        height: LOGO_SIZE,
+    // Draw attendee name (centered)
+    if (options.attendeeName) {
+      const greeting = `حياك الله ${options.attendeeName}`;
+      const nameX = centerText(greeting, abarBold, nameFontSize, width);
+      page.drawText(greeting, {
+        x: nameX,
+        y: nameY,
+        size: nameFontSize,
+        font: abarBold,
+        color: NAVY,
       });
     }
 
-    // Title: ثلوثية الأعمال (font size 20, bold)
-    doc.font(fontBold).fontSize(20).fillColor(BRAND.primary);
-    const titleText = "ثلوثية الأعمال";
-    const titleWidth = doc.widthOfString(titleText);
-    doc.text(titleText, (PAGE_WIDTH - titleWidth) / 2, currentY, RTL_OPTIONS);
-    currentY += 40; // Extra space before greeting
+    // Draw QR Code
+    page.drawImage(qrImage, {
+      x: qrX,
+      y: qrY,
+      width: qrSize,
+      height: qrSize,
+    });
 
-    // Welcome text and attendee name
-    if (options.attendeeName) {
-      doc.font(fontRegular).fontSize(14).fillColor(BRAND.textMuted);
-      const welcomeText = "مرحباً";
-      const welcomeWidth = doc.widthOfString(welcomeText);
-      doc.text(
-        welcomeText,
-        (PAGE_WIDTH - welcomeWidth) / 2,
-        currentY,
-        RTL_OPTIONS
-      );
-      currentY += 22;
+    // Draw date (right column, centered) - two lines: date+month on top, day name below
+    if (options.sessionDate) {
+      const lineSpacing = 40; // Space between the two lines
+      // When we have two lines, center them vertically around footerY
+      const dateY = options.sessionDayName
+        ? footerY + lineSpacing * 0.6
+        : footerY;
 
-      doc.font(fontBold).fontSize(18).fillColor(BRAND.textDark);
-      const nameWidth = doc.widthOfString(options.attendeeName);
-      doc.text(
-        options.attendeeName,
-        (PAGE_WIDTH - nameWidth) / 2,
-        currentY,
-        getTextOptions(options.attendeeName)
+      // Draw date (e.g., "١٦ ديسمبر")
+      const dateTextWidth = abarRegular.widthOfTextAtSize(
+        options.sessionDate,
+        footerFontSize
       );
-      currentY += 40;
+      page.drawText(options.sessionDate, {
+        x: dateX - dateTextWidth / 2,
+        y: dateY,
+        size: footerFontSize,
+        font: abarRegular,
+        color: NAVY,
+      });
+
+      // Draw day name below (e.g., "الثلاثاء")
+      if (options.sessionDayName) {
+        const dayNameWidth = abarRegular.widthOfTextAtSize(
+          options.sessionDayName,
+          footerFontSize
+        );
+        page.drawText(options.sessionDayName, {
+          x: dateX - dayNameWidth / 2,
+          y: dateY - lineSpacing,
+          size: footerFontSize,
+          font: abarRegular,
+          color: NAVY,
+        });
+      }
     }
 
-    // QR Code
-    const qrX = (PAGE_WIDTH - QR_SIZE) / 2;
-    doc.image(qrBuffer, qrX, currentY, { width: QR_SIZE, height: QR_SIZE });
-    currentY += QR_SIZE + 16;
-
-    // Scan instruction (font size 12)
-    doc.font(fontRegular).fontSize(12).fillColor(BRAND.textMuted);
-    const scanText = "امسح للتحقق من الحضور";
-    const scanWidth = doc.widthOfString(scanText);
-    doc.text(scanText, (PAGE_WIDTH - scanWidth) / 2, currentY, RTL_OPTIONS);
-    currentY += 28;
-
-    // Session title (font size 14, bold)
-    doc.font(fontBold).fontSize(14).fillColor(BRAND.primary);
-    const sessionTitleWidth = doc.widthOfString(options.sessionTitle);
-    doc.text(
-      options.sessionTitle,
-      (PAGE_WIDTH - sessionTitleWidth) / 2,
-      currentY,
-      getTextOptions(options.sessionTitle)
-    );
-    currentY += 24;
-
-    // Date and time - render date and time as separate centered texts
-    // to avoid bidirectional text issues with mixed Arabic/numbers
-    doc.font(fontRegular).fontSize(13).fillColor(BRAND.textMuted);
-    if (options.sessionTime) {
-      const fullText = `${options.sessionTime} • ${options.sessionDate}`;
-      const fullWidth = doc.widthOfString(fullText);
-      doc.text(fullText, (PAGE_WIDTH - fullWidth) / 2, currentY);
-    } else {
-      const dateWidth = doc.widthOfString(options.sessionDate);
-      doc.text(options.sessionDate, (PAGE_WIDTH - dateWidth) / 2, currentY);
-    }
-    currentY += 30;
-
-    // Location (with clickable link if locationUrl provided)
+    // Draw location (middle column, centered) - two lines like date
     if (options.location) {
-      doc.font(fontRegular).fontSize(13);
-      const locationTextOptions = getTextOptions(options.location);
+      const lineSpacingLoc = 40;
+      // When we have two lines, center them vertically around footerY
+      const locY = options.locationLine2
+        ? footerY + lineSpacingLoc * 0.6
+        : footerY;
 
-      if (options.locationUrl) {
-        // Make location clickable - underline + color indicates link
-        doc.fillColor(BRAND.primary);
-        const locationWidth = doc.widthOfString(options.location);
-        const locationX = (PAGE_WIDTH - locationWidth) / 2;
+      // Draw location line 1 (e.g., "منابت")
+      const locationTextWidth = abarRegular.widthOfTextAtSize(
+        options.location,
+        footerFontSize
+      );
+      const loc1X = locationX - locationTextWidth / 2;
+      page.drawText(options.location, {
+        x: loc1X,
+        y: locY,
+        size: footerFontSize,
+        font: abarRegular,
+        color: NAVY,
+      });
 
-        doc.text(options.location, locationX, currentY, {
-          ...locationTextOptions,
-          link: options.locationUrl,
-          underline: true,
+      // Track bounds for link annotation
+      let linkMinX = loc1X;
+      let linkMaxX = loc1X + locationTextWidth;
+      let linkMinY = locY;
+      const linkMaxY = locY + footerFontSize;
+
+      // Draw location line 2 below (e.g., "العمارية")
+      if (options.locationLine2) {
+        const loc2Width = abarRegular.widthOfTextAtSize(
+          options.locationLine2,
+          footerFontSize
+        );
+        const loc2X = locationX - loc2Width / 2;
+        page.drawText(options.locationLine2, {
+          x: loc2X,
+          y: locY - lineSpacingLoc,
+          size: footerFontSize,
+          font: abarRegular,
+          color: NAVY,
         });
 
-        // Draw small external link icon before the text (left side, pointing left)
-        const arrowSize = 7;
-        const arrowX = locationX - 8;
-        const arrowY = currentY + 14;
-        doc
-          .strokeColor(BRAND.primary)
-          .lineWidth(1.2)
-          // Horizontal arrow line (pointing left)
-          .moveTo(arrowX, arrowY)
-          .lineTo(arrowX - arrowSize, arrowY)
-          .stroke()
-          // Arrow head (pointing left)
-          .moveTo(arrowX - arrowSize + 3, arrowY - 3)
-          .lineTo(arrowX - arrowSize, arrowY)
-          .lineTo(arrowX - arrowSize + 3, arrowY + 3)
-          .stroke();
-      } else {
-        doc.fillColor(BRAND.textMuted);
-        const locationWidth = doc.widthOfString(options.location);
-        doc.text(
-          options.location,
-          (PAGE_WIDTH - locationWidth) / 2,
-          currentY,
-          locationTextOptions
-        );
+        // Expand link bounds to include second line
+        linkMinX = Math.min(linkMinX, loc2X);
+        linkMaxX = Math.max(linkMaxX, loc2X + loc2Width);
+        linkMinY = locY - lineSpacingLoc;
       }
-      currentY += 40;
+
+      // Add clickable link annotation if locationUrl is provided
+      if (options.locationUrl) {
+        // Create the action dictionary
+        const actionDict = pdfDoc.context.obj({
+          Type: "Action",
+          S: "URI",
+          URI: PDFString.of(options.locationUrl),
+        });
+
+        // Create the link annotation
+        const linkAnnotation = pdfDoc.context.obj({
+          Type: "Annot",
+          Subtype: "Link",
+          Rect: [linkMinX - 10, linkMinY - 5, linkMaxX + 10, linkMaxY + 5],
+          Border: [0, 0, 0],
+          A: actionDict,
+        });
+
+        // Add annotation to page
+        const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+        if (existingAnnots) {
+          existingAnnots.push(linkAnnotation);
+        } else {
+          page.node.set(PDFName.of("Annots"), pdfDoc.context.obj([linkAnnotation]));
+        }
+      }
     }
 
-    // Bottom decorative dots
-    doc
-      .fillOpacity(0.6)
-      .circle(PAGE_WIDTH / 2 - 30, currentY, 3)
-      .fill(BRAND.primary);
-    doc
-      .fillOpacity(1)
-      .circle(PAGE_WIDTH / 2, currentY, 3)
-      .fill(BRAND.accent);
-    doc
-      .fillOpacity(0.6)
-      .circle(PAGE_WIDTH / 2 + 30, currentY, 3)
-      .fill(BRAND.primary);
-    doc.fillOpacity(1);
-
-    // Finalize PDF
-    doc.end();
-
-    // Wait for PDF to complete
-    return new Promise((resolve, reject) => {
-      doc.on("end", () => {
-        const pdfBuffer = Buffer.concat(chunks);
-        resolve(pdfBuffer);
+    // Draw time (left column, centered)
+    if (options.sessionTime) {
+      const timeTextWidth = abarRegular.widthOfTextAtSize(
+        options.sessionTime,
+        footerFontSize
+      );
+      const reversedTime = options.sessionTime.split("").reverse().join(""); // Simple reversal for Arabic time display
+      // remove م or ص characters from reversedTime before drawing
+      const cleanedTime = reversedTime.replace(/[مص]/g, "");
+      page.drawText(cleanedTime, {
+        x: timeX - timeTextWidth / 2,
+        y: footerY,
+        size: footerFontSize,
+        font: abarRegular,
+        color: NAVY,
       });
-      doc.on("error", (error) => {
-        console.error("PDF document error:", error);
-        reject(error);
-      });
-    });
+      // add ً after مساء or صباح
+      // if it includes م or ص
+      if (reversedTime.includes("م")) {
+        const ampmX =
+          timeX - abarRegular.widthOfTextAtSize("م", footerFontSize) - 45;
+        page.drawText("م", {
+          x: ampmX,
+          y: footerY,
+          size: footerFontSize,
+          font: abarRegular,
+          color: NAVY,
+        });
+      } else if (reversedTime.includes("ص")) {
+        const ampmX =
+          timeX - abarRegular.widthOfTextAtSize("ص", footerFontSize) - 45;
+        page.drawText("ص", {
+          x: ampmX,
+          y: footerY,
+          size: footerFontSize,
+          font: abarRegular,
+          color: NAVY,
+        });
+      }
+    }
+
+    // 8. Save and return
+    const pdfBytes = await pdfDoc.save();
+    return Buffer.from(pdfBytes);
   } catch (error) {
     console.error("Failed to generate branded QR PDF:", error);
     return null;

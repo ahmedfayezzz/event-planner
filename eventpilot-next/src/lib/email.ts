@@ -205,7 +205,7 @@ function formatDateOnly(date: Date): string {
 }
 
 function formatTimeOnly(date: Date): string {
-  // Convert UTC to Saudi time for email display
+  // Convert UTC to Saudi time for email display (Latin numerals for PDF - Arabic numerals get reversed)
   const saudiDate = toSaudiTime(date);
   if (!saudiDate) return "";
   return saudiDate.toLocaleTimeString("ar-SA", {
@@ -213,6 +213,52 @@ function formatTimeOnly(date: Date): string {
     minute: "2-digit",
     numberingSystem: "latn",
   });
+}
+
+function formatDateForPdf(date: Date): string {
+  // Returns "16 ديسمبر" format (day + month, Latin numerals for PDF - Arabic numerals get reversed)
+  const saudiDate = toSaudiTime(date);
+  if (!saudiDate) return "";
+  return saudiDate.toLocaleDateString("ar-SA", {
+    day: "numeric",
+    month: "long",
+    numberingSystem: "latn",
+  });
+}
+
+function formatDayNameForPdf(date: Date): string {
+  // Returns "الثلاثاء" (day name in Arabic)
+  const saudiDate = toSaudiTime(date);
+  if (!saudiDate) return "";
+  return saudiDate.toLocaleDateString("ar-SA", {
+    weekday: "long",
+  });
+}
+
+function splitLocationForPdf(location: string | null | undefined): {
+  line1: string | undefined;
+  line2: string | undefined;
+} {
+  if (!location) return { line1: undefined, line2: undefined };
+
+  // Try splitting by " - " first (e.g., "فندق الحياة - الرياض")
+  if (location.includes(" - ")) {
+    const parts = location.split(" - ");
+    return { line1: parts[0]?.trim(), line2: parts.slice(1).join(" - ").trim() };
+  }
+
+  // If it's a short location (2 words or less), keep it on one line
+  const words = location.trim().split(/\s+/);
+  if (words.length <= 2) {
+    return { line1: location, line2: undefined };
+  }
+
+  // For longer locations, split roughly in half
+  const midPoint = Math.ceil(words.length / 2);
+  return {
+    line1: words.slice(0, midPoint).join(" "),
+    line2: words.slice(midPoint).join(" "),
+  };
 }
 
 // =============================================================================
@@ -294,12 +340,15 @@ export async function sendConfirmedEmail(
 
   if (qrData && session.sendQrInEmail) {
     try {
+      const locationParts = splitLocationForPdf(session.location);
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionTitle: session.title,
-        sessionDate: formatDateOnly(session.date),
+        sessionDate: formatDateForPdf(session.date),
+        sessionDayName: formatDayNameForPdf(session.date),
         sessionTime: formatTimeOnly(session.date),
         attendeeName: name,
-        location: session.location ?? undefined,
+        location: locationParts.line1,
+        locationLine2: locationParts.line2,
         locationUrl: session.locationUrl ?? undefined,
       });
       if (pdfBuffer) {
@@ -356,12 +405,15 @@ export async function sendCompanionEmail(
 
   if (isApproved && qrData && session.sendQrInEmail) {
     try {
+      const locationParts = splitLocationForPdf(session.location);
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionTitle: session.title,
-        sessionDate: formatDateOnly(session.date),
+        sessionDate: formatDateForPdf(session.date),
+        sessionDayName: formatDayNameForPdf(session.date),
         sessionTime: formatTimeOnly(session.date),
         attendeeName: companionName,
-        location: session.location ?? undefined,
+        location: locationParts.line1,
+        locationLine2: locationParts.line2,
         locationUrl: session.locationUrl ?? undefined,
       });
       if (pdfBuffer) {
@@ -540,12 +592,15 @@ export async function sendQrOnlyEmail(
   let attachments: EmailAttachment[] | undefined;
 
   try {
+    const locationParts = splitLocationForPdf(session.location);
     const pdfBuffer = await generateBrandedQRPdf(qrData, {
       sessionTitle: session.title,
-      sessionDate: formatDateOnly(session.date),
+      sessionDate: formatDateForPdf(session.date),
+      sessionDayName: formatDayNameForPdf(session.date),
       sessionTime: formatTimeOnly(session.date),
       attendeeName: name,
-      location: session.location ?? undefined,
+      location: locationParts.line1,
+      locationLine2: locationParts.line2,
       locationUrl: session.locationUrl ?? undefined,
     });
     if (pdfBuffer) {
