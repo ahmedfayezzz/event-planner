@@ -61,6 +61,7 @@ import {
 
 interface RegistrationItem {
   id: string;
+  userId?: string | null;
   name?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -604,7 +605,18 @@ ${qrPageUrl}
                                 aria-label={`تحديد ${reg.name}`}
                               />
                             </TableCell>
-                            <TableCell className="font-medium">{reg.name}</TableCell>
+                            <TableCell className="font-medium">
+                              {reg.userId ? (
+                                <Link
+                                  href={`/admin/users/${reg.userId}`}
+                                  className="text-primary hover:underline"
+                                >
+                                  {reg.name}
+                                </Link>
+                              ) : (
+                                reg.name
+                              )}
+                            </TableCell>
                             <TableCell className="hidden md:table-cell">{reg.email}</TableCell>
                             <TableCell className="hidden md:table-cell" dir="ltr">{reg.phone}</TableCell>
                             <TableCell className="hidden lg:table-cell">

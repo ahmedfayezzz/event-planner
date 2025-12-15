@@ -253,6 +253,7 @@ export const sessionRouter = createTRPCRouter({
         },
         recentRegistrations: session.registrations.map((r) => ({
           id: r.id,
+          userId: r.user?.id,
           name: r.user?.name || r.guestName,
           email: r.user?.email || r.guestEmail,
           phone: r.user?.phone || r.guestPhone,

@@ -643,6 +643,7 @@ export const registrationRouter = createTRPCRouter({
 
       return registrations.map((r) => ({
         ...r,
+        userId: r.user?.id,
         name: r.user?.name || r.guestName,
         email: r.user?.email || r.guestEmail,
         phone: r.user?.phone || r.guestPhone,

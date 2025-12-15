@@ -444,7 +444,18 @@ export default function SessionDetailPage({
                   return (
                     <React.Fragment key={reg.id}>
                       <TableRow>
-                        <TableCell className="font-medium">{reg.name}</TableCell>
+                        <TableCell className="font-medium">
+                          {reg.userId ? (
+                            <Link
+                              href={`/admin/users/${reg.userId}`}
+                              className="text-primary hover:underline"
+                            >
+                              {reg.name}
+                            </Link>
+                          ) : (
+                            reg.name
+                          )}
+                        </TableCell>
                         <TableCell className="hidden md:table-cell">
                           <div className="text-sm">
                             {reg.email && <div>{reg.email}</div>}
