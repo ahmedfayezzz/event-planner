@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Exclude pdfkit from bundling to avoid font path resolution issues
-  serverExternalPackages: ["pdfkit"],
+  // Exclude native modules from bundling
+  serverExternalPackages: ["pdfkit", "@napi-rs/canvas", "canvas"],
 };
 
 export default nextConfig;

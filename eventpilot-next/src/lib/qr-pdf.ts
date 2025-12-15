@@ -1,11 +1,35 @@
 import { PDFDocument, rgb, PDFName, PDFArray, PDFString } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import fs from "fs/promises";
+import fsSync from "fs";
 import path from "path";
 import { generateQRCodeBuffer } from "./qr";
+import { createCanvas, GlobalFonts } from "@napi-rs/canvas";
+
+// Register Abar fonts using @napi-rs/canvas GlobalFonts
+const abarBoldPath = path.join(
+  process.cwd(),
+  "public",
+  "fonts",
+  "AbarHigh-Bold.ttf"
+);
+const abarRegularPath = path.join(
+  process.cwd(),
+  "public",
+  "fonts",
+  "AbarLow-Regular.ttf"
+);
+
+// Register Abar fonts
+if (fsSync.existsSync(abarBoldPath)) {
+  GlobalFonts.registerFromPath(abarBoldPath, "AbarBold");
+}
+if (fsSync.existsSync(abarRegularPath)) {
+  GlobalFonts.registerFromPath(abarRegularPath, "Abar");
+}
 
 // Colors matching the design
-const NAVY = rgb(0, 0.078, 0.129); // #001421
+const NAVY_HEX = "#001421";
 
 export interface BrandedQRPdfOptions {
   sessionTitle: string;
@@ -18,69 +42,79 @@ export interface BrandedQRPdfOptions {
   locationUrl?: string; // Keep for API compatibility (not used in template)
 }
 
-// Cache for fonts
-let abarBoldBuffer: Buffer | null = null;
-let abarRegularBuffer: Buffer | null = null;
+// Cache for template
 let templateBuffer: Buffer | null = null;
 
 /**
- * Load and cache fonts and template
+ * Render Arabic text to a PNG buffer using canvas
+ * Canvas properly handles Arabic shaping and RTL automatically
  */
-async function loadAssets(): Promise<{
-  bold: Buffer;
-  regular: Buffer;
-  template: Buffer;
-}> {
-  if (abarBoldBuffer && abarRegularBuffer && templateBuffer) {
-    return {
-      bold: abarBoldBuffer,
-      regular: abarRegularBuffer,
-      template: templateBuffer,
-    };
-  }
+function renderArabicTextToImage(
+  text: string,
+  options: {
+    fontFamily?: string;
+    fontSize?: number;
+    color?: string;
+    padding?: number;
+    maxWidth?: number;
+  } = {}
+): { buffer: Buffer; width: number; height: number } {
+  const {
+    fontFamily = "AbarBold",
+    fontSize = 25,
+    color = NAVY_HEX,
+    padding = 10,
+    maxWidth = 800,
+  } = options;
 
-  const boldFontPath = path.join(
-    process.cwd(),
-    "public",
-    "fonts",
-    "AbarHigh-Bold.ttf"
-  );
-  const regularFontPath = path.join(
-    process.cwd(),
-    "public",
-    "fonts",
-    "AbarLow-Regular.ttf"
-  );
-  const templatePath = path.join(process.cwd(), "public", "دعوة خاصة (1).pdf");
+  // Create a temporary canvas to measure text
+  const measureCanvas = createCanvas(1, 1);
+  const measureCtx = measureCanvas.getContext("2d");
+  const fontString = `${fontSize}px "${fontFamily}"`;
+  measureCtx.font = fontString;
 
-  const [boldData, regularData, templateData] = await Promise.all([
-    fs.readFile(boldFontPath),
-    fs.readFile(regularFontPath),
-    fs.readFile(templatePath),
-  ]);
+  // Measure the text
+  const metrics = measureCtx.measureText(text);
+  const textWidth = Math.min(metrics.width, maxWidth);
+  const textHeight = fontSize * 1.4; // Approximate height with buffer
 
-  abarBoldBuffer = boldData;
-  abarRegularBuffer = regularData;
-  templateBuffer = templateData;
+  // Create the actual canvas with proper dimensions
+  const canvasWidth = Math.ceil(textWidth + padding * 2);
+  const canvasHeight = Math.ceil(textHeight + padding * 2);
+
+  const canvas = createCanvas(canvasWidth, canvasHeight);
+  const ctx = canvas.getContext("2d");
+
+  // Transparent background
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+  // Set text properties
+  ctx.font = fontString;
+  ctx.fillStyle = color;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  // Draw text centered
+  ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
 
   return {
-    bold: abarBoldBuffer,
-    regular: abarRegularBuffer,
-    template: templateBuffer,
+    buffer: canvas.toBuffer("image/png"),
+    width: canvasWidth,
+    height: canvasHeight,
   };
 }
 
 /**
- * Calculate centered X position for text
+ * Load and cache template
  */
-function centerText(
-  text: string,
-  font: Awaited<ReturnType<typeof PDFDocument.prototype.embedFont>>,
-  fontSize: number,
-  pageWidth: number
-): number {
-  const textWidth = font.widthOfTextAtSize(text, fontSize);
-  return (pageWidth - textWidth) / 2;
+async function loadTemplate(): Promise<Buffer> {
+  if (templateBuffer) {
+    return templateBuffer;
+  }
+
+  const templatePath = path.join(process.cwd(), "public", "دعوة خاصة (1).pdf");
+  templateBuffer = await fs.readFile(templatePath);
+  return templateBuffer;
 }
 
 /**
@@ -98,20 +132,14 @@ export async function generateBrandedQRPdf(
       return null;
     }
 
-    // 2. Load assets
-    const assets = await loadAssets();
-
     // 3. Load template PDF
-    const pdfDoc = await PDFDocument.load(assets.template);
+    const template = await loadTemplate();
+    const pdfDoc = await PDFDocument.load(template);
 
-    // 4. Register fontkit for custom fonts
+    // 4. Register fontkit (kept for potential future non-Arabic text)
     pdfDoc.registerFontkit(fontkit);
 
-    // 5. Embed fonts
-    const abarBold = await pdfDoc.embedFont(assets.bold);
-    const abarRegular = await pdfDoc.embedFont(assets.regular);
-
-    // 6. Get first page and dimensions
+    // 5. Get first page and dimensions
     const page = pdfDoc.getPages()[0];
     if (!page) {
       console.error("No pages found in template PDF");
@@ -119,7 +147,7 @@ export async function generateBrandedQRPdf(
     }
     const { width, height } = page.getSize();
 
-    // 7. Embed QR code image
+    // 6. Embed QR code image
     const qrImage = await pdfDoc.embedPng(qrBuffer);
 
     // ====================================
@@ -136,30 +164,39 @@ export async function generateBrandedQRPdf(
     const qrY = height * 0.3; // 30% from bottom
 
     // Footer info positions (date, location, time from right to left)
-    // The icons are at ~10% from bottom, text should be below them
-    const footerY = height * 0.14; // ~10% from bottom (below icons)
+    const footerY = height * 0.14;
     const footerFontSize = 30;
 
-    // Three columns for footer (right to left: date, location, time)
-    // Adjusted to match icon positions in template
-    const dateX = width * 0.68; // Right column (date - under calendar icon)
-    const locationX = width * 0.5; // Middle column (location - under pin icon)
-    const timeX = width * 0.35; // Left column (time - under clock icon)
+    // Three columns for footer
+    const dateX = width * 0.68;
+    const locationX = width * 0.5;
+    const timeX = width * 0.35;
 
     // ====================================
-    // DRAW DYNAMIC CONTENT (with Arabic text processing)
+    // DRAW DYNAMIC CONTENT
     // ====================================
 
-    // Draw attendee name (centered)
+    // Draw attendee name (centered) - RENDERED AS IMAGE FOR PROPER ARABIC
     if (options.attendeeName) {
-      const greeting = `حياك الله ${options.attendeeName}`;
-      const nameX = centerText(greeting, abarBold, nameFontSize, width);
-      page.drawText(greeting, {
-        x: nameX,
-        y: nameY,
-        size: nameFontSize,
-        font: abarBold,
-        color: NAVY,
+      const greeting = `حياك الله ${"محمد الكلبي"}`;
+      const nameImageData = renderArabicTextToImage(greeting, {
+        fontFamily: "AbarBold",
+        fontSize: nameFontSize,
+        color: NAVY_HEX,
+      });
+
+      const nameImage = await pdfDoc.embedPng(nameImageData.buffer);
+
+      // Center the image horizontally
+      const nameImageX = (width - nameImageData.width) / 2;
+      // Adjust Y to account for image height (PDF Y is from bottom)
+      const nameImageY = nameY - nameImageData.height / 2;
+
+      page.drawImage(nameImage, {
+        x: nameImageX,
+        y: nameImageY,
+        width: nameImageData.width,
+        height: nameImageData.height,
       });
     }
 
@@ -171,139 +208,99 @@ export async function generateBrandedQRPdf(
       height: qrSize,
     });
 
-    // Draw date (right column, centered) - two lines: date+month on top, day name below
+    // Draw date (right column) - RENDERED AS IMAGE
     // if (options.sessionDate) {
-    //   const lineSpacing = 40; // Space between the two lines
-    //   // When we have two lines, center them vertically around footerY
+    //   const lineSpacing = 40;
     //   const dateY = options.sessionDayName
     //     ? footerY + lineSpacing * 0.6
     //     : footerY;
 
-    //   // Draw date (e.g., "١٦ ديسمبر")
-    //   const dateTextWidth = abarRegular.widthOfTextAtSize(
-    //     options.sessionDate,
-    //     footerFontSize
-    //   );
-    //   page.drawText(options.sessionDate, {
-    //     x: dateX - dateTextWidth / 2,
-    //     y: dateY,
-    //     size: footerFontSize,
-    //     font: abarRegular,
-    //     color: NAVY,
+    //   // Render date as image
+    //   const dateImageData = renderArabicTextToImage(options.sessionDate, {
+    //     fontFamily: "AbarRegular",
+    //     fontSize: footerFontSize,
+    //     color: NAVY_HEX,
+    //   });
+    //   const dateImage = await pdfDoc.embedPng(dateImageData.buffer);
+
+    //   page.drawImage(dateImage, {
+    //     x: dateX - dateImageData.width / 2,
+    //     y: dateY - dateImageData.height / 2,
+    //     width: dateImageData.width,
+    //     height: dateImageData.height,
     //   });
 
-    //   // Draw day name below (e.g., "الثلاثاء")
+    //   // Render day name as image
     //   if (options.sessionDayName) {
-    //     const dayNameWidth = abarRegular.widthOfTextAtSize(
-    //       options.sessionDayName,
-    //       footerFontSize
-    //     );
-    //     page.drawText(options.sessionDayName, {
-    //       x: dateX - dayNameWidth / 2,
-    //       y: dateY - lineSpacing,
-    //       size: footerFontSize,
-    //       font: abarRegular,
-    //       color: NAVY,
+    //     const dayImageData = renderArabicTextToImage(options.sessionDayName, {
+    //       fontFamily: "AbarRegular",
+    //       fontSize: footerFontSize,
+    //       color: NAVY_HEX,
+    //     });
+    //     const dayImage = await pdfDoc.embedPng(dayImageData.buffer);
+
+    //     page.drawImage(dayImage, {
+    //       x: dateX - dayImageData.width / 2,
+    //       y: dateY - lineSpacing - dayImageData.height / 2,
+    //       width: dayImageData.width,
+    //       height: dayImageData.height,
     //     });
     //   }
     // }
 
-    // Draw location (middle column, centered) - two lines like date
+    // Draw location (middle column) - RENDERED AS IMAGE
     // if (options.location) {
     //   const lineSpacingLoc = 40;
-    //   // When we have two lines, center them vertically around footerY
     //   const locY = options.locationLine2
     //     ? footerY + lineSpacingLoc * 0.6
     //     : footerY;
 
-    //   // Draw location line 1 (e.g., "منابت")
-    //   const locationTextWidth = abarRegular.widthOfTextAtSize(
-    //     options.location,
-    //     footerFontSize
-    //   );
-    //   const loc1X = locationX - locationTextWidth / 2;
-    //   page.drawText(options.location, {
-    //     x: loc1X,
-    //     y: locY,
-    //     size: footerFontSize,
-    //     font: abarRegular,
-    //     color: NAVY,
+    //   // Render location line 1 as image
+    //   const locImageData = renderArabicTextToImage(options.location, {
+    //     fontFamily: "AbarRegular",
+    //     fontSize: footerFontSize,
+    //     color: NAVY_HEX,
+    //   });
+    //   const locImage = await pdfDoc.embedPng(locImageData.buffer);
+
+    //   page.drawImage(locImage, {
+    //     x: locationX - locImageData.width / 2,
+    //     y: locY - locImageData.height / 2,
+    //     width: locImageData.width,
+    //     height: locImageData.height,
     //   });
 
-    //   // Track bounds for link annotation
-    //   let linkMinX = loc1X;
-    //   let linkMaxX = loc1X + locationTextWidth;
-    //   let linkMinY = locY;
-    //   const linkMaxY = locY + footerFontSize;
-
-    //   // Draw location line 2 below (e.g., "العمارية")
+    //   // Render location line 2 as image
     //   if (options.locationLine2) {
-    //     const loc2Width = abarRegular.widthOfTextAtSize(
-    //       options.locationLine2,
-    //       footerFontSize
-    //     );
-    //     const loc2X = locationX - loc2Width / 2;
-    //     page.drawText(options.locationLine2, {
-    //       x: loc2X,
-    //       y: locY - lineSpacingLoc,
-    //       size: footerFontSize,
-    //       font: abarRegular,
-    //       color: NAVY,
+    //     const loc2ImageData = renderArabicTextToImage(options.locationLine2, {
+    //       fontFamily: "AbarRegular",
+    //       fontSize: footerFontSize,
+    //       color: NAVY_HEX,
     //     });
+    //     const loc2Image = await pdfDoc.embedPng(loc2ImageData.buffer);
 
-    //     // Expand link bounds to include second line
-    //     linkMinX = Math.min(linkMinX, loc2X);
-    //     linkMaxX = Math.max(linkMaxX, loc2X + loc2Width);
-    //     linkMinY = locY - lineSpacingLoc;
-    //   }
-
-    //   // Add clickable link annotation if locationUrl is provided
-    //   if (options.locationUrl) {
-    //     // Create the action dictionary
-    //     const actionDict = pdfDoc.context.obj({
-    //       Type: "Action",
-    //       S: "URI",
-    //       URI: PDFString.of(options.locationUrl),
+    //     page.drawImage(loc2Image, {
+    //       x: locationX - loc2ImageData.width / 2,
+    //       y: locY - lineSpacingLoc - loc2ImageData.height / 2,
+    //       width: loc2ImageData.width,
+    //       height: loc2ImageData.height,
     //     });
-
-    //     // Create the link annotation
-    //     const linkAnnotation = pdfDoc.context.obj({
-    //       Type: "Annot",
-    //       Subtype: "Link",
-    //       Rect: [linkMinX - 10, linkMinY - 5, linkMaxX + 10, linkMaxY + 5],
-    //       Border: [0, 0, 0],
-    //       A: actionDict,
-    //     });
-
-    //     // Add annotation to page
-    //     const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
-    //     if (existingAnnots) {
-    //       existingAnnots.push(linkAnnotation);
-    //     } else {
-    //       page.node.set(
-    //         PDFName.of("Annots"),
-    //         pdfDoc.context.obj([linkAnnotation])
-    //       );
-    //     }
     //   }
     // }
 
     // Add clickable link annotation over existing location text in template
     if (options.locationUrl) {
-      // Define clickable area over the location section (middle column)
       const linkWidth = 150;
       const linkHeight = 80;
       const linkX = locationX - linkWidth / 2;
       const linkY = footerY - 20;
 
-      // Create the action dictionary
       const actionDict = pdfDoc.context.obj({
         Type: "Action",
         S: "URI",
         URI: PDFString.of(options.locationUrl),
       });
 
-      // Create the link annotation
       const linkAnnotation = pdfDoc.context.obj({
         Type: "Annot",
         Subtype: "Link",
@@ -312,7 +309,6 @@ export async function generateBrandedQRPdf(
         A: actionDict,
       });
 
-      // Add annotation to page
       const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
       if (existingAnnots) {
         existingAnnots.push(linkAnnotation);
@@ -324,48 +320,24 @@ export async function generateBrandedQRPdf(
       }
     }
 
-    // Draw time (left column, centered)
+    // Draw time (left column) - RENDERED AS IMAGE
     // if (options.sessionTime) {
-    //   const timeTextWidth = abarRegular.widthOfTextAtSize(
-    //     options.sessionTime,
-    //     footerFontSize
-    //   );
-    //   const reversedTime = options.sessionTime.split("").reverse().join(""); // Simple reversal for Arabic time display
-    //   // remove م or ص characters from reversedTime before drawing
-    //   const cleanedTime = reversedTime.replace(/[مص]/g, "");
-    //   page.drawText(cleanedTime, {
-    //     x: timeX - timeTextWidth / 2,
-    //     y: footerY,
-    //     size: footerFontSize,
-    //     font: abarRegular,
-    //     color: NAVY,
+    //   const timeImageData = renderArabicTextToImage(options.sessionTime, {
+    //     fontFamily: "AbarRegular",
+    //     fontSize: footerFontSize,
+    //     color: NAVY_HEX,
     //   });
-    //   // add ً after مساء or صباح
-    //   // if it includes م or ص
-    //   if (reversedTime.includes("م")) {
-    //     const ampmX =
-    //       timeX - abarRegular.widthOfTextAtSize("م", footerFontSize) - 45;
-    //     page.drawText("م", {
-    //       x: ampmX,
-    //       y: footerY,
-    //       size: footerFontSize,
-    //       font: abarRegular,
-    //       color: NAVY,
-    //     });
-    //   } else if (reversedTime.includes("ص")) {
-    //     const ampmX =
-    //       timeX - abarRegular.widthOfTextAtSize("ص", footerFontSize) - 45;
-    //     page.drawText("ص", {
-    //       x: ampmX,
-    //       y: footerY,
-    //       size: footerFontSize,
-    //       font: abarRegular,
-    //       color: NAVY,
-    //     });
-    //   }
+    //   const timeImage = await pdfDoc.embedPng(timeImageData.buffer);
+
+    //   page.drawImage(timeImage, {
+    //     x: timeX - timeImageData.width / 2,
+    //     y: footerY - timeImageData.height / 2,
+    //     width: timeImageData.width,
+    //     height: timeImageData.height,
+    //   });
     // }
 
-    // 8. Save and return
+    // 7. Save and return
     const pdfBytes = await pdfDoc.save();
     return Buffer.from(pdfBytes);
   } catch (error) {
