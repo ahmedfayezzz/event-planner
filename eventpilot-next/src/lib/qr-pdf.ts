@@ -178,7 +178,7 @@ export async function generateBrandedQRPdf(
 
     // Draw attendee name (centered) - RENDERED AS IMAGE FOR PROPER ARABIC
     if (options.attendeeName) {
-      const greeting = `حياك الله ${"محمد الكلبي"}`;
+      const greeting = `حياك الله ${options.attendeeName}`;
       const nameImageData = renderArabicTextToImage(greeting, {
         fontFamily: "AbarBold",
         fontSize: nameFontSize,
