@@ -31,13 +31,26 @@ export default function UserQRPage({ params }: { params: Promise<{ id: string }>
       const brandedQR = await utils.attendance.getBrandedQR.fetch({ sessionId: id });
 
       if (brandedQR?.qrCode) {
+        // Convert data URL to Blob for better Safari compatibility
+        const base64Data = brandedQR.qrCode.split(",")[1];
+        const binaryData = atob(base64Data);
+        const bytes = new Uint8Array(binaryData.length);
+        for (let i = 0; i < binaryData.length; i++) {
+          bytes[i] = binaryData.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: "application/pdf" });
+        const blobUrl = URL.createObjectURL(blob);
+
         // Create download link for PDF
         const link = document.createElement("a");
-        link.href = brandedQR.qrCode;
+        link.href = blobUrl;
         link.download = `qr-${brandedQR.session.title.replace(/\s+/g, "-")}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+
+        // Clean up blob URL
+        URL.revokeObjectURL(blobUrl);
       }
     } catch (err) {
       console.error("Failed to download QR:", err);

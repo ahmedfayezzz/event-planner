@@ -28,13 +28,26 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
       const brandedQR = await utils.attendance.getPublicBrandedQR.fetch({ registrationId: id });
 
       if (brandedQR?.qrCode) {
-        // Create a link to download the branded QR code PDF
+        // Convert data URL to Blob for better Safari compatibility
+        const base64Data = brandedQR.qrCode.split(",")[1];
+        const binaryData = atob(base64Data);
+        const bytes = new Uint8Array(binaryData.length);
+        for (let i = 0; i < binaryData.length; i++) {
+          bytes[i] = binaryData.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: "application/pdf" });
+        const blobUrl = URL.createObjectURL(blob);
+
+        // Create a link to download the PDF
         const link = document.createElement("a");
-        link.href = brandedQR.qrCode;
+        link.href = blobUrl;
         link.download = `qr-${brandedQR.session.title.replace(/\s+/g, "-")}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+
+        // Clean up blob URL
+        URL.revokeObjectURL(blobUrl);
         toast.success("تم تحميل رمز QR");
       }
     } catch {
