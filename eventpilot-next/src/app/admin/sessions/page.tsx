@@ -24,16 +24,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatArabicDate } from "@/lib/utils";
 import {
@@ -52,7 +42,6 @@ import {
   Loader2,
   MoreHorizontal,
   QrCode,
-  Trash2,
   ChevronUp,
   ChevronDown,
   Globe,
@@ -78,10 +67,6 @@ interface SessionItem {
 export default function AdminSessionsPage() {
   const [tab, setTab] = useState<"all" | "upcoming" | "completed">("upcoming");
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityStatus | "all">("all");
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [sessionToDelete, setSessionToDelete] = useState<SessionItem | null>(
-    null
-  );
 
   const utils = api.useUtils();
   const { isExpanded, toggleRow } = useExpandableRows();
@@ -103,18 +88,6 @@ export default function AdminSessionsPage() {
     return true;
   }) ?? [];
 
-  const deleteMutation = api.session.delete.useMutation({
-    onSuccess: () => {
-      toast.success("تم حذف الحدث بنجاح");
-      utils.session.listAdmin.invalidate();
-      setDeleteDialogOpen(false);
-      setSessionToDelete(null);
-    },
-    onError: (error) => {
-      toast.error(error.message || "فشل حذف الحدث");
-    },
-  });
-
   const updateVisibilityMutation = api.session.updateVisibility.useMutation({
     onSuccess: (_, variables) => {
       const labels: Record<VisibilityStatus, string> = {
@@ -129,17 +102,6 @@ export default function AdminSessionsPage() {
       toast.error(error.message || "فشل تحديث حالة النشر");
     },
   });
-
-  const handleDeleteClick = (session: SessionItem) => {
-    setSessionToDelete(session);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = () => {
-    if (sessionToDelete) {
-      deleteMutation.mutate({ id: sessionToDelete.id });
-    }
-  };
 
   const statusColors: Record<string, string> = {
     open: "bg-green-500/10 text-green-600 border-green-200",
@@ -370,14 +332,6 @@ export default function AdminSessionsPage() {
                                         أرشفة الحدث
                                       </DropdownMenuItem>
                                     )}
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={() => handleDeleteClick(session)}
-                                      className="text-destructive focus:text-destructive"
-                                    >
-                                      <Trash2 className="ml-2 h-4 w-4" />
-                                      حذف الحدث
-                                    </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </TableCell>
@@ -456,15 +410,6 @@ export default function AdminSessionsPage() {
                                             الحضور
                                           </Link>
                                         </Button>
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          className="text-destructive hover:text-destructive"
-                                          onClick={() => handleDeleteClick(session)}
-                                        >
-                                          <Trash2 className="ml-1 h-3 w-3" />
-                                          حذف
-                                        </Button>
                                       </div>
                                     </div>
                                   </div>
@@ -483,35 +428,6 @@ export default function AdminSessionsPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد من حذف الحدث؟</AlertDialogTitle>
-            <AlertDialogDescription>
-              سيتم حذف الحدث &quot;{sessionToDelete?.title}&quot; وجميع
-              التسجيلات المرتبطة بها. هذا الإجراء لا يمكن التراجع عنه.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? (
-                <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  جاري الحذف...
-                </>
-              ) : (
-                "حذف"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

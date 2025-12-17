@@ -1084,6 +1084,7 @@ async function main() {
       email: "sponsor@alsaeed-tech.com",
       phone: "+966550001111",
       type: "company",
+      status: "sponsored", // تمت الرعاية
       sponsorshipTypes: ["dinner", "beverage"],
     },
     {
@@ -1091,13 +1092,30 @@ async function main() {
       email: "sponsor@shamri-group.com",
       phone: "+966550002222",
       type: "company",
+      status: "interested_permanent", // مهتم بالرعاية بشكل دائم
       sponsorshipTypes: ["dinner", "dessert"],
     },
     {
       name: "أحمد محمد السعيد",
       type: "person",
+      status: "contacted", // تم التواصل
       sponsorshipTypes: ["beverage"],
       userId: users[0]?.id, // Link to first user if available
+    },
+    {
+      name: "مؤسسة الرياض التجارية",
+      email: "sponsor@riyadh-trading.com",
+      phone: "+966550003333",
+      type: "company",
+      status: "new", // جديد
+      sponsorshipTypes: ["dessert", "other"],
+      sponsorshipOtherText: "هدايا للحضور",
+    },
+    {
+      name: "فهد الغامدي",
+      type: "person",
+      status: "interested_again", // مهتم بالرعاية مره اخرى
+      sponsorshipTypes: ["dinner"],
     },
   ];
 

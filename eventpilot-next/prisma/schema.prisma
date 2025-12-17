@@ -254,6 +254,7 @@ model Sponsor {
   email                String?
   phone                String?
   type                 String    @default("person") // "person" | "company"
+  status               String    @default("new") // new, contacted, sponsored, interested_again, interested_permanent
   logoUrl              String?
   sponsorshipTypes     String[]  @default([])
   sponsorshipOtherText String?
@@ -271,6 +272,7 @@ model Sponsor {
 
   @@index([userId])
   @@index([type])
+  @@index([status])
 }
 
 // NEW: Links sponsors to events (replaces EventCatering)

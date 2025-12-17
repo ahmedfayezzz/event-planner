@@ -5,7 +5,7 @@ import {
   adminProcedure,
   publicProcedure,
 } from "../trpc";
-import { getSponsorshipTypeLabel, getSponsorTypeLabel } from "@/lib/constants";
+import { getSponsorshipTypeLabel, getSponsorTypeLabel, getSponsorStatusLabel } from "@/lib/constants";
 import { exportToCSV } from "@/lib/utils";
 import { toSaudiTime } from "@/lib/timezone";
 
@@ -18,6 +18,7 @@ export const sponsorRouter = createTRPCRouter({
       z.object({
         search: z.string().optional(),
         type: z.enum(["person", "company"]).optional(),
+        status: z.enum(["new", "contacted", "sponsored", "interested_again", "interested_permanent"]).optional(),
         isActive: z.boolean().optional(),
         limit: z.number().min(1).max(100).default(50),
         cursor: z.string().optional(),
@@ -39,6 +40,10 @@ export const sponsorRouter = createTRPCRouter({
 
       if (input?.type) {
         where.type = input.type;
+      }
+
+      if (input?.status) {
+        where.status = input.status;
       }
 
       if (input?.isActive !== undefined) {
@@ -177,6 +182,7 @@ export const sponsorRouter = createTRPCRouter({
         email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable(),
         phone: z.string().optional().nullable(),
         type: z.enum(["person", "company"]).default("person"),
+        status: z.enum(["new", "contacted", "sponsored", "interested_again", "interested_permanent"]).default("new"),
         logoUrl: z.string().optional().nullable(),
         sponsorshipTypes: z.array(z.string()).default([]),
         sponsorshipOtherText: z.string().optional().nullable(),
@@ -206,6 +212,7 @@ export const sponsorRouter = createTRPCRouter({
           email: input.email || null,
           phone: input.phone || null,
           type: input.type,
+          status: input.status,
           logoUrl: input.logoUrl || null,
           sponsorshipTypes: input.sponsorshipTypes,
           sponsorshipOtherText: input.sponsorshipOtherText || null,
@@ -237,6 +244,7 @@ export const sponsorRouter = createTRPCRouter({
         email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable(),
         phone: z.string().optional().nullable(),
         type: z.enum(["person", "company"]).optional(),
+        status: z.enum(["new", "contacted", "sponsored", "interested_again", "interested_permanent"]).optional(),
         logoUrl: z.string().optional().nullable(),
         sponsorshipTypes: z.array(z.string()).optional(),
         sponsorshipOtherText: z.string().optional().nullable(),
@@ -601,6 +609,7 @@ export const sponsorRouter = createTRPCRouter({
       البريد: s.email || "",
       الهاتف: s.phone || "",
       النوع: getSponsorTypeLabel(s.type),
+      الحالة: getSponsorStatusLabel(s.status),
       "أنواع الرعاية": s.sponsorshipTypes.map(getSponsorshipTypeLabel).join(", "),
       "تفاصيل أخرى": s.sponsorshipOtherText || "",
       "مرتبط بمستخدم": s.user ? "نعم" : "لا",
@@ -815,6 +824,38 @@ export const sponsorRouter = createTRPCRouter({
       });
 
       return updatedSponsor;
+    }),
+
+  /**
+   * Quick update sponsor status (admin only)
+   */
+  updateStatus: adminProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        status: z.enum(["new", "contacted", "sponsored", "interested_again", "interested_permanent"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const existing = await db.sponsor.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الراعي غير موجود",
+        });
+      }
+
+      const sponsor = await db.sponsor.update({
+        where: { id: input.id },
+        data: { status: input.status },
+      });
+
+      return sponsor;
     }),
 
   /**

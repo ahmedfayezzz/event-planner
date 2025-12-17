@@ -1,8 +1,7 @@
 "use client";
 
-import React, { use, useState } from "react";
+import React, { use } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
 import { useExpandableRows } from "@/hooks/use-expandable-rows";
 import { cn } from "@/lib/utils";
@@ -18,16 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -46,7 +35,6 @@ import {
   CheckCircle,
   MailCheck,
   Loader2,
-  Trash2,
   ExternalLink,
   UtensilsCrossed,
   ChevronUp,
@@ -63,22 +51,10 @@ export default function SessionDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const router = useRouter();
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { isExpanded, toggleRow } = useExpandableRows();
 
   const { data: session, isLoading } = api.session.getAdminDetails.useQuery({ id });
   const { data: sponsorships } = api.sponsor.getSessionSponsorshipsAdmin.useQuery({ sessionId: id });
-
-  const deleteMutation = api.session.delete.useMutation({
-    onSuccess: () => {
-      toast.success("تم حذف الحدث بنجاح");
-      router.push("/admin/sessions");
-    },
-    onError: (error) => {
-      toast.error(error.message || "فشل حذف الحدث");
-    },
-  });
 
   const utils = api.useUtils();
   const updateVisibilityMutation = api.session.updateVisibility.useMutation({
@@ -226,15 +202,6 @@ export default function SessionDetailPage({
               <Edit className="ml-2 h-4 w-4" />
               تعديل
             </Link>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={() => setDeleteDialogOpen(true)}
-          >
-            <Trash2 className="ml-2 h-4 w-4" />
-            حذف
           </Button>
         </div>
       </div>
@@ -623,36 +590,6 @@ export default function SessionDetailPage({
           )}
         </CardContent>
       </Card>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد من حذف الحدث؟</AlertDialogTitle>
-            <AlertDialogDescription>
-              سيتم حذف الحدث &quot;{session.title}&quot; وجميع التسجيلات المرتبطة به.
-              هذا الإجراء لا يمكن التراجع عنه.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteMutation.mutate({ id })}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? (
-                <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  جاري الحذف...
-                </>
-              ) : (
-                "حذف"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

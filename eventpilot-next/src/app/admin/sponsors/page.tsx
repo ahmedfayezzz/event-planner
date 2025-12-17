@@ -52,8 +52,11 @@ import { formatArabicDate, getWhatsAppUrl } from "@/lib/utils";
 import {
   SPONSORSHIP_TYPES,
   SPONSOR_TYPES,
+  SPONSOR_STATUSES,
   getSponsorshipTypeLabel,
   getSponsorTypeLabel,
+  getSponsorStatusLabel,
+  getSponsorStatusColor,
 } from "@/lib/constants";
 import {
   UtensilsCrossed,
@@ -94,6 +97,7 @@ interface SponsorFormData {
   email: string;
   phone: string;
   type: "person" | "company";
+  status: "new" | "contacted" | "sponsored" | "interested_again" | "interested_permanent";
   sponsorshipTypes: string[];
   sponsorshipOtherText: string;
   logoUrl: string;
@@ -104,6 +108,7 @@ const initialFormData: SponsorFormData = {
   email: "",
   phone: "",
   type: "person",
+  status: "new",
   sponsorshipTypes: [],
   sponsorshipOtherText: "",
   logoUrl: "",
@@ -111,6 +116,7 @@ const initialFormData: SponsorFormData = {
 
 export default function AdminSponsorsPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sponsorshipTypeFilter, setSponsorshipTypeFilter] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -159,6 +165,7 @@ export default function AdminSponsorsPage() {
   } = api.sponsor.getAll.useInfiniteQuery(
     {
       type: typeFilter !== "all" ? (typeFilter as "person" | "company") : undefined,
+      status: statusFilter !== "all" ? (statusFilter as "new" | "contacted" | "sponsored" | "interested_again" | "interested_permanent") : undefined,
       limit: 50,
     },
     {
@@ -188,6 +195,16 @@ export default function AdminSponsorsPage() {
     },
     onError: (error) => {
       toast.error(error.message || "حدث خطأ أثناء تحديث الراعي");
+    },
+  });
+
+  const updateStatus = api.sponsor.updateStatus.useMutation({
+    onSuccess: () => {
+      toast.success("تم تحديث حالة الراعي بنجاح");
+      utils.sponsor.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء تحديث الحالة");
     },
   });
 
@@ -357,6 +374,7 @@ export default function AdminSponsorsPage() {
       email: formData.email || undefined,
       phone: formData.phone || undefined,
       type: formData.type,
+      status: formData.status,
       sponsorshipTypes: formData.sponsorshipTypes,
       sponsorshipOtherText: formData.sponsorshipOtherText || undefined,
       logoUrl: formData.logoUrl || undefined,
@@ -380,6 +398,7 @@ export default function AdminSponsorsPage() {
       email: formData.email || null,
       phone: formData.phone || null,
       type: formData.type,
+      status: formData.status,
       sponsorshipTypes: formData.sponsorshipTypes,
       sponsorshipOtherText: formData.sponsorshipOtherText || null,
       logoUrl: formData.logoUrl || null,
@@ -393,11 +412,19 @@ export default function AdminSponsorsPage() {
       email: sponsor.email || "",
       phone: sponsor.phone || "",
       type: sponsor.type as "person" | "company",
+      status: (sponsor.status as "new" | "contacted" | "sponsored" | "interested_again" | "interested_permanent") || "new",
       sponsorshipTypes: sponsor.sponsorshipTypes,
       sponsorshipOtherText: sponsor.sponsorshipOtherText || "",
       logoUrl: sponsor.logoUrl || "",
     });
     setIsEditDialogOpen(true);
+  };
+
+  const handleStatusChange = (sponsorId: string, newStatus: string) => {
+    updateStatus.mutate({
+      id: sponsorId,
+      status: newStatus as "new" | "contacted" | "sponsored" | "interested_again" | "interested_permanent",
+    });
   };
 
   const handleExport = async () => {
@@ -514,6 +541,21 @@ export default function AdminSponsorsPage() {
               </Select>
             </div>
             <div className="flex-1">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="الحالة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع الحالات</SelectItem>
+                  {SPONSOR_STATUSES.map((status) => (
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
               <Select
                 value={sponsorshipTypeFilter}
                 onValueChange={setSponsorshipTypeFilter}
@@ -572,6 +614,7 @@ export default function AdminSponsorsPage() {
                     <TableHead>الراعي</TableHead>
                     <TableHead className="hidden md:table-cell">التواصل</TableHead>
                     <TableHead>أنواع الرعاية</TableHead>
+                    <TableHead className="hidden sm:table-cell">الحالة</TableHead>
                     <TableHead className="hidden md:table-cell">النوع</TableHead>
                     <TableHead className="hidden lg:table-cell">مرتبط بعضو</TableHead>
                     <TableHead className="hidden lg:table-cell">الفعاليات</TableHead>
@@ -657,6 +700,34 @@ export default function AdminSponsorsPage() {
                                 </TooltipProvider>
                               ))}
                             </div>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            <Select
+                              value={sponsor.status}
+                              onValueChange={(value) => handleStatusChange(sponsor.id, value)}
+                              disabled={updateStatus.isPending}
+                            >
+                              <SelectTrigger className="h-8 w-auto min-w-[120px]">
+                                <Badge
+                                  variant="outline"
+                                  className={cn("font-normal", getSponsorStatusColor(sponsor.status))}
+                                >
+                                  {getSponsorStatusLabel(sponsor.status)}
+                                </Badge>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {SPONSOR_STATUSES.map((status) => (
+                                  <SelectItem key={status.value} value={status.value}>
+                                    <Badge
+                                      variant="outline"
+                                      className={cn("font-normal", getSponsorStatusColor(status.value))}
+                                    >
+                                      {status.label}
+                                    </Badge>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             <Badge
@@ -822,6 +893,17 @@ export default function AdminSponsorsPage() {
                                           className="gap-1"
                                         >
                                           {getSponsorTypeLabel(sponsor.type)}
+                                        </Badge>
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">الحالة:</span>
+                                      <span className="mr-1">
+                                        <Badge
+                                          variant="outline"
+                                          className={cn("font-normal", getSponsorStatusColor(sponsor.status))}
+                                        >
+                                          {getSponsorStatusLabel(sponsor.status)}
                                         </Badge>
                                       </span>
                                     </div>
@@ -1519,6 +1601,32 @@ function SponsorForm({
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="sponsorStatus">الحالة</Label>
+          <Select
+            value={formData.status}
+            onValueChange={(value: "new" | "contacted" | "sponsored" | "interested_again" | "interested_permanent") =>
+              setFormData({ ...formData, status: value })
+            }
+          >
+            <SelectTrigger id="sponsorStatus">
+              <SelectValue placeholder="اختر الحالة" />
+            </SelectTrigger>
+            <SelectContent>
+              {SPONSOR_STATUSES.map((status) => (
+                <SelectItem key={status.value} value={status.value}>
+                  <Badge
+                    variant="outline"
+                    className={cn("font-normal", getSponsorStatusColor(status.value))}
+                  >
+                    {status.label}
+                  </Badge>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
