@@ -23,6 +23,19 @@ export type { EmailSettings, SessionInfo };
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // =============================================================================
+// RATE LIMITING & RETRY CONFIGURATION
+// =============================================================================
+
+// Resend allows 2 requests/second by default
+const RATE_LIMIT_DELAY_MS = 500; // 500ms between emails = 2/second max
+const MAX_RETRIES = 3;
+let lastEmailSentAt = 0;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// =============================================================================
 // SETTINGS HELPER
 // =============================================================================
 
@@ -64,10 +77,15 @@ interface SendEmailParams {
   text?: string;
   html?: string;
   attachments?: EmailAttachment[];
+  // Optional logging context
+  type?: string; // "confirmed", "pending", "companion", "welcome", etc.
+  registrationId?: string;
+  sessionId?: string;
 }
 
 /**
  * Base email sending function using Resend
+ * Includes rate limiting, retry logic, and DB logging
  */
 export async function sendEmail({
   to,
@@ -75,47 +93,147 @@ export async function sendEmail({
   text,
   html,
   attachments,
+  type = "unknown",
+  registrationId,
+  sessionId,
 }: SendEmailParams): Promise<boolean> {
   const recipient = Array.isArray(to) ? to : [to];
+  const recipientStr = recipient.join(", ");
 
+  // Create email log entry
+  let logId: string | null = null;
   try {
-    const fromEmail = process.env.FROM_EMAIL;
-
-    if (!process.env.RESEND_API_KEY) {
-      console.warn(`RESEND_API_KEY not configured - email not sent to ${recipient.join(", ")}`);
-      return false;
-    }
-
-    if (!fromEmail) {
-      console.warn(`FROM_EMAIL not configured - email not sent to ${recipient.join(", ")}`);
-      return false;
-    }
-
-    const mappedAttachments = attachments
-      ? attachments.map((a) => ({
-          filename: a.filename,
-          content: Buffer.from(a.content, "base64"),
-        }))
-      : undefined;
-
-    console.log(`Sending email to ${recipient.join(", ")}: ${subject}`);
-
-    // Resend requires at least one of: text, html, or react template
-    const response = await resend.emails.send({
-      from: fromEmail,
-      to: recipient,
-      subject,
-      text: text ?? "",
-      html,
-      attachments: mappedAttachments,
+    const log = await db.emailLog.create({
+      data: {
+        to: recipientStr,
+        subject,
+        type,
+        status: "pending",
+        attempts: 0,
+        registrationId,
+        sessionId,
+      },
     });
+    logId = log.id;
+  } catch (logError) {
+    console.error("Failed to create email log:", logError);
+    // Continue sending even if logging fails
+  }
 
-    console.log(`Email sent successfully to ${recipient.join(", ")} (id: ${response.data?.id ?? "unknown"})`);
-    return true;
-  } catch (error) {
-    console.error(`Email sending failed to ${recipient.join(", ")}:`, error);
+  // Check environment configuration
+  const fromEmail = process.env.FROM_EMAIL;
+
+  if (!process.env.RESEND_API_KEY) {
+    console.warn(`RESEND_API_KEY not configured - email not sent to ${recipientStr}`);
+    if (logId) {
+      await db.emailLog.update({
+        where: { id: logId },
+        data: { status: "failed", errorMessage: "RESEND_API_KEY not configured" },
+      }).catch(() => {});
+    }
     return false;
   }
+
+  if (!fromEmail) {
+    console.warn(`FROM_EMAIL not configured - email not sent to ${recipientStr}`);
+    if (logId) {
+      await db.emailLog.update({
+        where: { id: logId },
+        data: { status: "failed", errorMessage: "FROM_EMAIL not configured" },
+      }).catch(() => {});
+    }
+    return false;
+  }
+
+  const mappedAttachments = attachments
+    ? attachments.map((a) => ({
+        filename: a.filename,
+        content: Buffer.from(a.content, "base64"),
+      }))
+    : undefined;
+
+  // Rate limiting: ensure minimum delay between emails
+  const timeSinceLast = Date.now() - lastEmailSentAt;
+  if (timeSinceLast < RATE_LIMIT_DELAY_MS) {
+    await sleep(RATE_LIMIT_DELAY_MS - timeSinceLast);
+  }
+
+  // Retry loop with exponential backoff
+  let lastError: string | null = null;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      // Update attempt count
+      if (logId) {
+        await db.emailLog.update({
+          where: { id: logId },
+          data: { attempts: attempt },
+        }).catch(() => {});
+      }
+
+      console.log(`Sending email to ${recipientStr}: ${subject} (attempt ${attempt}/${MAX_RETRIES})`);
+
+      // Resend requires at least one of: text, html, or react template
+      const response = await resend.emails.send({
+        from: fromEmail,
+        to: recipient,
+        subject,
+        text: text ?? "",
+        html,
+        attachments: mappedAttachments,
+      });
+
+      // Check for errors in response (Resend returns error objects, not exceptions)
+      if (response.error) {
+        lastError = response.error.message || "Unknown Resend error";
+        console.error(`Email attempt ${attempt} failed:`, response.error);
+
+        // Check for rate limit (429)
+        if (response.error.name === "rate_limit_exceeded") {
+          // Wait longer on rate limit
+          const backoffMs = 2000 * attempt;
+          console.log(`Rate limited, waiting ${backoffMs}ms before retry...`);
+          await sleep(backoffMs);
+          continue;
+        }
+
+        // For other errors, use standard backoff
+        if (attempt < MAX_RETRIES) {
+          await sleep(1000 * attempt);
+          continue;
+        }
+      } else {
+        // Success!
+        lastEmailSentAt = Date.now();
+        console.log(`Email sent successfully to ${recipientStr} (id: ${response.data?.id ?? "unknown"})`);
+
+        if (logId) {
+          await db.emailLog.update({
+            where: { id: logId },
+            data: { status: "sent", sentAt: new Date() },
+          }).catch(() => {});
+        }
+        return true;
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : "Unknown error";
+      console.error(`Email attempt ${attempt} exception:`, error);
+
+      if (attempt < MAX_RETRIES) {
+        await sleep(1000 * attempt);
+      }
+    }
+  }
+
+  // All retries exhausted
+  console.error(`Email sending failed to ${recipientStr} after ${MAX_RETRIES} attempts: ${lastError}`);
+  if (logId) {
+    await db.emailLog.update({
+      where: { id: logId },
+      data: { status: "failed", errorMessage: lastError },
+    }).catch(() => {});
+  }
+  return false;
 }
 
 // =============================================================================
@@ -271,7 +389,8 @@ function splitLocationForPdf(location: string | null | undefined): {
 export async function sendConfirmationEmail(
   emailAddress: string,
   name: string,
-  session: SessionInfo
+  session: SessionInfo,
+  registrationId?: string
 ): Promise<boolean> {
   const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
@@ -291,6 +410,9 @@ export async function sendConfirmationEmail(
     subject: `تأكيد التسجيل - ${session.title}`,
     html,
     text,
+    type: "confirmation",
+    registrationId,
+    sessionId: session.id,
   });
 }
 
@@ -300,7 +422,8 @@ export async function sendConfirmationEmail(
 export async function sendPendingEmail(
   emailAddress: string,
   name: string,
-  session: SessionInfo
+  session: SessionInfo,
+  registrationId?: string
 ): Promise<boolean> {
   const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
@@ -320,6 +443,9 @@ export async function sendPendingEmail(
     subject: `استلام التسجيل - ${session.title}`,
     html,
     text,
+    type: "pending",
+    registrationId,
+    sessionId: session.id,
   });
 }
 
@@ -330,7 +456,8 @@ export async function sendConfirmedEmail(
   emailAddress: string,
   name: string,
   session: SessionInfo,
-  qrData?: string
+  qrData?: string,
+  registrationId?: string
 ): Promise<boolean> {
   const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
@@ -383,6 +510,9 @@ export async function sendConfirmedEmail(
     html,
     text,
     attachments,
+    type: "confirmed",
+    registrationId,
+    sessionId: session.id,
   });
 }
 
@@ -395,7 +525,8 @@ export async function sendCompanionEmail(
   registrantName: string,
   session: SessionInfo,
   isApproved: boolean,
-  qrData?: string
+  qrData?: string,
+  registrationId?: string
 ): Promise<boolean> {
   const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
@@ -454,6 +585,9 @@ export async function sendCompanionEmail(
     html,
     text,
     attachments,
+    type: isApproved ? "companion_confirmed" : "companion_pending",
+    registrationId,
+    sessionId: session.id,
   });
 }
 
@@ -484,6 +618,7 @@ export async function sendWelcomeEmail(
     subject: `مرحباً بك في ${siteName}`,
     html,
     text,
+    type: "welcome",
   });
 }
 
@@ -512,6 +647,7 @@ export async function sendPasswordResetEmail(
     subject: "إعادة تعيين كلمة المرور",
     html,
     text,
+    type: "password_reset",
   });
 }
 
@@ -549,6 +685,8 @@ export async function sendInvitationEmail(
       to: emailAddress,
       subject: `دعوة خاصة - ${session.title}`,
       text: body,
+      type: "invitation",
+      sessionId: session.id,
     });
   }
 
@@ -573,6 +711,8 @@ export async function sendInvitationEmail(
     subject: `دعوة خاصة - ${session.title}`,
     html,
     text,
+    type: "invitation",
+    sessionId: session.id,
   });
 }
 
@@ -583,7 +723,8 @@ export async function sendQrOnlyEmail(
   emailAddress: string,
   name: string,
   session: SessionInfo,
-  qrData: string
+  qrData: string,
+  registrationId?: string
 ): Promise<boolean> {
   const settings = await getEmailSettings();
   const dateStr = formatSessionDate(session.date);
@@ -635,5 +776,8 @@ export async function sendQrOnlyEmail(
     html,
     text,
     attachments,
+    type: "qr_only",
+    registrationId,
+    sessionId: session.id,
   });
 }

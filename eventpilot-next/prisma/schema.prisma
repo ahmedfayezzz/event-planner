@@ -343,3 +343,24 @@ model UserNote {
   @@index([userId])
   @@index([createdById])
 }
+
+model EmailLog {
+  id           String    @id @default(cuid())
+  to           String
+  subject      String
+  type         String    // "confirmed", "pending", "companion", "welcome", etc.
+  status       String    @default("pending") // "pending", "sent", "failed"
+  errorMessage String?
+  attempts     Int       @default(0)
+
+  // Optional references for context
+  registrationId String?
+  sessionId      String?
+
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
+
+  @@index([status])
+  @@index([registrationId])
+  @@index([createdAt])
+}
