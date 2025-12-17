@@ -73,17 +73,22 @@ export default function AdminSessionsPage() {
 
   // Build query params based on filters
   const queryParams = {
-    ...(tab === "completed" ? { status: "completed" as const } : {}),
     ...(visibilityFilter !== "all" ? { visibilityStatus: visibilityFilter } : {}),
     sortOrder: tab === "upcoming" ? "asc" as const : "desc" as const,
   };
 
   const { data, isLoading, isFetching } = api.session.listAdmin.useQuery(queryParams);
 
-  // Filter upcoming sessions client-side (future date + open status)
+  // Filter sessions client-side based on tab
   const filteredSessions = data?.sessions.filter((session: SessionItem) => {
+    const isPast = new Date(session.date) < new Date();
     if (tab === "upcoming") {
-      return new Date(session.date) > new Date() && session.status === "open";
+      // Show future sessions that are open
+      return !isPast && session.status === "open";
+    }
+    if (tab === "completed") {
+      // Show past sessions OR sessions with completed status
+      return isPast || session.status === "completed";
     }
     return true;
   }) ?? [];
