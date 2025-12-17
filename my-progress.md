@@ -32,3 +32,14 @@
   - generate WhatsApp links with pre-filled messages (opens wa.me with personalized invite)
   - track invitation status (sent, used)
   - view all invitations for a session
+
+
+- sponsor status tracking
+- remove delete option
+- visibility status for sessions
+- bulk email support and email logging (email queue)
+- show professional details in attendees list
+- manual registration should be for guests as well not only members
+- user can upload their profile picture
+- admin can upload profile picture for users
+- whatsapp button for users table
