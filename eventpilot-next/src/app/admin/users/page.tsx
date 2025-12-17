@@ -58,7 +58,7 @@ import { UserLabelManager } from "@/components/admin/user-label-manager";
 import { UserNotes } from "@/components/admin/user-notes";
 import { UserAvatar } from "@/components/user-avatar";
 import { toast } from "sonner";
-import { formatArabicDate } from "@/lib/utils";
+import { formatArabicDate, getWhatsAppUrl } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { PERMISSION_LABELS, type PermissionKey } from "@/lib/permissions";
 import {
@@ -82,7 +82,8 @@ import {
   Building2,
   Briefcase,
   Calendar,
-  MessageSquare,
+  StickyNote,
+  MessageCircle,
 } from "lucide-react";
 
 interface UserItem {
@@ -578,6 +579,18 @@ export default function AdminUsersPage() {
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                               <div className="flex items-center gap-1">
+                                {/* WhatsApp button */}
+                                {user.phone && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                    onClick={() => window.open(getWhatsAppUrl(user.phone, ""), "_blank")}
+                                    title="إرسال رسالة واتساب"
+                                  >
+                                    <MessageCircle className="h-4 w-4" />
+                                  </Button>
+                                )}
                                 {/* Notes indicator */}
                                 <UserNotes
                                   userId={user.id}
@@ -588,8 +601,9 @@ export default function AdminUsersPage() {
                                       variant="ghost"
                                       size="icon"
                                       className="relative"
+                                      title="الملاحظات"
                                     >
-                                      <MessageSquare className="h-4 w-4" />
+                                      <StickyNote className="h-4 w-4" />
                                       {user.noteCount > 0 && (
                                         <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
                                           {user.noteCount}
@@ -600,7 +614,7 @@ export default function AdminUsersPage() {
                                 />
                                 <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
+                                  <Button variant="ghost" size="icon" title="المزيد">
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
@@ -781,6 +795,18 @@ export default function AdminUsersPage() {
                                       عرض الملف
                                     </Link>
                                   </Button>
+                                  {/* WhatsApp */}
+                                  {user.phone && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-green-600 hover:text-green-700"
+                                      onClick={() => window.open(getWhatsAppUrl(user.phone, ""), "_blank")}
+                                    >
+                                      <MessageCircle className="me-2 h-4 w-4" />
+                                      واتساب
+                                    </Button>
+                                  )}
                                   {/* Notes */}
                                   <UserNotes
                                     userId={user.id}
@@ -788,7 +814,7 @@ export default function AdminUsersPage() {
                                     onUpdate={() => refetch()}
                                     trigger={
                                       <Button variant="outline" size="sm" className="relative">
-                                        <MessageSquare className="me-2 h-4 w-4" />
+                                        <StickyNote className="me-2 h-4 w-4" />
                                         ملاحظات
                                         {user.noteCount > 0 && (
                                           <span className="ms-1 bg-primary text-primary-foreground text-[10px] rounded-full px-1.5 py-0.5">

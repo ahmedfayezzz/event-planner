@@ -40,7 +40,7 @@ import {
   UserX,
   ChevronUp,
   ChevronDown,
-  MessageSquare,
+  StickyNote,
   Camera,
   Loader2,
   Trash2,
@@ -409,7 +409,7 @@ export default function UserProfilePage({
             <div className="pt-4 border-t">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
+                  <StickyNote className="h-4 w-4" />
                   الملاحظات
                   {user.notes && user.notes.length > 0 && (
                     <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
