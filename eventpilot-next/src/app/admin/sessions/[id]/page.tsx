@@ -51,6 +51,9 @@ import {
   UtensilsCrossed,
   ChevronUp,
   ChevronDown,
+  Globe,
+  EyeOff,
+  Archive,
 } from "lucide-react";
 import { getSponsorshipTypeLabel, getSponsorTypeLabel } from "@/lib/constants";
 
@@ -76,6 +79,36 @@ export default function SessionDetailPage({
       toast.error(error.message || "فشل حذف الحدث");
     },
   });
+
+  const utils = api.useUtils();
+  const updateVisibilityMutation = api.session.updateVisibility.useMutation({
+    onSuccess: (_, variables) => {
+      const labels: Record<string, string> = {
+        inactive: "مسودة",
+        active: "منشور",
+        archived: "مؤرشف",
+      };
+      toast.success(`تم تغيير حالة النشر إلى "${labels[variables.visibilityStatus]}"`);
+      utils.session.getAdminDetails.invalidate({ id });
+    },
+    onError: (error) => {
+      toast.error(error.message || "فشل تحديث حالة النشر");
+    },
+  });
+
+  type VisibilityStatus = "inactive" | "active" | "archived";
+
+  const visibilityColors: Record<VisibilityStatus, string> = {
+    inactive: "bg-yellow-500/10 text-yellow-600 border-yellow-200",
+    active: "bg-blue-500/10 text-blue-600 border-blue-200",
+    archived: "bg-gray-500/10 text-gray-600 border-gray-200",
+  };
+
+  const visibilityLabels: Record<VisibilityStatus, string> = {
+    inactive: "مسودة",
+    active: "منشور",
+    archived: "مؤرشف",
+  };
 
   const statusColors: Record<string, string> = {
     open: "bg-green-500/10 text-green-600 border-green-200",
@@ -130,8 +163,14 @@ export default function SessionDetailPage({
             </Link>
           </Button>
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold">{session.title}</h1>
+              <Badge variant="outline" className={cn("flex items-center", visibilityColors[session.visibilityStatus as VisibilityStatus])}>
+                {session.visibilityStatus === "active" && <Globe className="h-3 w-3 ml-1" />}
+                {session.visibilityStatus === "inactive" && <EyeOff className="h-3 w-3 ml-1" />}
+                {session.visibilityStatus === "archived" && <Archive className="h-3 w-3 ml-1" />}
+                {visibilityLabels[session.visibilityStatus as VisibilityStatus]}
+              </Badge>
               <Badge variant="outline" className={statusColors[session.status]}>
                 {statusLabels[session.status]}
               </Badge>
@@ -141,7 +180,40 @@ export default function SessionDetailPage({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Visibility Actions */}
+          {session.visibilityStatus !== "active" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => updateVisibilityMutation.mutate({ id, visibilityStatus: "active" })}
+              disabled={updateVisibilityMutation.isPending}
+              className="text-blue-600 hover:text-blue-700"
+            >
+              {updateVisibilityMutation.isPending ? (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Globe className="ml-2 h-4 w-4" />
+              )}
+              نشر
+            </Button>
+          )}
+          {session.visibilityStatus === "active" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => updateVisibilityMutation.mutate({ id, visibilityStatus: "inactive" })}
+              disabled={updateVisibilityMutation.isPending}
+              className="text-yellow-600 hover:text-yellow-700"
+            >
+              {updateVisibilityMutation.isPending ? (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              ) : (
+                <EyeOff className="ml-2 h-4 w-4" />
+              )}
+              إلغاء النشر
+            </Button>
+          )}
           <Button variant="outline" size="sm" asChild>
             <Link href={`/session/${session.id}`} target="_blank">
               <Eye className="ml-2 h-4 w-4" />

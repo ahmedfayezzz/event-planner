@@ -47,6 +47,7 @@ export const sessionRouter = createTRPCRouter({
         where.date = { gt: new Date() };
         where.status = "open";
         where.inviteOnly = false; // Don't show invite-only sessions in public listings
+        where.visibilityStatus = "active"; // Only show active sessions in public
       }
 
       // Date range filtering for checkin page (using Saudi Arabia timezone)
@@ -123,6 +124,7 @@ export const sessionRouter = createTRPCRouter({
           date: { gt: new Date() },
           status: "open",
           inviteOnly: false, // Don't show invite-only sessions in public listings
+          visibilityStatus: "active", // Only show active sessions in public
         },
         orderBy: { date: "asc" },
         take: input?.limit ?? 5,
@@ -404,6 +406,7 @@ export const sessionRouter = createTRPCRouter({
         maxParticipants: z.number().int().positive().optional(),
         maxCompanions: z.number().int().min(0).optional(),
         status: z.enum(["open", "closed", "completed"]).optional(),
+        visibilityStatus: z.enum(["inactive", "active", "archived"]).optional(),
         requiresApproval: z.boolean().optional(),
         showParticipantCount: z.boolean().optional(),
         location: z.string().optional(),
@@ -631,6 +634,116 @@ export const sessionRouter = createTRPCRouter({
           registeredAt: registration.registeredAt,
           companionCount: registration.invitedRegistrations.length,
         },
+      };
+    }),
+
+  /**
+   * Update visibility status (admin only) - quick action
+   */
+  updateVisibility: adminProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        visibilityStatus: z.enum(["inactive", "active", "archived"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const session = await db.session.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!session) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الحدث غير موجود",
+        });
+      }
+
+      return db.session.update({
+        where: { id: input.id },
+        data: { visibilityStatus: input.visibilityStatus },
+      });
+    }),
+
+  /**
+   * List all sessions for admin (includes all visibility statuses)
+   */
+  listAdmin: adminProcedure
+    .input(
+      z
+        .object({
+          status: z.enum(["open", "closed", "completed"]).optional(),
+          visibilityStatus: z.enum(["inactive", "active", "archived"]).optional(),
+          dateRange: z.enum(["today", "week", "month", "all"]).optional(),
+          sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
+          limit: z.number().min(1).max(100).optional().default(50),
+          cursor: z.string().optional(),
+        })
+        .optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: Record<string, any> = {};
+
+      if (input?.status) {
+        where.status = input.status;
+      }
+
+      if (input?.visibilityStatus) {
+        where.visibilityStatus = input.visibilityStatus;
+      }
+
+      // Date range filtering (using Saudi Arabia timezone)
+      if (input?.dateRange && input.dateRange !== "all") {
+        if (input.dateRange === "today") {
+          where.date = {
+            gte: startOfDayInSaudi(),
+            lte: endOfDayInSaudi(),
+          };
+        } else if (input.dateRange === "week") {
+          where.date = {
+            gte: startOfWeekInSaudi(),
+            lte: endOfWeekInSaudi(),
+          };
+        } else if (input.dateRange === "month") {
+          where.date = {
+            gte: startOfMonthInSaudi(),
+            lte: endOfMonthInSaudi(),
+          };
+        }
+      }
+
+      const sortOrder = input?.sortOrder ?? "desc";
+
+      const sessions = await db.session.findMany({
+        where,
+        orderBy: { date: sortOrder },
+        take: (input?.limit ?? 50) + 1,
+        cursor: input?.cursor ? { id: input.cursor } : undefined,
+        include: {
+          _count: {
+            select: { registrations: { where: { isApproved: true } } },
+          },
+        },
+      });
+
+      let nextCursor: string | undefined;
+      if (sessions.length > (input?.limit ?? 50)) {
+        const nextItem = sessions.pop();
+        nextCursor = nextItem?.id;
+      }
+
+      return {
+        sessions: sessions.map((s) => ({
+          ...s,
+          registrationCount: s._count.registrations,
+          isFull: s._count.registrations >= s.maxParticipants,
+        })),
+        nextCursor,
       };
     }),
 

@@ -37,6 +37,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatArabicDate } from "@/lib/utils";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Plus,
   Eye,
   Edit,
@@ -45,12 +52,16 @@ import {
   Loader2,
   MoreHorizontal,
   QrCode,
-  FileDown,
   Trash2,
   ChevronUp,
   ChevronDown,
+  Globe,
+  EyeOff,
+  Archive,
 } from "lucide-react";
 import { toast } from "sonner";
+
+type VisibilityStatus = "inactive" | "active" | "archived";
 
 interface SessionItem {
   id: string;
@@ -58,6 +69,7 @@ interface SessionItem {
   title: string;
   date: Date;
   status: string;
+  visibilityStatus: VisibilityStatus;
   maxParticipants: number;
   registrationCount: number | null;
   _count: { registrations: number };
@@ -65,6 +77,7 @@ interface SessionItem {
 
 export default function AdminSessionsPage() {
   const [tab, setTab] = useState<"all" | "upcoming" | "completed">("upcoming");
+  const [visibilityFilter, setVisibilityFilter] = useState<VisibilityStatus | "all">("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<SessionItem | null>(
     null
@@ -72,23 +85,48 @@ export default function AdminSessionsPage() {
 
   const utils = api.useUtils();
   const { isExpanded, toggleRow } = useExpandableRows();
-  const { data, isLoading, isFetching } = api.session.list.useQuery(
-    tab === "upcoming"
-      ? { upcoming: true }
-      : tab === "completed"
-      ? { status: "completed" }
-      : undefined
-  );
+
+  // Build query params based on filters
+  const queryParams = {
+    ...(tab === "completed" ? { status: "completed" as const } : {}),
+    ...(visibilityFilter !== "all" ? { visibilityStatus: visibilityFilter } : {}),
+    sortOrder: tab === "upcoming" ? "asc" as const : "desc" as const,
+  };
+
+  const { data, isLoading, isFetching } = api.session.listAdmin.useQuery(queryParams);
+
+  // Filter upcoming sessions client-side (future date + open status)
+  const filteredSessions = data?.sessions.filter((session: SessionItem) => {
+    if (tab === "upcoming") {
+      return new Date(session.date) > new Date() && session.status === "open";
+    }
+    return true;
+  }) ?? [];
 
   const deleteMutation = api.session.delete.useMutation({
     onSuccess: () => {
       toast.success("تم حذف الحدث بنجاح");
-      utils.session.list.invalidate();
+      utils.session.listAdmin.invalidate();
       setDeleteDialogOpen(false);
       setSessionToDelete(null);
     },
     onError: (error) => {
       toast.error(error.message || "فشل حذف الحدث");
+    },
+  });
+
+  const updateVisibilityMutation = api.session.updateVisibility.useMutation({
+    onSuccess: (_, variables) => {
+      const labels: Record<VisibilityStatus, string> = {
+        inactive: "مسودة",
+        active: "منشور",
+        archived: "مؤرشف",
+      };
+      toast.success(`تم تغيير حالة النشر إلى "${labels[variables.visibilityStatus]}"`);
+      utils.session.listAdmin.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "فشل تحديث حالة النشر");
     },
   });
 
@@ -115,6 +153,24 @@ export default function AdminSessionsPage() {
     completed: "منتهي",
   };
 
+  const visibilityColors: Record<VisibilityStatus, string> = {
+    inactive: "bg-yellow-500/10 text-yellow-600 border-yellow-200",
+    active: "bg-blue-500/10 text-blue-600 border-blue-200",
+    archived: "bg-gray-500/10 text-gray-600 border-gray-200",
+  };
+
+  const visibilityLabels: Record<VisibilityStatus, string> = {
+    inactive: "مسودة",
+    active: "منشور",
+    archived: "مؤرشف",
+  };
+
+  const visibilityIcons: Record<VisibilityStatus, React.ReactNode> = {
+    inactive: <EyeOff className="h-3 w-3 ml-1" />,
+    active: <Globe className="h-3 w-3 ml-1" />,
+    archived: <Archive className="h-3 w-3 ml-1" />,
+  };
+
   // Show inline loading when switching tabs
   const showInlineLoading = isFetching && !isLoading;
 
@@ -134,13 +190,29 @@ export default function AdminSessionsPage() {
         </Button>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs and Filters */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        <TabsList>
-          <TabsTrigger value="all">جميع الأحداث</TabsTrigger>
-          <TabsTrigger value="upcoming">القادمة</TabsTrigger>
-          <TabsTrigger value="completed">المنتهية</TabsTrigger>
-        </TabsList>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <TabsList>
+            <TabsTrigger value="all">جميع الأحداث</TabsTrigger>
+            <TabsTrigger value="upcoming">القادمة</TabsTrigger>
+            <TabsTrigger value="completed">المنتهية</TabsTrigger>
+          </TabsList>
+          <Select
+            value={visibilityFilter}
+            onValueChange={(v) => setVisibilityFilter(v as VisibilityStatus | "all")}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="حالة النشر" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">جميع الحالات</SelectItem>
+              <SelectItem value="inactive">مسودة</SelectItem>
+              <SelectItem value="active">منشور</SelectItem>
+              <SelectItem value="archived">مؤرشف</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <TabsContent value={tab} className="mt-4">
           <Card>
@@ -160,7 +232,7 @@ export default function AdminSessionsPage() {
                     <Skeleton key={i} className="h-12 w-full" />
                   ))}
                 </div>
-              ) : !data || data.sessions.length === 0 ? (
+              ) : filteredSessions.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   <Calendar className="mx-auto h-12 w-12 mb-4 opacity-50" />
                   <p>لا توجد أحداث</p>
@@ -180,6 +252,7 @@ export default function AdminSessionsPage() {
                         <TableHead>#</TableHead>
                         <TableHead>العنوان</TableHead>
                         <TableHead className="hidden md:table-cell">التاريخ</TableHead>
+                        <TableHead className="hidden lg:table-cell">النشر</TableHead>
                         <TableHead>الحالة</TableHead>
                         <TableHead className="hidden md:table-cell">التسجيلات</TableHead>
                         <TableHead className="hidden md:table-cell">الإجراءات</TableHead>
@@ -187,7 +260,7 @@ export default function AdminSessionsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.sessions.map((session: SessionItem) => {
+                      {filteredSessions.map((session: SessionItem) => {
                         const expanded = isExpanded(session.id);
                         return (
                           <React.Fragment key={session.id}>
@@ -205,6 +278,15 @@ export default function AdminSessionsPage() {
                               </TableCell>
                               <TableCell className="hidden md:table-cell">
                                 {formatArabicDate(new Date(session.date))}
+                              </TableCell>
+                              <TableCell className="hidden lg:table-cell">
+                                <Badge
+                                  variant="outline"
+                                  className={cn("flex items-center w-fit", visibilityColors[session.visibilityStatus])}
+                                >
+                                  {visibilityIcons[session.visibilityStatus]}
+                                  {visibilityLabels[session.visibilityStatus]}
+                                </Badge>
                               </TableCell>
                               <TableCell>
                                 <Badge
@@ -260,6 +342,35 @@ export default function AdminSessionsPage() {
                                       </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
+                                    {/* Visibility Status Actions */}
+                                    {session.visibilityStatus !== "active" && (
+                                      <DropdownMenuItem
+                                        onClick={() => updateVisibilityMutation.mutate({ id: session.id, visibilityStatus: "active" })}
+                                        disabled={updateVisibilityMutation.isPending}
+                                      >
+                                        <Globe className="ml-2 h-4 w-4 text-blue-600" />
+                                        نشر الحدث
+                                      </DropdownMenuItem>
+                                    )}
+                                    {session.visibilityStatus === "active" && (
+                                      <DropdownMenuItem
+                                        onClick={() => updateVisibilityMutation.mutate({ id: session.id, visibilityStatus: "inactive" })}
+                                        disabled={updateVisibilityMutation.isPending}
+                                      >
+                                        <EyeOff className="ml-2 h-4 w-4 text-yellow-600" />
+                                        إلغاء النشر
+                                      </DropdownMenuItem>
+                                    )}
+                                    {session.visibilityStatus !== "archived" && (
+                                      <DropdownMenuItem
+                                        onClick={() => updateVisibilityMutation.mutate({ id: session.id, visibilityStatus: "archived" })}
+                                        disabled={updateVisibilityMutation.isPending}
+                                      >
+                                        <Archive className="ml-2 h-4 w-4 text-gray-600" />
+                                        أرشفة الحدث
+                                      </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                       onClick={() => handleDeleteClick(session)}
                                       className="text-destructive focus:text-destructive"
@@ -308,6 +419,16 @@ export default function AdminSessionsPage() {
                                           <span className="mr-1 font-medium">
                                             {session._count.registrations} / {session.maxParticipants}
                                           </span>
+                                        </div>
+                                        <div className="col-span-2">
+                                          <span className="text-muted-foreground">النشر:</span>
+                                          <Badge
+                                            variant="outline"
+                                            className={cn("mr-1 inline-flex items-center", visibilityColors[session.visibilityStatus])}
+                                          >
+                                            {visibilityIcons[session.visibilityStatus]}
+                                            {visibilityLabels[session.visibilityStatus]}
+                                          </Badge>
                                         </div>
                                       </div>
                                       <div className="flex flex-wrap gap-2">

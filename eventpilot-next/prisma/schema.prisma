@@ -17,6 +17,12 @@ enum Role {
   SUPER_ADMIN
 }
 
+enum VisibilityStatus {
+  inactive
+  active
+  archived
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String
@@ -100,6 +106,7 @@ model Session {
 
   // Status
   status          String   @default("open") // open, closed, completed
+  visibilityStatus VisibilityStatus @default(inactive) // inactive, active, archived
 
   // Settings
   requiresApproval      Boolean  @default(false)
