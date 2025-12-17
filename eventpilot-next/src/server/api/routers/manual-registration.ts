@@ -22,30 +22,19 @@ export const manualRegistrationRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      // Get registered user IDs for this session
-      const registrations = await db.registration.findMany({
-        where: { sessionId: input.sessionId },
-        select: { userId: true },
-      });
-      const registeredUserIds = new Set(
-        registrations
-          .map((r) => r.userId)
-          .filter((id): id is string => id !== null)
-      );
-
-      // Build where clause
+      // Build base where clause
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const where: Record<string, any> = {
+      const baseWhere: Record<string, any> = {
         isActive: true,
       };
 
       // Filter by role if specified (default: all users)
       if (input.roleFilter && input.roleFilter !== "all") {
-        where.role = input.roleFilter;
+        baseWhere.role = input.roleFilter;
       }
 
       if (input.search) {
-        where.OR = [
+        baseWhere.OR = [
           { name: { contains: input.search } },
           { email: { contains: input.search } },
           { phone: { contains: input.search } },
@@ -55,49 +44,71 @@ export const manualRegistrationRouter = createTRPCRouter({
 
       // Filter by labels if provided
       if (input.labelIds && input.labelIds.length > 0) {
-        where.labels = {
+        baseWhere.labels = {
           some: {
             id: { in: input.labelIds },
           },
         };
       }
 
-      const users = await db.user.findMany({
-        where,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-          companyName: true,
-          position: true,
-          role: true,
-          labels: {
-            select: {
-              id: true,
-              name: true,
-              color: true,
+      const userSelect = {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        companyName: true,
+        position: true,
+        role: true,
+        labels: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
+      };
+
+      // Query 1: Get unregistered users first (users NOT registered for this session)
+      const unregisteredUsers = await db.user.findMany({
+        where: {
+          ...baseWhere,
+          registrations: {
+            none: {
+              sessionId: input.sessionId,
             },
           },
         },
+        select: userSelect,
         take: input.limit,
         orderBy: { name: "asc" },
       });
 
-      // Add registration status and sort unregistered users first
-      return users
-        .map((user) => ({
-          ...user,
-          isRegistered: registeredUserIds.has(user.id),
-        }))
-        .sort((a, b) => {
-          // Unregistered users first
-          if (a.isRegistered !== b.isRegistered) {
-            return a.isRegistered ? 1 : -1;
-          }
-          // Then sort by name
-          return (a.name || "").localeCompare(b.name || "");
+      // Calculate remaining slots for registered users
+      const remainingLimit = input.limit - unregisteredUsers.length;
+
+      // Query 2: Get registered users if we have remaining slots
+      let registeredUsers: typeof unregisteredUsers = [];
+      if (remainingLimit > 0) {
+        registeredUsers = await db.user.findMany({
+          where: {
+            ...baseWhere,
+            registrations: {
+              some: {
+                sessionId: input.sessionId,
+              },
+            },
+          },
+          select: userSelect,
+          take: remainingLimit,
+          orderBy: { name: "asc" },
         });
+      }
+
+      // Combine results: unregistered first, then registered
+      return [
+        ...unregisteredUsers.map((user) => ({ ...user, isRegistered: false })),
+        ...registeredUsers.map((user) => ({ ...user, isRegistered: true })),
+      ];
     }),
 
   /**
