@@ -84,11 +84,20 @@ export const manualRegistrationRouter = createTRPCRouter({
         orderBy: { name: "asc" },
       });
 
-      // Add registration status
-      return users.map((user) => ({
-        ...user,
-        isRegistered: registeredUserIds.has(user.id),
-      }));
+      // Add registration status and sort unregistered users first
+      return users
+        .map((user) => ({
+          ...user,
+          isRegistered: registeredUserIds.has(user.id),
+        }))
+        .sort((a, b) => {
+          // Unregistered users first
+          if (a.isRegistered !== b.isRegistered) {
+            return a.isRegistered ? 1 : -1;
+          }
+          // Then sort by name
+          return (a.name || "").localeCompare(b.name || "");
+        });
     }),
 
   /**
