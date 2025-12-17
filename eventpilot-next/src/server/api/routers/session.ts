@@ -209,7 +209,7 @@ export const sessionRouter = createTRPCRouter({
             orderBy: { registeredAt: "desc" },
             include: {
               user: {
-                select: { id: true, name: true, email: true, phone: true },
+                select: { id: true, name: true, email: true, phone: true, companyName: true, position: true },
               },
               invitedRegistrations: true,
             },
@@ -259,6 +259,8 @@ export const sessionRouter = createTRPCRouter({
           name: r.user?.name || r.guestName,
           email: r.user?.email || r.guestEmail,
           phone: r.user?.phone || r.guestPhone,
+          companyName: r.user?.companyName || r.guestCompanyName,
+          position: r.user?.position || r.guestPosition,
           isGuest: !r.user,
           isApproved: r.isApproved,
           registeredAt: r.registeredAt,

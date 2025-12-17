@@ -42,6 +42,8 @@ import {
   Globe,
   EyeOff,
   Archive,
+  Building2,
+  Briefcase,
 } from "lucide-react";
 import { getSponsorshipTypeLabel, getSponsorTypeLabel } from "@/lib/constants";
 
@@ -469,7 +471,8 @@ export default function SessionDetailPage({
               <TableHeader>
                 <TableRow>
                   <TableHead>الاسم</TableHead>
-                  <TableHead className="hidden md:table-cell">البريد / الهاتف</TableHead>
+                  <TableHead className="hidden md:table-cell">التواصل</TableHead>
+                  <TableHead className="hidden lg:table-cell">الشركة</TableHead>
                   <TableHead className="hidden md:table-cell">النوع</TableHead>
                   <TableHead>الحالة</TableHead>
                   <TableHead className="hidden md:table-cell">المرافقين</TableHead>
@@ -499,7 +502,15 @@ export default function SessionDetailPage({
                           <div className="text-sm">
                             {reg.email && <div>{reg.email}</div>}
                             {reg.phone && (
-                              <div className="text-muted-foreground">{reg.phone}</div>
+                              <div className="text-muted-foreground" dir="ltr">{reg.phone}</div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <div>
+                            <p>{reg.companyName || "-"}</p>
+                            {reg.position && (
+                              <p className="text-sm text-muted-foreground">{reg.position}</p>
                             )}
                           </div>
                         </TableCell>
@@ -556,6 +567,15 @@ export default function SessionDetailPage({
                                     <span className="mr-1">
                                       {reg.email || reg.phone}
                                     </span>
+                                  </div>
+                                )}
+                                {reg.companyName && (
+                                  <div className="flex items-center gap-1">
+                                    <Building2 className="h-3 w-3 text-muted-foreground" />
+                                    <span>{reg.companyName}</span>
+                                    {reg.position && (
+                                      <span className="text-muted-foreground">- {reg.position}</span>
+                                    )}
                                   </div>
                                 )}
                                 <div>

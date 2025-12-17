@@ -57,6 +57,8 @@ import {
   Phone,
   Calendar,
   User,
+  Building2,
+  Briefcase,
 } from "lucide-react";
 
 interface RegistrationItem {
@@ -65,6 +67,8 @@ interface RegistrationItem {
   name?: string | null;
   email?: string | null;
   phone?: string | null;
+  companyName?: string | null;
+  position?: string | null;
   isGuest: boolean;
   isApproved: boolean;
   registeredAt: Date;
@@ -301,11 +305,13 @@ ${qrPageUrl}
       return;
     }
 
-    const headers = ["الاسم", "البريد", "الهاتف", "النوع", "الحالة", "تاريخ التسجيل"];
+    const headers = ["الاسم", "البريد", "الهاتف", "الشركة", "المنصب", "النوع", "الحالة", "تاريخ التسجيل"];
     const rows = selectedRegistrations.map((r: RegistrationItem) => [
       r.name || "",
       r.email || "",
       r.phone || "",
+      r.companyName || "",
+      r.position || "",
       r.isInvited ? "مرافق" : (r.isGuest ? "زائر" : "عضو"),
       r.isApproved ? "مؤكد" : "معلق",
       formatArabicDate(new Date(r.registeredAt)),
@@ -575,8 +581,8 @@ ${qrPageUrl}
                       />
                     </TableHead>
                     <TableHead>الاسم</TableHead>
-                    <TableHead className="hidden md:table-cell">البريد</TableHead>
-                    <TableHead className="hidden md:table-cell">الهاتف</TableHead>
+                    <TableHead className="hidden md:table-cell">التواصل</TableHead>
+                    <TableHead className="hidden lg:table-cell">الشركة</TableHead>
                     <TableHead className="hidden lg:table-cell">النوع</TableHead>
                     {filter !== "invited" && <TableHead className="hidden lg:table-cell">المرافقين</TableHead>}
                     {filter !== "direct" && <TableHead className="hidden lg:table-cell">مدعو من</TableHead>}
@@ -617,8 +623,22 @@ ${qrPageUrl}
                                 reg.name
                               )}
                             </TableCell>
-                            <TableCell className="hidden md:table-cell">{reg.email}</TableCell>
-                            <TableCell className="hidden md:table-cell" dir="ltr">{reg.phone}</TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              <div className="text-sm">
+                                {reg.email && <div>{reg.email}</div>}
+                                {reg.phone && (
+                                  <div className="text-muted-foreground" dir="ltr">{reg.phone}</div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              <div>
+                                <p>{reg.companyName || "-"}</p>
+                                {reg.position && (
+                                  <p className="text-sm text-muted-foreground">{reg.position}</p>
+                                )}
+                              </div>
+                            </TableCell>
                             <TableCell className="hidden lg:table-cell">
                               <div className="flex items-center gap-1 flex-wrap">
                                 {reg.isInvited ? (
@@ -749,6 +769,18 @@ ${qrPageUrl}
                                         <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
                                         <span>{formatArabicDate(new Date(reg.registeredAt))}</span>
                                       </div>
+                                      {reg.companyName && (
+                                        <div className="flex items-center gap-2">
+                                          <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                                          <span>{reg.companyName}</span>
+                                        </div>
+                                      )}
+                                      {reg.position && (
+                                        <div className="flex items-center gap-2">
+                                          <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
+                                          <span>{reg.position}</span>
+                                        </div>
+                                      )}
                                       {!reg.isInvited && (
                                         <div className="flex items-center gap-2 col-span-2">
                                           <Users className="h-4 w-4 text-muted-foreground shrink-0" />
