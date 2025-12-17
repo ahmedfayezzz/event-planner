@@ -15,6 +15,7 @@ export const manualRegistrationRouter = createTRPCRouter({
         sessionId: z.string(),
         search: z.string().optional(),
         labelIds: z.array(z.string()).optional(),
+        roleFilter: z.enum(["all", "USER", "GUEST"]).optional(),
         limit: z.number().min(1).max(100).default(50),
       })
     )
@@ -36,8 +37,12 @@ export const manualRegistrationRouter = createTRPCRouter({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const where: Record<string, any> = {
         isActive: true,
-        role: { in: ["USER", "GUEST"] }, // Only regular users, not admins
       };
+
+      // Filter by role if specified (default: all users)
+      if (input.roleFilter && input.roleFilter !== "all") {
+        where.role = input.roleFilter;
+      }
 
       if (input.search) {
         where.OR = [

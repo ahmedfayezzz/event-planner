@@ -30,6 +30,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowRight,
   Search,
   Loader2,
@@ -94,6 +101,7 @@ export default function ManualRegistrationPage({
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [labelFilter, setLabelFilter] = useState<string[]>([]);
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
+  const [roleFilter, setRoleFilter] = useState<"all" | "USER" | "GUEST">("all");
 
   // Guests tab state
   const [guests, setGuests] = useState<GuestEntry[]>([
@@ -118,6 +126,7 @@ export default function ManualRegistrationPage({
       sessionId,
       search: userSearch || undefined,
       labelIds: labelFilter.length > 0 ? labelFilter : undefined,
+      roleFilter: roleFilter !== "all" ? roleFilter : undefined,
       limit: 100,
     },
     { enabled: activeTab === "users" }
@@ -372,8 +381,8 @@ export default function ManualRegistrationPage({
             {/* Users Tab */}
             <TabsContent value="users" className="space-y-4">
               {/* Search and Filter */}
-              <div className="flex gap-2">
-                <div className="relative flex-1">
+              <div className="flex gap-2 flex-wrap">
+                <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="بحث بالاسم أو البريد أو الهاتف..."
@@ -382,6 +391,20 @@ export default function ManualRegistrationPage({
                     className="pe-10"
                   />
                 </div>
+                {/* Role Filter */}
+                <Select
+                  value={roleFilter}
+                  onValueChange={(v) => setRoleFilter(v as "all" | "USER" | "GUEST")}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="النوع" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">الكل</SelectItem>
+                    <SelectItem value="USER">الأعضاء</SelectItem>
+                    <SelectItem value="GUEST">الزوار</SelectItem>
+                  </SelectContent>
+                </Select>
                 {/* Label Filter */}
                 <Dialog open={labelDialogOpen} onOpenChange={setLabelDialogOpen}>
                   <DialogTrigger asChild>
