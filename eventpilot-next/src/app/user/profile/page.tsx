@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
@@ -25,11 +25,18 @@ import {
   Briefcase,
   Instagram,
   Twitter,
+  Camera,
+  Loader2,
+  Trash2,
 } from "lucide-react";
+import { UserAvatar } from "@/components/user-avatar";
 
 export default function UserProfilePage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const utils = api.useUtils();
 
   // Fetch full profile data from database
   const { data: profile, isLoading: profileLoading } =
@@ -45,6 +52,81 @@ export default function UserProfilePage() {
       toast.error(error.message || "حدث خطأ أثناء تحديث الملف الشخصي");
     },
   });
+
+  // Avatar upload mutations
+  const uploadAvatarMutation = api.upload.uploadUserAvatar.useMutation();
+  const confirmAvatarMutation = api.upload.confirmUserAvatar.useMutation({
+    onSuccess: () => {
+      toast.success("تم تحديث الصورة الشخصية");
+      utils.user.getMyProfile.invalidate();
+    },
+  });
+  const removeAvatarMutation = api.upload.removeUserAvatar.useMutation({
+    onSuccess: () => {
+      toast.success("تم حذف الصورة الشخصية");
+      utils.user.getMyProfile.invalidate();
+    },
+  });
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("نوع الملف غير مدعوم. يرجى اختيار صورة بصيغة JPG, PNG أو WebP");
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("حجم الملف كبير جداً. الحد الأقصى 5 ميجابايت");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      // Step 1: Get presigned URL
+      const { uploadUrl, publicUrl } = await uploadAvatarMutation.mutateAsync({
+        fileName: file.name,
+        contentType: file.type,
+        fileSize: file.size,
+      });
+
+      // Step 2: Upload to S3
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("فشل رفع الصورة");
+      }
+
+      // Step 3: Confirm upload
+      await confirmAvatarMutation.mutateAsync({ imageUrl: publicUrl });
+    } catch (error) {
+      console.error("Avatar upload failed:", error);
+      toast.error("فشل رفع الصورة الشخصية");
+    } finally {
+      setIsUploadingAvatar(false);
+      // Clear file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    try {
+      await removeAvatarMutation.mutateAsync();
+    } catch (error) {
+      console.error("Remove avatar failed:", error);
+      toast.error("فشل حذف الصورة الشخصية");
+    }
+  };
 
   const [formData, setFormData] = useState({
     name: "",
@@ -124,8 +206,34 @@ export default function UserProfilePage() {
               <div className="h-32 bg-gradient-to-br from-primary to-primary/80"></div>
               <CardContent className="pt-0 relative">
                 <div className="absolute -top-16 right-1/2 translate-x-1/2">
-                  <div className="h-32 w-32 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center text-4xl font-bold text-primary">
-                    {session?.user?.name?.charAt(0).toUpperCase()}
+                  <div className="relative group">
+                    <div className="h-32 w-32 rounded-full border-4 border-white bg-white shadow-md overflow-hidden">
+                      <UserAvatar
+                        avatarUrl={profile?.avatarUrl}
+                        name={session?.user?.name}
+                        size="xl"
+                        className="h-full w-full text-4xl"
+                      />
+                    </div>
+                    {/* Upload overlay */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingAvatar}
+                      className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                    >
+                      {isUploadingAvatar ? (
+                        <Loader2 className="h-8 w-8 text-white animate-spin" />
+                      ) : (
+                        <Camera className="h-8 w-8 text-white" />
+                      )}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
                   </div>
                 </div>
                 <div className="mt-20 text-center space-y-2">
@@ -133,6 +241,20 @@ export default function UserProfilePage() {
                   <p className="text-muted-foreground text-sm">
                     {session?.user?.email}
                   </p>
+                  {profile?.avatarUrl && (
+                    <button
+                      onClick={handleRemoveAvatar}
+                      disabled={removeAvatarMutation.isPending}
+                      className="text-xs text-destructive hover:underline inline-flex items-center gap-1"
+                    >
+                      {removeAvatarMutation.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3 w-3" />
+                      )}
+                      حذف الصورة
+                    </button>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -74,6 +74,7 @@ export const userRouter = createTRPCRouter({
         username: true,
         email: true,
         phone: true,
+        avatarUrl: true,
         instagram: true,
         snapchat: true,
         twitter: true,

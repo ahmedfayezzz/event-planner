@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { UserLabelManager } from "@/components/admin/user-label-manager";
 import { UserNotes } from "@/components/admin/user-notes";
+import { UserAvatar } from "@/components/user-avatar";
 import { toast } from "sonner";
 import { formatArabicDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -90,6 +91,7 @@ interface UserItem {
   email: string;
   phone: string;
   username: string;
+  avatarUrl?: string | null;
   role: string;
   isActive: boolean;
   isManuallyCreated?: boolean;
@@ -468,24 +470,31 @@ export default function AdminUsersPage() {
                       <React.Fragment key={user.id}>
                         <TableRow
                           className={cn(
-                            !user.isActive && "opacity-60",
+                            !user.isActive && user.role !== "GUEST" && "opacity-60",
                             expanded && "md:border-b border-b-0"
                           )}
                         >
                             <TableCell>
-                              <div>
-                                <p className="font-medium">{user.name}</p>
-                                {/* Show email/phone on desktop only */}
-                                <p className="text-sm text-muted-foreground hidden md:block">
-                                  {user.email}
-                                </p>
-                                <p
-                                  className="text-xs text-muted-foreground hidden md:block"
-                                  dir="ltr"
-                                >
-                                  {user.phone}
-                                </p>
-                              </div>
+                              <Link href={`/admin/users/${user.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                                <UserAvatar
+                                  avatarUrl={user.avatarUrl}
+                                  name={user.name}
+                                  size="sm"
+                                />
+                                <div>
+                                  <p className="font-medium hover:underline">{user.name}</p>
+                                  {/* Show email/phone on desktop only */}
+                                  <p className="text-sm text-muted-foreground hidden md:block">
+                                    {user.email}
+                                  </p>
+                                  <p
+                                    className="text-xs text-muted-foreground hidden md:block"
+                                    dir="ltr"
+                                  >
+                                    {user.phone}
+                                  </p>
+                                </div>
+                              </Link>
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1 flex-wrap">
@@ -547,16 +556,20 @@ export default function AdminUsersPage() {
                               />
                             </TableCell>
                             <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={
-                                  user.isActive
-                                    ? "bg-green-500/10 text-green-600 border-green-200"
-                                    : "bg-red-500/10 text-red-600 border-red-200"
-                                }
-                              >
-                                {user.isActive ? "نشط" : "معطل"}
-                              </Badge>
+                              {user.role !== "GUEST" ? (
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    user.isActive
+                                      ? "bg-green-500/10 text-green-600 border-green-200"
+                                      : "bg-red-500/10 text-red-600 border-red-200"
+                                  }
+                                >
+                                  {user.isActive ? "نشط" : "معطل"}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">-</span>
+                              )}
                             </TableCell>
                             <TableCell className="hidden md:table-cell">{user.registrationCount}</TableCell>
                             <TableCell className="hidden md:table-cell">{user.attendanceCount}</TableCell>
@@ -667,6 +680,18 @@ export default function AdminUsersPage() {
                               >
                                 <div className="overflow-hidden">
                                   <div className="p-4 bg-muted/30 border-b">
+                                {/* Avatar in mobile view */}
+                                <div className="flex items-center gap-3 mb-3 pb-3 border-b">
+                                  <UserAvatar
+                                    avatarUrl={user.avatarUrl}
+                                    name={user.name}
+                                    size="lg"
+                                  />
+                                  <div>
+                                    <p className="font-medium">{user.name}</p>
+                                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                                  </div>
+                                </div>
                                 <div className="grid grid-cols-2 gap-3 text-sm">
                                   <div className="flex items-center gap-2">
                                     <Mail className="h-4 w-4 text-muted-foreground shrink-0" />

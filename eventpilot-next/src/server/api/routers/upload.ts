@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, adminProcedure, publicProcedure } from "../trpc";
+import { createTRPCRouter, adminProcedure, publicProcedure, protectedProcedure } from "../trpc";
 import {
   generatePresignedUploadUrl,
   generatePresignedReadUrl,
@@ -223,6 +223,167 @@ export const uploadRouter = createTRPCRouter({
         });
       }
     }),
+
+  /**
+   * Get presigned URL for user's own avatar upload (authenticated users)
+   */
+  uploadUserAvatar: protectedProcedure
+    .input(
+      z.object({
+        fileName: z.string().min(1, "اسم الملف مطلوب"),
+        contentType: z.string().min(1, "نوع الملف مطلوب"),
+        fileSize: z.number().positive("حجم الملف يجب أن يكون أكبر من صفر"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { fileName, contentType, fileSize } = input;
+      const userId = ctx.session.user.id;
+
+      // Check if S3 is configured
+      if (!isS3Configured()) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "خدمة رفع الملفات غير مفعلة",
+        });
+      }
+
+      const config = IMAGE_TYPES.avatar;
+
+      // Validate file size
+      if (fileSize > config.maxSizeBytes) {
+        const maxSizeMB = config.maxSizeBytes / (1024 * 1024);
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `حجم الملف يتجاوز الحد المسموح (${maxSizeMB} ميجابايت)`,
+        });
+      }
+
+      // Validate content type
+      const allowedTypes: readonly string[] = config.allowedContentTypes;
+      if (!allowedTypes.includes(contentType)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `نوع الملف غير مدعوم. الأنواع المدعومة: ${config.allowedContentTypes.join(", ")}`,
+        });
+      }
+
+      try {
+        const { uploadUrl, publicUrl, key } = await generatePresignedUploadUrl({
+          imageType: "avatar",
+          fileName,
+          contentType,
+          entityId: userId,
+        });
+
+        return {
+          uploadUrl,
+          publicUrl,
+          key,
+          expiresIn: 600, // 10 minutes
+        };
+      } catch (error) {
+        console.error("Failed to generate presigned URL for user avatar:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "فشل في إنشاء رابط الرفع",
+        });
+      }
+    }),
+
+  /**
+   * Confirm user's own avatar upload
+   */
+  confirmUserAvatar: protectedProcedure
+    .input(
+      z.object({
+        imageUrl: z.string().url(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const userId = ctx.session.user.id;
+      const { imageUrl } = input;
+
+      try {
+        // Get current user to check for old avatar
+        const user = await db.user.findUnique({
+          where: { id: userId },
+          select: { avatarUrl: true },
+        });
+
+        const oldAvatarUrl = user?.avatarUrl;
+
+        // Update user's avatar
+        await db.user.update({
+          where: { id: userId },
+          data: { avatarUrl: imageUrl },
+        });
+
+        // Delete old avatar if exists
+        if (oldAvatarUrl) {
+          const oldKey = extractKeyFromUrl(oldAvatarUrl);
+          if (oldKey) {
+            try {
+              await deleteImage(oldKey);
+            } catch (error) {
+              console.error("Failed to delete old avatar:", error);
+            }
+          }
+        }
+
+        return { success: true, imageUrl };
+      } catch (error) {
+        console.error("Failed to confirm user avatar upload:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "فشل في تحديث الصورة الشخصية",
+        });
+      }
+    }),
+
+  /**
+   * Remove user's own avatar
+   */
+  removeUserAvatar: protectedProcedure.mutation(async ({ ctx }) => {
+    const { db } = ctx;
+    const userId = ctx.session.user.id;
+
+    try {
+      // Get current avatar URL
+      const user = await db.user.findUnique({
+        where: { id: userId },
+        select: { avatarUrl: true },
+      });
+
+      if (!user?.avatarUrl) {
+        return { success: true };
+      }
+
+      // Delete from S3
+      const key = extractKeyFromUrl(user.avatarUrl);
+      if (key) {
+        try {
+          await deleteImage(key);
+        } catch (error) {
+          console.error("Failed to delete avatar from S3:", error);
+        }
+      }
+
+      // Clear from database
+      await db.user.update({
+        where: { id: userId },
+        data: { avatarUrl: null },
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to remove user avatar:", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "فشل في حذف الصورة الشخصية",
+      });
+    }
+  }),
 
   /**
    * Get upload configuration for client

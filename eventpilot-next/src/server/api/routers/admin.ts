@@ -10,6 +10,7 @@ import { exportToCSV } from "@/lib/utils";
 import { getHostingTypeLabel } from "@/lib/constants";
 import { ADMIN_PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 import { toSaudiTime } from "@/lib/timezone";
+import { deleteImage, extractKeyFromUrl } from "@/lib/s3";
 
 export const adminRouter = createTRPCRouter({
   /**
@@ -339,6 +340,7 @@ export const adminRouter = createTRPCRouter({
           username: true,
           email: true,
           phone: true,
+          avatarUrl: true,
           companyName: true,
           position: true,
           role: true,
@@ -468,6 +470,54 @@ export const adminRouter = createTRPCRouter({
         ...user,
         stats,
       };
+    }),
+
+  /**
+   * Update or remove user avatar (admin only)
+   */
+  updateUserAvatar: adminProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        avatarUrl: z.string().url().nullable(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const user = await db.user.findUnique({
+        where: { id: input.userId },
+        select: { avatarUrl: true },
+      });
+
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "المستخدم غير موجود",
+        });
+      }
+
+      const oldAvatarUrl = user.avatarUrl;
+
+      // Update user's avatar
+      await db.user.update({
+        where: { id: input.userId },
+        data: { avatarUrl: input.avatarUrl },
+      });
+
+      // Delete old avatar from S3 if clearing or replacing
+      if (oldAvatarUrl && oldAvatarUrl !== input.avatarUrl) {
+        const oldKey = extractKeyFromUrl(oldAvatarUrl);
+        if (oldKey) {
+          try {
+            await deleteImage(oldKey);
+          } catch (error) {
+            console.error("Failed to delete old avatar:", error);
+          }
+        }
+      }
+
+      return { success: true, avatarUrl: input.avatarUrl };
     }),
 
   /**

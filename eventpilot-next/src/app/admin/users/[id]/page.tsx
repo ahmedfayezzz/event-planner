@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use } from "react";
+import React, { use, useRef, useState } from "react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
 import { useExpandableRows } from "@/hooks/use-expandable-rows";
@@ -19,7 +19,9 @@ import {
 } from "@/components/ui/table";
 import { UserLabelManager } from "@/components/admin/user-label-manager";
 import { UserNotes } from "@/components/admin/user-notes";
+import { UserAvatar } from "@/components/user-avatar";
 import { formatArabicDate } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   ArrowRight,
   User,
@@ -39,6 +41,9 @@ import {
   ChevronUp,
   ChevronDown,
   MessageSquare,
+  Camera,
+  Loader2,
+  Trash2,
 } from "lucide-react";
 
 export default function UserProfilePage({
@@ -48,8 +53,90 @@ export default function UserProfilePage({
 }) {
   const { id } = use(params);
   const { isExpanded, toggleRow } = useExpandableRows();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const { data: user, isLoading, refetch } = api.admin.getUserById.useQuery({ id });
+
+  // Admin avatar upload mutations
+  const getPresignedUrl = api.upload.getPresignedUrl.useMutation();
+  const updateUserAvatar = api.admin.updateUserAvatar.useMutation({
+    onSuccess: () => {
+      toast.success("تم تحديث الصورة الشخصية");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || "فشل تحديث الصورة");
+    },
+  });
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("نوع الملف غير مدعوم. يرجى اختيار صورة بصيغة JPG, PNG أو WebP");
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("حجم الملف كبير جداً. الحد الأقصى 5 ميجابايت");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      // Step 1: Get presigned URL
+      const { uploadUrl, publicUrl } = await getPresignedUrl.mutateAsync({
+        imageType: "avatar",
+        fileName: file.name,
+        contentType: file.type,
+        fileSize: file.size,
+        entityId: user.id,
+      });
+
+      // Step 2: Upload to S3
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("فشل رفع الصورة");
+      }
+
+      // Step 3: Update user avatar URL
+      await updateUserAvatar.mutateAsync({
+        userId: user.id,
+        avatarUrl: publicUrl,
+      });
+    } catch (error) {
+      console.error("Avatar upload failed:", error);
+      toast.error("فشل رفع الصورة الشخصية");
+    } finally {
+      setIsUploadingAvatar(false);
+      // Clear file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user) return;
+    try {
+      await updateUserAvatar.mutateAsync({
+        userId: user.id,
+        avatarUrl: null,
+      });
+    } catch (error) {
+      console.error("Remove avatar failed:", error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -101,6 +188,35 @@ export default function UserProfilePage({
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
+          {/* Avatar with upload */}
+          <div className="relative group">
+            <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-muted">
+              <UserAvatar
+                avatarUrl={user.avatarUrl}
+                name={user.name}
+                size="lg"
+                className="h-full w-full"
+              />
+            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingAvatar}
+              className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+            >
+              {isUploadingAvatar ? (
+                <Loader2 className="h-5 w-5 text-white animate-spin" />
+              ) : (
+                <Camera className="h-5 w-5 text-white" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
+          </div>
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{user.name}</h1>
@@ -117,9 +233,23 @@ export default function UserProfilePage({
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground">
-              انضم في {formatArabicDate(new Date(user.createdAt))}
-            </p>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span>انضم في {formatArabicDate(new Date(user.createdAt))}</span>
+              {user.avatarUrl && (
+                <button
+                  onClick={handleRemoveAvatar}
+                  disabled={updateUserAvatar.isPending}
+                  className="text-xs text-destructive hover:underline inline-flex items-center gap-1"
+                >
+                  {updateUserAvatar.isPending ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3 w-3" />
+                  )}
+                  حذف الصورة
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
