@@ -16,7 +16,7 @@ export const manualRegistrationRouter = createTRPCRouter({
         search: z.string().optional(),
         labelIds: z.array(z.string()).optional(),
         roleFilter: z.enum(["all", "USER", "GUEST"]).optional(),
-        limit: z.number().min(1).max(100).default(50),
+        limit: z.number().min(1).max(500).default(100),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -93,6 +93,7 @@ export const manualRegistrationRouter = createTRPCRouter({
 
   /**
    * Manual registration - register users and/or create guests
+   * Optimized for bulk operations (100+ users)
    */
   manualRegister: adminProcedure
     .input(
@@ -136,7 +137,7 @@ export const manualRegistrationRouter = createTRPCRouter({
         });
       }
 
-      // Get existing registrations to avoid duplicates
+      // Get existing registrations to avoid duplicates (single query)
       const existingRegistrations = await db.registration.findMany({
         where: { sessionId: input.sessionId },
         select: { userId: true, guestPhone: true },
@@ -161,41 +162,104 @@ export const manualRegistrationRouter = createTRPCRouter({
         registrationId: string;
       }> = [];
 
-      // Register existing users
-      for (const userId of input.userIds) {
-        if (registeredUserIds.has(userId)) {
+      // ============================================
+      // BULK REGISTER EXISTING USERS (Optimized)
+      // ============================================
+
+      // Filter out already registered users
+      const userIdsToRegister = input.userIds.filter((id) => {
+        if (registeredUserIds.has(id)) {
           skippedCount++;
-          continue;
+          return false;
         }
+        return true;
+      });
 
-        const user = await db.user.findUnique({
-          where: { id: userId },
-          select: { email: true, name: true },
+      if (userIdsToRegister.length > 0) {
+        // Fetch all users in a single query
+        const usersToRegister = await db.user.findMany({
+          where: { id: { in: userIdsToRegister } },
+          select: { id: true, email: true, name: true },
         });
 
-        if (!user) continue;
+        const validUserIds = new Set(usersToRegister.map((u) => u.id));
+        const userMap = new Map(usersToRegister.map((u) => [u.id, u]));
 
-        const registration = await db.registration.create({
-          data: {
-            sessionId: input.sessionId,
-            userId,
-            isApproved: true,
-            // Manual registration tracking
-            isManual: true,
-            manualAddedBy: ctx.session.user.id,
-            manualAddedAt: new Date(),
-          },
-        });
+        // Filter to only valid user IDs
+        const validUserIdsToRegister = userIdsToRegister.filter((id) => validUserIds.has(id));
 
-        registeredCount++;
+        // Prepare bulk registration data
+        const userRegistrationData = validUserIdsToRegister.map((userId) => ({
+          sessionId: input.sessionId,
+          userId,
+          isApproved: true,
+          isManual: true,
+          manualAddedBy: ctx.session.user.id,
+          manualAddedAt: new Date(),
+        }));
 
-        // Queue email for existing users (they get full confirmed email, handled elsewhere)
-        // For now, we only send QR-only emails to new guests
+        // Bulk create registrations
+        if (userRegistrationData.length > 0) {
+          await db.registration.createMany({
+            data: userRegistrationData,
+            skipDuplicates: true,
+          });
+          registeredCount += userRegistrationData.length;
+
+          // If sendQrEmail is enabled, fetch created registrations and queue emails
+          if (input.sendQrEmail) {
+            const createdRegistrations = await db.registration.findMany({
+              where: {
+                sessionId: input.sessionId,
+                userId: { in: validUserIdsToRegister },
+              },
+              select: { id: true, userId: true },
+            });
+
+            for (const reg of createdRegistrations) {
+              const user = userMap.get(reg.userId!);
+              if (user && user.email && !user.email.includes("@placeholder.local")) {
+                emailsToSend.push({
+                  email: user.email,
+                  name: user.name,
+                  registrationId: reg.id,
+                });
+              }
+            }
+          }
+        }
       }
 
-      // Register new guests
+      // ============================================
+      // REGISTER NEW GUESTS (Sequential - needs user creation)
+      // ============================================
+
+      // For guests, we need sequential processing due to user creation
+      // But we can optimize by batching the phone lookups
+      const guestPhones = input.newGuests.map((g) => g.phone);
+      const normalizedPhones = guestPhones.map((p) => p.replace(/\D/g, ""));
+      const allPhones = [...new Set([...guestPhones, ...normalizedPhones])];
+
+      // Fetch all existing users by phone in one query
+      const existingUsersByPhone = await db.user.findMany({
+        where: { phone: { in: allPhones } },
+      });
+
+      const phoneToUserMap = new Map<string, typeof existingUsersByPhone[0]>();
+      for (const user of existingUsersByPhone) {
+        phoneToUserMap.set(user.phone, user);
+      }
+
+      // Existing users found by phone - will be registered as regular users (not guests)
+      const existingUsersByPhoneToRegister: typeof existingUsersByPhone = [];
+
+      const newUsersToCreate: Array<{
+        guest: typeof input.newGuests[0];
+        tempId: string;
+      }> = [];
+
+      // Process guests to determine which need new users vs existing users
       for (const guest of input.newGuests) {
-        // Normalize phone for comparison
         const normalizedPhone = guest.phone.replace(/\D/g, "");
 
         // Check if already registered by phone
@@ -204,46 +268,92 @@ export const manualRegistrationRouter = createTRPCRouter({
           continue;
         }
 
-        // Check if user exists by phone
-        let user = await db.user.findFirst({
-          where: {
-            OR: [
-              { phone: guest.phone },
-              { phone: normalizedPhone },
-            ],
+        // Check if user exists
+        const user = phoneToUserMap.get(guest.phone) || phoneToUserMap.get(normalizedPhone);
+
+        if (user) {
+          // Check if this user is already registered
+          if (registeredUserIds.has(user.id)) {
+            skippedCount++;
+            continue;
+          }
+
+          // Existing user - register as regular user (not guest)
+          existingUsersByPhoneToRegister.push(user);
+
+          // Track for skipping duplicates
+          registeredUserIds.add(user.id);
+        } else {
+          // Need to create new user
+          newUsersToCreate.push({
+            guest,
+            tempId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          });
+        }
+      }
+
+      // Bulk register existing users found by phone (as regular registrations, not guests)
+      if (existingUsersByPhoneToRegister.length > 0) {
+        const existingUserIds = existingUsersByPhoneToRegister.map((u) => u.id);
+        const existingUserMap = new Map(existingUsersByPhoneToRegister.map((u) => [u.id, u]));
+
+        const existingUserRegistrationData = existingUserIds.map((userId) => ({
+          sessionId: input.sessionId,
+          userId,
+          isApproved: true,
+          isManual: true,
+          manualAddedBy: ctx.session.user.id,
+          manualAddedAt: new Date(),
+        }));
+
+        await db.registration.createMany({
+          data: existingUserRegistrationData,
+          skipDuplicates: true,
+        });
+        registeredCount += existingUserRegistrationData.length;
+
+        // Queue emails for existing users found by phone
+        if (input.sendQrEmail) {
+          const createdRegs = await db.registration.findMany({
+            where: {
+              sessionId: input.sessionId,
+              userId: { in: existingUserIds },
+            },
+            select: { id: true, userId: true },
+          });
+
+          for (const reg of createdRegs) {
+            const user = existingUserMap.get(reg.userId!);
+            if (user && user.email && !user.email.includes("@placeholder.local")) {
+              emailsToSend.push({
+                email: user.email,
+                name: user.name,
+                registrationId: reg.id,
+              });
+            }
+          }
+        }
+      }
+
+      // Create new users and their registrations
+      for (const { guest, tempId } of newUsersToCreate) {
+        const guestUsername = `guest-${tempId}`;
+
+        const user = await db.user.create({
+          data: {
+            name: guest.name,
+            phone: guest.phone,
+            email: guest.email || `guest-${tempId}@placeholder.local`,
+            username: guestUsername,
+            role: "GUEST",
+            isActive: true,
+            companyName: guest.companyName || null,
+            position: guest.position || null,
+            isManuallyCreated: true,
+            createdByAdminId: ctx.session.user.id,
           },
         });
 
-        // Create guest user if not exists
-        if (!user) {
-          // Generate unique username for guest
-          const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-          const guestUsername = `guest-${uniqueSuffix}`;
-
-          user = await db.user.create({
-            data: {
-              name: guest.name,
-              phone: guest.phone,
-              email: guest.email || `guest-${uniqueSuffix}@placeholder.local`,
-              username: guestUsername,
-              role: "GUEST",
-              isActive: true,
-              companyName: guest.companyName || null,
-              position: guest.position || null,
-              // Manual creation tracking
-              isManuallyCreated: true,
-              createdByAdminId: ctx.session.user.id,
-            },
-          });
-        }
-
-        // Check if this user is already registered
-        if (registeredUserIds.has(user.id)) {
-          skippedCount++;
-          continue;
-        }
-
-        // Create registration
         const registration = await db.registration.create({
           data: {
             sessionId: input.sessionId,
@@ -254,7 +364,6 @@ export const manualRegistrationRouter = createTRPCRouter({
             guestEmail: guest.email || null,
             guestCompanyName: guest.companyName || null,
             guestPosition: guest.position || null,
-            // Manual registration tracking
             isManual: true,
             manualAddedBy: ctx.session.user.id,
             manualAddedAt: new Date(),
@@ -273,50 +382,54 @@ export const manualRegistrationRouter = createTRPCRouter({
         }
       }
 
-      // Send QR-only emails to new guests
-      let emailsSent = 0;
-      let emailsFailed = 0;
+      // ============================================
+      // SEND EMAILS (Fire and forget - non-blocking)
+      // ============================================
+      const emailsQueued = emailsToSend.length;
 
-      for (const emailData of emailsToSend) {
-        try {
-          const qrData = createQRCheckInData({
-            type: "attendance",
-            registrationId: emailData.registrationId,
-            sessionId: input.sessionId,
-          });
+      // Fire and forget - emails sent in background with rate limiting
+      if (emailsToSend.length > 0) {
+        const sessionData = {
+          title: session.title,
+          sessionNumber: session.sessionNumber,
+          date: session.date,
+          location: session.location,
+          locationUrl: session.locationUrl,
+          slug: session.slug,
+          id: session.id,
+          sendQrInEmail: session.sendQrInEmail,
+        };
+        const sessionId = input.sessionId;
 
-          const success = await sendQrOnlyEmail(
-            emailData.email,
-            emailData.name,
-            {
-              title: session.title,
-              sessionNumber: session.sessionNumber,
-              date: session.date,
-              location: session.location,
-              locationUrl: session.locationUrl,
-              slug: session.slug,
-              id: session.id,
-              sendQrInEmail: session.sendQrInEmail,
-            },
-            qrData
-          );
+        // Don't await - let it run in background
+        Promise.resolve().then(async () => {
+          for (const emailData of emailsToSend) {
+            try {
+              const qrData = createQRCheckInData({
+                type: "attendance",
+                registrationId: emailData.registrationId,
+                sessionId,
+              });
 
-          if (success) {
-            emailsSent++;
-          } else {
-            emailsFailed++;
+              await sendQrOnlyEmail(
+                emailData.email,
+                emailData.name,
+                sessionData,
+                qrData
+              );
+            } catch (error) {
+              console.error("Failed to send QR email:", error);
+            }
           }
-        } catch (error) {
-          console.error("Failed to send QR email:", error);
-          emailsFailed++;
-        }
+        }).catch((error) => {
+          console.error("Email sending background task failed:", error);
+        });
       }
 
       return {
         registered: registeredCount,
         skipped: skippedCount,
-        emailsSent,
-        emailsFailed,
+        emailsQueued,
       };
     }),
 

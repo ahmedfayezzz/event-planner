@@ -127,7 +127,7 @@ export default function ManualRegistrationPage({
       search: userSearch || undefined,
       labelIds: labelFilter.length > 0 ? labelFilter : undefined,
       roleFilter: roleFilter !== "all" ? roleFilter : undefined,
-      limit: 100,
+      limit: 500, // Support bulk selection
     },
     { enabled: activeTab === "users" }
   );
@@ -140,8 +140,8 @@ export default function ManualRegistrationPage({
       toast.success(
         `تم تسجيل ${data.registered} شخص بنجاح${data.skipped > 0 ? ` (تم تخطي ${data.skipped} مسجلين مسبقاً)` : ""}`
       );
-      if (data.emailsSent > 0) {
-        toast.info(`تم إرسال ${data.emailsSent} بريد إلكتروني`);
+      if (data.emailsQueued > 0) {
+        toast.info(`جاري إرسال ${data.emailsQueued} بريد إلكتروني`);
       }
       // Reset state
       setSelectedUserIds([]);
