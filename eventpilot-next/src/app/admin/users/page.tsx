@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -145,6 +145,9 @@ export default function AdminUsersPage() {
     useState<PermissionKey[]>(ALL_PERMISSIONS);
 
   const debouncedSearch = useDebounce(search, 300);
+
+  // Fetch user stats
+  const { data: userStats } = api.admin.getUserStats.useQuery();
 
   // Fetch all labels for filtering
   const { data: allLabels, refetch: refetchLabels } = api.label.getAll.useQuery();
@@ -298,6 +301,66 @@ export default function AdminUsersPage() {
           تصدير CSV
         </Button>
       </div>
+
+      {/* Stats Cards */}
+      {userStats && (
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">الإجمالي</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{userStats.totalUsers}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">أعضاء</CardTitle>
+              <UserCheck className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{userStats.totalMembers}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">زوار</CardTitle>
+              <Users className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{userStats.totalGuests}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">نشط</CardTitle>
+              <UserCheck className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{userStats.activeMembers}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">معطل</CardTitle>
+              <UserX className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">{userStats.inactiveMembers}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">يدوي</CardTitle>
+              <Plus className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">{userStats.manuallyCreated}</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Filters */}
       <Card>

@@ -385,6 +385,50 @@ export const adminRouter = createTRPCRouter({
     }),
 
   /**
+   * Get user stats (totals) for admin dashboard
+   */
+  getUserStats: adminProcedure.query(async ({ ctx }) => {
+    const { db } = ctx;
+
+    const [
+      totalUsers,
+      totalMembers,
+      totalGuests,
+      activeMembers,
+      inactiveMembers,
+      manuallyCreated,
+    ] = await Promise.all([
+      db.user.count({
+        where: { role: { in: ["USER", "GUEST"] } },
+      }),
+      db.user.count({
+        where: { role: "USER" },
+      }),
+      db.user.count({
+        where: { role: "GUEST" },
+      }),
+      db.user.count({
+        where: { role: "USER", isActive: true },
+      }),
+      db.user.count({
+        where: { role: "USER", isActive: false },
+      }),
+      db.user.count({
+        where: { role: { in: ["USER", "GUEST"] }, isManuallyCreated: true },
+      }),
+    ]);
+
+    return {
+      totalUsers,
+      totalMembers,
+      totalGuests,
+      activeMembers,
+      inactiveMembers,
+      manuallyCreated,
+    };
+  }),
+
+  /**
    * Get user by ID with full details (admin only)
    */
   getUserById: adminProcedure
