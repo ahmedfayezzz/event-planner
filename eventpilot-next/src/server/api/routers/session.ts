@@ -43,11 +43,13 @@ export const sessionRouter = createTRPCRouter({
         where.status = input.status;
       }
 
+      // Always filter for active (published) sessions in public listings
+      where.visibilityStatus = "active";
+      where.inviteOnly = false; // Don't show invite-only sessions in public listings
+
       if (input?.upcoming) {
         where.date = { gt: new Date() };
         where.status = "open";
-        where.inviteOnly = false; // Don't show invite-only sessions in public listings
-        where.visibilityStatus = "active"; // Only show active sessions in public
       }
 
       // Date range filtering for checkin page (using Saudi Arabia timezone)
@@ -149,7 +151,7 @@ export const sessionRouter = createTRPCRouter({
     }),
 
   /**
-   * Get session by ID
+   * Get session by ID (public - only returns active/published sessions)
    */
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
@@ -166,6 +168,14 @@ export const sessionRouter = createTRPCRouter({
       });
 
       if (!session) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الحدث غير موجود",
+        });
+      }
+
+      // Only return active (published) sessions in public view
+      if (session.visibilityStatus !== "active") {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "الحدث غير موجود",
@@ -270,7 +280,7 @@ export const sessionRouter = createTRPCRouter({
     }),
 
   /**
-   * Get session by slug
+   * Get session by slug (public - only returns active/published sessions)
    */
   getBySlug: publicProcedure
     .input(z.object({ slug: z.string() }))
@@ -287,6 +297,14 @@ export const sessionRouter = createTRPCRouter({
       });
 
       if (!session) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الحدث غير موجود",
+        });
+      }
+
+      // Only return active (published) sessions in public view
+      if (session.visibilityStatus !== "active") {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "الحدث غير موجود",
@@ -497,7 +515,7 @@ export const sessionRouter = createTRPCRouter({
     }),
 
   /**
-   * Get countdown data for session
+   * Get countdown data for session (public - only for active/published sessions)
    */
   getCountdown: publicProcedure
     .input(z.object({ id: z.string() }))
@@ -511,10 +529,19 @@ export const sessionRouter = createTRPCRouter({
           title: true,
           date: true,
           showCountdown: true,
+          visibilityStatus: true,
         },
       });
 
       if (!session) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الحدث غير موجود",
+        });
+      }
+
+      // Only return countdown for active (published) sessions
+      if (session.visibilityStatus !== "active") {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "الحدث غير موجود",
