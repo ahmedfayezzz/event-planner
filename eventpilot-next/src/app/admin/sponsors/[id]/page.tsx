@@ -75,9 +75,12 @@ import {
   Loader2,
   Mail,
   MessageCircle,
+  MessageSquare,
   Pencil,
   Phone,
   Search,
+  Share2,
+  Tag,
   Trash2,
   Unlink,
   Upload,
@@ -87,8 +90,15 @@ import {
   UtensilsCrossed,
   X,
 } from "lucide-react";
+import { SponsorLabelManager } from "@/components/admin/sponsor-label-manager";
+import {
+  SponsorSocialMedia,
+  SponsorSocialMediaIcons,
+} from "@/components/admin/sponsor-social-media";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import { formatDistanceToNow } from "date-fns";
+import { ar } from "date-fns/locale";
 
 // Sponsor form data interface
 interface SponsorFormData {
@@ -128,7 +138,9 @@ export default function SponsorProfilePage({
   const [formData, setFormData] = useState<SponsorFormData>(initialFormData);
 
   // Add to Event dialog state
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
+    null
+  );
   const [selectedSponsorshipType, setSelectedSponsorshipType] = useState("");
   const [eventNotes, setEventNotes] = useState("");
   const [sessionSearchQuery, setSessionSearchQuery] = useState("");
@@ -201,10 +213,11 @@ export default function SponsorProfilePage({
   });
 
   // Search users for linking
-  const { data: searchedUsers, isLoading: isSearchingUsers } = api.sponsor.searchUsersForLinking.useQuery(
-    { search: userSearchQuery, limit: 10 },
-    { enabled: isLinkUserDialogOpen && userSearchQuery.length >= 2 }
-  );
+  const { data: searchedUsers, isLoading: isSearchingUsers } =
+    api.sponsor.searchUsersForLinking.useQuery(
+      { search: userSearchQuery, limit: 10 },
+      { enabled: isLinkUserDialogOpen && userSearchQuery.length >= 2 }
+    );
 
   // Link to user mutation
   const linkToUser = api.sponsor.linkToUser.useMutation({
@@ -489,7 +502,9 @@ export default function SponsorProfilePage({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">تاريخ الانضمام</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              تاريخ الانضمام
+            </CardTitle>
             <CalendarDays className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -507,6 +522,51 @@ export default function SponsorProfilePage({
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* Labels Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Tag className="h-5 w-5" />
+                التصنيفات
+              </CardTitle>
+              <SponsorLabelManager
+                sponsorId={sponsor.id}
+                sponsorLabels={sponsor.labels ?? []}
+                trigger={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                  >
+                    <Pencil className="h-3 w-3 me-1" />
+                    تعديل
+                  </Button>
+                }
+                onUpdate={() => utils.sponsor.getById.invalidate({ id })}
+              />
+            </CardHeader>
+            <CardContent>
+              {sponsor.labels && sponsor.labels.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {sponsor.labels.map((label) => (
+                    <Badge
+                      key={label.id}
+                      variant="outline"
+                      style={{
+                        backgroundColor: label.color + "20",
+                        color: label.color,
+                        borderColor: label.color + "40",
+                      }}
+                    >
+                      {label.name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">لا توجد تصنيفات</p>
+              )}
+            </CardContent>
+          </Card>
           {/* Contact Info Card */}
           <Card>
             <CardHeader>
@@ -554,6 +614,38 @@ export default function SponsorProfilePage({
                   <span className="text-sm text-muted-foreground">-</span>
                 )}
               </div>
+
+              {/* Social Media Links */}
+              <div className="pt-3 border-t">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Share2 className="h-4 w-4" />
+                    التواصل الاجتماعي
+                  </p>
+                  <SponsorSocialMedia
+                    sponsorId={sponsor.id}
+                    socialMediaLinks={
+                      sponsor.socialMediaLinks as Record<string, string> | null
+                    }
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                      >
+                        <Pencil className="h-3 w-3 me-1" />
+                        تعديل
+                      </Button>
+                    }
+                    onUpdate={() => utils.sponsor.getById.invalidate({ id })}
+                  />
+                </div>
+                <SponsorSocialMediaIcons
+                  socialMediaLinks={
+                    sponsor.socialMediaLinks as Record<string, string> | null
+                  }
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -579,9 +671,7 @@ export default function SponsorProfilePage({
               )}
 
               <div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  نوع الراعي
-                </p>
+                <p className="text-sm text-muted-foreground mb-2">نوع الراعي</p>
                 <Badge
                   variant={sponsor.type === "company" ? "default" : "secondary"}
                   className="gap-1"
@@ -729,6 +819,13 @@ export default function SponsorProfilePage({
               </div>
             </CardContent>
           </Card>
+
+          {/* Notes Card */}
+          <SponsorNotesCard
+            sponsorId={sponsor.id}
+            noteCount={sponsor._count?.notes ?? 0}
+            onUpdate={() => utils.sponsor.getById.invalidate({ id })}
+          />
 
           {/* Sponsorship History Table */}
           <Card>
@@ -945,9 +1042,7 @@ export default function SponsorProfilePage({
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>تعديل بيانات الراعي</DialogTitle>
-            <DialogDescription>
-              قم بتعديل بيانات الراعي
-            </DialogDescription>
+            <DialogDescription>قم بتعديل بيانات الراعي</DialogDescription>
           </DialogHeader>
 
           <SponsorForm
@@ -1046,7 +1141,9 @@ export default function SponsorProfilePage({
                           <Calendar className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{session.title}</p>
+                          <p className="font-medium truncate">
+                            {session.title}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             #{session.sessionNumber} •{" "}
                             {formatArabicDate(session.date)}
@@ -1067,10 +1164,10 @@ export default function SponsorProfilePage({
                           {session.status === "active"
                             ? "نشط"
                             : session.status === "upcoming"
-                              ? "قادم"
-                              : session.status === "completed"
-                                ? "مكتمل"
-                                : session.status}
+                            ? "قادم"
+                            : session.status === "completed"
+                            ? "مكتمل"
+                            : session.status}
                         </Badge>
                       </div>
                     </div>
@@ -1087,7 +1184,10 @@ export default function SponsorProfilePage({
               {selectedSessionId && availableSessions && (
                 <p className="text-sm text-primary">
                   تم اختيار:{" "}
-                  {availableSessions.find((s) => s.id === selectedSessionId)?.title}
+                  {
+                    availableSessions.find((s) => s.id === selectedSessionId)
+                      ?.title
+                  }
                 </p>
               )}
             </div>
@@ -1203,11 +1303,17 @@ export default function SponsorProfilePage({
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{user.name}</p>
-                            <p className="text-sm text-muted-foreground" dir="ltr">
+                            <p
+                              className="text-sm text-muted-foreground"
+                              dir="ltr"
+                            >
                               {user.email}
                             </p>
                             {user.phone && (
-                              <p className="text-xs text-muted-foreground" dir="ltr">
+                              <p
+                                className="text-xs text-muted-foreground"
+                                dir="ltr"
+                              >
                                 {user.phone}
                               </p>
                             )}
@@ -1240,7 +1346,8 @@ export default function SponsorProfilePage({
 
             {selectedUserId && searchedUsers && (
               <p className="text-sm text-primary">
-                تم اختيار: {searchedUsers.find((u) => u.id === selectedUserId)?.name}
+                تم اختيار:{" "}
+                {searchedUsers.find((u) => u.id === selectedUserId)?.name}
               </p>
             )}
           </div>
@@ -1284,7 +1391,8 @@ export default function SponsorProfilePage({
           <AlertDialogHeader>
             <AlertDialogTitle>إلغاء ربط المستخدم</AlertDialogTitle>
             <AlertDialogDescription>
-              هل أنت متأكد من إلغاء ربط الراعي &quot;{sponsor.name}&quot; بالمستخدم &quot;{sponsor.user?.name}&quot;؟
+              هل أنت متأكد من إلغاء ربط الراعي &quot;{sponsor.name}&quot;
+              بالمستخدم &quot;{sponsor.user?.name}&quot;؟
               <br />
               <span className="text-muted-foreground">
                 يمكنك إعادة ربط الراعي بمستخدم آخر لاحقاً.
@@ -1446,7 +1554,9 @@ function SponsorForm({
       "image/svg+xml",
     ];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("نوع الملف غير مدعوم. الأنواع المدعومة: JPEG, PNG, WebP, SVG");
+      toast.error(
+        "نوع الملف غير مدعوم. الأنواع المدعومة: JPEG, PNG, WebP, SVG"
+      );
       return;
     }
 
@@ -1676,5 +1786,149 @@ function SponsorForm({
         </Button>
       </DialogFooter>
     </>
+  );
+}
+
+// Inline Notes Card component with scrollable notes list
+function SponsorNotesCard({
+  sponsorId,
+  noteCount,
+  onUpdate,
+}: {
+  sponsorId: string;
+  noteCount: number;
+  onUpdate: () => void;
+}) {
+  const [newNote, setNewNote] = useState("");
+  const utils = api.useUtils();
+
+  // Fetch notes for this sponsor
+  const { data: notes, isLoading } = api.sponsor.getNotes.useQuery(
+    { sponsorId },
+    { enabled: !!sponsorId }
+  );
+
+  const addNoteMutation = api.sponsor.addNote.useMutation({
+    onSuccess: () => {
+      setNewNote("");
+      utils.sponsor.getNotes.invalidate({ sponsorId });
+      onUpdate();
+      toast.success("تم إضافة الملاحظة");
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ");
+    },
+  });
+
+  const deleteNoteMutation = api.sponsor.deleteNote.useMutation({
+    onSuccess: () => {
+      utils.sponsor.getNotes.invalidate({ sponsorId });
+      onUpdate();
+      toast.success("تم حذف الملاحظة");
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ");
+    },
+  });
+
+  const handleAddNote = () => {
+    if (!newNote.trim()) return;
+    addNoteMutation.mutate({
+      sponsorId,
+      content: newNote.trim(),
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <div>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            الملاحظات
+            {noteCount > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {noteCount}
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>ملاحظات داخلية عن الراعي</CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Add new note input */}
+        <div className="flex gap-2">
+          <Input
+            placeholder="أضف ملاحظة جديدة..."
+            value={newNote}
+            onChange={(e) => setNewNote(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleAddNote();
+              }
+            }}
+            disabled={addNoteMutation.isPending}
+          />
+          <Button
+            onClick={handleAddNote}
+            disabled={!newNote.trim() || addNoteMutation.isPending}
+            size="icon"
+          >
+            {addNoteMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+
+        {/* Notes list */}
+        <div className="max-h-64 overflow-y-auto space-y-3">
+          {isLoading ? (
+            <div className="py-4 text-center">
+              <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+            </div>
+          ) : notes && notes.length > 0 ? (
+            notes.map((note) => (
+              <div
+                key={note.id}
+                className="p-3 bg-muted/50 rounded-lg space-y-2 group"
+              >
+                <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <span>{note.createdBy.name}</span>
+                    <span>•</span>
+                    <span>
+                      {formatDistanceToNow(new Date(note.createdAt), {
+                        addSuffix: true,
+                        locale: ar,
+                      })}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                    onClick={() =>
+                      deleteNoteMutation.mutate({ noteId: note.id })
+                    }
+                    disabled={deleteNoteMutation.isPending}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="py-6 text-center text-muted-foreground">
+              <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">لا توجد ملاحظات</p>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

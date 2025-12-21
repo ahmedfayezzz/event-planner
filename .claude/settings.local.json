@@ -14,7 +14,8 @@
       "Bash(tree:*)",
       "mcp__playwright__*",
       "Bash(grep:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

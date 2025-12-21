@@ -13,9 +13,17 @@
 <!-- - remove hardcoded whatsapp message for sponsor -->
 - add social media links for sponsors
 - add notes to sponsor
-- add sponsor status (no interested, an appointment has been set)
-- invitation pdf
+- add labels to sponsors
+<!-- - invitation pdf -->
 - qr code pdf new design
+
+- provide a way to register as a sponsor from public site
+
+- give admin a way to order sponsorships on an event
+
+- add registration time as well 
+
+- check slug when session titles have similar names
 
 - don't allow deactivated users to register to events or login
 

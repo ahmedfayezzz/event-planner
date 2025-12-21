@@ -87,6 +87,7 @@ model User {
   notes         UserNote[] @relation("UserNotes")
   notesCreated  UserNote[] @relation("NotesCreated")
   sponsors      Sponsor[]
+  sponsorNotesCreated SponsorNote[] @relation("SponsorNoteAuthor")
 }
 
 model Session {
@@ -258,6 +259,7 @@ model Sponsor {
   logoUrl              String?
   sponsorshipTypes     String[]  @default([])
   sponsorshipOtherText String?
+  socialMediaLinks     Json?     // { "twitter": "url", "linkedin": "url", ... }
 
   // Optional link to user (member who wants to sponsor) - multiple sponsors can link to one user
   userId               String?
@@ -267,8 +269,10 @@ model Sponsor {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  // Event sponsorships
+  // Relations
   eventSponsorships    EventSponsorship[]
+  notes                SponsorNote[]
+  labels               SponsorLabel[] @relation("SponsorToLabel")
 
   @@index([userId])
   @@index([type])
@@ -351,6 +355,39 @@ model UserNote {
 
   @@index([userId])
   @@index([createdById])
+}
+
+model SponsorNote {
+  id        String   @id @default(cuid())
+  content   String
+
+  // Sponsor this note is about
+  sponsorId String
+  sponsor   Sponsor  @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+
+  // Admin who created the note
+  createdById String
+  createdBy   User   @relation("SponsorNoteAuthor", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sponsorId])
+  @@index([createdById])
+}
+
+model SponsorLabel {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  color     String    @default("#6366f1")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  sponsors  Sponsor[] @relation("SponsorToLabel")
+
+  @@index([name])
 }
 
 model EmailLog {

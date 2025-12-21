@@ -81,7 +81,22 @@ import {
   Search,
   UserPlus,
   Unlink,
+  MoreHorizontal,
+  Tag,
+  MessageSquare,
+  Share2,
+  Trash2,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { SponsorNotes } from "@/components/admin/sponsor-notes";
+import { SponsorLabelManager } from "@/components/admin/sponsor-label-manager";
+import { SponsorSocialMedia, SponsorSocialMediaIcons } from "@/components/admin/sponsor-social-media";
 import {
   Tooltip,
   TooltipContent,
@@ -611,10 +626,11 @@ export default function AdminSponsorsPage() {
                     <TableHead className="hidden md:table-cell">التواصل</TableHead>
                     <TableHead>أنواع الرعاية</TableHead>
                     <TableHead className="hidden sm:table-cell">الحالة</TableHead>
-                    <TableHead className="hidden md:table-cell">النوع</TableHead>
-                    <TableHead className="hidden lg:table-cell">مرتبط بعضو</TableHead>
+                    <TableHead className="hidden lg:table-cell">التصنيفات</TableHead>
+                    <TableHead className="hidden lg:table-cell">ملاحظات</TableHead>
+                    <TableHead className="hidden lg:table-cell">التواصل الاجتماعي</TableHead>
                     <TableHead className="hidden lg:table-cell">الفعاليات</TableHead>
-                    <TableHead className="hidden md:table-cell text-left">إجراءات</TableHead>
+                    <TableHead className="hidden md:table-cell text-left w-12">إجراءات</TableHead>
                     <TableHead className="md:hidden w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -725,25 +741,59 @@ export default function AdminSponsorsPage() {
                               </SelectContent>
                             </Select>
                           </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <Badge
-                              variant={sponsor.type === "company" ? "default" : "secondary"}
-                              className="gap-1"
-                            >
-                              <SponsorTypeIcon type={sponsor.type} />
-                              {getSponsorTypeLabel(sponsor.type)}
-                            </Badge>
-                          </TableCell>
+                          {/* Labels Column */}
                           <TableCell className="hidden lg:table-cell">
-                            {sponsor.user ? (
-                              <div className="flex items-center gap-1 text-sm">
-                                <UserCircle className="h-4 w-4 text-green-600" />
-                                <span>{sponsor.user.name}</span>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">-</span>
-                            )}
+                            <SponsorLabelManager
+                              sponsorId={sponsor.id}
+                              sponsorLabels={sponsor.labels}
+                              trigger={
+                                sponsor.labels.length > 0 ? (
+                                  <button className="flex flex-wrap gap-1 max-w-[150px]">
+                                    {sponsor.labels.slice(0, 2).map((label) => (
+                                      <Badge
+                                        key={label.id}
+                                        variant="outline"
+                                        className="text-xs"
+                                        style={{
+                                          backgroundColor: label.color + "20",
+                                          color: label.color,
+                                          borderColor: label.color + "40",
+                                        }}
+                                      >
+                                        {label.name}
+                                      </Badge>
+                                    ))}
+                                    {sponsor.labels.length > 2 && (
+                                      <Badge variant="outline" className="text-xs">
+                                        +{sponsor.labels.length - 2}
+                                      </Badge>
+                                    )}
+                                  </button>
+                                ) : (
+                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                                    <Tag className="h-3 w-3 me-1" />
+                                    إضافة
+                                  </Button>
+                                )
+                              }
+                              onUpdate={() => utils.sponsor.getAll.invalidate()}
+                            />
                           </TableCell>
+                          {/* Notes Column */}
+                          <TableCell className="hidden lg:table-cell">
+                            <SponsorNotes
+                              sponsorId={sponsor.id}
+                              noteCount={sponsor._count?.notes ?? 0}
+                              onUpdate={() => utils.sponsor.getAll.invalidate()}
+                            />
+                          </TableCell>
+                          {/* Social Media Column */}
+                          <TableCell className="hidden lg:table-cell">
+                            <SponsorSocialMediaIcons
+                              socialMediaLinks={sponsor.socialMediaLinks as Record<string, string> | null}
+                            />
+                          </TableCell>
+                          {/* Events Column */}
                           <TableCell className="hidden lg:table-cell">
                             {sponsor.eventSponsorships.length > 0 ? (
                               <TooltipProvider>
@@ -769,80 +819,87 @@ export default function AdminSponsorsPage() {
                               <span className="text-muted-foreground text-sm">-</span>
                             )}
                           </TableCell>
+                          {/* Actions Dropdown */}
                           <TableCell className="hidden md:table-cell">
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                asChild
-                                title="عرض"
-                              >
-                                <Link href={`/admin/sponsors/${sponsor.id}`}>
-                                  <Eye className="h-4 w-4" />
-                                </Link>
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEditClick(sponsor)}
-                                title="تعديل"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() =>
-                                  handleOpenAddToEventDialog({
-                                    id: sponsor.id,
-                                    name: sponsor.name,
-                                  })
-                                }
-                                title="إضافة إلى حدث"
-                              >
-                                <CalendarPlus className="h-4 w-4" />
-                              </Button>
-                              {sponsor.user ? (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleOpenUnlinkDialog({
-                                    id: sponsor.id,
-                                    name: sponsor.name,
-                                    userName: sponsor.user!.name,
-                                  })}
-                                  title="إلغاء ربط المستخدم"
-                                >
-                                  <Unlink className="h-4 w-4 text-orange-500" />
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
                                 </Button>
-                              ) : (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/sponsors/${sponsor.id}`} className="flex items-center">
+                                    <Eye className="h-4 w-4 me-2" />
+                                    عرض التفاصيل
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditClick(sponsor)}>
+                                  <Pencil className="h-4 w-4 me-2" />
+                                  تعديل
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
                                   onClick={() =>
-                                    handleOpenLinkUserDialog({
+                                    handleOpenAddToEventDialog({
                                       id: sponsor.id,
                                       name: sponsor.name,
-                                      userId: sponsor.userId,
                                     })
                                   }
-                                  title="ربط بمستخدم"
                                 >
-                                  <UserPlus className="h-4 w-4 text-blue-500" />
-                                </Button>
-                              )}
-                              {sponsor.phone && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                  onClick={() => handleWhatsApp(sponsor.phone!)}
-                                  title="إرسال رسالة واتساب"
-                                >
-                                  <MessageCircle className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
+                                  <CalendarPlus className="h-4 w-4 me-2" />
+                                  إضافة إلى حدث
+                                </DropdownMenuItem>
+                                <SponsorSocialMedia
+                                  sponsorId={sponsor.id}
+                                  socialMediaLinks={sponsor.socialMediaLinks as Record<string, string> | null}
+                                  trigger={
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                      <Share2 className="h-4 w-4 me-2" />
+                                      روابط التواصل
+                                    </DropdownMenuItem>
+                                  }
+                                  onUpdate={() => utils.sponsor.getAll.invalidate()}
+                                />
+                                <DropdownMenuSeparator />
+                                {sponsor.user ? (
+                                  <DropdownMenuItem
+                                    className="text-orange-600"
+                                    onClick={() => handleOpenUnlinkDialog({
+                                      id: sponsor.id,
+                                      name: sponsor.name,
+                                      userName: sponsor.user!.name,
+                                    })}
+                                  >
+                                    <Unlink className="h-4 w-4 me-2" />
+                                    إلغاء ربط ({sponsor.user.name})
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    className="text-blue-600"
+                                    onClick={() =>
+                                      handleOpenLinkUserDialog({
+                                        id: sponsor.id,
+                                        name: sponsor.name,
+                                        userId: sponsor.userId,
+                                      })
+                                    }
+                                  >
+                                    <UserPlus className="h-4 w-4 me-2" />
+                                    ربط بمستخدم
+                                  </DropdownMenuItem>
+                                )}
+                                {sponsor.phone && (
+                                  <DropdownMenuItem
+                                    className="text-green-600"
+                                    onClick={() => handleWhatsApp(sponsor.phone!)}
+                                  >
+                                    <MessageCircle className="h-4 w-4 me-2" />
+                                    إرسال واتساب
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                           <TableCell className="md:hidden">
                             <Button

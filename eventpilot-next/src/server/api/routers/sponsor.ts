@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { Prisma } from "@prisma/client";
 import {
   createTRPCRouter,
   adminProcedure,
@@ -82,6 +83,18 @@ export const sponsorRouter = createTRPCRouter({
               },
             },
           },
+          labels: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
+          },
+          _count: {
+            select: {
+              notes: true,
+            },
+          },
         },
       });
 
@@ -130,6 +143,18 @@ export const sponsorRouter = createTRPCRouter({
               },
             },
             orderBy: { createdAt: "desc" },
+          },
+          labels: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
+          },
+          _count: {
+            select: {
+              notes: true,
+            },
           },
         },
       });
@@ -901,5 +926,393 @@ export const sponsorRouter = createTRPCRouter({
         sponsorCount: u._count.sponsors,
         _count: undefined,
       }));
+    }),
+
+  // =====================
+  // NOTES PROCEDURES
+  // =====================
+
+  /**
+   * Get notes for a sponsor (admin only)
+   */
+  getNotes: adminProcedure
+    .input(z.object({ sponsorId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const notes = await db.sponsorNote.findMany({
+        where: { sponsorId: input.sponsorId },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return notes;
+    }),
+
+  /**
+   * Add a note to a sponsor (admin only)
+   */
+  addNote: adminProcedure
+    .input(
+      z.object({
+        sponsorId: z.string(),
+        content: z.string().min(1, "محتوى الملاحظة مطلوب"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+
+      // Verify sponsor exists
+      const sponsor = await db.sponsor.findUnique({
+        where: { id: input.sponsorId },
+      });
+
+      if (!sponsor) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الراعي غير موجود",
+        });
+      }
+
+      const note = await db.sponsorNote.create({
+        data: {
+          content: input.content,
+          sponsorId: input.sponsorId,
+          createdById: session.user.id,
+        },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      return note;
+    }),
+
+  /**
+   * Delete a sponsor note (admin only)
+   */
+  deleteNote: adminProcedure
+    .input(z.object({ noteId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const note = await db.sponsorNote.findUnique({
+        where: { id: input.noteId },
+      });
+
+      if (!note) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الملاحظة غير موجودة",
+        });
+      }
+
+      await db.sponsorNote.delete({
+        where: { id: input.noteId },
+      });
+
+      return { success: true };
+    }),
+
+  // =====================
+  // SOCIAL MEDIA PROCEDURES
+  // =====================
+
+  /**
+   * Update sponsor social media links (admin only)
+   */
+  updateSocialMedia: adminProcedure
+    .input(
+      z.object({
+        sponsorId: z.string(),
+        socialMediaLinks: z.record(z.string(), z.string().url().or(z.literal(""))),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Verify sponsor exists
+      const sponsor = await db.sponsor.findUnique({
+        where: { id: input.sponsorId },
+      });
+
+      if (!sponsor) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الراعي غير موجود",
+        });
+      }
+
+      // Filter out empty values
+      const filteredLinks: Record<string, string> = {};
+      for (const [key, value] of Object.entries(input.socialMediaLinks)) {
+        if (value && value.trim()) {
+          filteredLinks[key] = value.trim();
+        }
+      }
+
+      const updatedSponsor = await db.sponsor.update({
+        where: { id: input.sponsorId },
+        data: {
+          socialMediaLinks: Object.keys(filteredLinks).length > 0 ? filteredLinks : Prisma.JsonNull,
+        },
+      });
+
+      return updatedSponsor;
+    }),
+
+  // =====================
+  // LABELS PROCEDURES
+  // =====================
+
+  /**
+   * Get all sponsor labels (admin only)
+   */
+  getLabels: adminProcedure.query(async ({ ctx }) => {
+    const { db } = ctx;
+
+    const labels = await db.sponsorLabel.findMany({
+      orderBy: { name: "asc" },
+      include: {
+        _count: {
+          select: { sponsors: true },
+        },
+      },
+    });
+
+    return labels.map((l) => ({
+      ...l,
+      sponsorCount: l._count.sponsors,
+      _count: undefined,
+    }));
+  }),
+
+  /**
+   * Create a sponsor label (admin only)
+   */
+  createLabel: adminProcedure
+    .input(
+      z.object({
+        name: z.string().min(1, "اسم التصنيف مطلوب"),
+        color: z.string().default("#6366f1"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Check if label name already exists
+      const existing = await db.sponsorLabel.findUnique({
+        where: { name: input.name },
+      });
+
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "يوجد تصنيف بهذا الاسم بالفعل",
+        });
+      }
+
+      const label = await db.sponsorLabel.create({
+        data: {
+          name: input.name,
+          color: input.color,
+        },
+      });
+
+      return label;
+    }),
+
+  /**
+   * Update a sponsor label (admin only)
+   */
+  updateLabel: adminProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().min(1, "اسم التصنيف مطلوب").optional(),
+        color: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const { id, ...data } = input;
+
+      const existing = await db.sponsorLabel.findUnique({
+        where: { id },
+      });
+
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "التصنيف غير موجود",
+        });
+      }
+
+      // Check for name conflict if updating name
+      if (data.name && data.name !== existing.name) {
+        const nameConflict = await db.sponsorLabel.findUnique({
+          where: { name: data.name },
+        });
+
+        if (nameConflict) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "يوجد تصنيف بهذا الاسم بالفعل",
+          });
+        }
+      }
+
+      const label = await db.sponsorLabel.update({
+        where: { id },
+        data,
+      });
+
+      return label;
+    }),
+
+  /**
+   * Delete a sponsor label (admin only)
+   */
+  deleteLabel: adminProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const existing = await db.sponsorLabel.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "التصنيف غير موجود",
+        });
+      }
+
+      await db.sponsorLabel.delete({
+        where: { id: input.id },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Add a label to a sponsor (admin only)
+   */
+  addLabelToSponsor: adminProcedure
+    .input(
+      z.object({
+        sponsorId: z.string(),
+        labelId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const sponsor = await db.sponsor.findUnique({
+        where: { id: input.sponsorId },
+      });
+
+      if (!sponsor) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الراعي غير موجود",
+        });
+      }
+
+      const label = await db.sponsorLabel.findUnique({
+        where: { id: input.labelId },
+      });
+
+      if (!label) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "التصنيف غير موجود",
+        });
+      }
+
+      await db.sponsor.update({
+        where: { id: input.sponsorId },
+        data: {
+          labels: {
+            connect: { id: input.labelId },
+          },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Remove a label from a sponsor (admin only)
+   */
+  removeLabelFromSponsor: adminProcedure
+    .input(
+      z.object({
+        sponsorId: z.string(),
+        labelId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      await db.sponsor.update({
+        where: { id: input.sponsorId },
+        data: {
+          labels: {
+            disconnect: { id: input.labelId },
+          },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Update sponsor labels (replace all) - admin only
+   */
+  updateSponsorLabels: adminProcedure
+    .input(
+      z.object({
+        sponsorId: z.string(),
+        labelIds: z.array(z.string()),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const sponsor = await db.sponsor.findUnique({
+        where: { id: input.sponsorId },
+      });
+
+      if (!sponsor) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الراعي غير موجود",
+        });
+      }
+
+      await db.sponsor.update({
+        where: { id: input.sponsorId },
+        data: {
+          labels: {
+            set: input.labelIds.map((id) => ({ id })),
+          },
+        },
+      });
+
+      return { success: true };
     }),
 });
