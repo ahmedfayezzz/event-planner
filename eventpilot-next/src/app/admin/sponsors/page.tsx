@@ -441,12 +441,8 @@ export default function AdminSponsorsPage() {
     }
   };
 
-  const handleWhatsApp = (phone: string, name: string, sponsorshipTypes: string[]) => {
-    const typesText = sponsorshipTypes.length > 0
-      ? sponsorshipTypes.map(getSponsorshipTypeLabel).join(" و ")
-      : "الثلوثية";
-    const message = `مرحباً ${name}،\n\nنشكرك على عرضك لرعاية (${typesText}) للثلوثية.\n\nنود التواصل معك...`;
-    const url = getWhatsAppUrl(phone, message);
+  const handleWhatsApp = (phone: string) => {
+    const url = getWhatsAppUrl(phone, "");
     window.open(url, "_blank");
   };
 
@@ -840,9 +836,7 @@ export default function AdminSponsorsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                  onClick={() =>
-                                    handleWhatsApp(sponsor.phone!, sponsor.name, sponsor.sponsorshipTypes)
-                                  }
+                                  onClick={() => handleWhatsApp(sponsor.phone!)}
                                   title="إرسال رسالة واتساب"
                                 >
                                   <MessageCircle className="h-4 w-4" />
@@ -996,9 +990,7 @@ export default function AdminSponsorsPage() {
                                         variant="outline"
                                         size="sm"
                                         className="text-green-600 hover:text-green-700"
-                                        onClick={() =>
-                                          handleWhatsApp(sponsor.phone!, sponsor.name, sponsor.sponsorshipTypes)
-                                        }
+                                        onClick={() => handleWhatsApp(sponsor.phone!)}
                                       >
                                         <MessageCircle className="ml-1 h-3 w-3" />
                                         واتساب
