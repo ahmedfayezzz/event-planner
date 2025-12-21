@@ -168,6 +168,19 @@ export const sessionRouter = createTRPCRouter({
           _count: {
             select: { registrations: { where: { isApproved: true } } },
           },
+          eventSponsorships: {
+            where: { isSelfSponsored: false },
+            include: {
+              sponsor: {
+                select: {
+                  id: true,
+                  name: true,
+                  logoUrl: true,
+                  type: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -187,8 +200,21 @@ export const sessionRouter = createTRPCRouter({
       }
 
       const now = new Date();
+
+      // Format sponsors for display
+      const sponsors = session.eventSponsorships
+        .filter((s) => s.sponsor)
+        .map((s) => ({
+          id: s.sponsor.id,
+          name: s.sponsor.name,
+          logoUrl: s.sponsor.logoUrl,
+          type: s.sponsor.type,
+          sponsorshipType: s.sponsorType,
+        }));
+
       return {
         ...session,
+        sponsors,
         registrationCount: session.showParticipantCount
           ? session._count.registrations
           : null,

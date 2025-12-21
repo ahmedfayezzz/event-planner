@@ -359,14 +359,12 @@ export async function generateInvitationPdf(
             try {
               // Get the URL to fetch - handle S3 presigned URLs
               let logoUrl = sponsor.logoUrl;
-              console.log(`Processing sponsor logo: ${logoUrl}`);
 
               // Check if we need presigned URLs for S3
               if (needsPresignedReadUrl()) {
                 const key = extractKeyFromUrl(logoUrl);
                 if (key) {
                   logoUrl = await generatePresignedReadUrl(key);
-                  console.log(`Generated presigned URL for S3 key: ${key}`);
                 } else if (!logoUrl.startsWith("http")) {
                   // It's already a key, not a URL
                   logoUrl = await generatePresignedReadUrl(logoUrl);

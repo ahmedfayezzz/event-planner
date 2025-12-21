@@ -10,11 +10,11 @@ export async function GET(
   try {
     // Check authentication
     const session = await auth();
-    if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "SUPER_ADMIN")) {
-      return NextResponse.json(
-        { error: "غير مصرح" },
-        { status: 401 }
-      );
+    if (
+      !session?.user ||
+      (session.user.role !== "ADMIN" && session.user.role !== "SUPER_ADMIN")
+    ) {
+      return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -32,10 +32,7 @@ export async function GET(
     });
 
     if (!eventSession) {
-      return NextResponse.json(
-        { error: "الحدث غير موجود" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "الحدث غير موجود" }, { status: 404 });
     }
 
     // Get sponsors for this session
@@ -52,18 +49,14 @@ export async function GET(
       },
     });
 
-    console.log("Sponsorships found:", sponsorships.length, JSON.stringify(sponsorships, null, 2));
-
     // Extract sponsor info
     const sponsors = sponsorships
-      .filter(s => s.sponsor && !s.isSelfSponsored)
-      .map(s => ({
+      .filter((s) => s.sponsor && !s.isSelfSponsored)
+      .map((s) => ({
         name: s.sponsor!.name,
         logoUrl: s.sponsor!.logoUrl,
         type: s.sponsor!.type,
       }));
-
-    console.log("Sponsors to render:", sponsors.length, JSON.stringify(sponsors, null, 2));
 
     // Generate the PDF
     const pdfBuffer = await generateInvitationPdf({
@@ -75,10 +68,7 @@ export async function GET(
     });
 
     if (!pdfBuffer) {
-      return NextResponse.json(
-        { error: "فشل إنشاء ملف PDF" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "فشل إنشاء ملف PDF" }, { status: 500 });
     }
 
     // Check if download is requested
@@ -90,7 +80,9 @@ export async function GET(
     // Arabic characters would cause ByteString conversion errors
     const safeFilename = `invitation-${eventSession.id}.pdf`;
     // Use RFC 5987 encoding for filename* to support Unicode
-    const encodedFilename = encodeURIComponent(`دعوة-${eventSession.title}.pdf`);
+    const encodedFilename = encodeURIComponent(
+      `دعوة-${eventSession.title}.pdf`
+    );
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {

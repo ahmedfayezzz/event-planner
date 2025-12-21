@@ -29,8 +29,38 @@ import {
   Share2,
   Link2,
   Twitter,
+  Building2,
 } from "lucide-react";
+import { usePresignedUrl } from "@/hooks/use-presigned-url";
 import { copyToClipboard, shareOnTwitter, shareOnWhatsApp } from "@/lib/utils";
+
+function SponsorLogo({ logoUrl, name }: { logoUrl: string | null; name: string }) {
+  const { url, isLoading } = usePresignedUrl(logoUrl);
+
+  if (!logoUrl) {
+    return (
+      <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-primary/10 flex items-center justify-center">
+        <Building2 className="w-6 h-6 md:w-8 md:h-8 text-primary/60" />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-muted animate-pulse" />
+    );
+  }
+
+  return (
+    <div className="w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden bg-white border border-border shadow-sm">
+      <img
+        src={url}
+        alt={name}
+        className="w-full h-full object-cover"
+      />
+    </div>
+  );
+}
 
 export function SessionDetailClient({ id }: { id: string }) {
   const { status: authStatus } = useSession();
@@ -428,6 +458,34 @@ export function SessionDetailClient({ id }: { id: string }) {
                       )}
                       % من المقاعد محجوزة
                     </p>
+                  </div>
+                )}
+
+                {/* Sponsors Section */}
+                {session.sponsors && session.sponsors.length > 0 && (
+                  <div className="pt-4 md:pt-6 border-t border-border">
+                    <div className="flex items-center gap-1.5 md:gap-2 mb-3 md:mb-4">
+                      <Building2 className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                      <h3 className="font-semibold text-base md:text-lg text-primary">
+                        الرعاة
+                      </h3>
+                    </div>
+                    <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
+                      {session.sponsors.map((sponsor) => (
+                        <div
+                          key={sponsor.id}
+                          className="flex flex-col items-center gap-2"
+                        >
+                          <SponsorLogo
+                            logoUrl={sponsor.logoUrl}
+                            name={sponsor.name}
+                          />
+                          <span className="text-xs md:text-sm font-medium text-foreground text-center max-w-[80px] md:max-w-[100px] line-clamp-2">
+                            {sponsor.name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

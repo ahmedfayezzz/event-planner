@@ -14,6 +14,8 @@
 - add social media links for sponsors
 - add notes to sponsor
 - add sponsor status (no interested, an appointment has been set)
+- invitation pdf
+- qr code pdf new design
 
 - don't allow deactivated users to register to events or login
 
