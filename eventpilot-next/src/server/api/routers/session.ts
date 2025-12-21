@@ -205,11 +205,11 @@ export const sessionRouter = createTRPCRouter({
       const sponsors = session.eventSponsorships
         .filter((s) => s.sponsor)
         .map((s) => ({
-          id: s.sponsor.id,
-          name: s.sponsor.name,
-          logoUrl: s.sponsor.logoUrl,
-          type: s.sponsor.type,
-          sponsorshipType: s.sponsorType,
+          id: s.sponsor!.id,
+          name: s.sponsor!.name,
+          logoUrl: s.sponsor!.logoUrl,
+          type: s.sponsor!.type,
+          sponsorshipType: s.sponsorshipType,
         }));
 
       return {

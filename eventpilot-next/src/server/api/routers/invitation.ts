@@ -130,7 +130,7 @@ export const invitationRouter = createTRPCRouter({
           .map((s) => ({
             name: s.sponsor!.name,
             logoUrl: s.sponsor!.logoUrl,
-            type: s.sponsorType,
+            type: s.sponsorshipType,
           }));
       }
 
