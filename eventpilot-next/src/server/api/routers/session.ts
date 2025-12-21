@@ -93,6 +93,7 @@ export const sessionRouter = createTRPCRouter({
         nextCursor = nextItem?.id;
       }
 
+      const now = new Date();
       return {
         sessions: sessions.map((s) => ({
           ...s,
@@ -102,8 +103,9 @@ export const sessionRouter = createTRPCRouter({
           isFull: s._count.registrations >= s.maxParticipants,
           canRegister:
             s.status === "open" &&
+            new Date(s.date) > now && // Session must be in the future
             s._count.registrations < s.maxParticipants &&
-            (!s.registrationDeadline || new Date() < s.registrationDeadline),
+            (!s.registrationDeadline || now < s.registrationDeadline),
         })),
         nextCursor,
       };
@@ -137,6 +139,7 @@ export const sessionRouter = createTRPCRouter({
         },
       });
 
+      const now = new Date();
       return sessions.map((s) => ({
         ...s,
         registrationCount: s.showParticipantCount
@@ -145,8 +148,9 @@ export const sessionRouter = createTRPCRouter({
         isFull: s._count.registrations >= s.maxParticipants,
         canRegister:
           s.status === "open" &&
+          new Date(s.date) > now && // Session must be in the future
           s._count.registrations < s.maxParticipants &&
-          (!s.registrationDeadline || new Date() < s.registrationDeadline),
+          (!s.registrationDeadline || now < s.registrationDeadline),
       }));
     }),
 
@@ -182,6 +186,7 @@ export const sessionRouter = createTRPCRouter({
         });
       }
 
+      const now = new Date();
       return {
         ...session,
         registrationCount: session.showParticipantCount
@@ -190,9 +195,9 @@ export const sessionRouter = createTRPCRouter({
         isFull: session._count.registrations >= session.maxParticipants,
         canRegister:
           session.status === "open" &&
+          new Date(session.date) > now && // Session must be in the future
           session._count.registrations < session.maxParticipants &&
-          (!session.registrationDeadline ||
-            new Date() < session.registrationDeadline),
+          (!session.registrationDeadline || now < session.registrationDeadline),
       };
     }),
 
@@ -311,6 +316,7 @@ export const sessionRouter = createTRPCRouter({
         });
       }
 
+      const now = new Date();
       return {
         ...session,
         registrationCount: session.showParticipantCount
@@ -319,9 +325,9 @@ export const sessionRouter = createTRPCRouter({
         isFull: session._count.registrations >= session.maxParticipants,
         canRegister:
           session.status === "open" &&
+          new Date(session.date) > now && // Session must be in the future
           session._count.registrations < session.maxParticipants &&
-          (!session.registrationDeadline ||
-            new Date() < session.registrationDeadline),
+          (!session.registrationDeadline || now < session.registrationDeadline),
       };
     }),
 

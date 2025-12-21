@@ -77,6 +77,8 @@ export function SessionDetailClient({ id }: { id: string }) {
     saudiDate?.toLocaleDateString("ar-SA", { month: "long", numberingSystem: "latn" }) ??
     sessionDate.toLocaleDateString("ar-SA", { month: "long", numberingSystem: "latn" });
 
+  const isUpcoming = sessionDate > new Date();
+
   const statusColors: Record<string, string> = {
     open: "bg-emerald-100 text-emerald-800 border-emerald-200",
     closed: "bg-red-100 text-red-800 border-red-200",
@@ -89,7 +91,8 @@ export function SessionDetailClient({ id }: { id: string }) {
     completed: "منعقدة",
   };
 
-  const isUpcoming = sessionDate > new Date();
+  // Past events always show as "completed" regardless of their status
+  const displayStatus = isUpcoming ? session.status : "completed";
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -103,10 +106,10 @@ export function SessionDetailClient({ id }: { id: string }) {
           <Badge
             variant="secondary"
             className={`${
-              statusColors[session.status]
+              statusColors[displayStatus]
             } backdrop-blur-md shadow-lg text-xs md:text-base px-2.5 py-1 md:px-4 md:py-1.5`}
           >
-            {statusLabels[session.status]}
+            {statusLabels[displayStatus]}
           </Badge>
         </div>
 
@@ -190,112 +193,114 @@ export function SessionDetailClient({ id }: { id: string }) {
                   </h1>
                 </div>
 
-                {/* Registration CTA + Countdown - Combined */}
-                <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg md:rounded-xl p-4 md:p-6 border border-primary/10">
-                  <div className="flex flex-col lg:flex-row items-center gap-4 md:gap-6">
-                    {/* Countdown Section */}
-                    {isUpcoming && session.showCountdown && (
-                      <div className="w-full lg:w-auto lg:shrink-0">
-                        <CountdownTimer targetDate={sessionDate} compact />
-                      </div>
-                    )}
-
-                    {/* Divider - vertical on desktop, horizontal on mobile */}
-                    {isUpcoming && session.showCountdown && (
-                      <div className="hidden lg:block w-px h-20 bg-border" />
-                    )}
-                    {isUpcoming && session.showCountdown && (
-                      <div className="lg:hidden w-full h-px bg-border" />
-                    )}
-
-                    {/* CTA Section */}
-                    <div className="w-full lg:flex-1">
-                      {registration?.registered && registration.registration ? (
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4">
-                          <div className="flex items-center gap-2 md:gap-3">
-                            <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 text-emerald-600 shrink-0" />
-                            <div>
-                              <p className="font-bold text-base md:text-lg text-foreground">
-                                تم التسجيل بنجاح
-                              </p>
-                              <Badge
-                                variant={
-                                  registration.registration.isApproved
-                                    ? "default"
-                                    : "secondary"
-                                }
-                                className="mt-1 text-xs md:text-sm"
-                              >
-                                {registration.registration.isApproved
-                                  ? "✓ مؤكد"
-                                  : "⏳ في انتظار الموافقة"}
-                              </Badge>
-                            </div>
-                          </div>
-                          {registration.registration.isApproved && (
-                            <Button
-                              variant="outline"
-                              asChild
-                              className="shadow w-full sm:w-auto"
-                              size="sm"
-                            >
-                              <Link href="/user/registrations">
-                                عرض تفاصيل التسجيل
-                                <ArrowLeft className="w-4 h-4 mr-2" />
-                              </Link>
-                            </Button>
-                          )}
+                {/* Registration CTA + Countdown - Only for upcoming events */}
+                {isUpcoming && (
+                  <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg md:rounded-xl p-4 md:p-6 border border-primary/10">
+                    <div className="flex flex-col lg:flex-row items-center gap-4 md:gap-6">
+                      {/* Countdown Section */}
+                      {session.showCountdown && (
+                        <div className="w-full lg:w-auto lg:shrink-0">
+                          <CountdownTimer targetDate={sessionDate} compact />
                         </div>
-                      ) : session.canRegister ? (
-                        <div className="flex flex-col items-center lg:items-start gap-3 md:gap-4">
-                          <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full sm:w-auto">
-                            <Button
-                              asChild
-                              size="default"
-                              className="shadow-lg hover:shadow-xl transition-all w-full sm:w-auto md:text-base"
-                            >
-                              <Link
-                                href={
-                                  authStatus === "authenticated"
-                                    ? `/session/${id}/member-register`
-                                    : `/user/login?callbackUrl=/session/${id}/member-register`
-                                }
-                              >
-                                {session.requiresApproval
-                                  ? "سجل طلبك كعضو"
-                                  : authStatus !== "authenticated"
-                                  ? "سجيل كعضو"
-                                  : "احجز مكانك"}
-                              </Link>
-                            </Button>
-                            {authStatus !== "authenticated" && (
+                      )}
+
+                      {/* Divider - vertical on desktop, horizontal on mobile */}
+                      {session.showCountdown && (
+                        <div className="hidden lg:block w-px h-20 bg-border" />
+                      )}
+                      {session.showCountdown && (
+                        <div className="lg:hidden w-full h-px bg-border" />
+                      )}
+
+                      {/* CTA Section */}
+                      <div className="w-full lg:flex-1">
+                        {registration?.registered && registration.registration ? (
+                          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4">
+                            <div className="flex items-center gap-2 md:gap-3">
+                              <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 text-emerald-600 shrink-0" />
+                              <div>
+                                <p className="font-bold text-base md:text-lg text-foreground">
+                                  تم التسجيل بنجاح
+                                </p>
+                                <Badge
+                                  variant={
+                                    registration.registration.isApproved
+                                      ? "default"
+                                      : "secondary"
+                                  }
+                                  className="mt-1 text-xs md:text-sm"
+                                >
+                                  {registration.registration.isApproved
+                                    ? "✓ مؤكد"
+                                    : "⏳ في انتظار الموافقة"}
+                                </Badge>
+                              </div>
+                            </div>
+                            {registration.registration.isApproved && (
                               <Button
                                 variant="outline"
                                 asChild
-                                size="default"
-                                className="w-full sm:w-auto"
+                                className="shadow w-full sm:w-auto"
+                                size="sm"
                               >
-                                <Link href={`/session/${id}/guest-register`}>
-                                  {session.requiresApproval
-                                    ? "سجل طلبك كزائر"
-                                    : "سجل كزائر"}
+                                <Link href="/user/registrations">
+                                  عرض تفاصيل التسجيل
+                                  <ArrowLeft className="w-4 h-4 mr-2" />
                                 </Link>
                               </Button>
                             )}
                           </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center gap-3 py-2">
-                          <p className="text-muted-foreground font-medium text-sm md:text-base text-center">
-                            {session.isFull
-                              ? "🔒 الحدث مكتمل العدد"
-                              : "التسجيل مغلق لهذا الحدث"}
-                          </p>
-                        </div>
-                      )}
+                        ) : session.canRegister ? (
+                          <div className="flex flex-col items-center lg:items-start gap-3 md:gap-4">
+                            <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full sm:w-auto">
+                              <Button
+                                asChild
+                                size="default"
+                                className="shadow-lg hover:shadow-xl transition-all w-full sm:w-auto md:text-base"
+                              >
+                                <Link
+                                  href={
+                                    authStatus === "authenticated"
+                                      ? `/session/${id}/member-register`
+                                      : `/user/login?callbackUrl=/session/${id}/member-register`
+                                  }
+                                >
+                                  {session.requiresApproval
+                                    ? "سجل طلبك كعضو"
+                                    : authStatus !== "authenticated"
+                                    ? "سجيل كعضو"
+                                    : "احجز مكانك"}
+                                </Link>
+                              </Button>
+                              {authStatus !== "authenticated" && (
+                                <Button
+                                  variant="outline"
+                                  asChild
+                                  size="default"
+                                  className="w-full sm:w-auto"
+                                >
+                                  <Link href={`/session/${id}/guest-register`}>
+                                    {session.requiresApproval
+                                      ? "سجل طلبك كزائر"
+                                      : "سجل كزائر"}
+                                  </Link>
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-3 py-2">
+                            <p className="text-muted-foreground font-medium text-sm md:text-base text-center">
+                              {session.isFull
+                                ? "🔒 الحدث مكتمل العدد"
+                                : "التسجيل مغلق لهذا الحدث"}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Quick Info Icons */}
                 <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-4">

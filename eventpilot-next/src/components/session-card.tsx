@@ -28,6 +28,7 @@ export function SessionCard({
   showRegisterButton = true,
 }: SessionCardProps) {
   const sessionDate = new Date(session.date);
+  const isPast = sessionDate < new Date();
 
   const statusConfig: Record<
     string,
@@ -42,7 +43,8 @@ export function SessionCard({
     completed: { bg: "bg-gray-100", text: "text-gray-600", label: "منعقدة" },
   };
 
-  const status = statusConfig[session.status] || statusConfig.closed;
+  // Past events always show as "completed" regardless of their status
+  const status = isPast ? statusConfig.completed : (statusConfig[session.status] || statusConfig.closed);
   const registrationPercent =
     session.registrationCount !== null &&
     session.registrationCount !== undefined
