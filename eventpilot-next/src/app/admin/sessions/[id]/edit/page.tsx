@@ -22,7 +22,7 @@ export default function SessionEditPage({
   const { id } = use(params);
   const router = useRouter();
 
-  const { data: session, isLoading } = api.session.getById.useQuery({ id });
+  const { data: session, isLoading } = api.session.getAdminDetails.useQuery({ id });
 
   const [initialFormData, setInitialFormData] =
     useState<SessionFormData | null>(null);

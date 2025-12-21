@@ -36,7 +36,7 @@ export function Breadcrumbs() {
     sessionId && /^[0-9a-f-]{36}$|^c[a-z0-9]{24,}$/.test(sessionId);
 
   // Fetch session data if we have a valid session ID
-  const { data: session } = api.session.getById.useQuery(
+  const { data: session } = api.session.getAdminDetails.useQuery(
     { id: sessionId! },
     { enabled: !!isValidSessionId }
   );

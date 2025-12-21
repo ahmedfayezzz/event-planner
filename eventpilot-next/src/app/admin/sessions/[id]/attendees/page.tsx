@@ -99,7 +99,7 @@ export default function SessionAttendeesPage({
   const debouncedSearch = useDebounce(search, 300);
 
   const { data: session, isLoading: sessionLoading } =
-    api.session.getById.useQuery({ id });
+    api.session.getAdminDetails.useQuery({ id });
   const {
     data: registrations,
     isLoading: registrationsLoading,

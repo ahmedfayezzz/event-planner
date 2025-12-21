@@ -116,7 +116,7 @@ export default function ManualRegistrationPage({
   const [sendQrEmail, setSendQrEmail] = useState(true);
 
   // Queries
-  const { data: session, isLoading: loadingSession } = api.session.getById.useQuery(
+  const { data: session, isLoading: loadingSession } = api.session.getAdminDetails.useQuery(
     { id: sessionId },
     { enabled: !!sessionId }
   );

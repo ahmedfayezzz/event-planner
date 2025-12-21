@@ -136,7 +136,7 @@ export default function InvitationsPage({
   } | null>(null);
 
   // Queries
-  const { data: session, isLoading: loadingSession } = api.session.getById.useQuery(
+  const { data: session, isLoading: loadingSession } = api.session.getAdminDetails.useQuery(
     { id: sessionId },
     { enabled: !!sessionId }
   );
