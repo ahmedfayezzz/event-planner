@@ -47,6 +47,7 @@ import {
   Globe,
   EyeOff,
   Archive,
+  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -308,6 +309,12 @@ export default function AdminSessionsPage() {
                                         تسجيل الحضور
                                       </Link>
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                      <Link href={`/admin/sessions/new?duplicateFrom=${session.id}`}>
+                                        <Copy className="ml-2 h-4 w-4" />
+                                        نسخ الحدث
+                                      </Link>
+                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     {/* Visibility Status Actions */}
                                     {session.visibilityStatus !== "active" && (
@@ -413,6 +420,12 @@ export default function AdminSessionsPage() {
                                           <Link href={`/admin/checkin/${session.id}`}>
                                             <QrCode className="ml-1 h-3 w-3" />
                                             الحضور
+                                          </Link>
+                                        </Button>
+                                        <Button variant="outline" size="sm" asChild>
+                                          <Link href={`/admin/sessions/new?duplicateFrom=${session.id}`}>
+                                            <Copy className="ml-1 h-3 w-3" />
+                                            نسخ
                                           </Link>
                                         </Button>
                                       </div>

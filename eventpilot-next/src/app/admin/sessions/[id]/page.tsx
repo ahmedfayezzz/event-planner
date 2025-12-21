@@ -44,6 +44,7 @@ import {
   Archive,
   Building2,
   Briefcase,
+  Copy,
 } from "lucide-react";
 import { getSponsorshipTypeLabel, getSponsorTypeLabel } from "@/lib/constants";
 
@@ -203,6 +204,12 @@ export default function SessionDetailPage({
             <Link href={`/admin/sessions/${id}/edit`}>
               <Edit className="ml-2 h-4 w-4" />
               تعديل
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/admin/sessions/new?duplicateFrom=${id}`}>
+              <Copy className="ml-2 h-4 w-4" />
+              نسخ
             </Link>
           </Button>
         </div>

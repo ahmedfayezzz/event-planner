@@ -368,8 +368,13 @@ export function SessionForm({
 }: SessionFormProps) {
   const DRAFT_KEY = "session-form-draft";
 
-  // Load draft from localStorage for create mode
+  // Load draft from localStorage for create mode (but prioritize initialData if provided)
   const getInitialValues = (): SessionFormData => {
+    // If initialData is provided (e.g., duplicating a session), use it directly
+    if (initialData && Object.keys(initialData).length > 0) {
+      return { ...defaultSessionFormData, ...initialData };
+    }
+    // Otherwise, check for saved draft in create mode
     if (mode === "create" && typeof window !== "undefined") {
       const savedDraft = localStorage.getItem(DRAFT_KEY);
       if (savedDraft) {
@@ -385,6 +390,11 @@ export function SessionForm({
   };
 
   const getInitialHasGuest = (): boolean => {
+    // If initialData is provided, check for guest info
+    if (initialData && Object.keys(initialData).length > 0) {
+      return !!(initialData?.guestName || initialData?.guestProfile);
+    }
+    // Otherwise, check for saved draft in create mode
     if (mode === "create" && typeof window !== "undefined") {
       const savedDraft = localStorage.getItem(DRAFT_KEY);
       if (savedDraft) {
@@ -400,6 +410,10 @@ export function SessionForm({
   };
 
   const getInitialSelectedTemplate = (): string | null => {
+    // Don't load template from draft if initialData is provided
+    if (initialData && Object.keys(initialData).length > 0) {
+      return null;
+    }
     if (mode === "create" && typeof window !== "undefined") {
       const savedDraft = localStorage.getItem(DRAFT_KEY);
       if (savedDraft) {

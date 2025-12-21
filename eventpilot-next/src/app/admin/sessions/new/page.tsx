@@ -1,16 +1,57 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { SessionForm, SessionFormData } from "@/components/admin/session-form";
 import { parseFormDateToUTC } from "@/lib/timezone";
 
 export default function NewSessionPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const duplicateFromId = searchParams.get("duplicateFrom");
+
+  // Fetch source session if duplicating
+  const { data: sourceSession, isLoading: isLoadingSource } = api.session.getAdminDetails.useQuery(
+    { id: duplicateFromId! },
+    { enabled: !!duplicateFromId }
+  );
+
+  // Build initial data from source session
+  const initialData: Partial<SessionFormData> | undefined = sourceSession
+    ? {
+        title: `نسخة من ${sourceSession.title}`,
+        description: sourceSession.description || "",
+        // Leave date/time empty so user must set new values
+        date: "",
+        time: "",
+        location: sourceSession.location || "",
+        locationUrl: sourceSession.locationUrl || "",
+        guestName: sourceSession.guestName || "",
+        guestProfile: sourceSession.guestProfile || "",
+        maxParticipants: String(sourceSession.maxParticipants),
+        maxCompanions: String(sourceSession.maxCompanions),
+        requiresApproval: sourceSession.requiresApproval,
+        showParticipantCount: sourceSession.showParticipantCount,
+        showCountdown: sourceSession.showCountdown,
+        showGuestProfile: sourceSession.showGuestProfile,
+        inviteOnly: sourceSession.inviteOnly,
+        inviteMessage: sourceSession.inviteMessage || "",
+        sendQrInEmail: sourceSession.sendQrInEmail,
+        showSocialMediaFields: sourceSession.showSocialMediaFields,
+        showRegistrationPurpose: sourceSession.showRegistrationPurpose,
+        showCateringInterest: sourceSession.showCateringInterest,
+        customConfirmationMessage: sourceSession.customConfirmationMessage || "",
+        // Don't copy slug - will be auto-generated
+        slug: "",
+        // Don't copy registration deadline
+        registrationDeadline: "",
+      }
+    : undefined;
 
   const createMutation = api.session.create.useMutation({
     onSuccess: (session) => {
@@ -56,6 +97,24 @@ export default function NewSessionPage() {
     });
   };
 
+  // Show loading state while fetching source session for duplication
+  if (duplicateFromId && isLoadingSource) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-10" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -66,15 +125,20 @@ export default function NewSessionPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">حدث جديد</h1>
+          <h1 className="text-2xl font-bold">
+            {duplicateFromId ? "نسخ الحدث" : "حدث جديد"}
+          </h1>
           <p className="text-muted-foreground">
-            إنشاء حدث جديد لثلوثية الأعمال
+            {duplicateFromId
+              ? "إنشاء حدث جديد بناءً على حدث سابق"
+              : "إنشاء حدث جديد لثلوثية الأعمال"}
           </p>
         </div>
       </div>
 
       <SessionForm
         mode="create"
+        initialData={initialData}
         onSubmit={handleSubmit}
         isPending={createMutation.isPending}
         onCancel={() => router.push("/admin/sessions")}
