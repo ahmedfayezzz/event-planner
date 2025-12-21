@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { formatArabicDate, getWhatsAppUrl } from "@/lib/utils";
+import { formatArabicDate, formatArabicTime, formatArabicDateTime, getWhatsAppUrl } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -314,7 +314,7 @@ ${qrPageUrl}
       r.position || "",
       r.isInvited ? "مرافق" : (r.isGuest ? "زائر" : "عضو"),
       r.isApproved ? "مؤكد" : "معلق",
-      formatArabicDate(new Date(r.registeredAt)),
+      formatArabicDateTime(new Date(r.registeredAt)),
     ]);
 
     const csvContent = [
@@ -678,8 +678,13 @@ ${qrPageUrl}
                                 {reg.isApproved ? "مؤكد" : "معلق"}
                               </Badge>
                             </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              {formatArabicDate(new Date(reg.registeredAt))}
+                            <TableCell className="hidden md:table-cell text-muted-foreground">
+                              <div className="text-sm">
+                                {formatArabicDate(new Date(reg.registeredAt))}
+                              </div>
+                              <div className="text-xs">
+                                {formatArabicTime(new Date(reg.registeredAt))}
+                              </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                               <div className="flex items-center gap-1">
@@ -767,7 +772,7 @@ ${qrPageUrl}
                                       </div>
                                       <div className="flex items-center gap-2">
                                         <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                                        <span>{formatArabicDate(new Date(reg.registeredAt))}</span>
+                                        <span>{formatArabicDate(new Date(reg.registeredAt))} - {formatArabicTime(new Date(reg.registeredAt))}</span>
                                       </div>
                                       {reg.companyName && (
                                         <div className="flex items-center gap-2">

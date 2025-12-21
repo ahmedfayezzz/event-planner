@@ -96,7 +96,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SponsorNotes } from "@/components/admin/sponsor-notes";
 import { SponsorLabelManager } from "@/components/admin/sponsor-label-manager";
-import { SponsorSocialMedia, SponsorSocialMediaIcons } from "@/components/admin/sponsor-social-media";
+import { SponsorSocialMedia } from "@/components/admin/sponsor-social-media";
 import {
   Tooltip,
   TooltipContent,
@@ -628,7 +628,7 @@ export default function AdminSponsorsPage() {
                     <TableHead className="hidden sm:table-cell">الحالة</TableHead>
                     <TableHead className="hidden lg:table-cell">التصنيفات</TableHead>
                     <TableHead className="hidden lg:table-cell">ملاحظات</TableHead>
-                    <TableHead className="hidden lg:table-cell">التواصل الاجتماعي</TableHead>
+                    <TableHead className="hidden lg:table-cell">الحساب</TableHead>
                     <TableHead className="hidden lg:table-cell">الفعاليات</TableHead>
                     <TableHead className="hidden md:table-cell text-left w-12">إجراءات</TableHead>
                     <TableHead className="md:hidden w-10"></TableHead>
@@ -787,11 +787,19 @@ export default function AdminSponsorsPage() {
                               onUpdate={() => utils.sponsor.getAll.invalidate()}
                             />
                           </TableCell>
-                          {/* Social Media Column */}
+                          {/* Account Column */}
                           <TableCell className="hidden lg:table-cell">
-                            <SponsorSocialMediaIcons
-                              socialMediaLinks={sponsor.socialMediaLinks as Record<string, string> | null}
-                            />
+                            {sponsor.user ? (
+                              <Link
+                                href={`/admin/users/${sponsor.user.id}`}
+                                className="flex items-center gap-2 hover:underline text-sm"
+                              >
+                                <UserCircle className="h-4 w-4 text-primary" />
+                                {sponsor.user.name}
+                              </Link>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">-</span>
+                            )}
                           </TableCell>
                           {/* Events Column */}
                           <TableCell className="hidden lg:table-cell">

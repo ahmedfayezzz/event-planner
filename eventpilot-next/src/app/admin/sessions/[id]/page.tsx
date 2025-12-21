@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatArabicDate, formatArabicTime } from "@/lib/utils";
+import { formatArabicDate, formatArabicTime, formatArabicDateTime } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   ArrowRight,
@@ -614,7 +614,12 @@ export default function SessionDetailPage({
                         </TableCell>
                         <TableCell className="hidden md:table-cell">{reg.companionCount}</TableCell>
                         <TableCell className="hidden md:table-cell text-muted-foreground">
-                          {formatArabicDate(new Date(reg.registeredAt))}
+                          <div className="text-sm">
+                            {formatArabicDate(new Date(reg.registeredAt))}
+                          </div>
+                          <div className="text-xs">
+                            {formatArabicTime(new Date(reg.registeredAt))}
+                          </div>
                         </TableCell>
                         <TableCell className="md:hidden">
                           <Button
@@ -671,7 +676,7 @@ export default function SessionDetailPage({
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">التاريخ:</span>
-                                  <span className="mr-1">{formatArabicDate(new Date(reg.registeredAt))}</span>
+                                  <span className="mr-1">{formatArabicDate(new Date(reg.registeredAt))} - {formatArabicTime(new Date(reg.registeredAt))}</span>
                                 </div>
                               </div>
                             </div>
