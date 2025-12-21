@@ -125,11 +125,13 @@ export const invitationRouter = createTRPCRouter({
           where: { sessionId: input.sessionId },
           include: { sponsor: true },
         });
-        sponsors = sponsorships.map((s) => ({
-          name: s.sponsor.name,
-          logoUrl: s.sponsor.logoUrl,
-          type: s.sponsorType,
-        }));
+        sponsors = sponsorships
+          .filter((s) => s.sponsor)
+          .map((s) => ({
+            name: s.sponsor!.name,
+            logoUrl: s.sponsor!.logoUrl,
+            type: s.sponsorType,
+          }));
       }
 
       // Use session's registration deadline or 7 days if not set
