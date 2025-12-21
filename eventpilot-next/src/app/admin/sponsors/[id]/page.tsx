@@ -1354,7 +1354,7 @@ function SponsorLogo({
           <img
             src={presignedUrl}
             alt={name}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
           />
         )}
       </div>
@@ -1397,7 +1397,7 @@ function LogoPreview({
         <img
           src={presignedUrl}
           alt="شعار الراعي"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
         />
       )}
       <Button

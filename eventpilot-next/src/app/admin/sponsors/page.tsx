@@ -471,7 +471,7 @@ export default function AdminSponsorsPage() {
             <img
               src={presignedUrl}
               alt={name}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain"
               onError={(e) => {
                 // Fallback to icon on error
                 e.currentTarget.style.display = "none";
@@ -1400,7 +1400,7 @@ function LogoPreview({ logoUrl, onRemove, disabled }: {
         <img
           src={presignedUrl}
           alt="شعار الراعي"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
         />
       )}
       <Button
