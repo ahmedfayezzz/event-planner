@@ -24,3 +24,4 @@ build/
 # Local
 .local/
 *.log
+todo.md

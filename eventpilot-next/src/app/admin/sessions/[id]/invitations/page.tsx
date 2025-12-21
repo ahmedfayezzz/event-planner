@@ -41,6 +41,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Switch } from "@/components/ui/switch";
 import {
   ArrowRight,
   Mail,
@@ -62,6 +63,7 @@ import {
   XCircle,
   Plus,
   X,
+  FileText,
 } from "lucide-react";
 import { copyToClipboard } from "@/lib/utils";
 
@@ -92,6 +94,7 @@ export default function InvitationsPage({
   const [emailSearch, setEmailSearch] = useState("");
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [customMessage, setCustomMessage] = useState("");
+  const [attachPdf, setAttachPdf] = useState(false);
 
   // WhatsApp tab state
   const [whatsappSearch, setWhatsappSearch] = useState("");
@@ -162,6 +165,7 @@ export default function InvitationsPage({
       }
       setSelectedEmails([]);
       setCustomMessage("");
+      setAttachPdf(false);
       utils.invitation.getUsersForInvite.invalidate({ sessionId });
       utils.invitation.getSessionInvites.invalidate({ sessionId });
     },
@@ -239,6 +243,7 @@ export default function InvitationsPage({
       sessionId,
       emails: selectedEmails,
       customMessage: customMessage || undefined,
+      attachPdf,
     });
   };
 
@@ -567,6 +572,25 @@ export default function InvitationsPage({
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)}
                   rows={3}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <Label htmlFor="attach-pdf" className="cursor-pointer">
+                      إرفاق بطاقة الدعوة
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      إرفاق ملف PDF يحتوي على بطاقة الدعوة مع البريد الإلكتروني
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="attach-pdf"
+                  checked={attachPdf}
+                  onCheckedChange={setAttachPdf}
                 />
               </div>
 

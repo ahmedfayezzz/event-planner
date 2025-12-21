@@ -45,6 +45,10 @@ import {
   Building2,
   Briefcase,
   Copy,
+  FileText,
+  Download,
+  Share2,
+  Link2,
 } from "lucide-react";
 import { getSponsorshipTypeLabel, getSponsorTypeLabel } from "@/lib/constants";
 
@@ -397,6 +401,76 @@ export default function SessionDetailPage({
               </Link>
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Invitation PDF Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                بطاقة الدعوة
+              </CardTitle>
+              <CardDescription>
+                عرض وتحميل ومشاركة بطاقة الدعوة الخاصة بالحدث
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              onClick={() => window.open(`/api/sessions/${id}/invitation-pdf`, "_blank")}
+            >
+              <Eye className="ml-2 h-4 w-4" />
+              معاينة
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const link = document.createElement("a");
+                link.href = `/api/sessions/${id}/invitation-pdf?download=true`;
+                link.download = `invitation-${session?.title || "event"}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                toast.success("جاري تحميل الملف...");
+              }}
+            >
+              <Download className="ml-2 h-4 w-4" />
+              تحميل
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const pdfUrl = `${window.location.origin}/api/sessions/${id}/invitation-pdf`;
+                const whatsappText = encodeURIComponent(
+                  `دعوة خاصة - ${session?.title || "الحدث"}\n\nيسرنا دعوتكم لحضور الحدث.\n\nرابط بطاقة الدعوة:\n${pdfUrl}`
+                );
+                window.open(`https://wa.me/?text=${whatsappText}`, "_blank");
+              }}
+            >
+              <Share2 className="ml-2 h-4 w-4" />
+              مشاركة واتساب
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const pdfUrl = `${window.location.origin}/api/sessions/${id}/invitation-pdf`;
+                navigator.clipboard.writeText(pdfUrl);
+                toast.success("تم نسخ الرابط");
+              }}
+            >
+              <Link2 className="ml-2 h-4 w-4" />
+              نسخ الرابط
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            بطاقة الدعوة تتضمن تاريخ ووقت الحدث مع رابط الموقع والرعاة المعتمدين
+          </p>
         </CardContent>
       </Card>
 

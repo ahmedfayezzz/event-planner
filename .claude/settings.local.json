@@ -13,7 +13,8 @@
       "Bash(find:*)",
       "Bash(tree:*)",
       "mcp__playwright__*",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

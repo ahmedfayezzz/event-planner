@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 // PNG generation kept for future use: import { generateBrandedQRCode } from "./qr-branded";
 import { generateBrandedQRPdf } from "./qr-pdf";
+import { generateInvitationPdf } from "./invitation-pdf";
 import { db } from "@/server/db";
 import { toSaudiTime } from "./timezone";
 import {
@@ -651,6 +652,16 @@ export async function sendPasswordResetEmail(
   });
 }
 
+interface InvitationEmailOptions {
+  attachPdf?: boolean;
+  sponsors?: Array<{
+    name: string;
+    logoUrl?: string | null;
+    type: string;
+  }>;
+  useHtml?: boolean;
+}
+
 /**
  * Send invitation email
  */
@@ -658,12 +669,42 @@ export async function sendInvitationEmail(
   emailAddress: string,
   session: SessionInfo,
   registrationLink: string,
-  useHtml: boolean = true
+  options: InvitationEmailOptions | boolean = true
 ): Promise<boolean> {
+  // Handle backwards compatibility: if options is a boolean, treat it as useHtml
+  const opts: InvitationEmailOptions = typeof options === 'boolean'
+    ? { useHtml: options }
+    : options;
+  const { attachPdf = false, sponsors = [], useHtml = true } = opts;
+
   const settings = await getEmailSettings();
   const siteName = settings.siteName ?? "ثلوثية الأعمال";
   const dateStr = formatDateOnly(session.date);
   const timeStr = formatTimeOnly(session.date);
+
+  // Generate invitation PDF attachment if requested
+  let attachments: EmailAttachment[] | undefined;
+  if (attachPdf) {
+    try {
+      const pdfBuffer = await generateInvitationPdf({
+        sessionTitle: session.title,
+        sessionDate: session.date,
+        location: session.location ?? undefined,
+        locationUrl: session.locationUrl ?? undefined,
+        sponsors,
+      });
+      if (pdfBuffer) {
+        attachments = [
+          {
+            filename: "invitation.pdf",
+            content: pdfBuffer.toString("base64"),
+          },
+        ];
+      }
+    } catch (err) {
+      console.error("Failed to generate invitation PDF:", err);
+    }
+  }
 
   // Plain text fallback
   if (!useHtml) {
@@ -685,6 +726,7 @@ export async function sendInvitationEmail(
       to: emailAddress,
       subject: `دعوة خاصة - ${session.title}`,
       text: body,
+      attachments,
       type: "invitation",
       sessionId: session.id,
     });
@@ -711,6 +753,7 @@ export async function sendInvitationEmail(
     subject: `دعوة خاصة - ${session.title}`,
     html,
     text,
+    attachments,
     type: "invitation",
     sessionId: session.id,
   });

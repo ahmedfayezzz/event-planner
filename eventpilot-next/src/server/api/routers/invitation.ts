@@ -101,6 +101,7 @@ export const invitationRouter = createTRPCRouter({
         sessionId: z.string(),
         emails: z.array(z.string().email()).max(100),
         customMessage: z.string().optional(),
+        attachPdf: z.boolean().optional().default(false),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -115,6 +116,20 @@ export const invitationRouter = createTRPCRouter({
           code: "NOT_FOUND",
           message: "الحدث غير موجود",
         });
+      }
+
+      // Fetch sponsors if attaching PDF
+      let sponsors: Array<{ name: string; logoUrl: string | null; type: string }> = [];
+      if (input.attachPdf) {
+        const sponsorships = await db.eventSponsorship.findMany({
+          where: { sessionId: input.sessionId },
+          include: { sponsor: true },
+        });
+        sponsors = sponsorships.map((s) => ({
+          name: s.sponsor.name,
+          logoUrl: s.sponsor.logoUrl,
+          type: s.sponsorType,
+        }));
       }
 
       // Use session's registration deadline or 7 days if not set
@@ -163,7 +178,8 @@ export const invitationRouter = createTRPCRouter({
           const sent = await sendInvitationEmail(
             email,
             session,
-            registrationLink
+            registrationLink,
+            { attachPdf: input.attachPdf, sponsors }
           );
 
           results.push({

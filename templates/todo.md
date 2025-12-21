@@ -1,23 +1,24 @@
 - fix image display for logo
-<!-- - update qr code pdf according to latest design -->
 - issue when inviting a companion that already exists
-<!-- - check if companion is auto approved -->
-<!-- - make companion approval seprate from main attendee -->
-<!-- - give admin a way to add profile picture -->
-<!-- - give user a way to add profile picture -->
 - duplicate companion issue
-<!-- - whatsapp button for users -->
-<!-- - show professional details in attendees list -->
-<!-- - manual registration should be for guests as well not only members -->
+<!-- - show passed events as closed -->
+<!-- - new events not appearing in next events -->
+<!-- - unpublished events shouldn't show in all events in public events -->
+<!-- - add a way to duplicate sessions -->
+<!-- - users stats in users table (totals) -->
+- email log system
+- resend confirmation email
+- calender for sponsors
+- show sponsors logo in event details and qr code
+<!-- - remove hardcoded whatsapp message for sponsor -->
+- add social media links for sponsors
+- add notes to sponsor
+- add sponsor status (no interested, an appointment has been set)
+
+- don't allow deactivated users to register to events or login
 
 - whatsapp with qr code
 
-- deploy family project to production
+- manual email sending
 
-<!-- في الرعاة
-هل نقدر نضيف الحالة ، و يكون فيها
-- جديد
-- ⁠تم التواصل
-- ⁠تمت الرعاية 
-- ⁠مهتم بالرعاية مره اخرى
-- ⁠مهتم بالرعاية بشكل دائم -->
+- make qr code design fully dynamic
