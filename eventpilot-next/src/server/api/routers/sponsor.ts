@@ -391,7 +391,7 @@ export const sponsorRouter = createTRPCRouter({
             },
           },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { displayOrder: "asc" },
       });
 
       return sponsorships;
@@ -433,7 +433,7 @@ export const sponsorRouter = createTRPCRouter({
             },
           },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { displayOrder: "asc" },
       });
 
       return {
@@ -484,6 +484,13 @@ export const sponsorRouter = createTRPCRouter({
         }
       }
 
+      // Get max displayOrder for this session to add new sponsorship at the end
+      const maxOrder = await db.eventSponsorship.aggregate({
+        where: { sessionId: input.sessionId },
+        _max: { displayOrder: true },
+      });
+      const nextOrder = (maxOrder._max.displayOrder ?? -1) + 1;
+
       const sponsorship = await db.eventSponsorship.create({
         data: {
           sessionId: input.sessionId,
@@ -491,6 +498,7 @@ export const sponsorRouter = createTRPCRouter({
           sponsorshipType: input.sponsorshipType,
           isSelfSponsored: input.isSelfSponsored,
           notes: input.notes || null,
+          displayOrder: nextOrder,
         },
         include: {
           sponsor: {
@@ -599,6 +607,33 @@ export const sponsorRouter = createTRPCRouter({
       await db.eventSponsorship.delete({
         where: { id: input.id },
       });
+
+      return { success: true };
+    }),
+
+  /**
+   * Update display order for sponsorships (admin only)
+   * Used for drag-and-drop or up/down reordering
+   */
+  updateDisplayOrder: adminProcedure
+    .input(
+      z.object({
+        sessionId: z.string(),
+        orderedIds: z.array(z.string()),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Update each sponsorship with its new display order
+      const updates = input.orderedIds.map((id, index) =>
+        db.eventSponsorship.update({
+          where: { id },
+          data: { displayOrder: index },
+        })
+      );
+
+      await Promise.all(updates);
 
       return { success: true };
     }),

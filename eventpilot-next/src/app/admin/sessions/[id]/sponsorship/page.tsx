@@ -73,12 +73,57 @@ import {
   getSponsorshipTypeLabel,
   getSponsorTypeLabel,
 } from "@/lib/constants";
+import { usePresignedUrl } from "@/hooks/use-presigned-url";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+// Component to display sponsor logo with presigned URL support
+const SponsorLogo = ({ logoUrl, name, type }: { logoUrl: string | null; name: string; type: string }) => {
+  const { url: presignedUrl, isLoading } = usePresignedUrl(logoUrl);
+
+  if (logoUrl && presignedUrl) {
+    return (
+      <div className="relative h-8 w-8 rounded-full overflow-hidden border bg-muted flex-shrink-0">
+        {isLoading ? (
+          <Skeleton className="h-full w-full" />
+        ) : (
+          <img
+            src={presignedUrl}
+            alt={name}
+            className="h-full w-full object-contain"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+              e.currentTarget.parentElement?.classList.add("fallback");
+            }}
+          />
+        )}
+        <div className="hidden fallback:flex h-full w-full items-center justify-center">
+          {type === "company" ? (
+            <Building2 className="h-4 w-4" />
+          ) : (
+            <User className="h-4 w-4" />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Avatar className="h-8 w-8">
+      <AvatarFallback>
+        {type === "company" ? (
+          <Building2 className="h-4 w-4" />
+        ) : (
+          <User className="h-4 w-4" />
+        )}
+      </AvatarFallback>
+    </Avatar>
+  );
+};
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -143,6 +188,30 @@ export default function SponsorshipPage({ params }: PageProps) {
       toast.error(error.message || "حدث خطأ أثناء حذف الرعاية");
     },
   });
+
+  const updateDisplayOrder = api.sponsor.updateDisplayOrder.useMutation({
+    onSuccess: () => {
+      utils.sponsor.getSessionSponsorshipsAdmin.invalidate({ sessionId: id });
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء تحديث الترتيب");
+    },
+  });
+
+  const moveSponsorship = (index: number, direction: "up" | "down") => {
+    if (!data) return;
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= data.sponsorships.length) return;
+
+    // Create new order by swapping
+    const orderedIds = data.sponsorships.map((s) => s.id);
+    [orderedIds[index], orderedIds[newIndex]] = [orderedIds[newIndex]!, orderedIds[index]!];
+
+    updateDisplayOrder.mutate({
+      sessionId: id,
+      orderedIds,
+    });
+  };
 
   const resetForm = () => {
     setSelectedSponsorId(null);
@@ -245,7 +314,14 @@ export default function SponsorshipPage({ params }: PageProps) {
       <Card>
         <CardHeader>
           <CardTitle>قائمة الرعاية</CardTitle>
-          <CardDescription>{sponsorships.length} عنصر رعاية مسجل</CardDescription>
+          <CardDescription>
+            {sponsorships.length} عنصر رعاية مسجل
+            {sponsorships.length > 1 && (
+              <span className="text-xs mr-2">
+                • الترتيب من اليمين لليسار (الأول يظهر على اليمين)
+              </span>
+            )}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {sponsorships.length === 0 ? (
@@ -265,6 +341,7 @@ export default function SponsorshipPage({ params }: PageProps) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-20">الترتيب</TableHead>
                   <TableHead>نوع الرعاية</TableHead>
                   <TableHead>الراعي</TableHead>
                   <TableHead className="hidden md:table-cell">التواصل</TableHead>
@@ -274,11 +351,35 @@ export default function SponsorshipPage({ params }: PageProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sponsorships.map((sponsorship) => {
+                {sponsorships.map((sponsorship, index) => {
                   const expanded = isExpanded(sponsorship.id);
+                  const isFirst = index === 0;
+                  const isLast = index === sponsorships.length - 1;
                   return (
                     <React.Fragment key={sponsorship.id}>
                       <TableRow>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              disabled={isFirst || updateDisplayOrder.isPending}
+                              onClick={() => moveSponsorship(index, "up")}
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              disabled={isLast || updateDisplayOrder.isPending}
+                              onClick={() => moveSponsorship(index, "down")}
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <TooltipProvider>
                             <Tooltip>
@@ -314,21 +415,11 @@ export default function SponsorshipPage({ params }: PageProps) {
                             </span>
                           ) : sponsorship.sponsor ? (
                             <div className="flex items-center gap-2">
-                              <Avatar className="h-8 w-8">
-                                {sponsorship.sponsor.logoUrl ? (
-                                  <AvatarImage
-                                    src={sponsorship.sponsor.logoUrl}
-                                    alt={sponsorship.sponsor.name}
-                                  />
-                                ) : null}
-                                <AvatarFallback>
-                                  {sponsorship.sponsor.type === "company" ? (
-                                    <Building2 className="h-4 w-4" />
-                                  ) : (
-                                    <User className="h-4 w-4" />
-                                  )}
-                                </AvatarFallback>
-                              </Avatar>
+                              <SponsorLogo
+                                logoUrl={sponsorship.sponsor.logoUrl}
+                                name={sponsorship.sponsor.name}
+                                type={sponsorship.sponsor.type}
+                              />
                               <div>
                                 <p className="font-medium">{sponsorship.sponsor.name}</p>
                                 <p className="text-xs text-muted-foreground">
@@ -409,7 +500,7 @@ export default function SponsorshipPage({ params }: PageProps) {
                         </TableCell>
                       </TableRow>
                       <tr className="md:hidden">
-                        <td colSpan={3} className="p-0">
+                        <td colSpan={4} className="p-0">
                           <div
                             className={cn(
                               "grid transition-all duration-300 ease-in-out",
@@ -552,18 +643,11 @@ export default function SponsorshipPage({ params }: PageProps) {
                         onClick={() => setSelectedSponsorId(sponsor.id)}
                       >
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            {sponsor.logoUrl ? (
-                              <AvatarImage src={sponsor.logoUrl} alt={sponsor.name} />
-                            ) : null}
-                            <AvatarFallback>
-                              {sponsor.type === "company" ? (
-                                <Building2 className="h-4 w-4" />
-                              ) : (
-                                <User className="h-4 w-4" />
-                              )}
-                            </AvatarFallback>
-                          </Avatar>
+                          <SponsorLogo
+                            logoUrl={sponsor.logoUrl}
+                            name={sponsor.name}
+                            type={sponsor.type}
+                          />
                           <div className="flex-1">
                             <p className="font-medium">{sponsor.name}</p>
                             <p className="text-sm text-muted-foreground">
@@ -692,18 +776,11 @@ export default function SponsorshipPage({ params }: PageProps) {
                         onClick={() => setSelectedSponsorId(sponsor.id)}
                       >
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            {sponsor.logoUrl ? (
-                              <AvatarImage src={sponsor.logoUrl} alt={sponsor.name} />
-                            ) : null}
-                            <AvatarFallback>
-                              {sponsor.type === "company" ? (
-                                <Building2 className="h-4 w-4" />
-                              ) : (
-                                <User className="h-4 w-4" />
-                              )}
-                            </AvatarFallback>
-                          </Avatar>
+                          <SponsorLogo
+                            logoUrl={sponsor.logoUrl}
+                            name={sponsor.name}
+                            type={sponsor.type}
+                          />
                           <div className="flex-1">
                             <p className="font-medium">{sponsor.name}</p>
                             <p className="text-sm text-muted-foreground">

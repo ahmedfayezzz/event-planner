@@ -471,6 +471,7 @@ export async function sendConfirmedEmail(
       // Fetch sponsors for this session
       const eventSponsorships = await db.eventSponsorship.findMany({
         where: { sessionId: session.id },
+        orderBy: { displayOrder: "asc" },
         include: { sponsor: true },
       });
       const sponsors = eventSponsorships
@@ -549,6 +550,7 @@ export async function sendCompanionEmail(
       // Fetch sponsors for this session
       const eventSponsorships = await db.eventSponsorship.findMany({
         where: { sessionId: session.id },
+        orderBy: { displayOrder: "asc" },
         include: { sponsor: true },
       });
       const sponsors = eventSponsorships
@@ -797,6 +799,7 @@ export async function sendQrOnlyEmail(
     // Fetch sponsors for this session
     const eventSponsorships = await db.eventSponsorship.findMany({
       where: { sessionId: session.id },
+      orderBy: { displayOrder: "asc" },
       include: { sponsor: true },
     });
     const sponsors = eventSponsorships

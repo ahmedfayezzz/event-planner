@@ -322,6 +322,7 @@ export const attendanceRouter = createTRPCRouter({
           session: {
             include: {
               eventSponsorships: {
+                orderBy: { displayOrder: "asc" },
                 include: {
                   sponsor: true,
                 },
@@ -461,6 +462,7 @@ export const attendanceRouter = createTRPCRouter({
           session: {
             include: {
               eventSponsorships: {
+                orderBy: { displayOrder: "asc" },
                 include: {
                   sponsor: true,
                 },

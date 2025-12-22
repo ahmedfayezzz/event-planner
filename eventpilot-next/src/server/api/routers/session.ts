@@ -170,6 +170,7 @@ export const sessionRouter = createTRPCRouter({
           },
           eventSponsorships: {
             where: { isSelfSponsored: false },
+            orderBy: { displayOrder: "asc" },
             include: {
               sponsor: {
                 select: {
