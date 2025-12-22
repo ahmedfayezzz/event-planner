@@ -624,6 +624,13 @@ export const registrationRouter = createTRPCRouter({
               phone: true,
               companyName: true,
               position: true,
+              labels: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                },
+              },
             },
           },
           invitedRegistrations: true,
@@ -649,6 +656,7 @@ export const registrationRouter = createTRPCRouter({
         phone: r.user?.phone || r.guestPhone,
         companyName: r.user?.companyName || r.guestCompanyName,
         position: r.user?.position || r.guestPosition,
+        labels: r.user?.labels || [],
         isGuest: !r.user,
         isInvited: !!r.invitedByRegistrationId,
         invitedByName: r.invitedByRegistration?.user?.name || r.invitedByRegistration?.guestName,

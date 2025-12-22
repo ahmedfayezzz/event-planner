@@ -59,6 +59,7 @@ import {
   User,
   Building2,
   Briefcase,
+  Tag,
 } from "lucide-react";
 
 interface RegistrationItem {
@@ -69,6 +70,7 @@ interface RegistrationItem {
   phone?: string | null;
   companyName?: string | null;
   position?: string | null;
+  labels?: Array<{ id: string; name: string; color: string }>;
   isGuest: boolean;
   isApproved: boolean;
   registeredAt: Date;
@@ -583,6 +585,7 @@ ${qrPageUrl}
                     <TableHead>الاسم</TableHead>
                     <TableHead className="hidden md:table-cell">التواصل</TableHead>
                     <TableHead className="hidden lg:table-cell">الشركة</TableHead>
+                    <TableHead className="hidden lg:table-cell">التصنيفات</TableHead>
                     <TableHead className="hidden lg:table-cell">النوع</TableHead>
                     {filter !== "invited" && <TableHead className="hidden lg:table-cell">المرافقين</TableHead>}
                     {filter !== "direct" && <TableHead className="hidden lg:table-cell">مدعو من</TableHead>}
@@ -638,6 +641,28 @@ ${qrPageUrl}
                                   <p className="text-sm text-muted-foreground">{reg.position}</p>
                                 )}
                               </div>
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              {reg.labels && reg.labels.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {reg.labels.map((label) => (
+                                    <Badge
+                                      key={label.id}
+                                      variant="outline"
+                                      className="text-xs"
+                                      style={{
+                                        backgroundColor: label.color + "20",
+                                        color: label.color,
+                                        borderColor: label.color + "40",
+                                      }}
+                                    >
+                                      {label.name}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
                             </TableCell>
                             <TableCell className="hidden lg:table-cell">
                               <div className="flex items-center gap-1 flex-wrap">
@@ -784,6 +809,27 @@ ${qrPageUrl}
                                         <div className="flex items-center gap-2">
                                           <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
                                           <span>{reg.position}</span>
+                                        </div>
+                                      )}
+                                      {reg.labels && reg.labels.length > 0 && (
+                                        <div className="flex items-center gap-2 col-span-2">
+                                          <Tag className="h-4 w-4 text-muted-foreground shrink-0" />
+                                          <div className="flex flex-wrap gap-1">
+                                            {reg.labels.map((label) => (
+                                              <Badge
+                                                key={label.id}
+                                                variant="outline"
+                                                className="text-xs"
+                                                style={{
+                                                  backgroundColor: label.color + "20",
+                                                  color: label.color,
+                                                  borderColor: label.color + "40",
+                                                }}
+                                              >
+                                                {label.name}
+                                              </Badge>
+                                            ))}
+                                          </div>
                                         </div>
                                       )}
                                       {!reg.isInvited && (
