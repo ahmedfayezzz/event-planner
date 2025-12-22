@@ -84,6 +84,7 @@ import {
   Calendar,
   StickyNote,
   MessageCircle,
+  Pencil,
 } from "lucide-react";
 
 interface UserItem {
@@ -144,6 +145,17 @@ export default function AdminUsersPage() {
   } | null>(null);
   const [promotionPermissions, setPromotionPermissions] =
     useState<PermissionKey[]>(ALL_PERMISSIONS);
+
+  // Edit user dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editUser, setEditUser] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    companyName: string;
+    position: string;
+  } | null>(null);
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -222,6 +234,18 @@ export default function AdminUsersPage() {
     },
   });
 
+  const updateManualUserMutation = api.admin.updateManualUser.useMutation({
+    onSuccess: () => {
+      toast.success("تم تحديث بيانات المستخدم");
+      refetch();
+      setEditDialogOpen(false);
+      setEditUser(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ");
+    },
+  });
+
   const { refetch: fetchCsv } = api.admin.exportUsers.useQuery(
     { includeInactive: statusFilter !== "active" },
     { enabled: false }
@@ -281,6 +305,32 @@ export default function AdminUsersPage() {
       userId: promotionUser.id,
       role: "ADMIN",
       permissions: promotionPermissions,
+    });
+  };
+
+  // Open edit dialog
+  const openEditDialog = (user: UserItem) => {
+    setEditUser({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      companyName: user.companyName || "",
+      position: user.position || "",
+    });
+    setEditDialogOpen(true);
+  };
+
+  // Handle edit submit
+  const handleEditSubmit = () => {
+    if (!editUser) return;
+    updateManualUserMutation.mutate({
+      userId: editUser.id,
+      name: editUser.name,
+      email: editUser.email || undefined,
+      phone: editUser.phone,
+      companyName: editUser.companyName || undefined,
+      position: editUser.position || undefined,
     });
   };
 
@@ -695,6 +745,13 @@ export default function AdminUsersPage() {
                                       عرض الملف
                                     </Link>
                                   </DropdownMenuItem>
+                                  {/* Edit option for manually created users only */}
+                                  {user.isManuallyCreated && (
+                                    <DropdownMenuItem onClick={() => openEditDialog(user)}>
+                                      <Pencil className="me-2 h-4 w-4" />
+                                      تعديل البيانات
+                                    </DropdownMenuItem>
+                                  )}
                                   {/* Hide actions for current user */}
                                   {user.id !== currentUserId && (
                                     <>
@@ -877,6 +934,17 @@ export default function AdminUsersPage() {
                                       عرض الملف
                                     </Link>
                                   </Button>
+                                  {/* Edit for manually created users */}
+                                  {user.isManuallyCreated && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openEditDialog(user)}
+                                    >
+                                      <Pencil className="me-2 h-4 w-4" />
+                                      تعديل
+                                    </Button>
+                                  )}
                                   {/* WhatsApp */}
                                   {user.phone && (
                                     <Button
@@ -1086,6 +1154,113 @@ export default function AdminUsersPage() {
                 <Shield className="me-2 h-4 w-4" />
               )}
               ترقية لمدير
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) {
+            setEditUser(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تعديل بيانات المستخدم</DialogTitle>
+            <DialogDescription>
+              تعديل بيانات المستخدم المضاف يدوياً
+            </DialogDescription>
+          </DialogHeader>
+          {editUser && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">الاسم *</Label>
+                <Input
+                  id="edit-name"
+                  value={editUser.name}
+                  onChange={(e) =>
+                    setEditUser({ ...editUser, name: e.target.value })
+                  }
+                  placeholder="الاسم الكامل"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">رقم الهاتف *</Label>
+                <Input
+                  id="edit-phone"
+                  value={editUser.phone}
+                  onChange={(e) =>
+                    setEditUser({ ...editUser, phone: e.target.value })
+                  }
+                  placeholder="05xxxxxxxx"
+                  dir="ltr"
+                  className="text-left"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">البريد الإلكتروني</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editUser.email}
+                  onChange={(e) =>
+                    setEditUser({ ...editUser, email: e.target.value })
+                  }
+                  placeholder="example@domain.com"
+                  dir="ltr"
+                  className="text-left"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-company">الشركة</Label>
+                <Input
+                  id="edit-company"
+                  value={editUser.companyName}
+                  onChange={(e) =>
+                    setEditUser({ ...editUser, companyName: e.target.value })
+                  }
+                  placeholder="اسم الشركة"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-position">المنصب</Label>
+                <Input
+                  id="edit-position"
+                  value={editUser.position}
+                  onChange={(e) =>
+                    setEditUser({ ...editUser, position: e.target.value })
+                  }
+                  placeholder="المسمى الوظيفي"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleEditSubmit}
+              disabled={
+                updateManualUserMutation.isPending ||
+                !editUser?.name ||
+                !editUser?.phone
+              }
+            >
+              {updateManualUserMutation.isPending ? (
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Pencil className="me-2 h-4 w-4" />
+              )}
+              حفظ التعديلات
             </Button>
           </DialogFooter>
         </DialogContent>

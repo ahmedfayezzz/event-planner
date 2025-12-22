@@ -1489,6 +1489,91 @@ export const adminRouter = createTRPCRouter({
   }),
 
   /**
+   * Update manually created user (admin only)
+   */
+  updateManualUser: adminProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        name: z.string().min(1, "الاسم مطلوب"),
+        email: z.string().email("البريد الإلكتروني غير صالح").optional().or(z.literal("")),
+        phone: z.string().min(1, "رقم الهاتف مطلوب"),
+        companyName: z.string().optional(),
+        position: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const user = await db.user.findUnique({
+        where: { id: input.userId },
+      });
+
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "المستخدم غير موجود",
+        });
+      }
+
+      if (!user.isManuallyCreated) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "لا يمكن تعديل بيانات المستخدمين المسجلين ذاتياً",
+        });
+      }
+
+      // Check if email is being changed and if it's already in use
+      if (input.email && input.email !== user.email) {
+        const existingEmail = await db.user.findUnique({
+          where: { email: input.email.toLowerCase() },
+        });
+        if (existingEmail) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "البريد الإلكتروني مستخدم بالفعل",
+          });
+        }
+      }
+
+      // Check if phone is being changed and if it's already in use
+      if (input.phone !== user.phone) {
+        const existingPhone = await db.user.findFirst({
+          where: { phone: input.phone, id: { not: input.userId } },
+        });
+        if (existingPhone) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "رقم الهاتف مستخدم بالفعل",
+          });
+        }
+      }
+
+      const updated = await db.user.update({
+        where: { id: input.userId },
+        data: {
+          name: input.name,
+          email: input.email ? input.email.toLowerCase() : user.email,
+          phone: input.phone,
+          companyName: input.companyName || null,
+          position: input.position || null,
+        },
+      });
+
+      return {
+        success: true,
+        user: {
+          id: updated.id,
+          name: updated.name,
+          email: updated.email,
+          phone: updated.phone,
+          companyName: updated.companyName,
+          position: updated.position,
+        },
+      };
+    }),
+
+  /**
    * Create a new host manually (admin only)
    */
   createHost: adminProcedure
