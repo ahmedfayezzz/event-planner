@@ -121,6 +121,7 @@ const ALL_PERMISSIONS: PermissionKey[] = [
 export default function AdminUsersPage() {
   const { data: session } = useSession();
   const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
+  const currentUserId = session?.user?.id;
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -383,6 +384,8 @@ export default function AdminUsersPage() {
                 <SelectItem value="all">الكل</SelectItem>
                 <SelectItem value="USER">أعضاء</SelectItem>
                 <SelectItem value="GUEST">زوار</SelectItem>
+                <SelectItem value="ADMIN">مدراء</SelectItem>
+                <SelectItem value="SUPER_ADMIN">مدراء عامين</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -567,10 +570,14 @@ export default function AdminUsersPage() {
                                   className={
                                     user.role === "USER"
                                       ? "bg-blue-500/10 text-blue-600 border-blue-200"
-                                      : "bg-orange-500/10 text-orange-600 border-orange-200"
+                                      : user.role === "GUEST"
+                                      ? "bg-orange-500/10 text-orange-600 border-orange-200"
+                                      : user.role === "ADMIN"
+                                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-200"
+                                      : "bg-red-500/10 text-red-600 border-red-200"
                                   }
                                 >
-                                  {user.role === "USER" ? "عضو" : "زائر"}
+                                  {user.role === "USER" ? "عضو" : user.role === "GUEST" ? "زائر" : user.role === "ADMIN" ? "مدير" : "مدير عام"}
                                 </Badge>
                                 {user.isManuallyCreated && (
                                   <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200">
@@ -688,45 +695,53 @@ export default function AdminUsersPage() {
                                       عرض الملف
                                     </Link>
                                   </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  {/* Promote to admin - only for SUPER_ADMIN */}
-                                  {isSuperAdmin && (
+                                  {/* Hide actions for current user */}
+                                  {user.id !== currentUserId && (
                                     <>
-                                      <DropdownMenuItem
-                                        onClick={() =>
-                                          openPromotionDialog(user.id, user.name)
-                                        }
-                                      >
-                                        <Shield className="me-2 h-4 w-4" />
-                                        ترقية لمدير
-                                      </DropdownMenuItem>
                                       <DropdownMenuSeparator />
+                                      {/* Promote to admin - only for SUPER_ADMIN and non-admin users */}
+                                      {isSuperAdmin && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN" && (
+                                        <>
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              openPromotionDialog(user.id, user.name)
+                                            }
+                                          >
+                                            <Shield className="me-2 h-4 w-4" />
+                                            ترقية لمدير
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                        </>
+                                      )}
+                                      {/* Hide activate/deactivate for SUPER_ADMIN users */}
+                                      {user.role !== "SUPER_ADMIN" && (
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            setConfirmAction({
+                                              type: user.isActive ? "deactivate" : "activate",
+                                              userId: user.id,
+                                              userName: user.name,
+                                            })
+                                          }
+                                          className={
+                                            user.isActive ? "text-red-600" : "text-green-600"
+                                          }
+                                        >
+                                          {user.isActive ? (
+                                            <>
+                                              <UserX className="me-2 h-4 w-4" />
+                                              تعطيل الحساب
+                                            </>
+                                          ) : (
+                                            <>
+                                              <UserCheck className="me-2 h-4 w-4" />
+                                              تفعيل الحساب
+                                            </>
+                                          )}
+                                        </DropdownMenuItem>
+                                      )}
                                     </>
                                   )}
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      setConfirmAction({
-                                        type: user.isActive ? "deactivate" : "activate",
-                                        userId: user.id,
-                                        userName: user.name,
-                                      })
-                                    }
-                                    className={
-                                      user.isActive ? "text-red-600" : "text-green-600"
-                                    }
-                                  >
-                                    {user.isActive ? (
-                                      <>
-                                        <UserX className="me-2 h-4 w-4" />
-                                        تعطيل الحساب
-                                      </>
-                                    ) : (
-                                      <>
-                                        <UserCheck className="me-2 h-4 w-4" />
-                                        تفعيل الحساب
-                                      </>
-                                    )}
-                                  </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                               </div>
@@ -806,10 +821,14 @@ export default function AdminUsersPage() {
                                         className={
                                           user.role === "USER"
                                             ? "bg-blue-500/10 text-blue-600 border-blue-200"
-                                            : "bg-orange-500/10 text-orange-600 border-orange-200"
+                                            : user.role === "GUEST"
+                                            ? "bg-orange-500/10 text-orange-600 border-orange-200"
+                                            : user.role === "ADMIN"
+                                            ? "bg-emerald-500/10 text-emerald-600 border-emerald-200"
+                                            : "bg-red-500/10 text-red-600 border-red-200"
                                         }
                                       >
-                                        {user.role === "USER" ? "عضو" : "زائر"}
+                                        {user.role === "USER" ? "عضو" : user.role === "GUEST" ? "زائر" : user.role === "ADMIN" ? "مدير" : "مدير عام"}
                                       </Badge>
                                       {user.isManuallyCreated && (
                                         <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200">
@@ -887,42 +906,48 @@ export default function AdminUsersPage() {
                                       </Button>
                                     }
                                   />
-                                  {isSuperAdmin && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() =>
-                                        openPromotionDialog(user.id, user.name)
-                                      }
-                                    >
-                                      <Shield className="me-2 h-4 w-4" />
-                                      ترقية لمدير
-                                    </Button>
+                                  {user.id !== currentUserId && (
+                                    <>
+                                      {isSuperAdmin && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN" && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() =>
+                                            openPromotionDialog(user.id, user.name)
+                                          }
+                                        >
+                                          <Shield className="me-2 h-4 w-4" />
+                                          ترقية لمدير
+                                        </Button>
+                                      )}
+                                      {user.role !== "SUPER_ADMIN" && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() =>
+                                            setConfirmAction({
+                                              type: user.isActive ? "deactivate" : "activate",
+                                              userId: user.id,
+                                              userName: user.name,
+                                            })
+                                          }
+                                          className={user.isActive ? "text-red-600" : "text-green-600"}
+                                        >
+                                          {user.isActive ? (
+                                            <>
+                                              <UserX className="me-2 h-4 w-4" />
+                                              تعطيل
+                                            </>
+                                          ) : (
+                                            <>
+                                              <UserCheck className="me-2 h-4 w-4" />
+                                              تفعيل
+                                            </>
+                                          )}
+                                        </Button>
+                                      )}
+                                    </>
                                   )}
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() =>
-                                      setConfirmAction({
-                                        type: user.isActive ? "deactivate" : "activate",
-                                        userId: user.id,
-                                        userName: user.name,
-                                      })
-                                    }
-                                    className={user.isActive ? "text-red-600" : "text-green-600"}
-                                  >
-                                    {user.isActive ? (
-                                      <>
-                                        <UserX className="me-2 h-4 w-4" />
-                                        تعطيل
-                                      </>
-                                    ) : (
-                                      <>
-                                        <UserCheck className="me-2 h-4 w-4" />
-                                        تفعيل
-                                      </>
-                                    )}
-                                  </Button>
                                 </div>
                                   </div>
                                 </div>
