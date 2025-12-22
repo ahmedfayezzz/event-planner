@@ -19,8 +19,10 @@ export const invitationRouter = createTRPCRouter({
       z.object({
         sessionId: z.string(),
         search: z.string().optional(),
-        limit: z.number().min(1).max(100).default(50),
+        limit: z.number().min(1).max(500).default(500),
         hasPhone: z.boolean().optional(), // Filter for WhatsApp tab
+        role: z.enum(["USER", "GUEST", "ADMIN", "SUPER_ADMIN"]).optional(), // Filter by user role
+        labelIds: z.array(z.string()).optional(), // Filter by labels
       })
     )
     .query(async ({ ctx, input }) => {
@@ -61,6 +63,20 @@ export const invitationRouter = createTRPCRouter({
         ];
       }
 
+      // Filter by role
+      if (input.role) {
+        where.role = input.role;
+      }
+
+      // Filter by labels (users must have ALL specified labels)
+      if (input.labelIds && input.labelIds.length > 0) {
+        where.labels = {
+          some: {
+            id: { in: input.labelIds },
+          },
+        };
+      }
+
       // Fetch more users if filtering by phone (to account for nulls/empty)
       const fetchLimit = input.hasPhone ? input.limit * 3 : input.limit;
 
@@ -73,6 +89,14 @@ export const invitationRouter = createTRPCRouter({
           phone: true,
           companyName: true,
           position: true,
+          role: true,
+          labels: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
+          },
         },
         take: fetchLimit,
         orderBy: { name: "asc" },
@@ -123,6 +147,7 @@ export const invitationRouter = createTRPCRouter({
       if (input.attachPdf) {
         const sponsorships = await db.eventSponsorship.findMany({
           where: { sessionId: input.sessionId },
+          orderBy: { displayOrder: "asc" },
           include: { sponsor: true },
         });
         sponsors = sponsorships

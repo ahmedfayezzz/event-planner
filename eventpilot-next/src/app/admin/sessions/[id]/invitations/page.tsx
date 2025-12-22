@@ -43,6 +43,21 @@ import {
 } from "@/components/ui/collapsible";
 import { Switch } from "@/components/ui/switch";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowRight,
   Mail,
   Phone,
@@ -64,6 +79,7 @@ import {
   Plus,
   X,
   FileText,
+  Tag,
 } from "lucide-react";
 import { copyToClipboard } from "@/lib/utils";
 
@@ -74,9 +90,18 @@ interface UserWithStatus {
   phone: string | null;
   companyName: string | null;
   position: string | null;
+  role: string;
+  labels: { id: string; name: string; color: string }[];
   isRegistered: boolean;
   isInvited: boolean;
 }
+
+const USER_ROLES = [
+  { value: "USER", label: "عضو" },
+  { value: "GUEST", label: "ضيف" },
+  { value: "ADMIN", label: "مشرف" },
+  { value: "SUPER_ADMIN", label: "مدير النظام" },
+] as const;
 
 export default function InvitationsPage({
   params,
@@ -92,12 +117,18 @@ export default function InvitationsPage({
 
   // Email tab state
   const [emailSearch, setEmailSearch] = useState("");
+  const [emailRoleFilter, setEmailRoleFilter] = useState<"all" | "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN">("all");
+  const [emailLabelFilter, setEmailLabelFilter] = useState<string[]>([]);
+  const [emailLabelDialogOpen, setEmailLabelDialogOpen] = useState(false);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [customMessage, setCustomMessage] = useState("");
   const [attachPdf, setAttachPdf] = useState(false);
 
   // WhatsApp tab state
   const [whatsappSearch, setWhatsappSearch] = useState("");
+  const [whatsappRoleFilter, setWhatsappRoleFilter] = useState<"all" | "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN">("all");
+  const [whatsappLabelFilter, setWhatsappLabelFilter] = useState<string[]>([]);
+  const [whatsappLabelDialogOpen, setWhatsappLabelDialogOpen] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState<
     { phone: string; name?: string }[]
   >([]);
@@ -141,13 +172,28 @@ export default function InvitationsPage({
     { enabled: !!sessionId }
   );
 
+  const { data: labels } = api.label.getAll.useQuery();
+
   const { data: emailUsers, isLoading: loadingEmailUsers } = api.invitation.getUsersForInvite.useQuery(
-    { sessionId, search: emailSearch || undefined, limit: 50 },
+    {
+      sessionId,
+      search: emailSearch || undefined,
+      limit: 500,
+      role: emailRoleFilter !== "all" ? emailRoleFilter : undefined,
+      labelIds: emailLabelFilter.length > 0 ? emailLabelFilter : undefined,
+    },
     { enabled: activeTab === "email" }
   );
 
   const { data: whatsappUsers, isLoading: loadingWhatsappUsers } = api.invitation.getUsersForInvite.useQuery(
-    { sessionId, search: whatsappSearch || undefined, hasPhone: true, limit: 50 },
+    {
+      sessionId,
+      search: whatsappSearch || undefined,
+      hasPhone: true,
+      limit: 500,
+      role: whatsappRoleFilter !== "all" ? whatsappRoleFilter : undefined,
+      labelIds: whatsappLabelFilter.length > 0 ? whatsappLabelFilter : undefined,
+    },
     { enabled: activeTab === "whatsapp" }
   );
 
@@ -345,6 +391,22 @@ export default function InvitationsPage({
     }
   };
 
+  const toggleEmailLabelFilter = (labelId: string) => {
+    setEmailLabelFilter((prev) =>
+      prev.includes(labelId)
+        ? prev.filter((id) => id !== labelId)
+        : [...prev, labelId]
+    );
+  };
+
+  const toggleWhatsappLabelFilter = (labelId: string) => {
+    setWhatsappLabelFilter((prev) =>
+      prev.includes(labelId)
+        ? prev.filter((id) => id !== labelId)
+        : [...prev, labelId]
+    );
+  };
+
   // Handle confirmed action
   const handleConfirmedAction = () => {
     if (!confirmAction) return;
@@ -468,21 +530,114 @@ export default function InvitationsPage({
         <TabsContent value="email" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>دعوة عبر البريد الإلكتروني</CardTitle>
-              <CardDescription>ابحث عن المستخدمين وأرسل لهم دعوات عبر البريد الإلكتروني</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>دعوة عبر البريد الإلكتروني</CardTitle>
+                  <CardDescription>ابحث عن المستخدمين وأرسل لهم دعوات عبر البريد الإلكتروني</CardDescription>
+                </div>
+                {emailUsers && (
+                  <Badge variant="secondary" className="text-sm">
+                    {emailUsers.length} مستخدم
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>البحث عن مستخدمين</Label>
-                <div className="relative">
-                  <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              {/* Search and Filter */}
+              <div className="flex gap-2 flex-wrap">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="ابحث بالاسم، البريد، أو الشركة..."
+                    placeholder="بحث بالاسم أو البريد أو الشركة..."
                     value={emailSearch}
                     onChange={(e) => setEmailSearch(e.target.value)}
-                    className="pr-9"
+                    className="pe-10"
                   />
                 </div>
+                {/* Role Filter */}
+                <Select
+                  value={emailRoleFilter}
+                  onValueChange={(v) => setEmailRoleFilter(v as "all" | "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN")}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="النوع" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">الكل</SelectItem>
+                    {USER_ROLES.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {/* Label Filter */}
+                <Dialog open={emailLabelDialogOpen} onOpenChange={setEmailLabelDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-40 justify-between",
+                        emailLabelFilter.length > 0 && "border-primary"
+                      )}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Tag className="h-4 w-4" />
+                        {emailLabelFilter.length > 0
+                          ? `${emailLabelFilter.length} تصنيف`
+                          : "التصنيفات"}
+                      </span>
+                      {emailLabelFilter.length > 0 ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEmailLabelFilter([]);
+                          }}
+                          className="hover:bg-muted rounded-full p-1"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      ) : (
+                        <ChevronDown className="h-4 w-4 opacity-50" />
+                      )}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>تصفية حسب التصنيف</DialogTitle>
+                      <DialogDescription>
+                        اختر تصنيف واحد أو أكثر للتصفية
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="border rounded-lg max-h-[300px] overflow-y-auto p-2">
+                      {labels?.map((label) => {
+                        const isSelected = emailLabelFilter.includes(label.id);
+                        return (
+                          <button
+                            key={label.id}
+                            onClick={() => toggleEmailLabelFilter(label.id)}
+                            className="w-full flex items-center gap-2 px-2 py-2.5 rounded hover:bg-accent text-sm"
+                          >
+                            <div
+                              className="w-3 h-3 rounded-full shrink-0"
+                              style={{ backgroundColor: label.color }}
+                            />
+                            <span className="flex-1 text-right">{label.name}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {label._count.users}
+                            </Badge>
+                            {isSelected && <Check className="h-4 w-4 text-primary" />}
+                          </button>
+                        );
+                      })}
+                      {(!labels || labels.length === 0) && (
+                        <p className="text-center text-muted-foreground py-4">
+                          لا توجد تصنيفات
+                        </p>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               <ScrollArea className="h-64 border rounded-md">
@@ -522,7 +677,7 @@ export default function InvitationsPage({
                           disabled={user.isRegistered}
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-medium truncate">{user.name}</p>
                             {user.isRegistered && (
                               <Badge variant="outline" className="bg-green-500/10 text-green-600 text-xs">
@@ -534,6 +689,16 @@ export default function InvitationsPage({
                                 مدعو
                               </Badge>
                             )}
+                            {user.labels.map((label) => (
+                              <Badge
+                                key={label.id}
+                                variant="outline"
+                                className="text-xs"
+                                style={{ backgroundColor: `${label.color}20`, color: label.color, borderColor: `${label.color}40` }}
+                              >
+                                {label.name}
+                              </Badge>
+                            ))}
                           </div>
                           <p className="text-sm text-muted-foreground truncate">
                             {user.email}
@@ -545,7 +710,7 @@ export default function InvitationsPage({
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
-                    {emailSearch ? "لا توجد نتائج" : "ابدأ البحث للعثور على مستخدمين"}
+                    لا يوجد مستخدمون
                   </div>
                 )}
               </ScrollArea>
@@ -617,21 +782,114 @@ export default function InvitationsPage({
         <TabsContent value="whatsapp" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>دعوة عبر واتساب</CardTitle>
-              <CardDescription>اختر المستخدمين أو أدخل أرقام الهواتف لإنشاء روابط واتساب</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>دعوة عبر واتساب</CardTitle>
+                  <CardDescription>اختر المستخدمين أو أدخل أرقام الهواتف لإنشاء روابط واتساب</CardDescription>
+                </div>
+                {whatsappUsers && (
+                  <Badge variant="secondary" className="text-sm">
+                    {whatsappUsers.length} مستخدم
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>البحث عن مستخدمين</Label>
-                <div className="relative">
-                  <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              {/* Search and Filter */}
+              <div className="flex gap-2 flex-wrap">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="ابحث بالاسم، الهاتف، أو الشركة..."
+                    placeholder="بحث بالاسم أو الهاتف أو الشركة..."
                     value={whatsappSearch}
                     onChange={(e) => setWhatsappSearch(e.target.value)}
-                    className="pr-9"
+                    className="pe-10"
                   />
                 </div>
+                {/* Role Filter */}
+                <Select
+                  value={whatsappRoleFilter}
+                  onValueChange={(v) => setWhatsappRoleFilter(v as "all" | "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN")}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="النوع" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">الكل</SelectItem>
+                    {USER_ROLES.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {/* Label Filter */}
+                <Dialog open={whatsappLabelDialogOpen} onOpenChange={setWhatsappLabelDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-40 justify-between",
+                        whatsappLabelFilter.length > 0 && "border-primary"
+                      )}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Tag className="h-4 w-4" />
+                        {whatsappLabelFilter.length > 0
+                          ? `${whatsappLabelFilter.length} تصنيف`
+                          : "التصنيفات"}
+                      </span>
+                      {whatsappLabelFilter.length > 0 ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setWhatsappLabelFilter([]);
+                          }}
+                          className="hover:bg-muted rounded-full p-1"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      ) : (
+                        <ChevronDown className="h-4 w-4 opacity-50" />
+                      )}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>تصفية حسب التصنيف</DialogTitle>
+                      <DialogDescription>
+                        اختر تصنيف واحد أو أكثر للتصفية
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="border rounded-lg max-h-[300px] overflow-y-auto p-2">
+                      {labels?.map((label) => {
+                        const isSelected = whatsappLabelFilter.includes(label.id);
+                        return (
+                          <button
+                            key={label.id}
+                            onClick={() => toggleWhatsappLabelFilter(label.id)}
+                            className="w-full flex items-center gap-2 px-2 py-2.5 rounded hover:bg-accent text-sm"
+                          >
+                            <div
+                              className="w-3 h-3 rounded-full shrink-0"
+                              style={{ backgroundColor: label.color }}
+                            />
+                            <span className="flex-1 text-right">{label.name}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {label._count.users}
+                            </Badge>
+                            {isSelected && <Check className="h-4 w-4 text-primary" />}
+                          </button>
+                        );
+                      })}
+                      {(!labels || labels.length === 0) && (
+                        <p className="text-center text-muted-foreground py-4">
+                          لا توجد تصنيفات
+                        </p>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               <ScrollArea className="h-48 border rounded-md">
@@ -673,7 +931,7 @@ export default function InvitationsPage({
                           disabled={user.isRegistered || !user.phone}
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-medium truncate">{user.name}</p>
                             {user.isRegistered && (
                               <Badge variant="outline" className="bg-green-500/10 text-green-600 text-xs">
@@ -685,6 +943,16 @@ export default function InvitationsPage({
                                 مدعو
                               </Badge>
                             )}
+                            {user.labels.map((label) => (
+                              <Badge
+                                key={label.id}
+                                variant="outline"
+                                className="text-xs"
+                                style={{ backgroundColor: `${label.color}20`, color: label.color, borderColor: `${label.color}40` }}
+                              >
+                                {label.name}
+                              </Badge>
+                            ))}
                           </div>
                           <p className="text-sm text-muted-foreground truncate" dir="ltr">
                             {user.phone || "بدون رقم"}
@@ -696,7 +964,7 @@ export default function InvitationsPage({
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
-                    {whatsappSearch ? "لا توجد نتائج" : "ابدأ البحث للعثور على مستخدمين"}
+                    لا يوجد مستخدمون
                   </div>
                 )}
               </ScrollArea>
