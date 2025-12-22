@@ -39,7 +39,7 @@ function SponsorLogo({ logoUrl, name }: { logoUrl: string | null; name: string }
 
   if (!logoUrl) {
     return (
-      <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-primary/10 flex items-center justify-center">
+      <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg bg-primary/10 flex items-center justify-center">
         <Building2 className="w-6 h-6 md:w-8 md:h-8 text-primary/60" />
       </div>
     );
@@ -47,16 +47,16 @@ function SponsorLogo({ logoUrl, name }: { logoUrl: string | null; name: string }
 
   if (isLoading) {
     return (
-      <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-muted animate-pulse" />
+      <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg bg-muted animate-pulse" />
     );
   }
 
   return (
-    <div className="w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden bg-white border border-border shadow-sm">
+    <div className="h-12 md:h-16 max-w-[80px] md:max-w-[100px] flex items-center justify-center bg-white rounded-lg border border-border shadow-sm p-1">
       <img
         src={url}
         alt={name}
-        className="w-full h-full object-cover"
+        className="max-h-full max-w-full object-contain"
       />
     </div>
   );
