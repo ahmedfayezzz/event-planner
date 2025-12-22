@@ -3,6 +3,7 @@
 import { use } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -217,10 +218,17 @@ export function SessionDetailClient({ id }: { id: string }) {
 
               <div className="space-y-4 md:space-y-6">
                 {/* Title */}
-                <div>
+                <div className="flex items-center gap-3 md:gap-4 flex-wrap">
                   <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary leading-tight">
                     {session.title}
                   </h1>
+                  <Image
+                    src="/laft-logo.png"
+                    alt="LAFT"
+                    width={120}
+                    height={48}
+                    className="h-8 md:h-10 w-auto object-contain"
+                  />
                 </div>
 
                 {/* Registration CTA + Countdown - Only for upcoming events */}
