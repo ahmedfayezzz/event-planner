@@ -4,10 +4,13 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
 import { useExpandableRows } from "@/hooks/use-expandable-rows";
+import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CalendarTab } from "./components/calendar-tab";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,6 +89,11 @@ import {
   MessageSquare,
   Share2,
   Trash2,
+  Users,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  ArrowRight,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -130,9 +138,11 @@ const initialFormData: SponsorFormData = {
 };
 
 export default function AdminSponsorsPage() {
+  const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sponsorshipTypeFilter, setSponsorshipTypeFilter] = useState<string>("all");
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddToEventDialogOpen, setIsAddToEventDialogOpen] = useState(false);
@@ -170,6 +180,9 @@ export default function AdminSponsorsPage() {
 
   const utils = api.useUtils();
 
+  // Fetch insights for stats cards
+  const { data: insights } = api.sponsor.getSponsorInsights.useQuery();
+
   const {
     data,
     isLoading,
@@ -179,6 +192,7 @@ export default function AdminSponsorsPage() {
     isFetchingNextPage,
   } = api.sponsor.getAll.useInfiniteQuery(
     {
+      search: debouncedSearch || undefined,
       type: typeFilter !== "all" ? (typeFilter as "person" | "company") : undefined,
       status: statusFilter !== "all" ? (statusFilter as "new" | "contacted" | "sponsored" | "interested_again" | "interested_permanent") : undefined,
       limit: 50,
@@ -192,6 +206,7 @@ export default function AdminSponsorsPage() {
     onSuccess: () => {
       toast.success("تم إضافة الراعي بنجاح");
       utils.sponsor.getAll.invalidate();
+      utils.sponsor.getSponsorInsights.invalidate();
       setIsAddDialogOpen(false);
       resetForm();
     },
@@ -217,6 +232,7 @@ export default function AdminSponsorsPage() {
     onSuccess: () => {
       toast.success("تم تحديث حالة الراعي بنجاح");
       utils.sponsor.getAll.invalidate();
+      utils.sponsor.getSponsorInsights.invalidate();
     },
     onError: (error) => {
       toast.error(error.message || "حدث خطأ أثناء تحديث الحالة");
@@ -238,6 +254,7 @@ export default function AdminSponsorsPage() {
     onSuccess: () => {
       toast.success("تمت إضافة الرعاية بنجاح");
       utils.sponsor.getAll.invalidate();
+      utils.sponsor.getSponsorInsights.invalidate();
       utils.sponsor.getAvailableSessions.invalidate();
       resetAddToEventForm();
       setIsAddToEventDialogOpen(false);
@@ -532,10 +549,185 @@ export default function AdminSponsorsPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
+      {/* Stats Cards */}
+      {insights && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">إجمالي الرعاة</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{insights.totalSponsors}</div>
+              <p className="text-xs text-muted-foreground">
+                {insights.totalCompanies} شركة • {insights.totalPersons} فرد
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">رعاة نشطون</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{insights.activeSponsors}</div>
+              <p className="text-xs text-muted-foreground">رعوا في آخر 3 أشهر</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">بحاجة لمتابعة</CardTitle>
+              <Clock className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{insights.needsFollowUp}</div>
+              <p className="text-xs text-muted-foreground">تم التواصل منذ 7+ أيام</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">تغطية الفعاليات</CardTitle>
+              <CheckCircle className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {insights.upcomingSessions.total > 0
+                  ? Math.round((insights.upcomingSessions.fullySponsored / insights.upcomingSessions.total) * 100)
+                  : 0}%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {insights.upcomingSessions.fullySponsored}/{insights.upcomingSessions.total} فعالية مكتملة
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="lg:col-span-1">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">فعاليات قادمة</CardTitle>
+              <Calendar className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-green-500" />
+                  {insights.upcomingSessions.fullySponsored} مكتملة
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-yellow-500" />
+                  {insights.upcomingSessions.partiallySponsored} جزئية
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-red-500" />
+                  {insights.upcomingSessions.noSponsorship} بدون
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Pipeline Indicator */}
+      {insights && (
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <button
+                onClick={() => setStatusFilter("new")}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors",
+                  statusFilter === "new" ? "bg-gray-200 text-gray-800" : "hover:bg-gray-100"
+                )}
+              >
+                <span className="font-medium">جديد</span>
+                <Badge variant="secondary" className="text-xs">{insights.statusCounts.new}</Badge>
+              </button>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              <button
+                onClick={() => setStatusFilter("contacted")}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors",
+                  statusFilter === "contacted" ? "bg-blue-100 text-blue-800" : "hover:bg-blue-50"
+                )}
+              >
+                <span className="font-medium">تم التواصل</span>
+                <Badge variant="secondary" className="text-xs bg-blue-100">{insights.statusCounts.contacted}</Badge>
+              </button>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              <button
+                onClick={() => setStatusFilter("sponsored")}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors",
+                  statusFilter === "sponsored" ? "bg-green-100 text-green-800" : "hover:bg-green-50"
+                )}
+              >
+                <span className="font-medium">تم الرعاية</span>
+                <Badge variant="secondary" className="text-xs bg-green-100">{insights.statusCounts.sponsored}</Badge>
+              </button>
+              <span className="mx-2 text-muted-foreground">|</span>
+              <button
+                onClick={() => setStatusFilter("interested_again")}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors",
+                  statusFilter === "interested_again" ? "bg-purple-100 text-purple-800" : "hover:bg-purple-50"
+                )}
+              >
+                <span className="font-medium">مهتم مجدداً</span>
+                <Badge variant="secondary" className="text-xs bg-purple-100">{insights.statusCounts.interested_again}</Badge>
+              </button>
+              <button
+                onClick={() => setStatusFilter("interested_permanent")}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors",
+                  statusFilter === "interested_permanent" ? "bg-amber-100 text-amber-800" : "hover:bg-amber-50"
+                )}
+              >
+                <span className="font-medium">مهتم دائم</span>
+                <Badge variant="secondary" className="text-xs bg-amber-100">{insights.statusCounts.interested_permanent}</Badge>
+              </button>
+              {statusFilter !== "all" && (
+                <>
+                  <span className="mx-2 text-muted-foreground">|</span>
+                  <button
+                    onClick={() => setStatusFilter("all")}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    عرض الكل
+                  </button>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Main Tabs */}
+      <Tabs defaultValue="list" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="list" className="gap-2">
+            <UtensilsCrossed className="h-4 w-4" />
+            الرعاة
+          </TabsTrigger>
+          <TabsTrigger value="calendar" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            التقويم
+          </TabsTrigger>
+        </TabsList>
+
+        {/* List Tab */}
+        <TabsContent value="list" className="space-y-6">
+          {/* Filters */}
+          <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            {/* Search Input */}
+            <div className="relative flex-1 md:flex-[2]">
+              <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="بحث بالاسم أو البريد أو الهاتف..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="ps-10"
+              />
+            </div>
             <div className="flex-1">
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-full md:w-48">
@@ -626,10 +818,9 @@ export default function AdminSponsorsPage() {
                     <TableHead className="hidden md:table-cell">التواصل</TableHead>
                     <TableHead>أنواع الرعاية</TableHead>
                     <TableHead className="hidden sm:table-cell">الحالة</TableHead>
+                    <TableHead className="hidden lg:table-cell">الرعايات</TableHead>
                     <TableHead className="hidden lg:table-cell">التصنيفات</TableHead>
-                    <TableHead className="hidden lg:table-cell">ملاحظات</TableHead>
                     <TableHead className="hidden lg:table-cell">الحساب</TableHead>
-                    <TableHead className="hidden lg:table-cell">الفعاليات</TableHead>
                     <TableHead className="hidden md:table-cell text-left w-12">إجراءات</TableHead>
                     <TableHead className="md:hidden w-10"></TableHead>
                   </TableRow>
@@ -741,6 +932,39 @@ export default function AdminSponsorsPage() {
                               </SelectContent>
                             </Select>
                           </TableCell>
+                          {/* Sponsorships Column - Count & Last Date */}
+                          <TableCell className="hidden lg:table-cell">
+                            {sponsor.eventSponsorships.length > 0 ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="text-sm">
+                                      <div className="font-medium">{sponsor.eventSponsorships.length} رعاية</div>
+                                      <div className="text-xs text-muted-foreground">
+                                        آخرها: {formatArabicDate(new Date(sponsor.eventSponsorships[0]?.createdAt ?? new Date()))}
+                                      </div>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <ul className="text-sm space-y-1">
+                                      {sponsor.eventSponsorships.slice(0, 5).map((es) => (
+                                        <li key={es.id}>
+                                          {es.session.title} - {getSponsorshipTypeLabel(es.sponsorshipType)}
+                                        </li>
+                                      ))}
+                                      {sponsor.eventSponsorships.length > 5 && (
+                                        <li className="text-muted-foreground">
+                                          +{sponsor.eventSponsorships.length - 5} أخرى
+                                        </li>
+                                      )}
+                                    </ul>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">لم يرعَ بعد</span>
+                            )}
+                          </TableCell>
                           {/* Labels Column */}
                           <TableCell className="hidden lg:table-cell">
                             <SponsorLabelManager
@@ -779,14 +1003,6 @@ export default function AdminSponsorsPage() {
                               onUpdate={() => utils.sponsor.getAll.invalidate()}
                             />
                           </TableCell>
-                          {/* Notes Column */}
-                          <TableCell className="hidden lg:table-cell">
-                            <SponsorNotes
-                              sponsorId={sponsor.id}
-                              noteCount={sponsor._count?.notes ?? 0}
-                              onUpdate={() => utils.sponsor.getAll.invalidate()}
-                            />
-                          </TableCell>
                           {/* Account Column */}
                           <TableCell className="hidden lg:table-cell">
                             {sponsor.user ? (
@@ -797,32 +1013,6 @@ export default function AdminSponsorsPage() {
                                 <UserCircle className="h-4 w-4 text-primary" />
                                 {sponsor.user.name}
                               </Link>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">-</span>
-                            )}
-                          </TableCell>
-                          {/* Events Column */}
-                          <TableCell className="hidden lg:table-cell">
-                            {sponsor.eventSponsorships.length > 0 ? (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Badge variant="outline" className="cursor-help">
-                                      <Link2 className="h-3 w-3 me-1" />
-                                      {sponsor.eventSponsorships.length} فعالية
-                                    </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <ul className="text-sm space-y-1">
-                                      {sponsor.eventSponsorships.map((es) => (
-                                        <li key={es.id}>
-                                          {es.session.title} - {getSponsorshipTypeLabel(es.sponsorshipType)}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
                             ) : (
                               <span className="text-muted-foreground text-sm">-</span>
                             )}
@@ -1094,6 +1284,13 @@ export default function AdminSponsorsPage() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        {/* Calendar Tab */}
+        <TabsContent value="calendar">
+          <CalendarTab />
+        </TabsContent>
+      </Tabs>
 
       {/* Add Sponsor Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

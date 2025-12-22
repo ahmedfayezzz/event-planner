@@ -74,6 +74,7 @@ export const sponsorRouter = createTRPCRouter({
               id: true,
               sessionId: true,
               sponsorshipType: true,
+              createdAt: true,
               session: {
                 select: {
                   id: true,
@@ -82,6 +83,7 @@ export const sponsorRouter = createTRPCRouter({
                 },
               },
             },
+            orderBy: { createdAt: "desc" },
           },
           labels: {
             select: {
@@ -109,6 +111,133 @@ export const sponsorRouter = createTRPCRouter({
         nextCursor,
       };
     }),
+
+  /**
+   * Get sponsor insights for dashboard (admin only)
+   */
+  getSponsorInsights: adminProcedure.query(async ({ ctx }) => {
+    const { db } = ctx;
+
+    // Get all active sponsors with their sponsorships
+    const sponsors = await db.sponsor.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        updatedAt: true,
+        eventSponsorships: {
+          select: {
+            id: true,
+            createdAt: true,
+            session: {
+              select: {
+                date: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+      },
+    });
+
+    // Calculate insights
+    const now = new Date();
+    const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    let totalCompanies = 0;
+    let totalPersons = 0;
+    let activeSponsors = 0;
+    let needsFollowUp = 0;
+    const statusCounts: Record<string, number> = {
+      new: 0,
+      contacted: 0,
+      sponsored: 0,
+      interested_again: 0,
+      interested_permanent: 0,
+    };
+
+    for (const sponsor of sponsors) {
+      // Count by type
+      if (sponsor.type === "company") {
+        totalCompanies++;
+      } else {
+        totalPersons++;
+      }
+
+      // Count by status
+      if (sponsor.status && statusCounts[sponsor.status] !== undefined) {
+        statusCounts[sponsor.status]++;
+      }
+
+      // Check if active (sponsored in last 3 months)
+      const lastSponsorship = sponsor.eventSponsorships[0];
+      if (lastSponsorship && new Date(lastSponsorship.createdAt) >= threeMonthsAgo) {
+        activeSponsors++;
+      }
+
+      // Check if needs follow-up (contacted status for 7+ days without sponsorship)
+      if (
+        sponsor.status === "contacted" &&
+        new Date(sponsor.updatedAt) <= sevenDaysAgo &&
+        (!lastSponsorship || new Date(lastSponsorship.createdAt) < new Date(sponsor.updatedAt))
+      ) {
+        needsFollowUp++;
+      }
+    }
+
+    // Get upcoming sessions coverage
+    const upcomingSessions = await db.session.findMany({
+      where: {
+        date: { gte: now },
+        visibilityStatus: { not: "archived" },
+      },
+      include: {
+        eventSponsorships: {
+          select: {
+            sponsorshipType: true,
+          },
+        },
+      },
+      take: 10,
+    });
+
+    let fullySponsored = 0;
+    let partiallySponsored = 0;
+    let noSponsorship = 0;
+
+    for (const session of upcomingSessions) {
+      const types = new Set(session.eventSponsorships.map((s) => s.sponsorshipType));
+      const hasDinner = types.has("dinner");
+      const hasBeverage = types.has("beverage");
+      const hasDessert = types.has("dessert");
+
+      if (hasDinner && hasBeverage && hasDessert) {
+        fullySponsored++;
+      } else if (types.size > 0) {
+        partiallySponsored++;
+      } else {
+        noSponsorship++;
+      }
+    }
+
+    return {
+      totalSponsors: sponsors.length,
+      totalCompanies,
+      totalPersons,
+      activeSponsors,
+      needsFollowUp,
+      statusCounts,
+      upcomingSessions: {
+        total: upcomingSessions.length,
+        fullySponsored,
+        partiallySponsored,
+        noSponsorship,
+      },
+    };
+  }),
 
   /**
    * Get sponsor by ID (admin only)
@@ -1349,5 +1478,192 @@ export const sponsorRouter = createTRPCRouter({
       });
 
       return { success: true };
+    }),
+
+  // =====================
+  // CALENDAR PROCEDURES
+  // =====================
+
+  /**
+   * Get sponsorship calendar data (admin only)
+   * Returns sessions with their sponsorship status for a date range
+   */
+  getSponsorshipCalendar: adminProcedure
+    .input(
+      z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const sessions = await db.session.findMany({
+        where: {
+          date: {
+            gte: input.startDate,
+            lte: input.endDate,
+          },
+          visibilityStatus: { not: "archived" },
+        },
+        include: {
+          eventSponsorships: {
+            include: {
+              sponsor: {
+                select: {
+                  id: true,
+                  name: true,
+                  type: true,
+                  logoUrl: true,
+                },
+              },
+            },
+            orderBy: { displayOrder: "asc" },
+          },
+        },
+        orderBy: { date: "asc" },
+      });
+
+      // Helper to find sponsorship by type
+      const findByType = (
+        sponsorships: typeof sessions[0]["eventSponsorships"],
+        type: string
+      ) => {
+        const found = sponsorships.find((s) => s.sponsorshipType === type);
+        if (!found) return null;
+        return {
+          id: found.id,
+          sponsorId: found.sponsorId,
+          sponsorName: found.sponsor?.name || null,
+          sponsorLogoUrl: found.sponsor?.logoUrl || null,
+          sponsorType: found.sponsor?.type || null,
+          isSelfSponsored: found.isSelfSponsored,
+          notes: found.notes,
+        };
+      };
+
+      // Helper to filter sponsorships by type (for "other" which can have multiple)
+      const filterByType = (
+        sponsorships: typeof sessions[0]["eventSponsorships"],
+        type: string
+      ) => {
+        return sponsorships
+          .filter((s) => s.sponsorshipType === type)
+          .map((found) => ({
+            id: found.id,
+            sponsorId: found.sponsorId,
+            sponsorName: found.sponsor?.name || null,
+            sponsorLogoUrl: found.sponsor?.logoUrl || null,
+            sponsorType: found.sponsor?.type || null,
+            isSelfSponsored: found.isSelfSponsored,
+            notes: found.notes,
+          }));
+      };
+
+      // Calculate completion rate (dinner, beverage, dessert = 3 main types)
+      const calculateCompletion = (
+        sponsorships: typeof sessions[0]["eventSponsorships"]
+      ) => {
+        const mainTypes = ["dinner", "beverage", "dessert"];
+        const filled = mainTypes.filter((type) =>
+          sponsorships.some((s) => s.sponsorshipType === type)
+        ).length;
+        return Math.round((filled / mainTypes.length) * 100);
+      };
+
+      const calendarSessions = sessions.map((session) => ({
+        id: session.id,
+        sessionNumber: session.sessionNumber,
+        title: session.title,
+        date: session.date,
+        status: session.status,
+        visibilityStatus: session.visibilityStatus,
+        sponsorships: {
+          dinner: findByType(session.eventSponsorships, "dinner"),
+          beverage: findByType(session.eventSponsorships, "beverage"),
+          dessert: findByType(session.eventSponsorships, "dessert"),
+          other: filterByType(session.eventSponsorships, "other"),
+        },
+        completionRate: calculateCompletion(session.eventSponsorships),
+      }));
+
+      // Calculate stats
+      const stats = {
+        totalSessions: calendarSessions.length,
+        fullySponsored: calendarSessions.filter((s) => s.completionRate === 100).length,
+        partiallySponsored: calendarSessions.filter(
+          (s) => s.completionRate > 0 && s.completionRate < 100
+        ).length,
+        noSponsorship: calendarSessions.filter((s) => s.completionRate === 0).length,
+      };
+
+      return {
+        sessions: calendarSessions,
+        stats,
+      };
+    }),
+
+  /**
+   * Get sponsorship stats for charts (admin only)
+   * Returns aggregated data for sponsorship history visualization
+   */
+  getSponsorshipStats: adminProcedure
+    .input(
+      z.object({
+        sessionCount: z.number().min(1).max(50).default(12),
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Get last N sessions with sponsorship data
+      const sessions = await db.session.findMany({
+        where: {
+          visibilityStatus: { not: "archived" },
+        },
+        include: {
+          eventSponsorships: {
+            select: {
+              sponsorshipType: true,
+              isSelfSponsored: true,
+            },
+          },
+        },
+        orderBy: { date: "desc" },
+        take: input?.sessionCount ?? 12,
+      });
+
+      // Reverse to show oldest first in charts
+      const orderedSessions = sessions.reverse();
+
+      // Build chart data
+      const chartData = orderedSessions.map((session) => {
+        const types = session.eventSponsorships.map((s) => s.sponsorshipType);
+        return {
+          sessionNumber: session.sessionNumber,
+          title: session.title,
+          date: session.date,
+          dinner: types.includes("dinner") ? 1 : 0,
+          beverage: types.includes("beverage") ? 1 : 0,
+          dessert: types.includes("dessert") ? 1 : 0,
+          other: types.filter((t) => t === "other").length,
+          total: session.eventSponsorships.length,
+          selfSponsored: session.eventSponsorships.filter((s) => s.isSelfSponsored).length,
+        };
+      });
+
+      // Calculate totals
+      const totals = {
+        dinner: chartData.reduce((sum, s) => sum + s.dinner, 0),
+        beverage: chartData.reduce((sum, s) => sum + s.beverage, 0),
+        dessert: chartData.reduce((sum, s) => sum + s.dessert, 0),
+        other: chartData.reduce((sum, s) => sum + s.other, 0),
+        selfSponsored: chartData.reduce((sum, s) => sum + s.selfSponsored, 0),
+      };
+
+      return {
+        chartData,
+        totals,
+      };
     }),
 });

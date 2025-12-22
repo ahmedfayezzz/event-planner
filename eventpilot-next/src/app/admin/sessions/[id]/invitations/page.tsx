@@ -460,50 +460,50 @@ export default function InvitationsPage({
 
       {/* Stats Cards */}
       {stats && (
-        <div className="grid gap-4 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 md:gap-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">الإجمالي</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium">الإجمالي</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
+            <CardContent className="pt-0">
+              <div className="text-xl sm:text-2xl font-bold">{stats.total}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">سارية</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium">سارية</CardTitle>
               <MailCheck className="h-4 w-4 text-green-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.valid}</div>
+            <CardContent className="pt-0">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.valid}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">منتهية</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium">منتهية</CardTitle>
               <Clock className="h-4 w-4 text-yellow-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.expired}</div>
+            <CardContent className="pt-0">
+              <div className="text-xl sm:text-2xl font-bold text-yellow-600">{stats.expired}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">مستخدمة</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium">مستخدمة</CardTitle>
               <CheckCircle className="h-4 w-4 text-blue-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.used}</div>
+            <CardContent className="pt-0">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">{stats.used}</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">ملغاة</CardTitle>
+          <Card className="col-span-2 sm:col-span-1">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium">ملغاة</CardTitle>
               <XCircle className="h-4 w-4 text-red-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.invalidated}</div>
+            <CardContent className="pt-0">
+              <div className="text-xl sm:text-2xl font-bold text-red-600">{stats.invalidated}</div>
             </CardContent>
           </Card>
         </div>
@@ -512,17 +512,20 @@ export default function InvitationsPage({
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="email">
-            <Mail className="h-4 w-4 ml-2" />
-            بريد إلكتروني
+          <TabsTrigger value="email" className="gap-1 sm:gap-2 px-2 sm:px-3">
+            <Mail className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">بريد إلكتروني</span>
+            <span className="sm:hidden">بريد</span>
           </TabsTrigger>
-          <TabsTrigger value="whatsapp">
-            <Phone className="h-4 w-4 ml-2" />
-            واتساب
+          <TabsTrigger value="whatsapp" className="gap-1 sm:gap-2 px-2 sm:px-3">
+            <Phone className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">واتساب</span>
+            <span className="sm:hidden">واتساب</span>
           </TabsTrigger>
-          <TabsTrigger value="manage">
-            <RefreshCw className="h-4 w-4 ml-2" />
-            إدارة الدعوات
+          <TabsTrigger value="manage" className="gap-1 sm:gap-2 px-2 sm:px-3">
+            <RefreshCw className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">إدارة الدعوات</span>
+            <span className="sm:hidden">إدارة</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1100,14 +1103,15 @@ export default function InvitationsPage({
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Filters */}
-              <div className="flex flex-wrap gap-4 items-center">
-                <div className="flex gap-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4 sm:items-center">
+                <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 -mx-1 px-1 sm:mx-0 sm:px-0">
                   {(["all", "valid", "expired", "used", "invalidated"] as const).map((status) => (
                     <Button
                       key={status}
                       size="sm"
                       variant={statusFilter === status ? "default" : "outline"}
                       onClick={() => setStatusFilter(status)}
+                      className="whitespace-nowrap shrink-0"
                     >
                       {status === "all" && "الكل"}
                       {status === "valid" && "سارية"}
@@ -1135,35 +1139,38 @@ export default function InvitationsPage({
 
               {/* Bulk Actions */}
               {selectedInvites.length > 0 && (
-                <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-2 bg-muted rounded-md">
                   <span className="text-sm">تم تحديد {selectedInvites.length} دعوة</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setConfirmAction({ type: "resendBulk", count: selectedInvites.length })}
-                    disabled={bulkResendMutation.isPending}
-                  >
-                    {bulkResendMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin ml-1" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4 ml-1" />
-                    )}
-                    إعادة إرسال
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-destructive"
-                    onClick={() => setConfirmAction({ type: "invalidateBulk", count: selectedInvites.length })}
-                    disabled={bulkInvalidateMutation.isPending}
-                  >
-                    {bulkInvalidateMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin ml-1" />
-                    ) : (
-                      <Ban className="h-4 w-4 ml-1" />
-                    )}
-                    إلغاء
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConfirmAction({ type: "resendBulk", count: selectedInvites.length })}
+                      disabled={bulkResendMutation.isPending}
+                    >
+                      {bulkResendMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin ml-1" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 ml-1" />
+                      )}
+                      <span className="hidden sm:inline">إعادة إرسال</span>
+                      <span className="sm:hidden">إرسال</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-destructive"
+                      onClick={() => setConfirmAction({ type: "invalidateBulk", count: selectedInvites.length })}
+                      disabled={bulkInvalidateMutation.isPending}
+                    >
+                      {bulkInvalidateMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin ml-1" />
+                      ) : (
+                        <Ban className="h-4 w-4 ml-1" />
+                      )}
+                      إلغاء
+                    </Button>
+                  </div>
                 </div>
               )}
 

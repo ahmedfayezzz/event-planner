@@ -349,29 +349,32 @@ export default function ManualRegistrationPage({
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3 mb-6">
-              <TabsTrigger value="users" className="gap-2">
-                <Users className="h-4 w-4" />
-                اختيار أعضاء
+              <TabsTrigger value="users" className="gap-1 sm:gap-2 px-2 sm:px-3">
+                <Users className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">اختيار أعضاء</span>
+                <span className="sm:hidden">أعضاء</span>
                 {selectedUsersCount > 0 && (
-                  <Badge variant="secondary" className="mr-1">
+                  <Badge variant="secondary" className="mr-1 text-xs">
                     {selectedUsersCount}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="guests" className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                إضافة زوار
+              <TabsTrigger value="guests" className="gap-1 sm:gap-2 px-2 sm:px-3">
+                <UserPlus className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">إضافة زوار</span>
+                <span className="sm:hidden">زوار</span>
                 {validGuestsCount > 0 && (
-                  <Badge variant="secondary" className="mr-1">
+                  <Badge variant="secondary" className="mr-1 text-xs">
                     {validGuestsCount}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="csv" className="gap-2">
-                <FileSpreadsheet className="h-4 w-4" />
-                استيراد CSV
+              <TabsTrigger value="csv" className="gap-1 sm:gap-2 px-2 sm:px-3">
+                <FileSpreadsheet className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">استيراد CSV</span>
+                <span className="sm:hidden">CSV</span>
                 {csvCount > 0 && (
-                  <Badge variant="secondary" className="mr-1">
+                  <Badge variant="secondary" className="mr-1 text-xs">
                     {csvCount}
                   </Badge>
                 )}
@@ -575,84 +578,92 @@ export default function ManualRegistrationPage({
                 {guests.map((guest, index) => (
                   <div
                     key={guest.id}
-                    className="grid grid-cols-12 gap-2 items-start p-3 border rounded-lg"
+                    className="p-3 border rounded-lg space-y-3"
                   >
-                    <div className="col-span-3">
-                      <Label className="text-xs text-muted-foreground">
-                        الاسم *
-                      </Label>
-                      <Input
-                        placeholder="الاسم"
-                        value={guest.name}
-                        onChange={(e) =>
-                          updateGuest(guest.id, "name", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Label className="text-xs text-muted-foreground">
-                        الهاتف *
-                      </Label>
-                      <div className="border rounded-md px-3 py-2">
-                        <PhoneInput
-                          international
-                          defaultCountry="SA"
-                          value={guest.phone}
-                          onChange={(value) =>
-                            updateGuest(guest.id, "phone", value || "")
+                    {/* Row 1: Name and Phone (required fields) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">
+                          الاسم *
+                        </Label>
+                        <Input
+                          placeholder="الاسم"
+                          value={guest.name}
+                          onChange={(e) =>
+                            updateGuest(guest.id, "name", e.target.value)
                           }
-                          className="phone-input-container"
-                          placeholder="5XXXXXXXX"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">
+                          الهاتف *
+                        </Label>
+                        <div className="border rounded-md px-3 py-2">
+                          <PhoneInput
+                            international
+                            defaultCountry="SA"
+                            value={guest.phone}
+                            onChange={(value) =>
+                              updateGuest(guest.id, "phone", value || "")
+                            }
+                            className="phone-input-container"
+                            placeholder="5XXXXXXXX"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    {/* Row 2: Email, Company, Position (optional fields) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">
+                          البريد
+                        </Label>
+                        <Input
+                          type="email"
+                          placeholder="email@example.com"
+                          value={guest.email}
+                          onChange={(e) =>
+                            updateGuest(guest.id, "email", e.target.value)
+                          }
+                          dir="ltr"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">
+                          الشركة
+                        </Label>
+                        <Input
+                          placeholder="الشركة"
+                          value={guest.companyName}
+                          onChange={(e) =>
+                            updateGuest(guest.id, "companyName", e.target.value)
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">
+                          المنصب
+                        </Label>
+                        <Input
+                          placeholder="المنصب"
+                          value={guest.position}
+                          onChange={(e) =>
+                            updateGuest(guest.id, "position", e.target.value)
+                          }
                         />
                       </div>
                     </div>
-                    <div className="col-span-3">
-                      <Label className="text-xs text-muted-foreground">
-                        البريد
-                      </Label>
-                      <Input
-                        type="email"
-                        placeholder="email@example.com"
-                        value={guest.email}
-                        onChange={(e) =>
-                          updateGuest(guest.id, "email", e.target.value)
-                        }
-                        dir="ltr"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Label className="text-xs text-muted-foreground">
-                        الشركة
-                      </Label>
-                      <Input
-                        placeholder="الشركة"
-                        value={guest.companyName}
-                        onChange={(e) =>
-                          updateGuest(guest.id, "companyName", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      <Label className="text-xs text-muted-foreground">
-                        المنصب
-                      </Label>
-                      <Input
-                        placeholder="المنصب"
-                        value={guest.position}
-                        onChange={(e) =>
-                          updateGuest(guest.id, "position", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="col-span-1 flex items-end">
+                    {/* Delete button */}
+                    <div className="flex justify-end">
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         onClick={() => removeGuestRow(guest.id)}
                         disabled={guests.length === 1}
                         className="text-destructive hover:text-destructive"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 me-1" />
+                        <span className="sm:inline hidden">حذف</span>
                       </Button>
                     </div>
                   </div>
@@ -751,8 +762,8 @@ export default function ManualRegistrationPage({
 
           {/* Summary and Submit */}
           <div className="mt-6 pt-6 border-t space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 text-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="text-sm">
                 <span>
                   المحدد:{" "}
                   <strong>
