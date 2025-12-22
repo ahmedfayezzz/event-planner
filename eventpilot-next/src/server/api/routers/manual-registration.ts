@@ -15,7 +15,7 @@ export const manualRegistrationRouter = createTRPCRouter({
         sessionId: z.string(),
         search: z.string().optional(),
         labelIds: z.array(z.string()).optional(),
-        roleFilter: z.enum(["all", "USER", "GUEST"]).optional(),
+        roleFilter: z.enum(["all", "USER", "GUEST", "ADMIN", "SUPER_ADMIN"]).optional(),
         limit: z.number().min(1).max(500).default(100),
       })
     )
@@ -25,7 +25,7 @@ export const manualRegistrationRouter = createTRPCRouter({
       // Build base where clause
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const baseWhere: Record<string, any> = {
-        isActive: true,
+        // isActive: true, // Commented out to allow inactive users
       };
 
       // Filter by role if specified (default: all users)

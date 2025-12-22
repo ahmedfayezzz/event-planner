@@ -101,7 +101,7 @@ export default function ManualRegistrationPage({
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [labelFilter, setLabelFilter] = useState<string[]>([]);
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
-  const [roleFilter, setRoleFilter] = useState<"all" | "USER" | "GUEST">("all");
+  const [roleFilter, setRoleFilter] = useState<"all" | "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN">("all");
 
   // Guests tab state
   const [guests, setGuests] = useState<GuestEntry[]>([
@@ -397,15 +397,17 @@ export default function ManualRegistrationPage({
                 {/* Role Filter */}
                 <Select
                   value={roleFilter}
-                  onValueChange={(v) => setRoleFilter(v as "all" | "USER" | "GUEST")}
+                  onValueChange={(v) => setRoleFilter(v as "all" | "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN")}
                 >
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-36">
                     <SelectValue placeholder="النوع" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">الكل</SelectItem>
                     <SelectItem value="USER">الأعضاء</SelectItem>
                     <SelectItem value="GUEST">الزوار</SelectItem>
+                    <SelectItem value="ADMIN">المدراء</SelectItem>
+                    <SelectItem value="SUPER_ADMIN">المدراء العامين</SelectItem>
                   </SelectContent>
                 </Select>
                 {/* Label Filter */}

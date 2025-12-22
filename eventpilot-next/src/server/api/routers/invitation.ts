@@ -51,7 +51,7 @@ export const invitationRouter = createTRPCRouter({
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const where: Record<string, any> = {
-        isActive: true,
+        // isActive: true, // Commented out to allow inactive users
       };
 
       if (input.search) {
