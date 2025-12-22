@@ -313,23 +313,26 @@ export async function generateInvitationPdf(
         const containerHeight = containerTop - containerBottom;
 
         // Calculate grid layout based on sponsor count (1-10 sponsors)
+        // For even counts > 3: divide evenly (4→2,2; 6→3,3; 8→4,4; 10→5,5)
+        // For odd counts > 3: smaller row first (5→2,3; 7→3,4; 9→4,5)
         const count = Math.min(validSponsors.length, 10);
-        let cols: number;
         let rows: number;
+        let row1Count: number;
+        let row2Count: number;
 
         if (count <= 3) {
-          cols = count;
           rows = 1;
-        } else if (count <= 6) {
-          cols = 3;
-          rows = 2;
+          row1Count = count;
+          row2Count = 0;
         } else {
-          cols = 5;
           rows = 2;
+          row1Count = Math.floor(count / 2);
+          row2Count = Math.ceil(count / 2);
         }
 
-        // Calculate cell dimensions
-        const cellWidth = containerWidth / cols;
+        // Calculate cell dimensions based on max columns needed
+        const maxCols = Math.max(row1Count, row2Count);
+        const cellWidth = containerWidth / maxCols;
         const cellHeight = containerHeight / rows;
         const padding = Math.min(cellWidth, cellHeight) * 0.1;
 
@@ -345,13 +348,33 @@ export async function generateInvitationPdf(
           const sponsor = validSponsors[i];
           if (!sponsor) continue;
 
-          // Calculate grid position (RTL: start from right)
-          const row = Math.floor(i / cols);
-          const colFromLeft = i % cols;
-          const colFromRight = cols - 1 - colFromLeft; // Flip for RTL
+          // Determine which row this sponsor is in and position within row
+          let row: number;
+          let colInRow: number;
+          let colsInThisRow: number;
 
-          // Calculate center position of this cell
-          const cellCenterX = containerLeft + (colFromRight + 0.5) * cellWidth;
+          if (rows === 1) {
+            row = 0;
+            colInRow = i;
+            colsInThisRow = row1Count;
+          } else {
+            if (i < row1Count) {
+              row = 0;
+              colInRow = i;
+              colsInThisRow = row1Count;
+            } else {
+              row = 1;
+              colInRow = i - row1Count;
+              colsInThisRow = row2Count;
+            }
+          }
+
+          // Calculate cell width for this row (each row is centered)
+          const rowCellWidth = containerWidth / colsInThisRow;
+
+          // Calculate position (RTL: start from right)
+          const colFromRight = colsInThisRow - 1 - colInRow;
+          const cellCenterX = containerLeft + (colFromRight + 0.5) * rowCellWidth;
           const cellCenterY = containerTop - (row + 0.5) * cellHeight;
 
           // Try to load and embed sponsor logo

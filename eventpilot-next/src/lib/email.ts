@@ -468,16 +468,25 @@ export async function sendConfirmedEmail(
 
   if (qrData && session.sendQrInEmail) {
     try {
-      const locationParts = splitLocationForPdf(session.location);
+      // Fetch sponsors for this session
+      const eventSponsorships = await db.eventSponsorship.findMany({
+        where: { sessionId: session.id },
+        include: { sponsor: true },
+      });
+      const sponsors = eventSponsorships
+        .filter((es) => es.sponsor)
+        .map((es) => ({
+          name: es.sponsor!.name,
+          logoUrl: es.sponsor!.logoUrl,
+          type: es.sponsorshipType,
+        }));
+
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionTitle: session.title,
-        sessionDate: formatDateForPdf(session.date),
-        sessionDayName: formatDayNameForPdf(session.date),
-        sessionTime: formatTimeOnly(session.date),
+        sessionDate: session.date,
         attendeeName: name,
-        location: locationParts.line1,
-        locationLine2: locationParts.line2,
         locationUrl: session.locationUrl ?? undefined,
+        sponsors,
       });
       if (pdfBuffer) {
         const pdfBase64 = pdfBuffer.toString("base64");
@@ -537,16 +546,25 @@ export async function sendCompanionEmail(
 
   if (isApproved && qrData && session.sendQrInEmail) {
     try {
-      const locationParts = splitLocationForPdf(session.location);
+      // Fetch sponsors for this session
+      const eventSponsorships = await db.eventSponsorship.findMany({
+        where: { sessionId: session.id },
+        include: { sponsor: true },
+      });
+      const sponsors = eventSponsorships
+        .filter((es) => es.sponsor)
+        .map((es) => ({
+          name: es.sponsor!.name,
+          logoUrl: es.sponsor!.logoUrl,
+          type: es.sponsorshipType,
+        }));
+
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionTitle: session.title,
-        sessionDate: formatDateForPdf(session.date),
-        sessionDayName: formatDayNameForPdf(session.date),
-        sessionTime: formatTimeOnly(session.date),
+        sessionDate: session.date,
         attendeeName: companionName,
-        location: locationParts.line1,
-        locationLine2: locationParts.line2,
         locationUrl: session.locationUrl ?? undefined,
+        sponsors,
       });
       if (pdfBuffer) {
         const pdfBase64 = pdfBuffer.toString("base64");
@@ -776,16 +794,25 @@ export async function sendQrOnlyEmail(
   let attachments: EmailAttachment[] | undefined;
 
   try {
-    const locationParts = splitLocationForPdf(session.location);
+    // Fetch sponsors for this session
+    const eventSponsorships = await db.eventSponsorship.findMany({
+      where: { sessionId: session.id },
+      include: { sponsor: true },
+    });
+    const sponsors = eventSponsorships
+      .filter((es) => es.sponsor)
+      .map((es) => ({
+        name: es.sponsor!.name,
+        logoUrl: es.sponsor!.logoUrl,
+        type: es.sponsorshipType,
+      }));
+
     const pdfBuffer = await generateBrandedQRPdf(qrData, {
       sessionTitle: session.title,
-      sessionDate: formatDateForPdf(session.date),
-      sessionDayName: formatDayNameForPdf(session.date),
-      sessionTime: formatTimeOnly(session.date),
+      sessionDate: session.date,
       attendeeName: name,
-      location: locationParts.line1,
-      locationLine2: locationParts.line2,
       locationUrl: session.locationUrl ?? undefined,
+      sponsors,
     });
     if (pdfBuffer) {
       const pdfBase64 = pdfBuffer.toString("base64");
