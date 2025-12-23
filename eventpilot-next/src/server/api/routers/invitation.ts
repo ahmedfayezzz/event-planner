@@ -8,6 +8,7 @@ import {
 import { generateInviteToken } from "@/lib/utils";
 import { sendInvitationEmail } from "@/lib/email";
 import { toSaudiTime } from "@/lib/timezone";
+import { normalizeArabic } from "@/lib/search";
 
 export const invitationRouter = createTRPCRouter({
   /**
@@ -55,11 +56,12 @@ export const invitationRouter = createTRPCRouter({
       };
 
       if (input.search) {
+        const normalizedSearch = normalizeArabic(input.search);
         where.OR = [
-          { name: { contains: input.search } },
-          { email: { contains: input.search } },
-          { phone: { contains: input.search } },
-          { companyName: { contains: input.search } },
+          { name: { contains: normalizedSearch, mode: "insensitive" } },
+          { email: { contains: normalizedSearch, mode: "insensitive" } },
+          { phone: { contains: normalizedSearch, mode: "insensitive" } },
+          { companyName: { contains: normalizedSearch, mode: "insensitive" } },
         ];
       }
 
@@ -351,7 +353,8 @@ export const invitationRouter = createTRPCRouter({
       }
 
       if (input.search) {
-        where.email = { contains: input.search };
+        const normalizedSearch = normalizeArabic(input.search);
+        where.email = { contains: normalizedSearch, mode: "insensitive" };
       }
 
       const invites = await db.invite.findMany({

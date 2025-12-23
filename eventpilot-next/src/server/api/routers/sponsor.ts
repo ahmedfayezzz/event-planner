@@ -9,6 +9,7 @@ import {
 import { getSponsorshipTypeLabel, getSponsorTypeLabel, getSponsorStatusLabel } from "@/lib/constants";
 import { exportToCSV } from "@/lib/utils";
 import { toSaudiTime } from "@/lib/timezone";
+import { normalizeArabic } from "@/lib/search";
 
 export const sponsorRouter = createTRPCRouter({
   /**
@@ -32,10 +33,11 @@ export const sponsorRouter = createTRPCRouter({
       const where: Record<string, any> = {};
 
       if (input?.search) {
+        const normalizedSearch = normalizeArabic(input.search);
         where.OR = [
-          { name: { contains: input.search } },
-          { email: { contains: input.search } },
-          { phone: { contains: input.search } },
+          { name: { contains: normalizedSearch, mode: "insensitive" } },
+          { email: { contains: normalizedSearch, mode: "insensitive" } },
+          { phone: { contains: normalizedSearch, mode: "insensitive" } },
         ];
       }
 
@@ -845,14 +847,15 @@ export const sponsorRouter = createTRPCRouter({
 
       // Search by title or session number
       if (input.search) {
+        const normalizedSearch = normalizeArabic(input.search);
         const searchNum = parseInt(input.search);
         if (!isNaN(searchNum)) {
           where.OR = [
-            { title: { contains: input.search } },
+            { title: { contains: normalizedSearch, mode: "insensitive" } },
             { sessionNumber: searchNum },
           ];
         } else {
-          where.title = { contains: input.search };
+          where.title = { contains: normalizedSearch, mode: "insensitive" };
         }
       }
 
@@ -892,10 +895,11 @@ export const sponsorRouter = createTRPCRouter({
       };
 
       if (input.search) {
+        const normalizedSearch = normalizeArabic(input.search);
         where.OR = [
-          { name: { contains: input.search } },
-          { email: { contains: input.search } },
-          { phone: { contains: input.search } },
+          { name: { contains: normalizedSearch, mode: "insensitive" } },
+          { email: { contains: normalizedSearch, mode: "insensitive" } },
+          { phone: { contains: normalizedSearch, mode: "insensitive" } },
         ];
       }
 
@@ -1059,15 +1063,16 @@ export const sponsorRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
+      const normalizedSearch = normalizeArabic(input.search);
 
       const users = await db.user.findMany({
         where: {
           isActive: true,
           OR: [
-            { name: { contains: input.search, mode: "insensitive" } },
-            { email: { contains: input.search, mode: "insensitive" } },
-            { phone: { contains: input.search } },
-            { username: { contains: input.search, mode: "insensitive" } },
+            { name: { contains: normalizedSearch, mode: "insensitive" } },
+            { email: { contains: normalizedSearch, mode: "insensitive" } },
+            { phone: { contains: normalizedSearch, mode: "insensitive" } },
+            { username: { contains: normalizedSearch, mode: "insensitive" } },
           ],
         },
         select: {

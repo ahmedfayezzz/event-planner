@@ -5,6 +5,7 @@ import {
   adminProcedure,
   publicProcedure,
 } from "../trpc";
+import { normalizeArabic } from "@/lib/search";
 
 export const cateringRouter = createTRPCRouter({
   /**
@@ -249,13 +250,14 @@ export const cateringRouter = createTRPCRouter({
       };
 
       if (input.search) {
+        const normalizedSearch = normalizeArabic(input.search);
         where.AND = [
           {
             OR: [
-              { name: { contains: input.search } },
-              { email: { contains: input.search } },
-              { phone: { contains: input.search } },
-              { companyName: { contains: input.search } },
+              { name: { contains: normalizedSearch, mode: "insensitive" } },
+              { email: { contains: normalizedSearch, mode: "insensitive" } },
+              { phone: { contains: normalizedSearch, mode: "insensitive" } },
+              { companyName: { contains: normalizedSearch, mode: "insensitive" } },
             ],
           },
         ];
@@ -281,6 +283,7 @@ export const cateringRouter = createTRPCRouter({
       });
 
       // Also get guests who want to host (from registrations)
+      const normalizedSearchForGuests = input.search ? normalizeArabic(input.search) : "";
       const guestRegistrations = await db.registration.findMany({
         where: {
           guestWantsToHost: true,
@@ -288,9 +291,9 @@ export const cateringRouter = createTRPCRouter({
           ...(input.search
             ? {
                 OR: [
-                  { guestName: { contains: input.search } },
-                  { guestEmail: { contains: input.search } },
-                  { guestPhone: { contains: input.search } },
+                  { guestName: { contains: normalizedSearchForGuests, mode: "insensitive" } },
+                  { guestEmail: { contains: normalizedSearchForGuests, mode: "insensitive" } },
+                  { guestPhone: { contains: normalizedSearchForGuests, mode: "insensitive" } },
                 ],
               }
             : {}),

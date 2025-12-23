@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { formatArabicDate, formatArabicTime, formatArabicDateTime, getWhatsAppUrl } from "@/lib/utils";
+import { normalizeArabic } from "@/lib/search";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -205,15 +206,15 @@ export default function SessionAttendeesPage({
       filtered = filtered.filter((reg: RegistrationItem) => !reg.isApproved);
     }
 
-    // Filter by search
+    // Filter by search (with Arabic normalization)
     if (debouncedSearch.trim()) {
-      const searchLower = debouncedSearch.toLowerCase();
+      const normalizedSearch = normalizeArabic(debouncedSearch);
       filtered = filtered.filter(
         (reg: RegistrationItem) =>
-          reg.name?.toLowerCase().includes(searchLower) ||
-          reg.email?.toLowerCase().includes(searchLower) ||
-          reg.phone?.includes(debouncedSearch) ||
-          reg.invitedByName?.toLowerCase().includes(searchLower)
+          normalizeArabic(reg.name || "").includes(normalizedSearch) ||
+          normalizeArabic(reg.email || "").includes(normalizedSearch) ||
+          normalizeArabic(reg.phone || "").includes(normalizedSearch) ||
+          normalizeArabic(reg.invitedByName || "").includes(normalizedSearch)
       );
     }
 

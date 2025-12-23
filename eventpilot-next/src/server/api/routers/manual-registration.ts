@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, adminProcedure } from "../trpc";
 import { sendQrOnlyEmail } from "@/lib/email";
 import { createQRCheckInData } from "@/lib/qr";
+import { normalizeArabic } from "@/lib/search";
 
 export const manualRegistrationRouter = createTRPCRouter({
   /**
@@ -34,11 +35,12 @@ export const manualRegistrationRouter = createTRPCRouter({
       }
 
       if (input.search) {
+        const normalizedSearch = normalizeArabic(input.search);
         baseWhere.OR = [
-          { name: { contains: input.search } },
-          { email: { contains: input.search } },
-          { phone: { contains: input.search } },
-          { companyName: { contains: input.search } },
+          { name: { contains: normalizedSearch, mode: "insensitive" } },
+          { email: { contains: normalizedSearch, mode: "insensitive" } },
+          { phone: { contains: normalizedSearch, mode: "insensitive" } },
+          { companyName: { contains: normalizedSearch, mode: "insensitive" } },
         ];
       }
 
