@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import type { Registration } from "@prisma/client";
+import type { Registration, PrismaClient } from "@prisma/client";
 import {
   createTRPCRouter,
   publicProcedure,
@@ -16,6 +16,86 @@ import {
   sendWelcomeEmail,
 } from "@/lib/email";
 import bcrypt from "bcryptjs";
+
+/**
+ * Helper function to find or create a user for a companion
+ * Returns the userId to link to the registration
+ */
+async function findOrCreateCompanionUser(
+  db: PrismaClient,
+  companion: {
+    name: string;
+    phone: string;
+    company?: string;
+    title?: string;
+    email?: string;
+  },
+  sessionId: string,
+  isApproved: boolean
+): Promise<{ userId: string; isExisting: boolean }> {
+  const formattedPhone = formatPhoneNumber(companion.phone);
+  const email = companion.email?.toLowerCase() || null;
+
+  // Check if user exists with matching phone or email
+  const existingUser = await db.user.findFirst({
+    where: {
+      OR: [
+        { phone: formattedPhone },
+        ...(email ? [{ email }] : []),
+      ],
+    },
+  });
+
+  if (existingUser) {
+    // Check if user is already registered for this session
+    const existingReg = await db.registration.findFirst({
+      where: {
+        sessionId,
+        userId: existingUser.id,
+      },
+    });
+
+    if (existingReg) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: `المرافق ${companion.name} مسجل مسبقاً في هذا الحدث`,
+      });
+    }
+
+    // If it's a GUEST user, update their info
+    if (existingUser.role === "GUEST") {
+      await db.user.update({
+        where: { id: existingUser.id },
+        data: {
+          name: companion.name,
+          companyName: companion.company || existingUser.companyName,
+          position: companion.title || existingUser.position,
+          isActive: isApproved ? true : existingUser.isActive,
+        },
+      });
+    }
+
+    return { userId: existingUser.id, isExisting: true };
+  }
+
+  // Create new GUEST user for companion
+  const username = await generateUsername(companion.name);
+  const newGuestUser = await db.user.create({
+    data: {
+      name: companion.name,
+      username,
+      email: email || `companion-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@temp.local`,
+      phone: formattedPhone,
+      passwordHash: null,
+      role: "GUEST",
+      isActive: isApproved,
+      companyName: companion.company || null,
+      position: companion.title || null,
+    },
+  });
+
+  return { userId: newGuestUser.id, isExisting: false };
+}
 
 export const registrationRouter = createTRPCRouter({
   /**
@@ -188,14 +268,26 @@ export const registrationRouter = createTRPCRouter({
         },
       });
 
-      // Create invited registrations (companions)
+      // Create invited registrations (companions) with user matching/creation
       const invitedRegistrations: Registration[] = [];
       for (const companion of input.companions) {
+        const companionApproved = session.requiresApproval ? false : true;
+
+        // Find or create user for companion
+        const { userId: companionUserId } = await findOrCreateCompanionUser(
+          db,
+          companion,
+          input.sessionId,
+          companionApproved
+        );
+
         const invitedReg = await db.registration.create({
           data: {
             sessionId: input.sessionId,
             invitedByRegistrationId: registration.id,
-            isApproved: session.requiresApproval ? false : true,
+            isApproved: companionApproved,
+            userId: companionUserId,
+            // Keep guest fields for display/backup
             guestName: companion.name,
             guestCompanyName: companion.company || null,
             guestPosition: companion.title || null,
@@ -512,14 +604,26 @@ export const registrationRouter = createTRPCRouter({
         },
       });
 
-      // Create invited registrations (companions)
+      // Create invited registrations (companions) with user matching/creation
       const invitedRegistrations: Registration[] = [];
       for (const companion of input.companions) {
+        const companionApproved = session.requiresApproval ? false : true;
+
+        // Find or create user for companion
+        const { userId: companionUserId } = await findOrCreateCompanionUser(
+          db,
+          companion,
+          input.sessionId,
+          companionApproved
+        );
+
         const invitedReg = await db.registration.create({
           data: {
             sessionId: input.sessionId,
             invitedByRegistrationId: registration.id,
-            isApproved: session.requiresApproval ? false : true,
+            isApproved: companionApproved,
+            userId: companionUserId,
+            // Keep guest fields for display/backup
             guestName: companion.name,
             guestCompanyName: companion.company || null,
             guestPosition: companion.title || null,
@@ -987,12 +1091,24 @@ export const registrationRouter = createTRPCRouter({
             },
           });
         } else {
-          // Create new companion
+          // Create new companion with user matching/creation
+          const companionApproved = registration.isApproved;
+
+          // Find or create user for companion
+          const { userId: companionUserId } = await findOrCreateCompanionUser(
+            db,
+            companion,
+            registration.sessionId,
+            companionApproved
+          );
+
           await db.registration.create({
             data: {
               sessionId: registration.sessionId,
               invitedByRegistrationId: registration.id,
-              isApproved: registration.isApproved, // Same approval status as parent
+              isApproved: companionApproved,
+              userId: companionUserId,
+              // Keep guest fields for display/backup
               guestName: companion.name,
               guestPhone: formatPhoneNumber(companion.phone),
               guestCompanyName: companion.company || null,

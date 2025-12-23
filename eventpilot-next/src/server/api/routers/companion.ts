@@ -5,7 +5,7 @@ import {
   protectedProcedure,
   adminProcedure,
 } from "../trpc";
-import { formatPhoneNumber } from "@/lib/validation";
+import { formatPhoneNumber, generateUsername } from "@/lib/validation";
 import { createQRCheckInData } from "@/lib/qr";
 import { sendCompanionEmail } from "@/lib/email";
 
@@ -59,17 +59,85 @@ export const companionRouter = createTRPCRouter({
         });
       }
 
-      // Create invited registration (companion)
+      // Format phone and email
+      const formattedPhone = formatPhoneNumber(input.phone);
+      const email = input.email?.toLowerCase() || null;
+
+      // Check if user exists with matching phone or email
+      let companionUserId: string | null = null;
+      const existingUser = await db.user.findFirst({
+        where: {
+          OR: [
+            { phone: formattedPhone },
+            ...(email ? [{ email }] : []),
+          ],
+        },
+      });
+
+      const isApproved = parentRegistration.session.requiresApproval ? false : true;
+
+      if (existingUser) {
+        // Check if user is already registered for this session
+        const existingReg = await db.registration.findFirst({
+          where: {
+            sessionId: parentRegistration.sessionId,
+            userId: existingUser.id,
+          },
+        });
+
+        if (existingReg) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "هذا المستخدم مسجل مسبقاً في هذا الحدث",
+          });
+        }
+
+        companionUserId = existingUser.id;
+
+        // If it's a GUEST user, update their info
+        if (existingUser.role === "GUEST") {
+          await db.user.update({
+            where: { id: existingUser.id },
+            data: {
+              name: input.name,
+              companyName: input.company || existingUser.companyName,
+              position: input.title || existingUser.position,
+              isActive: isApproved ? true : existingUser.isActive,
+            },
+          });
+        }
+      } else {
+        // Create new GUEST user for companion
+        const username = await generateUsername(input.name);
+        const newGuestUser = await db.user.create({
+          data: {
+            name: input.name,
+            username,
+            email: email || `companion-${Date.now()}@temp.local`, // Temporary email if not provided
+            phone: formattedPhone,
+            passwordHash: null,
+            role: "GUEST",
+            isActive: isApproved,
+            companyName: input.company || null,
+            position: input.title || null,
+          },
+        });
+        companionUserId = newGuestUser.id;
+      }
+
+      // Create invited registration linked to user
       const invitedRegistration = await db.registration.create({
         data: {
           sessionId: parentRegistration.sessionId,
           invitedByRegistrationId: parentRegistration.id,
-          isApproved: parentRegistration.session.requiresApproval ? false : true,
+          isApproved,
+          userId: companionUserId,
+          // Keep guest fields as backup/display
           guestName: input.name,
           guestCompanyName: input.company || null,
           guestPosition: input.title || null,
-          guestPhone: formatPhoneNumber(input.phone),
-          guestEmail: input.email?.toLowerCase() || null,
+          guestPhone: formattedPhone,
+          guestEmail: email,
         },
       });
 
@@ -110,7 +178,20 @@ export const companionRouter = createTRPCRouter({
       const registration = await db.registration.findUnique({
         where: { id: input.registrationId },
         include: {
-          invitedRegistrations: true,
+          invitedRegistrations: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  phone: true,
+                  companyName: true,
+                  position: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -133,13 +214,14 @@ export const companionRouter = createTRPCRouter({
       return registration.invitedRegistrations.map((r) => ({
         id: r.id,
         registrationId: registration.id,
-        name: r.guestName || "",
-        company: r.guestCompanyName,
-        title: r.guestPosition,
-        phone: r.guestPhone,
-        email: r.guestEmail,
+        name: r.user?.name || r.guestName || "",
+        company: r.user?.companyName || r.guestCompanyName,
+        title: r.user?.position || r.guestPosition,
+        phone: r.user?.phone || r.guestPhone,
+        email: r.user?.email || r.guestEmail,
         createdAt: r.registeredAt,
         isApproved: r.isApproved,
+        userId: r.userId,
       }));
     }),
 
@@ -158,6 +240,16 @@ export const companionRouter = createTRPCRouter({
           invitedByRegistrationId: { not: null },
         },
         include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              companyName: true,
+              position: true,
+            },
+          },
           invitedByRegistration: {
             include: {
               user: {
@@ -176,13 +268,14 @@ export const companionRouter = createTRPCRouter({
       return invitedRegistrations.map((r) => ({
         id: r.id,
         registrationId: r.invitedByRegistrationId,
-        name: r.guestName || "",
-        company: r.guestCompanyName,
-        title: r.guestPosition,
-        phone: r.guestPhone,
-        email: r.guestEmail,
+        name: r.user?.name || r.guestName || "",
+        company: r.user?.companyName || r.guestCompanyName,
+        title: r.user?.position || r.guestPosition,
+        phone: r.user?.phone || r.guestPhone,
+        email: r.user?.email || r.guestEmail,
         createdAt: r.registeredAt,
         isApproved: r.isApproved,
+        userId: r.userId,
         registrantName: r.invitedByRegistration?.user?.name || r.invitedByRegistration?.guestName,
         registrantEmail: r.invitedByRegistration?.user?.email || r.invitedByRegistration?.guestEmail,
         registrationApproved: r.invitedByRegistration?.isApproved,
