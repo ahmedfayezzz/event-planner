@@ -15,6 +15,7 @@ import { noteRouter } from "./routers/note";
 import { uploadRouter } from "./routers/upload";
 import { manualRegistrationRouter } from "./routers/manual-registration";
 import { emailRouter } from "./routers/email";
+import { suggestionRouter } from "./routers/suggestion";
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -33,6 +34,7 @@ export const appRouter = createTRPCRouter({
   upload: uploadRouter,
   manualRegistration: manualRegistrationRouter,
   email: emailRouter,
+  suggestion: suggestionRouter,
 });
 
 export type AppRouter = typeof appRouter;

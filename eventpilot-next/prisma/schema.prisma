@@ -57,6 +57,7 @@ model User {
   canAccessAnalytics  Boolean  @default(false)
   canAccessCheckin    Boolean  @default(false)
   canAccessSettings   Boolean  @default(false)
+  canAccessSuggestions Boolean @default(false)
 
   // Password reset
   resetToken        String?
@@ -88,6 +89,7 @@ model User {
   notesCreated  UserNote[] @relation("NotesCreated")
   sponsors      Sponsor[]
   sponsorNotesCreated SponsorNote[] @relation("SponsorNoteAuthor")
+  suggestions   Suggestion[]
 }
 
 model Session {
@@ -409,5 +411,21 @@ model EmailLog {
 
   @@index([status])
   @@index([registrationId])
+  @@index([createdAt])
+}
+
+model Suggestion {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  status    String   @default("pending") // pending, reviewed, implemented, dismissed
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
   @@index([createdAt])
 }

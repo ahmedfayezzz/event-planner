@@ -44,6 +44,7 @@ import {
   BarChart3,
   UtensilsCrossed,
   ShieldCheck,
+  MessageSquare,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/admin/breadcrumbs";
 import {
@@ -108,6 +109,12 @@ const allSidebarLinks: SidebarLink[] = [
     label: "الإعدادات",
     icon: Settings,
     permission: "settings",
+  },
+  {
+    href: "/admin/suggestions",
+    label: "الاقتراحات",
+    icon: MessageSquare,
+    permission: "suggestions",
   },
 ];
 

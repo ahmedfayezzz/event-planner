@@ -19,13 +19,15 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Menu, X } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { SuggestionDialog } from "@/components/suggestions/suggestion-dialog";
 
 export function Navbar() {
   const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [suggestionOpen, setSuggestionOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -129,6 +131,9 @@ export function Navbar() {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/user/change-password">تغيير كلمة المرور</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSuggestionOpen(true)}>
+                    تقديم الاقتراحات
                   </DropdownMenuItem>
                   {(session.user?.role === "ADMIN" ||
                     session.user?.role === "SUPER_ADMIN") && (
@@ -260,6 +265,15 @@ export function Navbar() {
                           تغيير كلمة المرور
                         </Link>
                         <button
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-primary/5 hover:text-primary transition-colors text-right"
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            setSuggestionOpen(true);
+                          }}
+                        >
+                          تقديم الاقتراحات
+                        </button>
+                        <button
                           className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors text-right"
                           onClick={() => {
                             setMobileMenuOpen(false);
@@ -295,6 +309,9 @@ export function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Suggestion Dialog */}
+      <SuggestionDialog open={suggestionOpen} onOpenChange={setSuggestionOpen} />
     </nav>
   );
 }
