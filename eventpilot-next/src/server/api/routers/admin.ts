@@ -672,6 +672,8 @@ export const adminRouter = createTRPCRouter({
                 input.permissions?.includes("checkin") ?? true,
               canAccessSettings:
                 input.permissions?.includes("settings") ?? true,
+              canAccessSuggestions:
+                input.permissions?.includes("suggestions") ?? true,
             }
           : {
               canAccessDashboard: false,
@@ -681,6 +683,7 @@ export const adminRouter = createTRPCRouter({
               canAccessAnalytics: false,
               canAccessCheckin: false,
               canAccessSettings: false,
+              canAccessSuggestions: false,
             };
 
       const updated = await db.user.update({
@@ -716,6 +719,7 @@ export const adminRouter = createTRPCRouter({
             "analytics",
             "checkin",
             "settings",
+            "suggestions",
           ])
         ),
       })
@@ -748,6 +752,7 @@ export const adminRouter = createTRPCRouter({
         "analytics",
         "checkin",
         "settings",
+        "suggestions",
       ];
 
       const permissionData: Record<string, boolean> = {};
@@ -813,6 +818,7 @@ export const adminRouter = createTRPCRouter({
         canAccessAnalytics: true,
         canAccessCheckin: true,
         canAccessSettings: true,
+        canAccessSuggestions: true,
       },
     });
 
@@ -851,6 +857,7 @@ export const adminRouter = createTRPCRouter({
         canAccessAnalytics: true,
         canAccessCheckin: true,
         canAccessSettings: true,
+        canAccessSuggestions: true,
         createdAt: true,
       },
       orderBy: [{ role: "desc" }, { createdAt: "asc" }],
@@ -878,6 +885,7 @@ export const adminRouter = createTRPCRouter({
             "analytics",
             "checkin",
             "settings",
+            "suggestions",
           ])
         ),
       })
@@ -922,6 +930,7 @@ export const adminRouter = createTRPCRouter({
         "analytics",
         "checkin",
         "settings",
+        "suggestions",
       ];
 
       for (const perm of allPermissions) {
@@ -946,6 +955,7 @@ export const adminRouter = createTRPCRouter({
           canAccessAnalytics: updated.canAccessAnalytics,
           canAccessCheckin: updated.canAccessCheckin,
           canAccessSettings: updated.canAccessSettings,
+          canAccessSuggestions: updated.canAccessSuggestions,
         },
       };
     }),

@@ -71,6 +71,7 @@ const ALL_PERMISSIONS: PermissionKey[] = [
   "analytics",
   "checkin",
   "settings",
+  "suggestions",
 ];
 
 interface AdminUser {
@@ -88,6 +89,7 @@ interface AdminUser {
   canAccessAnalytics: boolean;
   canAccessCheckin: boolean;
   canAccessSettings: boolean;
+  canAccessSuggestions: boolean;
 }
 
 export default function AdminsPage() {
@@ -216,6 +218,7 @@ export default function AdminsPage() {
     if (admin.canAccessAnalytics) currentPermissions.push("analytics");
     if (admin.canAccessCheckin) currentPermissions.push("checkin");
     if (admin.canAccessSettings) currentPermissions.push("settings");
+    if (admin.canAccessSuggestions) currentPermissions.push("suggestions");
     setSelectedPermissions(currentPermissions);
     setPermissionDialogOpen(true);
   };
@@ -245,6 +248,7 @@ export default function AdminsPage() {
     if (admin.canAccessAnalytics) count++;
     if (admin.canAccessCheckin) count++;
     if (admin.canAccessSettings) count++;
+    if (admin.canAccessSuggestions) count++;
     return count;
   };
 
