@@ -620,6 +620,7 @@ export const adminRouter = createTRPCRouter({
               "analytics",
               "checkin",
               "settings",
+              "suggestions",
             ])
           )
           .optional(),
