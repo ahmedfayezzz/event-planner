@@ -1574,6 +1574,117 @@ export const adminRouter = createTRPCRouter({
     }),
 
   /**
+   * Update any user (super admin only)
+   * For non-manual users, uses comprehensive form with all profile fields
+   */
+  updateUser: superAdminProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        name: z.string().min(1, "الاسم مطلوب"),
+        email: z.string().email("البريد الإلكتروني غير صالح"),
+        phone: z.string().min(1, "رقم الهاتف مطلوب"),
+        companyName: z.string().optional().nullable(),
+        position: z.string().optional().nullable(),
+        activityType: z.string().optional().nullable(),
+        instagram: z.string().optional().nullable(),
+        snapchat: z.string().optional().nullable(),
+        twitter: z.string().optional().nullable(),
+        gender: z.enum(["male", "female"]).optional().nullable(),
+        goal: z.string().optional().nullable(),
+        wantsToHost: z.boolean().optional(),
+        hostingTypes: z.array(z.string()).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+
+      const user = await db.user.findUnique({
+        where: { id: input.userId },
+      });
+
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "المستخدم غير موجود",
+        });
+      }
+
+      // Cannot edit other SUPER_ADMINs (can edit self)
+      if (user.role === "SUPER_ADMIN" && user.id !== session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "لا يمكنك تعديل بيانات مدير رئيسي آخر",
+        });
+      }
+
+      // Check if email is being changed and if it's already in use
+      if (input.email.toLowerCase() !== user.email.toLowerCase()) {
+        const existingEmail = await db.user.findUnique({
+          where: { email: input.email.toLowerCase() },
+        });
+        if (existingEmail) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "البريد الإلكتروني مستخدم بالفعل",
+          });
+        }
+      }
+
+      // Check if phone is being changed and if it's already in use
+      if (input.phone !== user.phone) {
+        const existingPhone = await db.user.findFirst({
+          where: { phone: input.phone, id: { not: input.userId } },
+        });
+        if (existingPhone) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "رقم الهاتف مستخدم بالفعل",
+          });
+        }
+      }
+
+      const updated = await db.user.update({
+        where: { id: input.userId },
+        data: {
+          name: input.name,
+          email: input.email.toLowerCase(),
+          phone: input.phone,
+          companyName: input.companyName ?? null,
+          position: input.position ?? null,
+          activityType: input.activityType ?? null,
+          instagram: input.instagram ?? null,
+          snapchat: input.snapchat ?? null,
+          twitter: input.twitter ?? null,
+          gender: input.gender ?? null,
+          goal: input.goal ?? null,
+          wantsToHost: input.wantsToHost ?? false,
+          hostingTypes: input.hostingTypes ?? [],
+        },
+      });
+
+      return {
+        success: true,
+        user: {
+          id: updated.id,
+          name: updated.name,
+          email: updated.email,
+          phone: updated.phone,
+          companyName: updated.companyName,
+          position: updated.position,
+          activityType: updated.activityType,
+          instagram: updated.instagram,
+          snapchat: updated.snapchat,
+          twitter: updated.twitter,
+          gender: updated.gender,
+          goal: updated.goal,
+          wantsToHost: updated.wantsToHost,
+          hostingTypes: updated.hostingTypes,
+        },
+      };
+    }),
+
+  /**
    * Create a new host manually (admin only)
    */
   createHost: adminProcedure

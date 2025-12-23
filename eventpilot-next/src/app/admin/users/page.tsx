@@ -61,6 +61,9 @@ import { toast } from "sonner";
 import { formatArabicDate, getWhatsAppUrl } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { PERMISSION_LABELS, type PermissionKey } from "@/lib/permissions";
+import { HOSTING_TYPES } from "@/lib/constants";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Search,
   Users,
@@ -155,6 +158,16 @@ export default function AdminUsersPage() {
     phone: string;
     companyName: string;
     position: string;
+    // Extended fields for super admin comprehensive edit
+    isManuallyCreated?: boolean;
+    activityType?: string;
+    instagram?: string;
+    snapchat?: string;
+    twitter?: string;
+    gender?: "male" | "female" | "";
+    goal?: string;
+    wantsToHost?: boolean;
+    hostingTypes?: string[];
   } | null>(null);
 
   const debouncedSearch = useDebounce(search, 300);
@@ -246,6 +259,19 @@ export default function AdminUsersPage() {
     },
   });
 
+  // Super admin comprehensive update mutation
+  const updateUserMutation = api.admin.updateUser.useMutation({
+    onSuccess: () => {
+      toast.success("تم تحديث بيانات المستخدم");
+      refetch();
+      setEditDialogOpen(false);
+      setEditUser(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ");
+    },
+  });
+
   const { refetch: fetchCsv } = api.admin.exportUsers.useQuery(
     { includeInactive: statusFilter !== "active" },
     { enabled: false }
@@ -308,29 +334,119 @@ export default function AdminUsersPage() {
     });
   };
 
-  // Open edit dialog
+  // Query for fetching full user data (for super admin comprehensive edit)
+  const [editUserId, setEditUserId] = useState<string | null>(null);
+  const { data: fullUserData, isLoading: isLoadingUserData } = api.admin.getUserById.useQuery(
+    { id: editUserId! },
+    { enabled: !!editUserId && isSuperAdmin }
+  );
+
+  // Update edit form when full user data is loaded
+  React.useEffect(() => {
+    if (fullUserData && editUserId && isSuperAdmin) {
+      setEditUser({
+        id: fullUserData.id,
+        name: fullUserData.name,
+        email: fullUserData.email,
+        phone: fullUserData.phone,
+        companyName: fullUserData.companyName || "",
+        position: fullUserData.position || "",
+        isManuallyCreated: fullUserData.isManuallyCreated,
+        activityType: fullUserData.activityType || "",
+        instagram: fullUserData.instagram || "",
+        snapchat: fullUserData.snapchat || "",
+        twitter: fullUserData.twitter || "",
+        gender: (fullUserData.gender as "male" | "female" | "") || "",
+        goal: fullUserData.goal || "",
+        wantsToHost: fullUserData.wantsToHost || false,
+        hostingTypes: fullUserData.hostingTypes || [],
+      });
+    }
+  }, [fullUserData, editUserId, isSuperAdmin]);
+
+  // Open edit dialog - needs to fetch full user data for super admin
   const openEditDialog = (user: UserItem) => {
-    setEditUser({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      companyName: user.companyName || "",
-      position: user.position || "",
-    });
-    setEditDialogOpen(true);
+    if (isSuperAdmin) {
+      // Super admin needs full user data for comprehensive edit
+      // Set initial data and trigger query for full data
+      setEditUser({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        companyName: user.companyName || "",
+        position: user.position || "",
+        isManuallyCreated: user.isManuallyCreated,
+        activityType: "",
+        instagram: "",
+        snapchat: "",
+        twitter: "",
+        gender: "",
+        goal: "",
+        wantsToHost: false,
+        hostingTypes: [],
+      });
+      setEditUserId(user.id);
+      setEditDialogOpen(true);
+    } else {
+      // Regular admin uses simple form
+      setEditUser({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        companyName: user.companyName || "",
+        position: user.position || "",
+        isManuallyCreated: user.isManuallyCreated,
+      });
+      setEditDialogOpen(true);
+    }
   };
 
   // Handle edit submit
   const handleEditSubmit = () => {
     if (!editUser) return;
-    updateManualUserMutation.mutate({
-      userId: editUser.id,
-      name: editUser.name,
-      email: editUser.email || undefined,
-      phone: editUser.phone,
-      companyName: editUser.companyName || undefined,
-      position: editUser.position || undefined,
+
+    if (isSuperAdmin) {
+      // Super admin uses comprehensive update
+      updateUserMutation.mutate({
+        userId: editUser.id,
+        name: editUser.name,
+        email: editUser.email,
+        phone: editUser.phone,
+        companyName: editUser.companyName || null,
+        position: editUser.position || null,
+        activityType: editUser.activityType || null,
+        instagram: editUser.instagram || null,
+        snapchat: editUser.snapchat || null,
+        twitter: editUser.twitter || null,
+        gender: editUser.gender || null,
+        goal: editUser.goal || null,
+        wantsToHost: editUser.wantsToHost ?? false,
+        hostingTypes: editUser.hostingTypes ?? [],
+      });
+    } else {
+      // Regular admin uses simple update (only for manual users)
+      updateManualUserMutation.mutate({
+        userId: editUser.id,
+        name: editUser.name,
+        email: editUser.email || undefined,
+        phone: editUser.phone,
+        companyName: editUser.companyName || undefined,
+        position: editUser.position || undefined,
+      });
+    }
+  };
+
+  // Handle hosting type toggle for edit form
+  const handleEditHostingTypeToggle = (type: string) => {
+    if (!editUser) return;
+    const currentTypes = editUser.hostingTypes || [];
+    setEditUser({
+      ...editUser,
+      hostingTypes: currentTypes.includes(type)
+        ? currentTypes.filter((t) => t !== type)
+        : [...currentTypes, type],
     });
   };
 
@@ -745,8 +861,8 @@ export default function AdminUsersPage() {
                                       عرض الملف
                                     </Link>
                                   </DropdownMenuItem>
-                                  {/* Edit option for manually created users only */}
-                                  {user.isManuallyCreated && (
+                                  {/* Edit option: SUPER_ADMIN can edit all users (except other SUPER_ADMINs), regular admin can only edit manual users */}
+                                  {(isSuperAdmin ? (user.role !== "SUPER_ADMIN" || user.id === currentUserId) : user.isManuallyCreated) && (
                                     <DropdownMenuItem onClick={() => openEditDialog(user)}>
                                       <Pencil className="me-2 h-4 w-4" />
                                       تعديل البيانات
@@ -934,8 +1050,8 @@ export default function AdminUsersPage() {
                                       عرض الملف
                                     </Link>
                                   </Button>
-                                  {/* Edit for manually created users */}
-                                  {user.isManuallyCreated && (
+                                  {/* Edit: SUPER_ADMIN can edit all users (except other SUPER_ADMINs), regular admin can only edit manual users */}
+                                  {(isSuperAdmin ? (user.role !== "SUPER_ADMIN" || user.id === currentUserId) : user.isManuallyCreated) && (
                                     <Button
                                       variant="outline"
                                       size="sm"
@@ -1166,78 +1282,259 @@ export default function AdminUsersPage() {
           setEditDialogOpen(open);
           if (!open) {
             setEditUser(null);
+            setEditUserId(null);
           }
         }}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className={isSuperAdmin ? "max-w-2xl max-h-[90vh] overflow-y-auto" : "max-w-md"}>
           <DialogHeader>
             <DialogTitle>تعديل بيانات المستخدم</DialogTitle>
             <DialogDescription>
-              تعديل بيانات المستخدم المضاف يدوياً
+              {isSuperAdmin
+                ? "تعديل جميع بيانات المستخدم"
+                : "تعديل بيانات المستخدم المضاف يدوياً"}
             </DialogDescription>
           </DialogHeader>
           {editUser && (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">الاسم *</Label>
-                <Input
-                  id="edit-name"
-                  value={editUser.name}
-                  onChange={(e) =>
-                    setEditUser({ ...editUser, name: e.target.value })
-                  }
-                  placeholder="الاسم الكامل"
-                />
+            <div className="space-y-6 py-4">
+              {/* Loading indicator for super admin */}
+              {isSuperAdmin && isLoadingUserData && (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="mr-2 text-muted-foreground">جاري تحميل البيانات...</span>
+                </div>
+              )}
+
+              {/* Basic Info Section */}
+              <div className="space-y-4">
+                {isSuperAdmin && (
+                  <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">
+                    المعلومات الأساسية
+                  </h3>
+                )}
+                <div className={isSuperAdmin ? "grid gap-4 sm:grid-cols-2" : "space-y-4"}>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-name">الاسم *</Label>
+                    <Input
+                      id="edit-name"
+                      value={editUser.name}
+                      onChange={(e) =>
+                        setEditUser({ ...editUser, name: e.target.value })
+                      }
+                      placeholder="الاسم الكامل"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-phone">رقم الهاتف *</Label>
+                    <Input
+                      id="edit-phone"
+                      value={editUser.phone}
+                      onChange={(e) =>
+                        setEditUser({ ...editUser, phone: e.target.value })
+                      }
+                      placeholder="05xxxxxxxx"
+                      dir="ltr"
+                      className="text-left"
+                    />
+                  </div>
+                  <div className={isSuperAdmin ? "space-y-2 sm:col-span-2" : "space-y-2"}>
+                    <Label htmlFor="edit-email">البريد الإلكتروني {isSuperAdmin && "*"}</Label>
+                    <Input
+                      id="edit-email"
+                      type="email"
+                      value={editUser.email}
+                      onChange={(e) =>
+                        setEditUser({ ...editUser, email: e.target.value })
+                      }
+                      placeholder="example@domain.com"
+                      dir="ltr"
+                      className="text-left"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-phone">رقم الهاتف *</Label>
-                <Input
-                  id="edit-phone"
-                  value={editUser.phone}
-                  onChange={(e) =>
-                    setEditUser({ ...editUser, phone: e.target.value })
-                  }
-                  placeholder="05xxxxxxxx"
-                  dir="ltr"
-                  className="text-left"
-                />
+
+              {/* Professional Info Section */}
+              <div className="space-y-4">
+                {isSuperAdmin && (
+                  <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">
+                    المعلومات المهنية
+                  </h3>
+                )}
+                <div className={isSuperAdmin ? "grid gap-4 sm:grid-cols-2" : "space-y-4"}>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-company">الشركة</Label>
+                    <Input
+                      id="edit-company"
+                      value={editUser.companyName}
+                      onChange={(e) =>
+                        setEditUser({ ...editUser, companyName: e.target.value })
+                      }
+                      placeholder="اسم الشركة"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-position">المنصب</Label>
+                    <Input
+                      id="edit-position"
+                      value={editUser.position}
+                      onChange={(e) =>
+                        setEditUser({ ...editUser, position: e.target.value })
+                      }
+                      placeholder="المسمى الوظيفي"
+                    />
+                  </div>
+                  {isSuperAdmin && (
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="edit-activity">نوع النشاط</Label>
+                      <Input
+                        id="edit-activity"
+                        value={editUser.activityType || ""}
+                        onChange={(e) =>
+                          setEditUser({ ...editUser, activityType: e.target.value })
+                        }
+                        placeholder="نوع النشاط التجاري"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-email">البريد الإلكتروني</Label>
-                <Input
-                  id="edit-email"
-                  type="email"
-                  value={editUser.email}
-                  onChange={(e) =>
-                    setEditUser({ ...editUser, email: e.target.value })
-                  }
-                  placeholder="example@domain.com"
-                  dir="ltr"
-                  className="text-left"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-company">الشركة</Label>
-                <Input
-                  id="edit-company"
-                  value={editUser.companyName}
-                  onChange={(e) =>
-                    setEditUser({ ...editUser, companyName: e.target.value })
-                  }
-                  placeholder="اسم الشركة"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-position">المنصب</Label>
-                <Input
-                  id="edit-position"
-                  value={editUser.position}
-                  onChange={(e) =>
-                    setEditUser({ ...editUser, position: e.target.value })
-                  }
-                  placeholder="المسمى الوظيفي"
-                />
-              </div>
+
+              {/* Super Admin only sections */}
+              {isSuperAdmin && (
+                <>
+                  {/* Social Media Section */}
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">
+                      التواصل الاجتماعي
+                    </h3>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-instagram">Instagram</Label>
+                        <Input
+                          id="edit-instagram"
+                          value={editUser.instagram || ""}
+                          onChange={(e) =>
+                            setEditUser({ ...editUser, instagram: e.target.value })
+                          }
+                          placeholder="اسم المستخدم"
+                          dir="ltr"
+                          className="text-left"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-snapchat">Snapchat</Label>
+                        <Input
+                          id="edit-snapchat"
+                          value={editUser.snapchat || ""}
+                          onChange={(e) =>
+                            setEditUser({ ...editUser, snapchat: e.target.value })
+                          }
+                          placeholder="اسم المستخدم"
+                          dir="ltr"
+                          className="text-left"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-twitter">X (Twitter)</Label>
+                        <Input
+                          id="edit-twitter"
+                          value={editUser.twitter || ""}
+                          onChange={(e) =>
+                            setEditUser({ ...editUser, twitter: e.target.value })
+                          }
+                          placeholder="اسم المستخدم"
+                          dir="ltr"
+                          className="text-left"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Personal Info Section */}
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">
+                      معلومات شخصية
+                    </h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-gender">الجنس</Label>
+                        <Select
+                          value={editUser.gender || "none"}
+                          onValueChange={(value) =>
+                            setEditUser({
+                              ...editUser,
+                              gender: value === "none" ? "" : (value as "male" | "female"),
+                            })
+                          }
+                        >
+                          <SelectTrigger id="edit-gender">
+                            <SelectValue placeholder="اختر الجنس" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">غير محدد</SelectItem>
+                            <SelectItem value="male">ذكر</SelectItem>
+                            <SelectItem value="female">أنثى</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-goal">الهدف</Label>
+                      <Textarea
+                        id="edit-goal"
+                        value={editUser.goal || ""}
+                        onChange={(e) =>
+                          setEditUser({ ...editUser, goal: e.target.value })
+                        }
+                        placeholder="الهدف من الانضمام..."
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Hosting Section */}
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">
+                      الضيافة
+                    </h3>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="edit-wants-host" className="cursor-pointer">
+                        يرغب بتقديم الضيافة
+                      </Label>
+                      <Switch
+                        id="edit-wants-host"
+                        checked={editUser.wantsToHost || false}
+                        onCheckedChange={(checked) =>
+                          setEditUser({ ...editUser, wantsToHost: checked })
+                        }
+                      />
+                    </div>
+                    {editUser.wantsToHost && (
+                      <div className="space-y-2">
+                        <Label>أنواع الضيافة</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {HOSTING_TYPES.map((type) => (
+                            <div key={type.value} className="flex items-center space-x-2 space-x-reverse">
+                              <Checkbox
+                                id={`edit-hosting-${type.value}`}
+                                checked={(editUser.hostingTypes || []).includes(type.value)}
+                                onCheckedChange={() => handleEditHostingTypeToggle(type.value)}
+                              />
+                              <Label
+                                htmlFor={`edit-hosting-${type.value}`}
+                                className="text-sm cursor-pointer"
+                              >
+                                {type.label}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
           <DialogFooter className="gap-2">
@@ -1251,11 +1548,13 @@ export default function AdminUsersPage() {
               onClick={handleEditSubmit}
               disabled={
                 updateManualUserMutation.isPending ||
+                updateUserMutation.isPending ||
                 !editUser?.name ||
-                !editUser?.phone
+                !editUser?.phone ||
+                (isSuperAdmin && !editUser?.email)
               }
             >
-              {updateManualUserMutation.isPending ? (
+              {(updateManualUserMutation.isPending || updateUserMutation.isPending) ? (
                 <Loader2 className="me-2 h-4 w-4 animate-spin" />
               ) : (
                 <Pencil className="me-2 h-4 w-4" />

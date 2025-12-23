@@ -2,6 +2,7 @@
 
 import React, { use, useRef, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { api } from "@/trpc/react";
 import { useExpandableRows } from "@/hooks/use-expandable-rows";
 import { cn } from "@/lib/utils";
@@ -9,6 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -17,11 +23,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { UserLabelManager } from "@/components/admin/user-label-manager";
 import { UserNotes } from "@/components/admin/user-notes";
 import { UserAvatar } from "@/components/user-avatar";
 import { formatArabicDate } from "@/lib/utils";
 import { toast } from "sonner";
+import { HOSTING_TYPES } from "@/lib/constants";
 import {
   ArrowRight,
   User,
@@ -44,7 +66,25 @@ import {
   Camera,
   Loader2,
   Trash2,
+  Pencil,
 } from "lucide-react";
+
+// Edit form data type for comprehensive edit
+interface EditFormData {
+  name: string;
+  email: string;
+  phone: string;
+  companyName: string;
+  position: string;
+  activityType: string;
+  instagram: string;
+  snapchat: string;
+  twitter: string;
+  gender: "male" | "female" | "";
+  goal: string;
+  wantsToHost: boolean;
+  hostingTypes: string[];
+}
 
 export default function UserProfilePage({
   params,
@@ -52,9 +92,17 @@ export default function UserProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const { data: session } = useSession();
+  const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
+  const currentUserId = session?.user?.id;
+
   const { isExpanded, toggleRow } = useExpandableRows();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState<EditFormData | null>(null);
 
   const { data: user, isLoading, refetch } = api.admin.getUserById.useQuery({ id });
 
@@ -137,6 +185,106 @@ export default function UserProfilePage({
       console.error("Remove avatar failed:", error);
     }
   };
+
+  // Edit mutations
+  const updateUserMutation = api.admin.updateUser.useMutation({
+    onSuccess: () => {
+      toast.success("تم تحديث بيانات المستخدم");
+      refetch();
+      setEditDialogOpen(false);
+      setEditForm(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ");
+    },
+  });
+
+  const updateManualUserMutation = api.admin.updateManualUser.useMutation({
+    onSuccess: () => {
+      toast.success("تم تحديث بيانات المستخدم");
+      refetch();
+      setEditDialogOpen(false);
+      setEditForm(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ");
+    },
+  });
+
+  // Open edit dialog
+  const openEditDialog = () => {
+    if (!user) return;
+    setEditForm({
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      companyName: user.companyName || "",
+      position: user.position || "",
+      activityType: user.activityType || "",
+      instagram: user.instagram || "",
+      snapchat: user.snapchat || "",
+      twitter: user.twitter || "",
+      gender: (user.gender as "male" | "female" | "") || "",
+      goal: user.goal || "",
+      wantsToHost: user.wantsToHost || false,
+      hostingTypes: user.hostingTypes || [],
+    });
+    setEditDialogOpen(true);
+  };
+
+  // Handle edit form submit
+  const handleEditSubmit = () => {
+    if (!editForm || !user) return;
+
+    if (isSuperAdmin) {
+      // Super admin uses comprehensive update
+      updateUserMutation.mutate({
+        userId: user.id,
+        name: editForm.name,
+        email: editForm.email,
+        phone: editForm.phone,
+        companyName: editForm.companyName || null,
+        position: editForm.position || null,
+        activityType: editForm.activityType || null,
+        instagram: editForm.instagram || null,
+        snapchat: editForm.snapchat || null,
+        twitter: editForm.twitter || null,
+        gender: editForm.gender || null,
+        goal: editForm.goal || null,
+        wantsToHost: editForm.wantsToHost,
+        hostingTypes: editForm.hostingTypes,
+      });
+    } else {
+      // Regular admin uses simple update (only for manual users)
+      updateManualUserMutation.mutate({
+        userId: user.id,
+        name: editForm.name,
+        email: editForm.email || undefined,
+        phone: editForm.phone,
+        companyName: editForm.companyName || undefined,
+        position: editForm.position || undefined,
+      });
+    }
+  };
+
+  // Handle hosting type toggle
+  const handleHostingTypeToggle = (type: string) => {
+    if (!editForm) return;
+    setEditForm({
+      ...editForm,
+      hostingTypes: editForm.hostingTypes.includes(type)
+        ? editForm.hostingTypes.filter((t) => t !== type)
+        : [...editForm.hostingTypes, type],
+    });
+  };
+
+  // Determine if edit button should be visible
+  const canEdit = user && (
+    // Super admin can edit any user except other super admins (can edit self)
+    (isSuperAdmin && (user.role !== "SUPER_ADMIN" || user.id === currentUserId)) ||
+    // Regular admin can only edit manually created users
+    (!isSuperAdmin && user.isManuallyCreated)
+  );
 
   if (isLoading) {
     return (
@@ -252,6 +400,13 @@ export default function UserProfilePage({
             </div>
           </div>
         </div>
+        {/* Edit button */}
+        {canEdit && (
+          <Button variant="outline" onClick={openEditDialog}>
+            <Pencil className="me-2 h-4 w-4" />
+            تعديل البيانات
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -612,6 +767,283 @@ export default function UserProfilePage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit User Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) {
+            setEditForm(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>تعديل بيانات المستخدم</DialogTitle>
+            <DialogDescription>
+              {isSuperAdmin
+                ? "تعديل جميع بيانات المستخدم"
+                : "تعديل بيانات المستخدم المضاف يدوياً"}
+            </DialogDescription>
+          </DialogHeader>
+          {editForm && (
+            <div className="space-y-6 py-4">
+              {/* Basic Info Section */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">
+                  المعلومات الأساسية
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-name">الاسم *</Label>
+                    <Input
+                      id="edit-name"
+                      value={editForm.name}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, name: e.target.value })
+                      }
+                      placeholder="الاسم الكامل"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-phone">رقم الهاتف *</Label>
+                    <Input
+                      id="edit-phone"
+                      value={editForm.phone}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, phone: e.target.value })
+                      }
+                      placeholder="05xxxxxxxx"
+                      dir="ltr"
+                      className="text-left"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="edit-email">البريد الإلكتروني *</Label>
+                    <Input
+                      id="edit-email"
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, email: e.target.value })
+                      }
+                      placeholder="example@domain.com"
+                      dir="ltr"
+                      className="text-left"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional Info Section */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">
+                  المعلومات المهنية
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-company">الشركة</Label>
+                    <Input
+                      id="edit-company"
+                      value={editForm.companyName}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, companyName: e.target.value })
+                      }
+                      placeholder="اسم الشركة"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-position">المنصب</Label>
+                    <Input
+                      id="edit-position"
+                      value={editForm.position}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, position: e.target.value })
+                      }
+                      placeholder="المسمى الوظيفي"
+                    />
+                  </div>
+                  {isSuperAdmin && (
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="edit-activity">نوع النشاط</Label>
+                      <Input
+                        id="edit-activity"
+                        value={editForm.activityType}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, activityType: e.target.value })
+                        }
+                        placeholder="نوع النشاط التجاري"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Super Admin only sections */}
+              {isSuperAdmin && (
+                <>
+                  {/* Social Media Section */}
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">
+                      التواصل الاجتماعي
+                    </h3>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-instagram">Instagram</Label>
+                        <Input
+                          id="edit-instagram"
+                          value={editForm.instagram}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, instagram: e.target.value })
+                          }
+                          placeholder="اسم المستخدم"
+                          dir="ltr"
+                          className="text-left"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-snapchat">Snapchat</Label>
+                        <Input
+                          id="edit-snapchat"
+                          value={editForm.snapchat}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, snapchat: e.target.value })
+                          }
+                          placeholder="اسم المستخدم"
+                          dir="ltr"
+                          className="text-left"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-twitter">X (Twitter)</Label>
+                        <Input
+                          id="edit-twitter"
+                          value={editForm.twitter}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, twitter: e.target.value })
+                          }
+                          placeholder="اسم المستخدم"
+                          dir="ltr"
+                          className="text-left"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Personal Info Section */}
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">
+                      معلومات شخصية
+                    </h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-gender">الجنس</Label>
+                        <Select
+                          value={editForm.gender || "none"}
+                          onValueChange={(value) =>
+                            setEditForm({
+                              ...editForm,
+                              gender: value === "none" ? "" : (value as "male" | "female"),
+                            })
+                          }
+                        >
+                          <SelectTrigger id="edit-gender">
+                            <SelectValue placeholder="اختر الجنس" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">غير محدد</SelectItem>
+                            <SelectItem value="male">ذكر</SelectItem>
+                            <SelectItem value="female">أنثى</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-goal">الهدف</Label>
+                      <Textarea
+                        id="edit-goal"
+                        value={editForm.goal}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, goal: e.target.value })
+                        }
+                        placeholder="الهدف من الانضمام..."
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Hosting Section */}
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">
+                      الضيافة
+                    </h3>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="edit-wants-host" className="cursor-pointer">
+                        يرغب بتقديم الضيافة
+                      </Label>
+                      <Switch
+                        id="edit-wants-host"
+                        checked={editForm.wantsToHost}
+                        onCheckedChange={(checked) =>
+                          setEditForm({ ...editForm, wantsToHost: checked })
+                        }
+                      />
+                    </div>
+                    {editForm.wantsToHost && (
+                      <div className="space-y-2">
+                        <Label>أنواع الضيافة</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {HOSTING_TYPES.map((type) => (
+                            <div key={type.value} className="flex items-center space-x-2 space-x-reverse">
+                              <Checkbox
+                                id={`hosting-${type.value}`}
+                                checked={editForm.hostingTypes.includes(type.value)}
+                                onCheckedChange={() => handleHostingTypeToggle(type.value)}
+                              />
+                              <Label
+                                htmlFor={`hosting-${type.value}`}
+                                className="text-sm cursor-pointer"
+                              >
+                                {type.label}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleEditSubmit}
+              disabled={
+                updateUserMutation.isPending ||
+                updateManualUserMutation.isPending ||
+                !editForm?.name ||
+                !editForm?.phone ||
+                !editForm?.email
+              }
+            >
+              {(updateUserMutation.isPending || updateManualUserMutation.isPending) ? (
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Pencil className="me-2 h-4 w-4" />
+              )}
+              حفظ التعديلات
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
