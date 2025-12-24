@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
 import { Mail, Phone, Building2, Briefcase, Instagram, Twitter, Edit, Calendar, Clock, MapPin, Users, CalendarCheck, ExternalLink } from "lucide-react";
+import { UserAvatar } from "@/components/user-avatar";
 
 interface RegistrationItem {
   id: string;
@@ -53,9 +54,13 @@ export default function UserRegistrationsPage() {
         <div className="container relative z-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <div className="h-20 w-20 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-3xl font-bold text-accent shadow-xl">
-                {dashboard?.user.name?.charAt(0).toUpperCase()}
-              </div>
+              <UserAvatar
+                avatarUrl={dashboard?.user.avatarUrl}
+                name={dashboard?.user.name}
+                size="xl"
+                variant="accent"
+                className="rounded-2xl border-2 border-white/20 shadow-xl"
+              />
               <div>
                 <h1 className="text-3xl font-bold">مرحباً، {dashboard?.user.name}</h1>
                 <p className="text-white/80 mt-1">تسجيلاتي في الأحداث</p>

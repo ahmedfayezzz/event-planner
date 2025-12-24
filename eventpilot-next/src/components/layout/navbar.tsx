@@ -18,10 +18,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Menu } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { SuggestionDialog } from "@/components/suggestions/suggestion-dialog";
+import { UserAvatar } from "@/components/user-avatar";
 
 export function Navbar() {
   const { data: session, status } = useSession();
@@ -38,14 +38,6 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   return (
     <nav
@@ -104,13 +96,14 @@ export function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="relative h-9 w-9 rounded-full hover:bg-primary/10"
+                    className="relative h-9 w-9 rounded-full hover:bg-primary/10 p-0"
                   >
-                    <Avatar className="h-9 w-9 border-2 border-primary/20">
-                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                        {getInitials(session.user?.name || "U")}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      avatarUrl={session.user?.avatarUrl}
+                      name={session.user?.name}
+                      size="sm"
+                      className="border-2 border-primary/20"
+                    />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -203,11 +196,12 @@ export function Navbar() {
                   {/* User Info if logged in */}
                   {session && (
                     <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-lg mb-2">
-                      <Avatar className="h-12 w-12 border-2 border-primary/20">
-                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                          {getInitials(session.user?.name || "U")}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        avatarUrl={session.user?.avatarUrl}
+                        name={session.user?.name}
+                        size="lg"
+                        className="border-2 border-primary/20"
+                      />
                       <div className="flex flex-col space-y-1 leading-none">
                         <p className="font-medium">{session.user?.name}</p>
                         <p className="text-xs text-muted-foreground">

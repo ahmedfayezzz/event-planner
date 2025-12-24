@@ -8,7 +8,7 @@ import { useSession, signOut } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/user-avatar";
 import {
   Sheet,
   SheetContent,
@@ -175,14 +175,6 @@ export default function AdminLayout({
     return true;
   });
 
-  const userInitials =
-    session?.user?.name
-      ?.split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2) || "AD";
-
   return (
     <TooltipProvider delayDuration={0}>
       <div className="min-h-screen flex flex-col">
@@ -249,22 +241,22 @@ export default function AdminLayout({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-full h-9 w-9"
+                    className="rounded-full h-9 w-9 p-0"
                   >
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      avatarUrl={session?.user?.avatarUrl}
+                      name={session?.user?.name}
+                      size="sm"
+                    />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
                   <div className="flex items-center gap-2 p-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      avatarUrl={session?.user?.avatarUrl}
+                      name={session?.user?.name}
+                      size="sm"
+                    />
                     <div className="flex flex-col space-y-0.5">
                       <p className="text-sm font-medium">{session?.user?.name}</p>
                       <p className="text-xs text-muted-foreground truncate">

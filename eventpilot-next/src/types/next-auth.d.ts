@@ -6,6 +6,7 @@ declare module "next-auth" {
     user: {
       id: string;
       role: "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN";
+      avatarUrl?: string | null;
       // Admin permissions
       canAccessDashboard: boolean;
       canAccessSessions: boolean;
@@ -19,6 +20,7 @@ declare module "next-auth" {
 
   interface User {
     role: "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN";
+    avatarUrl?: string | null;
     canAccessDashboard: boolean;
     canAccessSessions: boolean;
     canAccessUsers: boolean;
@@ -33,6 +35,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN";
+    avatarUrl?: string | null;
     canAccessDashboard: boolean;
     canAccessSessions: boolean;
     canAccessUsers: boolean;
@@ -47,6 +50,7 @@ declare module "next-auth/jwt" {
 declare module "@auth/core/adapters" {
   interface AdapterUser {
     role: "USER" | "GUEST" | "ADMIN" | "SUPER_ADMIN";
+    avatarUrl?: string | null;
     canAccessDashboard: boolean;
     canAccessSessions: boolean;
     canAccessUsers: boolean;

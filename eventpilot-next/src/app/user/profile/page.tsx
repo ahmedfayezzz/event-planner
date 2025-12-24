@@ -109,7 +109,7 @@ function SponsorLogo({
 
 export default function UserProfilePage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const utils = api.useUtils();
@@ -121,8 +121,10 @@ export default function UserProfilePage() {
     });
 
   const updateProfileMutation = api.user.updateProfile.useMutation({
-    onSuccess: () => {
+    onSuccess: async (_data, variables) => {
       toast.success("تم تحديث الملف الشخصي بنجاح");
+      // Update session so changes reflect immediately in navbar/header
+      await updateSession({ name: variables.name });
     },
     onError: (error) => {
       toast.error(error.message || "حدث خطأ أثناء تحديث الملف الشخصي");
@@ -132,15 +134,19 @@ export default function UserProfilePage() {
   // Avatar upload mutations
   const uploadAvatarMutation = api.upload.uploadUserAvatar.useMutation();
   const confirmAvatarMutation = api.upload.confirmUserAvatar.useMutation({
-    onSuccess: () => {
+    onSuccess: async (data) => {
       toast.success("تم تحديث الصورة الشخصية");
       utils.user.getMyProfile.invalidate();
+      // Update session so avatar reflects immediately in navbar/header
+      await updateSession({ avatarUrl: data.imageUrl });
     },
   });
   const removeAvatarMutation = api.upload.removeUserAvatar.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("تم حذف الصورة الشخصية");
       utils.user.getMyProfile.invalidate();
+      // Update session so avatar removal reflects immediately in navbar/header
+      await updateSession({ avatarUrl: null });
     },
   });
 
