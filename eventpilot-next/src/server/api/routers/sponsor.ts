@@ -22,6 +22,7 @@ export const sponsorRouter = createTRPCRouter({
         type: z.enum(["person", "company"]).optional(),
         status: z.enum(["new", "contacted", "sponsored", "interested_again", "interested_permanent"]).optional(),
         isActive: z.boolean().optional(),
+        isArchived: z.boolean().optional(),
         limit: z.number().min(1).max(100).default(50),
         cursor: z.string().optional(),
       }).optional()
@@ -56,6 +57,13 @@ export const sponsorRouter = createTRPCRouter({
       } else {
         // By default, only show active sponsors
         where.isActive = true;
+      }
+
+      // Filter by archived status (default: show non-archived)
+      if (input?.isArchived !== undefined) {
+        where.isArchived = input.isArchived;
+      } else {
+        where.isArchived = false;
       }
 
       const sponsors = await db.sponsor.findMany({
@@ -122,9 +130,9 @@ export const sponsorRouter = createTRPCRouter({
   getSponsorInsights: adminProcedure.query(async ({ ctx }) => {
     const { db } = ctx;
 
-    // Get all active sponsors with their sponsorships
+    // Get all active, non-archived sponsors with their sponsorships
     const sponsors = await db.sponsor.findMany({
-      where: { isActive: true },
+      where: { isActive: true, isArchived: false },
       select: {
         id: true,
         type: true,
@@ -311,7 +319,7 @@ export const sponsorRouter = createTRPCRouter({
       const { db } = ctx;
 
       const sponsors = await db.sponsor.findMany({
-        where: { userId: input.userId, isActive: true },
+        where: { userId: input.userId, isActive: true, isArchived: false },
         include: {
           eventSponsorships: {
             include: {
@@ -466,6 +474,74 @@ export const sponsorRouter = createTRPCRouter({
       await db.sponsor.update({
         where: { id: input.id },
         data: { isActive: false },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Archive a sponsor (admin only)
+   */
+  archive: adminProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const existing = await db.sponsor.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الراعي غير موجود",
+        });
+      }
+
+      if (existing.isArchived) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "الراعي مؤرشف بالفعل",
+        });
+      }
+
+      await db.sponsor.update({
+        where: { id: input.id },
+        data: { isArchived: true },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Unarchive a sponsor (admin only)
+   */
+  unarchive: adminProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const existing = await db.sponsor.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الراعي غير موجود",
+        });
+      }
+
+      if (!existing.isArchived) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "الراعي غير مؤرشف",
+        });
+      }
+
+      await db.sponsor.update({
+        where: { id: input.id },
+        data: { isArchived: false },
       });
 
       return { success: true };
@@ -782,7 +858,7 @@ export const sponsorRouter = createTRPCRouter({
     const { db } = ctx;
 
     const sponsors = await db.sponsor.findMany({
-      where: { isActive: true },
+      where: { isActive: true, isArchived: false },
       include: {
         user: {
           select: {
@@ -898,6 +974,7 @@ export const sponsorRouter = createTRPCRouter({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const where: Record<string, any> = {
         isActive: true,
+        isArchived: false,
       };
 
       if (input.search) {

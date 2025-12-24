@@ -94,6 +94,8 @@ import {
   Clock,
   CheckCircle,
   ArrowRight,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -142,6 +144,7 @@ export default function AdminSponsorsPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sponsorshipTypeFilter, setSponsorshipTypeFilter] = useState<string>("all");
+  const [showArchived, setShowArchived] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -195,6 +198,7 @@ export default function AdminSponsorsPage() {
       search: debouncedSearch || undefined,
       type: typeFilter !== "all" ? (typeFilter as "person" | "company") : undefined,
       status: statusFilter !== "all" ? (statusFilter as "new" | "contacted" | "sponsored" | "interested_again" | "interested_permanent") : undefined,
+      isArchived: showArchived,
       limit: 50,
     },
     {
@@ -293,6 +297,30 @@ export default function AdminSponsorsPage() {
     },
     onError: (error) => {
       toast.error(error.message || "حدث خطأ أثناء إلغاء الربط");
+    },
+  });
+
+  // Archive sponsor mutation
+  const archiveSponsor = api.sponsor.archive.useMutation({
+    onSuccess: () => {
+      toast.success("تم أرشفة الراعي بنجاح");
+      utils.sponsor.getAll.invalidate();
+      utils.sponsor.getSponsorInsights.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء أرشفة الراعي");
+    },
+  });
+
+  // Unarchive sponsor mutation
+  const unarchiveSponsor = api.sponsor.unarchive.useMutation({
+    onSuccess: () => {
+      toast.success("تم استعادة الراعي بنجاح");
+      utils.sponsor.getAll.invalidate();
+      utils.sponsor.getSponsorInsights.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء استعادة الراعي");
     },
   });
 
@@ -741,6 +769,34 @@ export default function AdminSponsorsPage() {
 
         {/* List Tab */}
         <TabsContent value="list" className="space-y-6">
+          {/* Active/Archived Tabs */}
+          <div className="flex items-center gap-4 border-b pb-4">
+            <button
+              onClick={() => setShowArchived(false)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                !showArchived
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted hover:bg-muted/80"
+              )}
+            >
+              <Users className="h-4 w-4" />
+              الرعاة النشطين
+            </button>
+            <button
+              onClick={() => setShowArchived(true)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                showArchived
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted hover:bg-muted/80"
+              )}
+            >
+              <Archive className="h-4 w-4" />
+              الأرشيف
+            </button>
+          </div>
+
           {/* Filters */}
           <Card>
         <CardContent className="pt-6">
@@ -1124,6 +1180,26 @@ export default function AdminSponsorsPage() {
                                     إرسال واتساب
                                   </DropdownMenuItem>
                                 )}
+                                <DropdownMenuSeparator />
+                                {showArchived ? (
+                                  <DropdownMenuItem
+                                    className="text-blue-600"
+                                    onClick={() => unarchiveSponsor.mutate({ id: sponsor.id })}
+                                    disabled={unarchiveSponsor.isPending}
+                                  >
+                                    <ArchiveRestore className="h-4 w-4 me-2" />
+                                    استعادة من الأرشيف
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    className="text-orange-600"
+                                    onClick={() => archiveSponsor.mutate({ id: sponsor.id })}
+                                    disabled={archiveSponsor.isPending}
+                                  >
+                                    <Archive className="h-4 w-4 me-2" />
+                                    أرشفة
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -1277,6 +1353,29 @@ export default function AdminSponsorsPage() {
                                       >
                                         <MessageCircle className="ml-1 h-3 w-3" />
                                         واتساب
+                                      </Button>
+                                    )}
+                                    {showArchived ? (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-blue-500 hover:text-blue-600"
+                                        onClick={() => unarchiveSponsor.mutate({ id: sponsor.id })}
+                                        disabled={unarchiveSponsor.isPending}
+                                      >
+                                        <ArchiveRestore className="ml-1 h-3 w-3" />
+                                        استعادة
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-orange-500 hover:text-orange-600"
+                                        onClick={() => archiveSponsor.mutate({ id: sponsor.id })}
+                                        disabled={archiveSponsor.isPending}
+                                      >
+                                        <Archive className="ml-1 h-3 w-3" />
+                                        أرشفة
                                       </Button>
                                     )}
                                   </div>

@@ -269,6 +269,7 @@ model Sponsor {
   user                 User?     @relation(fields: [userId], references: [id])
 
   isActive             Boolean   @default(true)
+  isArchived           Boolean   @default(false)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -280,6 +281,7 @@ model Sponsor {
   @@index([userId])
   @@index([type])
   @@index([status])
+  @@index([isArchived])
 }
 
 // NEW: Links sponsors to events (replaces EventCatering)
