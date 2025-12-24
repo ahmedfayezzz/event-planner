@@ -2,23 +2,32 @@
 - duplicate companion issue
 - email log system
 - resend confirmation email
-- calender for sponsors
 
-- make sponsor logos clicable
-
+- when a user edits registration to add a companion, if user is already acceoted, companion shouldn't be accepted automatically
+- companion added in this case should be registered as a guest (already done)
+- companio email should only be sent to the user email, not companion email
+- only send confirmation email to companion no need for registration
 - provide a way to register as a sponsor from public site
 
-<!-- - add laft logo to session page right after the title laft-logo.png -->
+high priority:
+- manual email sending
+- 
 
-<!-- - add labels to session attendees list -->
 
-- make manual registration responsive
+sponsors:
+- calender for sponsors
+- add custom background color to sponosr logo
+- make sponsor logos clickable in public session details page, qr-pdf and invitation pdf (website or social media while giving priority to website and then to whatever social media is available)
+- add a way to search sponsors by account name (user should be able to search by linked account name in sponsors table)
+- show linked sponsors to user in user profile (sponsors linked to user accounts)
+- add sponsor name
+- add a way to archive sponsors
+- sponosr search by text arabic support (ا أ)
+- date of last sponosrship in sponsors list is not right
+- sponsor attachments
 
-<!-- - invitation email user not showing all -->
-<!-- - filter by user type and label -->
 
-<!-- - give admin a way to order sponsorships on an event -->
-
+- fix hyper link on invitation pdf
 
 - check slug when session titles have similar names
 
@@ -26,5 +35,4 @@
 
 - whatsapp with qr code
 
-- manual email sending
 

@@ -490,13 +490,40 @@ export default function AdminSponsorsPage() {
     return <User className="h-4 w-4" />;
   };
 
+  // Helper to check if value is a custom hex color
+  const isHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value);
+
+  // Background style classes for logos
+  const logoBgClasses: Record<string, string> = {
+    transparent: "bg-muted",
+    dark: "bg-gray-900",
+    light: "bg-white",
+    primary: "bg-primary",
+  };
+
   // Component to display sponsor logo with presigned URL support
-  const SponsorLogo = ({ logoUrl, name, type }: { logoUrl: string | null; name: string; type: string }) => {
+  const SponsorLogo = ({
+    logoUrl,
+    name,
+    type,
+    logoBackground = "transparent",
+  }: {
+    logoUrl: string | null;
+    name: string;
+    type: string;
+    logoBackground?: string;
+  }) => {
     const { url: presignedUrl, isLoading } = usePresignedUrl(logoUrl);
+
+    const isCustomColor = isHexColor(logoBackground);
+    const bgClass = isCustomColor ? "" : (logoBgClasses[logoBackground] || logoBgClasses.transparent);
 
     if (logoUrl && presignedUrl) {
       return (
-        <div className="relative h-10 w-10 rounded-full overflow-hidden border bg-muted flex-shrink-0">
+        <div
+          className={cn("relative h-10 w-10 rounded-full overflow-hidden border flex-shrink-0", bgClass)}
+          style={isCustomColor ? { backgroundColor: logoBackground } : undefined}
+        >
           {isLoading ? (
             <Skeleton className="h-full w-full" />
           ) : (
@@ -722,7 +749,7 @@ export default function AdminSponsorsPage() {
             <div className="relative flex-1 md:flex-[2]">
               <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="بحث بالاسم أو البريد أو الهاتف..."
+                placeholder="بحث بالاسم أو البريد أو الهاتف أو اسم الحساب المرتبط..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="ps-10"
@@ -840,6 +867,7 @@ export default function AdminSponsorsPage() {
                                 logoUrl={sponsor.logoUrl}
                                 name={sponsor.name}
                                 type={sponsor.type}
+                                logoBackground={sponsor.logoBackground}
                               />
                               <div>
                                 <p className="font-medium hover:underline">

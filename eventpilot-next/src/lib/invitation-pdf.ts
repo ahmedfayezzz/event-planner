@@ -46,7 +46,26 @@ export interface InvitationPdfOptions {
     name: string;
     logoUrl?: string | null;
     type: string;
+    socialMediaLinks?: Record<string, string> | null;
   }>;
+}
+
+/**
+ * Get the primary sponsor link (website first, then social media)
+ */
+function getSponsorLink(socialMediaLinks: Record<string, string> | null | undefined): string | null {
+  if (!socialMediaLinks) return null;
+
+  // Priority order: website > twitter > instagram > linkedin > other
+  const priorityOrder = ["website", "twitter", "instagram", "linkedin"];
+
+  for (const key of priorityOrder) {
+    if (socialMediaLinks[key]) return socialMediaLinks[key];
+  }
+
+  // Return any other available link
+  const values = Object.values(socialMediaLinks).filter(Boolean);
+  return values.length > 0 ? values[0] : null;
 }
 
 // Cache for template
@@ -464,6 +483,37 @@ export async function generateInvitationPdf(
                   width: logoWidth,
                   height: logoHeight,
                 });
+
+                // Add hyperlink if sponsor has a link
+                const sponsorLink = getSponsorLink(sponsor.socialMediaLinks);
+                if (sponsorLink) {
+                  const linkX = cellCenterX - logoWidth / 2;
+                  const linkY = cellCenterY - logoHeight / 2;
+
+                  const actionDict = pdfDoc.context.obj({
+                    Type: "Action",
+                    S: "URI",
+                    URI: PDFString.of(sponsorLink),
+                  });
+
+                  const linkAnnotation = pdfDoc.context.obj({
+                    Type: "Annot",
+                    Subtype: "Link",
+                    Rect: [linkX, linkY, linkX + logoWidth, linkY + logoHeight],
+                    Border: [0, 0, 0],
+                    A: actionDict,
+                  });
+
+                  const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+                  if (existingAnnots) {
+                    existingAnnots.push(linkAnnotation);
+                  } else {
+                    page.node.set(
+                      PDFName.of("Annots"),
+                      pdfDoc.context.obj([linkAnnotation])
+                    );
+                  }
+                }
               } else {
                 throw new Error("Failed to fetch logo");
               }
@@ -487,6 +537,37 @@ export async function generateInvitationPdf(
                 width: nameImageData.width,
                 height: nameImageData.height,
               });
+
+              // Add hyperlink for text fallback if sponsor has a link
+              const sponsorLink = getSponsorLink(sponsor.socialMediaLinks);
+              if (sponsorLink) {
+                const linkX = cellCenterX - nameImageData.width / 2;
+                const linkY = cellCenterY - nameImageData.height / 2;
+
+                const actionDict = pdfDoc.context.obj({
+                  Type: "Action",
+                  S: "URI",
+                  URI: PDFString.of(sponsorLink),
+                });
+
+                const linkAnnotation = pdfDoc.context.obj({
+                  Type: "Annot",
+                  Subtype: "Link",
+                  Rect: [linkX, linkY, linkX + nameImageData.width, linkY + nameImageData.height],
+                  Border: [0, 0, 0],
+                  A: actionDict,
+                });
+
+                const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+                if (existingAnnots) {
+                  existingAnnots.push(linkAnnotation);
+                } else {
+                  page.node.set(
+                    PDFName.of("Annots"),
+                    pdfDoc.context.obj([linkAnnotation])
+                  );
+                }
+              }
             }
           } else {
             // No logo, draw sponsor name
@@ -504,6 +585,37 @@ export async function generateInvitationPdf(
               width: nameImageData.width,
               height: nameImageData.height,
             });
+
+            // Add hyperlink for text if sponsor has a link
+            const sponsorLink = getSponsorLink(sponsor.socialMediaLinks);
+            if (sponsorLink) {
+              const linkX = cellCenterX - nameImageData.width / 2;
+              const linkY = cellCenterY - nameImageData.height / 2;
+
+              const actionDict = pdfDoc.context.obj({
+                Type: "Action",
+                S: "URI",
+                URI: PDFString.of(sponsorLink),
+              });
+
+              const linkAnnotation = pdfDoc.context.obj({
+                Type: "Annot",
+                Subtype: "Link",
+                Rect: [linkX, linkY, linkX + nameImageData.width, linkY + nameImageData.height],
+                Border: [0, 0, 0],
+                A: actionDict,
+              });
+
+              const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+              if (existingAnnots) {
+                existingAnnots.push(linkAnnotation);
+              } else {
+                page.node.set(
+                  PDFName.of("Annots"),
+                  pdfDoc.context.obj([linkAnnotation])
+                );
+              }
+            }
           }
         }
       }

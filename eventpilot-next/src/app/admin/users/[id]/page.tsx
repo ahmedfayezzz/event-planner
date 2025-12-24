@@ -67,7 +67,79 @@ import {
   Loader2,
   Trash2,
   Pencil,
+  HandCoins,
 } from "lucide-react";
+import { usePresignedUrl } from "@/hooks/use-presigned-url";
+import { getSponsorshipTypeLabel, getSponsorTypeLabel } from "@/lib/constants";
+
+// Helper to check if value is a custom hex color
+const isHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value);
+
+// Background style classes for logos
+const logoBgClasses: Record<string, string> = {
+  transparent: "bg-muted",
+  dark: "bg-gray-900",
+  light: "bg-white",
+  primary: "bg-primary",
+};
+
+// Helper to get the primary sponsor link
+function getSponsorLink(socialMediaLinks: Record<string, string> | null | undefined): string | null {
+  if (!socialMediaLinks) return null;
+  const priorityOrder = ["website", "twitter", "instagram", "linkedin"];
+  for (const key of priorityOrder) {
+    if (socialMediaLinks[key]) return socialMediaLinks[key];
+  }
+  const values = Object.values(socialMediaLinks).filter(Boolean);
+  return values.length > 0 ? values[0] : null;
+}
+
+// Sponsor Logo component with presigned URL support
+function SponsorLogo({
+  logoUrl,
+  name,
+  type,
+  logoBackground = "transparent",
+}: {
+  logoUrl: string | null;
+  name: string;
+  type: string;
+  logoBackground?: string;
+}) {
+  const { url: presignedUrl, isLoading } = usePresignedUrl(logoUrl);
+
+  const isCustomColor = isHexColor(logoBackground);
+  const bgClass = isCustomColor ? "" : (logoBgClasses[logoBackground] || logoBgClasses.transparent);
+
+  if (logoUrl && presignedUrl) {
+    return (
+      <div
+        className={`relative h-12 w-12 rounded-lg overflow-hidden border flex-shrink-0 ${bgClass}`}
+        style={isCustomColor ? { backgroundColor: logoBackground } : undefined}
+      >
+        {isLoading ? (
+          <Skeleton className="h-full w-full" />
+        ) : (
+          <img
+            src={presignedUrl}
+            alt={name}
+            className="h-full w-full object-contain p-1"
+          />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+      {type === "company" ? (
+        <Building2 className="h-6 w-6 text-primary/60" />
+      ) : (
+        <User className="h-6 w-6 text-primary/60" />
+      )}
+    </div>
+  );
+}
 
 // Edit form data type for comprehensive edit
 interface EditFormData {
@@ -604,6 +676,83 @@ export default function UserProfilePage({
                 <p className="text-sm text-muted-foreground">لا توجد ملاحظات</p>
               )}
             </div>
+
+            {/* Linked Sponsors */}
+            {user.sponsors && user.sponsors.length > 0 && (
+              <div className="pt-4 border-t">
+                <div className="flex items-center gap-2 mb-3">
+                  <HandCoins className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">الرعايات المرتبطة</span>
+                  <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                    {user.sponsors.length}
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {user.sponsors.map((sponsor) => {
+                    const sponsorLink = getSponsorLink(sponsor.socialMediaLinks as Record<string, string> | null);
+                    return (
+                      <div
+                        key={sponsor.id}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/30"
+                      >
+                        <Link href={`/admin/sponsors/${sponsor.id}`}>
+                          <SponsorLogo
+                            logoUrl={sponsor.logoUrl}
+                            name={sponsor.name}
+                            type={sponsor.type}
+                            logoBackground={sponsor.logoBackground ?? "transparent"}
+                          />
+                        </Link>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Link
+                              href={`/admin/sponsors/${sponsor.id}`}
+                              className="font-medium text-sm hover:underline"
+                            >
+                              {sponsor.name}
+                            </Link>
+                            <Badge variant="outline" className="text-xs">
+                              {getSponsorTypeLabel(sponsor.type)}
+                            </Badge>
+                            {sponsorLink && (
+                              <a
+                                href={sponsorLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {sponsor.sponsorshipTypes.slice(0, 2).map((type) => (
+                              <Badge
+                                key={type}
+                                variant="secondary"
+                                className="text-xs bg-primary/10 text-primary"
+                              >
+                                {getSponsorshipTypeLabel(type)}
+                              </Badge>
+                            ))}
+                            {sponsor.sponsorshipTypes.length > 2 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{sponsor.sponsorshipTypes.length - 2}
+                              </Badge>
+                            )}
+                          </div>
+                          {sponsor.eventSponsorships.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {sponsor.eventSponsorships.length} رعاية
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

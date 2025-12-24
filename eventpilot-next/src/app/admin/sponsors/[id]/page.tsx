@@ -109,6 +109,7 @@ interface SponsorFormData {
   sponsorshipTypes: string[];
   sponsorshipOtherText: string;
   logoUrl: string;
+  logoBackground: string; // Can be preset value or custom hex color
 }
 
 const initialFormData: SponsorFormData = {
@@ -119,7 +120,22 @@ const initialFormData: SponsorFormData = {
   sponsorshipTypes: [],
   sponsorshipOtherText: "",
   logoUrl: "",
+  logoBackground: "transparent",
 };
+
+const LOGO_BACKGROUND_PRESETS = [
+  { value: "transparent", label: "شفاف", color: "bg-transparent border-2 border-dashed" },
+  { value: "dark", label: "داكن", color: "bg-gray-900" },
+  { value: "light", label: "فاتح", color: "bg-white border" },
+  { value: "primary", label: "رئيسي", color: "bg-primary" },
+] as const;
+
+// Helper to check if a value is a preset or custom color
+const isPresetBackground = (value: string) =>
+  LOGO_BACKGROUND_PRESETS.some(p => p.value === value);
+
+// Helper to check if value is a valid hex color
+const isHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value);
 
 export default function SponsorProfilePage({
   params,
@@ -296,6 +312,7 @@ export default function SponsorProfilePage({
       sponsorshipTypes: sponsor.sponsorshipTypes,
       sponsorshipOtherText: sponsor.sponsorshipOtherText || "",
       logoUrl: sponsor.logoUrl || "",
+      logoBackground: sponsor.logoBackground || "transparent",
     });
     setIsEditDialogOpen(true);
   };
@@ -322,6 +339,7 @@ export default function SponsorProfilePage({
       sponsorshipTypes: formData.sponsorshipTypes,
       sponsorshipOtherText: formData.sponsorshipOtherText || null,
       logoUrl: formData.logoUrl || null,
+      logoBackground: formData.logoBackground,
     });
   };
 
@@ -392,6 +410,7 @@ export default function SponsorProfilePage({
               logoUrl={sponsor.logoUrl}
               name={sponsor.name}
               type={sponsor.type}
+              logoBackground={sponsor.logoBackground}
               size="lg"
             />
             <div>
@@ -665,6 +684,7 @@ export default function SponsorProfilePage({
                     logoUrl={sponsor.logoUrl}
                     name={sponsor.name}
                     type={sponsor.type}
+                    logoBackground={sponsor.logoBackground}
                     size="xl"
                   />
                 </div>
@@ -1427,11 +1447,13 @@ function SponsorLogo({
   logoUrl,
   name,
   type,
+  logoBackground = "transparent",
   size = "md",
 }: {
   logoUrl: string | null;
   name: string;
   type: string;
+  logoBackground?: string;
   size?: "md" | "lg" | "xl";
 }) {
   const { url: presignedUrl, isLoading } = usePresignedUrl(logoUrl);
@@ -1448,13 +1470,26 @@ function SponsorLogo({
     xl: "h-8 w-8",
   };
 
+  // Background style classes
+  const bgClasses: Record<string, string> = {
+    transparent: "bg-muted",
+    dark: "bg-gray-900",
+    light: "bg-white",
+    primary: "bg-primary",
+  };
+
+  const isCustomColor = isHexColor(logoBackground);
+  const bgClass = isCustomColor ? "" : (bgClasses[logoBackground] || bgClasses.transparent);
+
   if (logoUrl && presignedUrl) {
     return (
       <div
         className={cn(
-          "relative rounded-lg overflow-hidden border bg-muted flex-shrink-0",
-          sizeClasses[size]
+          "relative rounded-lg overflow-hidden border flex-shrink-0",
+          sizeClasses[size],
+          bgClass
         )}
+        style={isCustomColor ? { backgroundColor: logoBackground } : undefined}
       >
         {isLoading ? (
           <Skeleton className="h-full w-full" />
@@ -1485,20 +1520,37 @@ function SponsorLogo({
   );
 }
 
+// Background style mapping for logo preview
+const LOGO_BG_CLASSES: Record<string, string> = {
+  transparent: "bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%3E%3Crect%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23ccc%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23ccc%22%2F%3E%3C%2Fsvg%3E')]",
+  dark: "bg-gray-900",
+  light: "bg-white",
+  primary: "bg-primary",
+};
+
 // Logo preview component with presigned URL support for form
 function LogoPreview({
   logoUrl,
+  logoBackground = "transparent",
   onRemove,
   disabled,
 }: {
   logoUrl: string;
+  logoBackground?: string;
   onRemove: () => void;
   disabled: boolean;
 }) {
   const { url: presignedUrl, isLoading } = usePresignedUrl(logoUrl);
 
+  // Determine background style
+  const isCustomColor = isHexColor(logoBackground);
+  const bgClass = isCustomColor ? "" : (LOGO_BG_CLASSES[logoBackground] || LOGO_BG_CLASSES.transparent);
+
   return (
-    <div className="relative w-20 h-20 rounded-lg border overflow-hidden bg-muted">
+    <div
+      className={cn("relative w-20 h-20 rounded-lg border overflow-hidden", bgClass)}
+      style={isCustomColor ? { backgroundColor: logoBackground } : undefined}
+    >
       {isLoading ? (
         <Skeleton className="w-full h-full" />
       ) : (
@@ -1616,6 +1668,7 @@ function SponsorForm({
               {formData.logoUrl ? (
                 <LogoPreview
                   logoUrl={formData.logoUrl}
+                  logoBackground={formData.logoBackground}
                   onRemove={handleRemoveLogo}
                   disabled={isPending}
                 />
@@ -1658,6 +1711,70 @@ function SponsorForm({
               </p>
             </div>
           </div>
+          {formData.logoUrl && (
+            <div className="space-y-2">
+              <Label>خلفية الشعار</Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                اختر خلفية مناسبة للشعارات ذات الخلفية الشفافة
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {LOGO_BACKGROUND_PRESETS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, logoBackground: option.value })}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-2 rounded-lg transition-all",
+                      formData.logoBackground === option.value
+                        ? "ring-2 ring-primary ring-offset-2"
+                        : "hover:bg-muted"
+                    )}
+                  >
+                    <div className={cn("w-8 h-8 rounded", option.color)} />
+                    <span className="text-xs">{option.label}</span>
+                  </button>
+                ))}
+                {/* Custom color option */}
+                <div className="flex flex-col items-center gap-1 p-2">
+                  <label
+                    className={cn(
+                      "relative w-8 h-8 rounded cursor-pointer overflow-hidden border-2",
+                      !isPresetBackground(formData.logoBackground)
+                        ? "ring-2 ring-primary ring-offset-2"
+                        : "border-dashed border-muted-foreground/50 hover:border-primary"
+                    )}
+                  >
+                    <input
+                      type="color"
+                      value={isHexColor(formData.logoBackground) ? formData.logoBackground : "#ffffff"}
+                      onChange={(e) => setFormData({ ...formData, logoBackground: e.target.value })}
+                      className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                    />
+                    <div
+                      className="w-full h-full"
+                      style={{
+                        background: isHexColor(formData.logoBackground)
+                          ? formData.logoBackground
+                          : "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
+                      }}
+                    />
+                  </label>
+                  <span className="text-xs">مخصص</span>
+                </div>
+              </div>
+              {isHexColor(formData.logoBackground) && (
+                <div className="flex items-center gap-2 mt-2">
+                  <div
+                    className="w-4 h-4 rounded border"
+                    style={{ backgroundColor: formData.logoBackground }}
+                  />
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {formData.logoBackground}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">

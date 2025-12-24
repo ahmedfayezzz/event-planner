@@ -38,6 +38,8 @@ export const sponsorRouter = createTRPCRouter({
           { name: { contains: normalizedSearch, mode: "insensitive" } },
           { email: { contains: normalizedSearch, mode: "insensitive" } },
           { phone: { contains: normalizedSearch, mode: "insensitive" } },
+          // Search by linked user's name
+          { user: { name: { contains: normalizedSearch, mode: "insensitive" } } },
         ];
       }
 
@@ -340,6 +342,7 @@ export const sponsorRouter = createTRPCRouter({
         type: z.enum(["person", "company"]).default("person"),
         status: z.enum(["new", "contacted", "sponsored", "interested_again", "interested_permanent"]).default("new"),
         logoUrl: z.string().optional().nullable(),
+        logoBackground: z.string().default("transparent"), // Can be preset value or custom hex color
         sponsorshipTypes: z.array(z.string()).default([]),
         sponsorshipOtherText: z.string().optional().nullable(),
         userId: z.string().optional().nullable(),
@@ -370,6 +373,7 @@ export const sponsorRouter = createTRPCRouter({
           type: input.type,
           status: input.status,
           logoUrl: input.logoUrl || null,
+          logoBackground: input.logoBackground,
           sponsorshipTypes: input.sponsorshipTypes,
           sponsorshipOtherText: input.sponsorshipOtherText || null,
           userId: input.userId || null,
@@ -402,6 +406,7 @@ export const sponsorRouter = createTRPCRouter({
         type: z.enum(["person", "company"]).optional(),
         status: z.enum(["new", "contacted", "sponsored", "interested_again", "interested_permanent"]).optional(),
         logoUrl: z.string().optional().nullable(),
+        logoBackground: z.string().optional(), // Can be preset value or custom hex color
         sponsorshipTypes: z.array(z.string()).optional(),
         sponsorshipOtherText: z.string().optional().nullable(),
         isActive: z.boolean().optional(),
@@ -519,6 +524,7 @@ export const sponsorRouter = createTRPCRouter({
               name: true,
               type: true,
               logoUrl: true,
+              logoBackground: true,
             },
           },
         },

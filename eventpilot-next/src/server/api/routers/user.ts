@@ -91,9 +91,30 @@ export const userRouter = createTRPCRouter({
         hostingTypes: true,
         createdAt: true,
         sponsors: {
+          where: { isActive: true },
           select: {
             id: true,
+            name: true,
+            logoUrl: true,
+            logoBackground: true,
+            type: true,
             sponsorshipTypes: true,
+            socialMediaLinks: true,
+            eventSponsorships: {
+              select: {
+                id: true,
+                sponsorshipType: true,
+                session: {
+                  select: {
+                    id: true,
+                    title: true,
+                    date: true,
+                  },
+                },
+              },
+              orderBy: { createdAt: "desc" },
+              take: 5,
+            },
           },
         },
       },

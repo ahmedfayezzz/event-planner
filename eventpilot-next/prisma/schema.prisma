@@ -259,6 +259,7 @@ model Sponsor {
   type                 String    @default("person") // "person" | "company"
   status               String    @default("new") // new, contacted, sponsored, interested_again, interested_permanent
   logoUrl              String?
+  logoBackground       String    @default("transparent") // transparent, dark, light, primary
   sponsorshipTypes     String[]  @default([])
   sponsorshipOtherText String?
   socialMediaLinks     Json?     // { "twitter": "url", "linkedin": "url", ... }

@@ -177,7 +177,9 @@ export const sessionRouter = createTRPCRouter({
                   id: true,
                   name: true,
                   logoUrl: true,
+                  logoBackground: true,
                   type: true,
+                  socialMediaLinks: true,
                 },
               },
             },
@@ -209,7 +211,9 @@ export const sessionRouter = createTRPCRouter({
           id: s.sponsor!.id,
           name: s.sponsor!.name,
           logoUrl: s.sponsor!.logoUrl,
+          logoBackground: s.sponsor!.logoBackground,
           type: s.sponsor!.type,
+          socialMediaLinks: s.sponsor!.socialMediaLinks as Record<string, string> | null,
           sponsorshipType: s.sponsorshipType,
         }));
 

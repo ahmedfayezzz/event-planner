@@ -35,7 +35,41 @@ import {
 import { usePresignedUrl } from "@/hooks/use-presigned-url";
 import { copyToClipboard, shareOnTwitter, shareOnWhatsApp } from "@/lib/utils";
 
-function SponsorLogo({ logoUrl, name }: { logoUrl: string | null; name: string }) {
+const LOGO_BACKGROUND_STYLES: Record<string, string> = {
+  transparent: "bg-transparent",
+  dark: "bg-gray-900",
+  light: "bg-white border border-border",
+  primary: "bg-primary",
+};
+
+// Helper to check if value is a custom hex color
+const isHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value);
+
+// Helper to get the primary sponsor link (website first, then social media)
+function getSponsorLink(socialMediaLinks: Record<string, string> | null | undefined): string | null {
+  if (!socialMediaLinks) return null;
+
+  // Priority order: website > twitter > instagram > linkedin > other
+  const priorityOrder = ["website", "twitter", "instagram", "linkedin"];
+
+  for (const key of priorityOrder) {
+    if (socialMediaLinks[key]) return socialMediaLinks[key];
+  }
+
+  // Return any other available link
+  const values = Object.values(socialMediaLinks).filter(Boolean);
+  return values.length > 0 ? values[0] : null;
+}
+
+function SponsorLogo({
+  logoUrl,
+  name,
+  logoBackground = "transparent",
+}: {
+  logoUrl: string | null;
+  name: string;
+  logoBackground?: string;
+}) {
   const { url, isLoading } = usePresignedUrl(logoUrl);
 
   if (!logoUrl) {
@@ -52,8 +86,15 @@ function SponsorLogo({ logoUrl, name }: { logoUrl: string | null; name: string }
     );
   }
 
+  // Check if it's a custom hex color or a preset
+  const isCustomColor = isHexColor(logoBackground);
+  const bgStyle = isCustomColor ? "" : (LOGO_BACKGROUND_STYLES[logoBackground] || LOGO_BACKGROUND_STYLES.transparent);
+
   return (
-    <div className="h-12 md:h-16 max-w-[80px] md:max-w-[100px] flex items-center justify-center bg-white rounded-lg border border-border shadow-sm p-1">
+    <div
+      className={`h-12 md:h-16 max-w-[80px] md:max-w-[100px] flex items-center justify-center rounded-lg shadow-sm p-1 ${bgStyle}`}
+      style={isCustomColor ? { backgroundColor: logoBackground } : undefined}
+    >
       <img
         src={url}
         alt={name}
@@ -227,7 +268,7 @@ export function SessionDetailClient({ id }: { id: string }) {
                     alt="LAFT"
                     width={120}
                     height={48}
-                    className="h-8 md:h-10 w-auto object-contain"
+                    className="h-8 md:h-10 w-auto object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]"
                   />
                 </div>
 
@@ -479,20 +520,40 @@ export function SessionDetailClient({ id }: { id: string }) {
                       </h3>
                     </div>
                     <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
-                      {session.sponsors.map((sponsor) => (
-                        <div
-                          key={sponsor.id}
-                          className="flex flex-col items-center gap-2"
-                        >
-                          <SponsorLogo
-                            logoUrl={sponsor.logoUrl}
-                            name={sponsor.name}
-                          />
-                          <span className="text-xs md:text-sm font-medium text-foreground text-center max-w-[80px] md:max-w-[100px] line-clamp-2">
-                            {sponsor.name}
-                          </span>
-                        </div>
-                      ))}
+                      {session.sponsors.map((sponsor) => {
+                        const sponsorLink = getSponsorLink(sponsor.socialMediaLinks);
+                        const logoContent = (
+                          <>
+                            <SponsorLogo
+                              logoUrl={sponsor.logoUrl}
+                              name={sponsor.name}
+                              logoBackground={sponsor.logoBackground}
+                            />
+                            <span className="text-xs md:text-sm font-medium text-foreground text-center max-w-[80px] md:max-w-[100px] line-clamp-2">
+                              {sponsor.name}
+                            </span>
+                          </>
+                        );
+
+                        return sponsorLink ? (
+                          <a
+                            key={sponsor.id}
+                            href={sponsorLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex flex-col items-center gap-2 transition-transform hover:scale-105"
+                          >
+                            {logoContent}
+                          </a>
+                        ) : (
+                          <div
+                            key={sponsor.id}
+                            className="flex flex-col items-center gap-2"
+                          >
+                            {logoContent}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

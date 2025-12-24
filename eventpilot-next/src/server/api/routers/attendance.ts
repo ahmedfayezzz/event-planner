@@ -362,6 +362,7 @@ export const attendanceRouter = createTRPCRouter({
           name: es.sponsor!.name,
           logoUrl: es.sponsor!.logoUrl,
           type: es.sponsorshipType,
+          socialMediaLinks: es.sponsor!.socialMediaLinks as Record<string, string> | null,
         }));
 
       // Generate branded QR as PDF
@@ -509,6 +510,7 @@ export const attendanceRouter = createTRPCRouter({
           name: es.sponsor!.name,
           logoUrl: es.sponsor!.logoUrl,
           type: es.sponsorshipType,
+          socialMediaLinks: es.sponsor!.socialMediaLinks as Record<string, string> | null,
         }));
 
       // Generate branded QR as PDF

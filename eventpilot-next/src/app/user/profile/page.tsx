@@ -28,8 +28,84 @@ import {
   Camera,
   Loader2,
   Trash2,
+  Building2,
+  ExternalLink,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { usePresignedUrl } from "@/hooks/use-presigned-url";
+import { formatArabicDate } from "@/lib/utils";
+import { getSponsorshipTypeLabel, getSponsorTypeLabel } from "@/lib/constants";
 import { UserAvatar } from "@/components/user-avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Helper to check if value is a custom hex color
+const isHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value);
+
+// Background style classes for logos
+const logoBgClasses: Record<string, string> = {
+  transparent: "bg-muted",
+  dark: "bg-gray-900",
+  light: "bg-white",
+  primary: "bg-primary",
+};
+
+// Helper to get the primary sponsor link
+function getSponsorLink(socialMediaLinks: Record<string, string> | null | undefined): string | null {
+  if (!socialMediaLinks) return null;
+  const priorityOrder = ["website", "twitter", "instagram", "linkedin"];
+  for (const key of priorityOrder) {
+    if (socialMediaLinks[key]) return socialMediaLinks[key];
+  }
+  const values = Object.values(socialMediaLinks).filter(Boolean);
+  return values.length > 0 ? values[0] : null;
+}
+
+// Sponsor Logo component with presigned URL support
+function SponsorLogo({
+  logoUrl,
+  name,
+  type,
+  logoBackground = "transparent",
+}: {
+  logoUrl: string | null;
+  name: string;
+  type: string;
+  logoBackground?: string;
+}) {
+  const { url: presignedUrl, isLoading } = usePresignedUrl(logoUrl);
+
+  const isCustomColor = isHexColor(logoBackground);
+  const bgClass = isCustomColor ? "" : (logoBgClasses[logoBackground] || logoBgClasses.transparent);
+
+  if (logoUrl && presignedUrl) {
+    return (
+      <div
+        className={`relative h-16 w-16 rounded-lg overflow-hidden border flex-shrink-0 ${bgClass}`}
+        style={isCustomColor ? { backgroundColor: logoBackground } : undefined}
+      >
+        {isLoading ? (
+          <Skeleton className="h-full w-full" />
+        ) : (
+          <img
+            src={presignedUrl}
+            alt={name}
+            className="h-full w-full object-contain p-1"
+          />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-16 w-16 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+      {type === "company" ? (
+        <Building2 className="h-8 w-8 text-primary/60" />
+      ) : (
+        <User className="h-8 w-8 text-primary/60" />
+      )}
+    </div>
+  );
+}
 
 export default function UserProfilePage() {
   const router = useRouter();
@@ -395,6 +471,113 @@ export default function UserProfilePage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Linked Sponsors Section */}
+            {profile?.sponsors && profile.sponsors.length > 0 && (
+              <Card className="border-none shadow-lg mt-8">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    الرعايات المرتبطة
+                  </CardTitle>
+                  <CardDescription>
+                    الرعايات المرتبطة بحسابك
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {profile.sponsors.map((sponsor) => {
+                    const sponsorLink = getSponsorLink(sponsor.socialMediaLinks as Record<string, string> | null);
+                    return (
+                      <div
+                        key={sponsor.id}
+                        className="flex items-start gap-4 p-4 rounded-lg border bg-muted/30"
+                      >
+                        {/* Logo */}
+                        {sponsorLink ? (
+                          <a
+                            href={sponsorLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:opacity-80 transition-opacity"
+                          >
+                            <SponsorLogo
+                              logoUrl={sponsor.logoUrl}
+                              name={sponsor.name}
+                              type={sponsor.type}
+                              logoBackground={sponsor.logoBackground ?? "transparent"}
+                            />
+                          </a>
+                        ) : (
+                          <SponsorLogo
+                            logoUrl={sponsor.logoUrl}
+                            name={sponsor.name}
+                            type={sponsor.type}
+                            logoBackground={sponsor.logoBackground ?? "transparent"}
+                          />
+                        )}
+
+                        {/* Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-lg">{sponsor.name}</h3>
+                            <Badge variant="outline" className="text-xs">
+                              {getSponsorTypeLabel(sponsor.type)}
+                            </Badge>
+                            {sponsorLink && (
+                              <a
+                                href={sponsorLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                الموقع
+                              </a>
+                            )}
+                          </div>
+
+                          {/* Sponsorship Types */}
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {sponsor.sponsorshipTypes.map((type) => (
+                              <Badge
+                                key={type}
+                                variant="secondary"
+                                className="text-xs bg-primary/10 text-primary"
+                              >
+                                {getSponsorshipTypeLabel(type)}
+                              </Badge>
+                            ))}
+                          </div>
+
+                          {/* Recent Sponsorships */}
+                          {sponsor.eventSponsorships.length > 0 && (
+                            <div className="mt-3 text-sm text-muted-foreground">
+                              <span className="font-medium">آخر الرعايات:</span>
+                              <ul className="mt-1 space-y-1">
+                                {sponsor.eventSponsorships.slice(0, 3).map((es) => (
+                                  <li key={es.id} className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                                    <Link
+                                      href={`/session/${es.session.id}`}
+                                      className="hover:underline hover:text-primary"
+                                    >
+                                      {es.session.title}
+                                    </Link>
+                                    <span className="text-xs">
+                                      ({formatArabicDate(new Date(es.session.date))})
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

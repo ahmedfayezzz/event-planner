@@ -44,6 +44,7 @@ export async function GET(
             name: true,
             logoUrl: true,
             type: true,
+            socialMediaLinks: true,
           },
         },
       },
@@ -56,6 +57,7 @@ export async function GET(
         name: s.sponsor!.name,
         logoUrl: s.sponsor!.logoUrl,
         type: s.sponsor!.type,
+        socialMediaLinks: s.sponsor!.socialMediaLinks as Record<string, string> | null,
       }));
 
     // Generate the PDF
