@@ -60,6 +60,7 @@ export default function RegisterPage() {
     sponsorshipTypes: [] as string[],
     sponsorshipOtherText: "",
     sponsorType: "" as "person" | "company" | "",
+    sponsorCompanyName: "",
   });
 
   const registerMutation = api.auth.register.useMutation({
@@ -105,6 +106,7 @@ export default function RegisterPage() {
         sponsorshipTypes: formData.sponsorshipTypes,
         sponsorshipOtherText: formData.sponsorshipOtherText || undefined,
         sponsorType: formData.sponsorType || undefined,
+        sponsorCompanyName: formData.sponsorCompanyName || undefined,
       });
     } finally {
       setIsLoading(false);
@@ -432,6 +434,7 @@ export default function RegisterPage() {
                       sponsorshipTypes: formData.sponsorshipTypes,
                       sponsorshipOtherText: formData.sponsorshipOtherText,
                       sponsorType: formData.sponsorType,
+                      sponsorCompanyName: formData.sponsorCompanyName,
                     }}
                     onChange={(sponsorship: SponsorshipData) =>
                       setFormData({

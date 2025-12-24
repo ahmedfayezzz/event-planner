@@ -6,7 +6,7 @@ import {
   publicProcedure,
   protectedProcedure,
 } from "../trpc";
-import { generateUsername, formatPhoneNumber, validateSaudiPhone } from "@/lib/validation";
+import { generateUsername, formatPhoneNumber } from "@/lib/validation";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "@/lib/email";
 import { generateInviteToken } from "@/lib/utils";
 
@@ -34,6 +34,7 @@ export const authRouter = createTRPCRouter({
         sponsorshipTypes: z.array(z.string()).default([]),
         sponsorshipOtherText: z.string().optional(),
         sponsorType: z.enum(["person", "company"]).optional(),
+        sponsorCompanyName: z.string().optional(),
         // Backward compatibility (deprecated)
         wantsToHost: z.boolean().default(false),
         hostingTypes: z.array(z.string()).default([]),
@@ -42,14 +43,8 @@ export const authRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      // Format and validate phone
+      // Format phone
       const formattedPhone = formatPhoneNumber(input.phone);
-      if (!validateSaudiPhone(input.phone)) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "رقم الهاتف غير صالح",
-        });
-      }
 
       const email = input.email.toLowerCase();
 
@@ -103,12 +98,18 @@ export const authRouter = createTRPCRouter({
               where: { userId: user.id },
             });
 
+            // Determine sponsor name: use company name if type is company, otherwise user name
+            const sponsorName =
+              input.sponsorType === "company" && input.sponsorCompanyName
+                ? input.sponsorCompanyName
+                : input.name;
+
             if (existingSponsor) {
               // Update existing sponsor
               await db.sponsor.update({
                 where: { id: existingSponsor.id },
                 data: {
-                  name: input.name,
+                  name: sponsorName,
                   email,
                   phone: formattedPhone,
                   type: input.sponsorType || "person",
@@ -121,7 +122,7 @@ export const authRouter = createTRPCRouter({
               await db.sponsor.create({
                 data: {
                   userId: user.id,
-                  name: input.name,
+                  name: sponsorName,
                   email,
                   phone: formattedPhone,
                   type: input.sponsorType || "person",
@@ -171,10 +172,16 @@ export const authRouter = createTRPCRouter({
 
         // Create Sponsor record if user wants to sponsor
         if (input.wantsToSponsor) {
+          // Determine sponsor name: use company name if type is company, otherwise user name
+          const sponsorName =
+            input.sponsorType === "company" && input.sponsorCompanyName
+              ? input.sponsorCompanyName
+              : input.name;
+
           await db.sponsor.create({
             data: {
               userId: user.id,
-              name: input.name,
+              name: sponsorName,
               email,
               phone: formattedPhone,
               type: input.sponsorType || "person",

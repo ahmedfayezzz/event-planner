@@ -41,6 +41,7 @@ export default function MemberRegisterPage({
   const [sponsorshipTypes, setSponsorshipTypes] = useState<string[]>([]);
   const [sponsorshipOtherText, setSponsorshipOtherText] = useState("");
   const [sponsorType, setSponsorType] = useState<"person" | "company" | "">("");
+  const [sponsorCompanyName, setSponsorCompanyName] = useState("");
 
   // Fetch session data
   const { data: session, isLoading } = api.session.getById.useQuery({
@@ -158,6 +159,11 @@ export default function MemberRegisterPage({
           : wantsToSponsor
           ? sponsorType || undefined
           : undefined,
+        sponsorCompanyName: isAlreadySponsor
+          ? undefined
+          : wantsToSponsor && sponsorType === "company"
+          ? sponsorCompanyName || undefined
+          : undefined,
       });
     } finally {
       setIsSubmitting(false);
@@ -262,12 +268,14 @@ export default function MemberRegisterPage({
                         sponsorshipTypes,
                         sponsorshipOtherText,
                         sponsorType,
+                        sponsorCompanyName,
                       }}
                       onChange={(sponsorship: SponsorshipData) => {
                         setWantsToSponsor(sponsorship.wantsToSponsor);
                         setSponsorshipTypes(sponsorship.sponsorshipTypes);
                         setSponsorshipOtherText(sponsorship.sponsorshipOtherText);
                         setSponsorType(sponsorship.sponsorType);
+                        setSponsorCompanyName(sponsorship.sponsorCompanyName);
                       }}
                       disabled={isSubmitting}
                       variant="card"

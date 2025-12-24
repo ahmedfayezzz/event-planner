@@ -3,6 +3,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -17,6 +18,8 @@ export interface SponsorshipData {
   sponsorshipTypes: string[];
   sponsorshipOtherText: string;
   sponsorType: "person" | "company" | "";
+  /** Company name - only used when sponsorType is "company" */
+  sponsorCompanyName: string;
 }
 
 interface SponsorshipSectionProps {
@@ -40,11 +43,21 @@ export function SponsorshipSection({
       sponsorshipTypes: checked ? data.sponsorshipTypes : [],
       sponsorshipOtherText: checked ? data.sponsorshipOtherText : "",
       sponsorType: checked ? data.sponsorType : "",
+      sponsorCompanyName: checked ? data.sponsorCompanyName : "",
     });
   };
 
   const handleSponsorTypeChange = (value: "person" | "company") => {
-    onChange({ ...data, sponsorType: value });
+    onChange({
+      ...data,
+      sponsorType: value,
+      // Clear company name if switching to person
+      sponsorCompanyName: value === "person" ? "" : data.sponsorCompanyName,
+    });
+  };
+
+  const handleCompanyNameChange = (name: string) => {
+    onChange({ ...data, sponsorCompanyName: name });
   };
 
   const handleSponsorshipTypeToggle = (typeValue: string, checked: boolean) => {
@@ -109,6 +122,22 @@ export function SponsorshipSection({
               </SelectContent>
             </Select>
           </div>
+
+          {data.sponsorType === "company" && (
+            <div className="space-y-2">
+              <Label htmlFor="sponsorCompanyName" className="text-sm">
+                اسم الشركة / المؤسسة
+              </Label>
+              <Input
+                id="sponsorCompanyName"
+                value={data.sponsorCompanyName}
+                onChange={(e) => handleCompanyNameChange(e.target.value)}
+                placeholder="أدخل اسم الشركة أو المؤسسة"
+                disabled={disabled}
+                className={inputClassName}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className="text-sm">نوع الرعاية</Label>

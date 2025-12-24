@@ -16,14 +16,14 @@ high priority:
 
 sponsors:
 - calender for sponsors
-- add custom background color to sponosr logo
-- make sponsor logos clickable in public session details page, qr-pdf and invitation pdf (website or social media while giving priority to website and then to whatever social media is available)
-- add a way to search sponsors by account name (user should be able to search by linked account name in sponsors table)
-- show linked sponsors to user in user profile (sponsors linked to user accounts)
-- add sponsor name
+<!-- - add custom background color to sponosr logo -->
+<!-- - make sponsor logos clickable in public session details page, qr-pdf and invitation pdf (website or social media while giving priority to website and then to whatever social media is available) -->
+<!-- - add a way to search sponsors by account name (user should be able to search by linked account name in sponsors table) -->
+<!-- - show linked sponsors to user in user profile (sponsors linked to user accounts) -->
+<!-- - add sponsor name input in registration when user selects a sponsor as a company -->
 - add a way to archive sponsors
-- sponosr search by text arabic support (ا أ)
-- date of last sponosrship in sponsors list is not right
+- sponsor search by text arabic support (ا أ)
+- date of last sponsorship in sponsors list is not right
 - sponsor attachments
 
 

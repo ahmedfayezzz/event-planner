@@ -7,7 +7,7 @@ import {
   protectedProcedure,
   adminProcedure,
 } from "../trpc";
-import { formatPhoneNumber, validateSaudiPhone, generateUsername } from "@/lib/validation";
+import { formatPhoneNumber, generateUsername } from "@/lib/validation";
 import { generateQRCode, createQRCheckInData } from "@/lib/qr";
 import {
   sendPendingEmail,
@@ -122,6 +122,7 @@ export const registrationRouter = createTRPCRouter({
         sponsorshipTypes: z.array(z.string()).optional(),
         sponsorshipOtherText: z.string().optional(),
         sponsorType: z.enum(["person", "company"]).optional(),
+        sponsorCompanyName: z.string().optional(),
         // Invitation token for invite-only sessions
         inviteToken: z.string().optional(),
       })
@@ -242,9 +243,15 @@ export const registrationRouter = createTRPCRouter({
         });
 
         if (!existingSponsor) {
+          // Determine sponsor name: use company name if type is company, otherwise user name
+          const sponsorName =
+            input.sponsorType === "company" && input.sponsorCompanyName
+              ? input.sponsorCompanyName
+              : user.name;
+
           await db.sponsor.create({
             data: {
-              name: user.name,
+              name: sponsorName,
               email: user.email,
               phone: user.phone,
               type: input.sponsorType || "person",
@@ -375,6 +382,7 @@ export const registrationRouter = createTRPCRouter({
         sponsorshipTypes: z.array(z.string()).default([]),
         sponsorshipOtherText: z.string().optional(),
         sponsorType: z.enum(["person", "company"]).optional(),
+        sponsorCompanyName: z.string().optional(),
         // Companions
         companions: z
           .array(
@@ -477,12 +485,6 @@ export const registrationRouter = createTRPCRouter({
 
       // Format phone
       const formattedPhone = formatPhoneNumber(input.phone);
-      if (!validateSaudiPhone(input.phone)) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "رقم الهاتف غير صالح",
-        });
-      }
 
       const email = input.email.toLowerCase();
 

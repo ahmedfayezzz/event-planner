@@ -78,6 +78,7 @@ export default function GuestRegisterPage({
     sponsorshipTypes: [] as string[],
     sponsorshipOtherText: "",
     sponsorType: "" as "person" | "company" | "",
+    sponsorCompanyName: "",
   });
 
   const { data: session, isLoading } = api.session.getById.useQuery({ id });
@@ -175,6 +176,7 @@ export default function GuestRegisterPage({
         sponsorshipTypes: formData.sponsorshipTypes,
         sponsorshipOtherText: formData.sponsorshipOtherText || undefined,
         sponsorType: formData.sponsorType || undefined,
+        sponsorCompanyName: formData.sponsorCompanyName || undefined,
         inviteToken,
         companions: validCompanions,
       });
@@ -571,6 +573,7 @@ export default function GuestRegisterPage({
                         sponsorshipTypes: formData.sponsorshipTypes,
                         sponsorshipOtherText: formData.sponsorshipOtherText,
                         sponsorType: formData.sponsorType,
+                        sponsorCompanyName: formData.sponsorCompanyName,
                       }}
                       onChange={(sponsorship: SponsorshipData) =>
                         setFormData({
