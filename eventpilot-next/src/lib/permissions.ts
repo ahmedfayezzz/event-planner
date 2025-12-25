@@ -15,6 +15,7 @@ export const ADMIN_PERMISSIONS = {
   checkin: 'canAccessCheckin',
   settings: 'canAccessSettings',
   suggestions: 'canAccessSuggestions',
+  emailCampaigns: 'canAccessEmailCampaigns',
 } as const;
 
 export type PermissionKey = keyof typeof ADMIN_PERMISSIONS;
@@ -30,6 +31,7 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   checkin: 'تسجيل الحضور',
   settings: 'الإعدادات',
   suggestions: 'الاقتراحات',
+  emailCampaigns: 'حملات البريد',
 };
 
 // User type that includes permission fields
@@ -44,6 +46,7 @@ export interface AdminUser {
   canAccessCheckin: boolean;
   canAccessSettings: boolean;
   canAccessSuggestions: boolean;
+  canAccessEmailCampaigns: boolean;
 }
 
 /**

@@ -648,6 +648,7 @@ export const adminRouter = createTRPCRouter({
               "checkin",
               "settings",
               "suggestions",
+              "emailCampaigns",
             ])
           )
           .optional(),
@@ -702,6 +703,8 @@ export const adminRouter = createTRPCRouter({
                 input.permissions?.includes("settings") ?? true,
               canAccessSuggestions:
                 input.permissions?.includes("suggestions") ?? true,
+              canAccessEmailCampaigns:
+                input.permissions?.includes("emailCampaigns") ?? true,
             }
           : {
               canAccessDashboard: false,
@@ -712,6 +715,7 @@ export const adminRouter = createTRPCRouter({
               canAccessCheckin: false,
               canAccessSettings: false,
               canAccessSuggestions: false,
+              canAccessEmailCampaigns: false,
             };
 
       const updated = await db.user.update({
@@ -748,6 +752,7 @@ export const adminRouter = createTRPCRouter({
             "checkin",
             "settings",
             "suggestions",
+            "emailCampaigns",
           ])
         ),
       })
@@ -781,6 +786,7 @@ export const adminRouter = createTRPCRouter({
         "checkin",
         "settings",
         "suggestions",
+        "emailCampaigns",
       ];
 
       const permissionData: Record<string, boolean> = {};
@@ -847,6 +853,7 @@ export const adminRouter = createTRPCRouter({
         canAccessCheckin: true,
         canAccessSettings: true,
         canAccessSuggestions: true,
+        canAccessEmailCampaigns: true,
       },
     });
 
@@ -886,6 +893,7 @@ export const adminRouter = createTRPCRouter({
         canAccessCheckin: true,
         canAccessSettings: true,
         canAccessSuggestions: true,
+        canAccessEmailCampaigns: true,
         createdAt: true,
       },
       orderBy: [{ role: "desc" }, { createdAt: "asc" }],
@@ -914,6 +922,7 @@ export const adminRouter = createTRPCRouter({
             "checkin",
             "settings",
             "suggestions",
+            "emailCampaigns",
           ])
         ),
       })
@@ -959,6 +968,7 @@ export const adminRouter = createTRPCRouter({
         "checkin",
         "settings",
         "suggestions",
+        "emailCampaigns",
       ];
 
       for (const perm of allPermissions) {

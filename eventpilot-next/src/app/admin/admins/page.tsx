@@ -72,6 +72,7 @@ const ALL_PERMISSIONS: PermissionKey[] = [
   "checkin",
   "settings",
   "suggestions",
+  "emailCampaigns",
 ];
 
 interface AdminUser {
@@ -90,6 +91,7 @@ interface AdminUser {
   canAccessCheckin: boolean;
   canAccessSettings: boolean;
   canAccessSuggestions: boolean;
+  canAccessEmailCampaigns: boolean;
 }
 
 export default function AdminsPage() {
@@ -219,6 +221,7 @@ export default function AdminsPage() {
     if (admin.canAccessCheckin) currentPermissions.push("checkin");
     if (admin.canAccessSettings) currentPermissions.push("settings");
     if (admin.canAccessSuggestions) currentPermissions.push("suggestions");
+    if (admin.canAccessEmailCampaigns) currentPermissions.push("emailCampaigns");
     setSelectedPermissions(currentPermissions);
     setPermissionDialogOpen(true);
   };
@@ -249,6 +252,7 @@ export default function AdminsPage() {
     if (admin.canAccessCheckin) count++;
     if (admin.canAccessSettings) count++;
     if (admin.canAccessSuggestions) count++;
+    if (admin.canAccessEmailCampaigns) count++;
     return count;
   };
 

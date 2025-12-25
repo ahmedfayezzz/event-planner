@@ -678,3 +678,31 @@ export function generateQrSection(qrDataUrl: string): string {
     </table>
   `;
 }
+
+// =============================================================================
+// PLACEHOLDER REPLACEMENT
+// =============================================================================
+
+export interface PlaceholderData {
+  name?: string;
+  email?: string;
+  companyName?: string;
+  position?: string;
+  phone?: string;
+}
+
+/**
+ * Replace placeholders in email content with user data
+ * Supported placeholders: {{name}}, {{email}}, {{companyName}}, {{position}}, {{phone}}
+ */
+export function replacePlaceholders(
+  content: string,
+  data: PlaceholderData
+): string {
+  return content
+    .replace(/\{\{name\}\}/g, data.name ?? "")
+    .replace(/\{\{email\}\}/g, data.email ?? "")
+    .replace(/\{\{companyName\}\}/g, data.companyName ?? "")
+    .replace(/\{\{position\}\}/g, data.position ?? "")
+    .replace(/\{\{phone\}\}/g, data.phone ?? "");
+}

@@ -9,6 +9,8 @@
 - only send confirmation email to companion no need for registration
 - provide a way to register as a sponsor from public site
 
+- update logos display to have dynamic container
+
 high priority:
 - manual email sending
 - 
@@ -21,7 +23,7 @@ sponsors:
 <!-- - add a way to search sponsors by account name (user should be able to search by linked account name in sponsors table) -->
 <!-- - show linked sponsors to user in user profile (sponsors linked to user accounts) -->
 <!-- - add sponsor name input in registration when user selects a sponsor as a company -->
-- add a way to archive sponsors
+<!-- - add a way to archive sponsors -->
 - sponsor search by text arabic support (ا أ)
 - date of last sponsorship in sponsors list is not right
 - sponsor attachments

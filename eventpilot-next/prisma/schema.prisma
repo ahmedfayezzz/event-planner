@@ -58,6 +58,7 @@ model User {
   canAccessCheckin    Boolean  @default(false)
   canAccessSettings   Boolean  @default(false)
   canAccessSuggestions Boolean @default(false)
+  canAccessEmailCampaigns Boolean @default(false)
 
   // Password reset
   resetToken        String?
@@ -90,6 +91,10 @@ model User {
   sponsors      Sponsor[]
   sponsorNotesCreated SponsorNote[] @relation("SponsorNoteAuthor")
   suggestions   Suggestion[]
+  emailDrafts   EmailDraft[]    @relation("DraftCreator")
+  emailTemplates EmailTemplate[] @relation("TemplateCreator")
+  emailCampaignsCreated  EmailCampaign[]          @relation("CampaignCreator")
+  emailCampaignsReceived EmailCampaignRecipient[] @relation("RecipientUser")
 }
 
 model Session {
@@ -400,7 +405,7 @@ model EmailLog {
   id           String    @id @default(cuid())
   to           String
   subject      String
-  type         String    // "confirmed", "pending", "companion", "welcome", etc.
+  type         String    // "confirmed", "pending", "companion", "welcome", "bulk", etc.
   status       String    @default("pending") // "pending", "sent", "failed"
   errorMessage String?
   attempts     Int       @default(0)
@@ -415,6 +420,92 @@ model EmailLog {
   @@index([status])
   @@index([registrationId])
   @@index([createdAt])
+}
+
+// Email drafts for bulk emails (in-progress compositions)
+model EmailDraft {
+  id          String   @id @default(cuid())
+  name        String
+  subject     String?
+  content     String?
+  filters     Json?    // Saved filter state for user selection
+
+  createdById String
+  createdBy   User     @relation("DraftCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdById])
+}
+
+// Reusable email templates
+// type: "custom" for admin-created, future: "confirmation", "invitation", etc.
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   @default("custom")  // "custom" | future: "confirmation", "invitation", etc.
+  subject     String
+  content     String
+  isSystem    Boolean  @default(false)     // true for system templates (non-deletable)
+
+  createdById String?
+  createdBy   User?    @relation("TemplateCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type])
+  @@index([createdById])
+}
+
+// Email campaign for bulk emails - groups sent emails together
+model EmailCampaign {
+  id               String   @id @default(cuid())
+  name             String?
+  subject          String
+  content          String   @db.Text  // Full HTML content for history
+
+  totalRecipients  Int      @default(0)
+  sentCount        Int      @default(0)
+  failedCount      Int      @default(0)
+
+  status           String   @default("draft") // draft, sending, completed, failed
+  recipientFilters Json?    // Saved filters for reference
+  attachments      Json?    // Array of {filename, content}
+
+  createdById      String
+  createdBy        User     @relation("CampaignCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime @default(now())
+  sentAt           DateTime?
+  completedAt      DateTime?
+
+  recipients       EmailCampaignRecipient[]
+
+  @@index([status])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+// Individual recipient in a campaign
+model EmailCampaignRecipient {
+  id           String   @id @default(cuid())
+  campaignId   String
+  userId       String?
+  email        String
+  name         String?
+
+  status       String   @default("pending") // pending, sent, failed
+  errorMessage String?
+  sentAt       DateTime?
+
+  campaign     EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user         User?         @relation("RecipientUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@index([userId])
+  @@index([status])
 }
 
 model Suggestion {

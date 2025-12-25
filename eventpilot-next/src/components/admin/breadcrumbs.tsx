@@ -20,6 +20,11 @@ const pathLabels: Record<string, string> = {
   invitations: "الدعوات",
   catering: "الضيافة",
   sponsorship: "الرعاية",
+  "email-campaigns": "حملات البريد",
+  templates: "القوالب",
+  admins: "المديرين",
+  suggestions: "الاقتراحات",
+  "manual-registration": "تسجيل يدوي",
 };
 
 export function Breadcrumbs() {

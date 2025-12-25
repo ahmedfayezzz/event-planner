@@ -45,6 +45,7 @@ import {
   UtensilsCrossed,
   ShieldCheck,
   MessageSquare,
+  Mail,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/admin/breadcrumbs";
 import {
@@ -79,6 +80,12 @@ const allSidebarLinks: SidebarLink[] = [
     label: "الأعضاء",
     icon: Users,
     permission: "users",
+  },
+  {
+    href: "/admin/email-campaigns",
+    label: "حملات البريد",
+    icon: Mail,
+    permission: "emailCampaigns",
   },
   {
     href: "/admin/admins",
