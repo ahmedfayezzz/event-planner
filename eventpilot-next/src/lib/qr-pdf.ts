@@ -1,4 +1,4 @@
-import { PDFDocument, PDFName, PDFArray, PDFString, rgb } from "pdf-lib";
+import { PDFDocument, PDFName, PDFArray, PDFString } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import fs from "fs/promises";
 import fsSync from "fs";
@@ -364,19 +364,7 @@ export async function generateBrandedQRPdf(
         const containerLeft = width * 0.12;
         const containerRight = width * 0.88;
         const containerWidth = containerRight - containerLeft;
-        const containerTop = height * 0.18; // Just below the ribbon
-        const containerBottom = height * 0.07; // Above the very bottom
-        const containerHeight = containerTop - containerBottom;
-
-        // DEBUG: Draw red outline rectangle for the grid container
-        // page.drawRectangle({
-        //   x: containerLeft,
-        //   y: containerBottom,
-        //   width: containerWidth,
-        //   height: containerHeight,
-        //   borderColor: rgb(1, 0, 0),
-        //   borderWidth: 2,
-        // });
+        const containerTop = height * 0.18; // Just below the ribbon - anchor point
 
         // Calculate grid layout based on sponsor count (1-10 sponsors)
         // For even counts > 3: divide evenly (4→2,2; 6→3,3; 8→4,4; 10→5,5)
@@ -396,18 +384,79 @@ export async function generateBrandedQRPdf(
           row2Count = Math.ceil(count / 2);
         }
 
+        // Calculate available height from containerTop to bottom margin
+        const bottomMargin = height * 0.02;
+        const maxContainerHeight = containerTop - bottomMargin;
+
+        // Calculate ideal row height based on fixed logo size
+        const idealLogoSize = height * 0.08;
+        const idealRowPadding = idealLogoSize * 0.2;
+        const idealRowHeight = idealLogoSize + idealRowPadding * 2;
+
+        // Calculate actual row height - use ideal if fits, otherwise shrink to fit
+        const idealContainerHeight = rows * idealRowHeight;
+        const rowHeight = idealContainerHeight <= maxContainerHeight
+          ? idealRowHeight
+          : maxContainerHeight / rows;
+
+        const containerHeight = rows * rowHeight;
+        const containerBottom = containerTop - containerHeight;
+
+        // Calculate logo size based on actual row height
+        const rowPadding = rowHeight * 0.15;
+        const fixedLogoSize = rowHeight - rowPadding * 2;
+
         // Calculate cell dimensions based on max columns needed
         const maxCols = Math.max(row1Count, row2Count);
         const cellWidth = containerWidth / maxCols;
-        const cellHeight = containerHeight / rows;
-        const padding = Math.min(cellWidth, cellHeight) * 0.1;
+        const cellHeight = rowHeight;
+        const padding = rowPadding;
 
-        // Calculate max logo/text size based on cell size
-        const maxLogoSize = Math.min(
-          cellWidth - padding * 2,
-          cellHeight - padding * 2
-        );
+        // Use calculated logo size
+        const maxLogoSize = fixedLogoSize;
         const fontSize = Math.max(12, Math.min(24, maxLogoSize * 0.3));
+        const bgPadding = 10;
+        const borderRadius = 15;
+
+        // Draw rounded rectangle background (50% transparent #01142d)
+        const bgX = containerLeft - bgPadding;
+        const bgY = containerBottom - bgPadding;
+        const bgWidth = containerWidth + bgPadding * 2;
+        const bgHeight = containerHeight + bgPadding * 2;
+
+        // Create rounded rectangle using canvas and embed as PNG
+        const scale = 2; // Higher resolution
+        const bgCanvas = createCanvas(bgWidth * scale, bgHeight * scale);
+        const bgCtx = bgCanvas.getContext("2d");
+        bgCtx.clearRect(0, 0, bgWidth * scale, bgHeight * scale);
+
+        // Draw rounded rectangle path
+        const r = borderRadius * scale;
+        bgCtx.beginPath();
+        bgCtx.moveTo(r, 0);
+        bgCtx.lineTo(bgWidth * scale - r, 0);
+        bgCtx.quadraticCurveTo(bgWidth * scale, 0, bgWidth * scale, r);
+        bgCtx.lineTo(bgWidth * scale, bgHeight * scale - r);
+        bgCtx.quadraticCurveTo(bgWidth * scale, bgHeight * scale, bgWidth * scale - r, bgHeight * scale);
+        bgCtx.lineTo(r, bgHeight * scale);
+        bgCtx.quadraticCurveTo(0, bgHeight * scale, 0, bgHeight * scale - r);
+        bgCtx.lineTo(0, r);
+        bgCtx.quadraticCurveTo(0, 0, r, 0);
+        bgCtx.closePath();
+
+        // Fill with 50% transparent #01142d
+        bgCtx.fillStyle = "rgba(1, 20, 45, 0.5)";
+        bgCtx.fill();
+
+        const bgImageBuffer = bgCanvas.toBuffer("image/png");
+        const bgImage = await pdfDoc.embedPng(bgImageBuffer);
+
+        page.drawImage(bgImage, {
+          x: bgX,
+          y: bgY,
+          width: bgWidth,
+          height: bgHeight,
+        });
 
         // Draw sponsors in RTL order (right to left, top to bottom)
         for (let i = 0; i < count; i++) {
