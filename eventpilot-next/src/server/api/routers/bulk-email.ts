@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, adminProcedure } from "../trpc";
-import { normalizeArabic } from "@/lib/search";
+import { arabicSearchOr } from "@/lib/search";
 import { sendEmail } from "@/lib/email";
 import {
   createEmailTemplate,
@@ -88,15 +88,13 @@ export const bulkEmailRouter = createTRPCRouter({
         where.isActive = input.isActive;
       }
 
-      // Search filter
+      // Search filter - use Arabic-aware search
       if (input.search) {
-        const normalizedSearch = normalizeArabic(input.search);
-        where.OR = [
-          { name: { contains: normalizedSearch, mode: "insensitive" } },
-          { email: { contains: normalizedSearch, mode: "insensitive" } },
-          { phone: { contains: normalizedSearch, mode: "insensitive" } },
-          { companyName: { contains: normalizedSearch, mode: "insensitive" } },
-        ];
+        const matchingIds = await db.$queryRaw<{ id: string }[]>`
+          SELECT "id" FROM "User"
+          WHERE ${arabicSearchOr(['"name"', '"email"', '"phone"', '"companyName"'], input.search)}
+        `;
+        where.id = { in: matchingIds.map((m) => m.id) };
       }
 
       // Labels filter
@@ -219,13 +217,12 @@ export const bulkEmailRouter = createTRPCRouter({
       }
 
       if (input.search) {
-        const normalizedSearch = normalizeArabic(input.search);
-        where.OR = [
-          { name: { contains: normalizedSearch, mode: "insensitive" } },
-          { email: { contains: normalizedSearch, mode: "insensitive" } },
-          { phone: { contains: normalizedSearch, mode: "insensitive" } },
-          { companyName: { contains: normalizedSearch, mode: "insensitive" } },
-        ];
+        // Use Arabic-aware search
+        const matchingIds = await db.$queryRaw<{ id: string }[]>`
+          SELECT "id" FROM "User"
+          WHERE ${arabicSearchOr(['"name"', '"email"', '"phone"', '"companyName"'], input.search)}
+        `;
+        where.id = { in: matchingIds.map((m) => m.id) };
       }
 
       if (input.labelIds && input.labelIds.length > 0) {

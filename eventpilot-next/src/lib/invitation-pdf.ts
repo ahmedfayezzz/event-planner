@@ -53,7 +53,9 @@ export interface InvitationPdfOptions {
 /**
  * Get the primary sponsor link (website first, then social media)
  */
-function getSponsorLink(socialMediaLinks: Record<string, string> | null | undefined): string | null {
+function getSponsorLink(
+  socialMediaLinks: Record<string, string> | null | undefined
+): string | null {
   if (!socialMediaLinks) return null;
 
   // Priority order: website > twitter > instagram > linkedin > other
@@ -102,7 +104,7 @@ let templateBuffer: Buffer | null = null;
 // }
 
 /**
- * Render Arabic text to a PNG buffer using canvas
+ * Render Arabic text to a PNG buffer using canvas with word wrapping
  */
 function renderArabicTextToImage(
   text: string,
@@ -128,14 +130,36 @@ function renderArabicTextToImage(
   const fontString = `${fontSize}px "${fontFamily}"`;
   measureCtx.font = fontString;
 
-  // Measure the text
-  const metrics = measureCtx.measureText(text);
-  const textWidth = Math.min(metrics.width, maxWidth);
-  const textHeight = fontSize * 1.4;
+  // Split text into words and wrap lines
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let currentLine = "";
 
-  // Create the actual canvas with proper dimensions
-  const canvasWidth = Math.ceil(textWidth + padding * 2);
-  const canvasHeight = Math.ceil(textHeight + padding * 2);
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const testWidth = measureCtx.measureText(testLine).width;
+
+    if (testWidth <= maxWidth || !currentLine) {
+      currentLine = testLine;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  // Calculate dimensions
+  const lineHeight = fontSize * 1.4;
+  let maxLineWidth = 0;
+  for (const line of lines) {
+    const lineWidth = measureCtx.measureText(line).width;
+    if (lineWidth > maxLineWidth) maxLineWidth = lineWidth;
+  }
+
+  const canvasWidth = Math.ceil(Math.min(maxLineWidth, maxWidth) + padding * 2);
+  const canvasHeight = Math.ceil(lines.length * lineHeight + padding * 2);
 
   const canvas = createCanvas(canvasWidth, canvasHeight);
   const ctx = canvas.getContext("2d");
@@ -149,14 +173,54 @@ function renderArabicTextToImage(
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  // Draw text centered
-  ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
+  // Draw each line centered
+  for (let i = 0; i < lines.length; i++) {
+    const y = padding + lineHeight * (i + 0.5);
+    ctx.fillText(lines[i], canvasWidth / 2, y);
+  }
 
   return {
     buffer: canvas.toBuffer("image/png"),
     width: canvasWidth,
     height: canvasHeight,
   };
+}
+
+/**
+ * Convert image to TEXT_COLOR while preserving alpha channel
+ */
+async function convertImageToTextColor(imageBuffer: Buffer): Promise<Buffer> {
+  const img = await loadImage(imageBuffer);
+  const canvas = createCanvas(img.width, img.height);
+  const ctx = canvas.getContext("2d");
+
+  // Draw original image
+  ctx.drawImage(img, 0, 0);
+
+  // Get image data
+  const imageData = ctx.getImageData(0, 0, img.width, img.height);
+  const data = imageData.data;
+
+  // Parse TEXT_COLOR (#E8DFC9) to RGB
+  const r = 0xe8; // 232
+  const g = 0xdf; // 223
+  const b = 0xc9; // 201
+
+  // Convert all non-transparent pixels to TEXT_COLOR
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3];
+    if (alpha > 0) {
+      // Set RGB to TEXT_COLOR, preserve alpha
+      data[i] = r;
+      data[i + 1] = g;
+      data[i + 2] = b;
+    }
+  }
+
+  // Put modified image data back
+  ctx.putImageData(imageData, 0, 0);
+
+  return canvas.toBuffer("image/png");
 }
 
 /**
@@ -233,7 +297,7 @@ export async function generateInvitationPdf(
 
     // Location link area - middle section near bottom
     const locationLinkY = dateY;
-    const locationLinkX = width * 0.5;
+    const locationLinkX = width * 0.7;
 
     // ====================================
     // DRAW DATE (Two lines: date on top, day name below)
@@ -358,9 +422,10 @@ export async function generateInvitationPdf(
 
         // Calculate actual row height - use ideal if fits, otherwise shrink to fit
         const idealContainerHeight = rows * idealRowHeight;
-        const rowHeight = idealContainerHeight <= maxContainerHeight
-          ? idealRowHeight
-          : maxContainerHeight / rows;
+        const rowHeight =
+          idealContainerHeight <= maxContainerHeight
+            ? idealRowHeight
+            : maxContainerHeight / rows;
 
         const containerHeight = rows * rowHeight;
         const containerBottom = containerTop - containerHeight;
@@ -377,7 +442,7 @@ export async function generateInvitationPdf(
 
         // Use calculated logo size
         const maxLogoSize = fixedLogoSize;
-        const fontSize = Math.max(12, Math.min(24, maxLogoSize * 0.3));
+        const fontSize = Math.max(16, Math.min(30, maxLogoSize * 0.3));
         const bgPadding = 10;
         const borderRadius = 15;
 
@@ -400,7 +465,12 @@ export async function generateInvitationPdf(
         bgCtx.lineTo(bgWidth * scale - r, 0);
         bgCtx.quadraticCurveTo(bgWidth * scale, 0, bgWidth * scale, r);
         bgCtx.lineTo(bgWidth * scale, bgHeight * scale - r);
-        bgCtx.quadraticCurveTo(bgWidth * scale, bgHeight * scale, bgWidth * scale - r, bgHeight * scale);
+        bgCtx.quadraticCurveTo(
+          bgWidth * scale,
+          bgHeight * scale,
+          bgWidth * scale - r,
+          bgHeight * scale
+        );
         bgCtx.lineTo(r, bgHeight * scale);
         bgCtx.quadraticCurveTo(0, bgHeight * scale, 0, bgHeight * scale - r);
         bgCtx.lineTo(0, r);
@@ -408,7 +478,7 @@ export async function generateInvitationPdf(
         bgCtx.closePath();
 
         // Fill with 50% transparent #01142d
-        bgCtx.fillStyle = "rgba(1, 20, 45, 0.5)";
+        bgCtx.fillStyle = "rgba(1, 20, 45, 0.6)";
         bgCtx.fill();
 
         const bgImageBuffer = bgCanvas.toBuffer("image/png");
@@ -452,7 +522,8 @@ export async function generateInvitationPdf(
 
           // Calculate position (RTL: start from right)
           const colFromRight = colsInThisRow - 1 - colInRow;
-          const cellCenterX = containerLeft + (colFromRight + 0.5) * rowCellWidth;
+          const cellCenterX =
+            containerLeft + (colFromRight + 0.5) * rowCellWidth;
           const cellCenterY = containerTop - (row + 0.5) * cellHeight;
 
           // Try to load and embed sponsor logo
@@ -518,13 +589,13 @@ export async function generateInvitationPdf(
                   pngBuffer = canvas.toBuffer("image/png");
                 }
 
-                // Crop to circle - commented out for now
-                // const circleSize = Math.round(maxLogoSize);
-                // const circularBuffer = await cropImageToCircle(pngBuffer, circleSize);
-                // const logoImage = await pdfDoc.embedPng(circularBuffer);
+                // Convert logo to TEXT_COLOR for dark background
+                const coloredPngBuffer = await convertImageToTextColor(
+                  pngBuffer
+                );
 
-                // Use original image without circular cropping
-                const logoImage = await pdfDoc.embedPng(pngBuffer);
+                // Embed the colored logo
+                const logoImage = await pdfDoc.embedPng(coloredPngBuffer);
 
                 // Calculate logo dimensions to fit cell
                 const aspectRatio = logoImage.width / logoImage.height;
@@ -563,7 +634,10 @@ export async function generateInvitationPdf(
                     A: actionDict,
                   });
 
-                  const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+                  const existingAnnots = page.node.lookup(
+                    PDFName.of("Annots"),
+                    PDFArray
+                  );
                   if (existingAnnots) {
                     existingAnnots.push(linkAnnotation);
                   } else {
@@ -583,7 +657,7 @@ export async function generateInvitationPdf(
               );
               // Fall back to text
               const nameImageData = renderArabicTextToImage(sponsor.name, {
-                fontFamily: "Abar",
+                fontFamily: "AbarBold",
                 fontSize,
                 color: TEXT_COLOR,
                 maxWidth: cellWidth - padding * 2,
@@ -612,12 +686,20 @@ export async function generateInvitationPdf(
                 const linkAnnotation = pdfDoc.context.obj({
                   Type: "Annot",
                   Subtype: "Link",
-                  Rect: [linkX, linkY, linkX + nameImageData.width, linkY + nameImageData.height],
+                  Rect: [
+                    linkX,
+                    linkY,
+                    linkX + nameImageData.width,
+                    linkY + nameImageData.height,
+                  ],
                   Border: [0, 0, 0],
                   A: actionDict,
                 });
 
-                const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+                const existingAnnots = page.node.lookup(
+                  PDFName.of("Annots"),
+                  PDFArray
+                );
                 if (existingAnnots) {
                   existingAnnots.push(linkAnnotation);
                 } else {
@@ -631,7 +713,7 @@ export async function generateInvitationPdf(
           } else {
             // No logo, draw sponsor name
             const nameImageData = renderArabicTextToImage(sponsor.name, {
-              fontFamily: "Abar",
+              fontFamily: "AbarBold",
               fontSize,
               color: TEXT_COLOR,
               maxWidth: cellWidth - padding * 2,
@@ -660,12 +742,20 @@ export async function generateInvitationPdf(
               const linkAnnotation = pdfDoc.context.obj({
                 Type: "Annot",
                 Subtype: "Link",
-                Rect: [linkX, linkY, linkX + nameImageData.width, linkY + nameImageData.height],
+                Rect: [
+                  linkX,
+                  linkY,
+                  linkX + nameImageData.width,
+                  linkY + nameImageData.height,
+                ],
                 Border: [0, 0, 0],
                 A: actionDict,
               });
 
-              const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+              const existingAnnots = page.node.lookup(
+                PDFName.of("Annots"),
+                PDFArray
+              );
               if (existingAnnots) {
                 existingAnnots.push(linkAnnotation);
               } else {

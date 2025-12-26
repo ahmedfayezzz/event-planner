@@ -70,12 +70,19 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Download,
   ExternalLink,
+  Eye,
+  File,
+  FileImage,
+  FileSpreadsheet,
+  FileText,
   ImageIcon,
   Loader2,
   Mail,
   MessageCircle,
   MessageSquare,
+  Paperclip,
   Pencil,
   Phone,
   Search,
@@ -736,6 +743,12 @@ export default function SponsorProfilePage({
               )}
             </CardContent>
           </Card>
+
+          {/* Attachments Card */}
+          <SponsorAttachmentsCard
+            sponsorId={sponsor.id}
+            onUpdate={() => utils.sponsor.getById.invalidate({ id })}
+          />
 
           {/* Linked User Card */}
           {sponsor.user && (
@@ -2047,5 +2060,469 @@ function SponsorNotesCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Attachment type for preview
+interface AttachmentData {
+  id: string;
+  filename: string;
+  url: string;
+  contentType: string;
+  size: number;
+  uploadedAt: string;
+}
+
+// Sponsor Attachments Card component
+function SponsorAttachmentsCard({
+  sponsorId,
+  onUpdate,
+}: {
+  sponsorId: string;
+  onUpdate: () => void;
+}) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState<AttachmentData | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const utils = api.useUtils();
+
+  // Fetch attachments
+  const { data: attachments, isLoading } = api.sponsor.getAttachments.useQuery(
+    { sponsorId },
+    { enabled: !!sponsorId }
+  );
+
+  const getPresignedUrl = api.upload.getPresignedUrl.useMutation();
+
+  const addAttachmentMutation = api.sponsor.addAttachment.useMutation({
+    onSuccess: () => {
+      utils.sponsor.getAttachments.invalidate({ sponsorId });
+      onUpdate();
+      toast.success("تم إضافة المرفق بنجاح");
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء إضافة المرفق");
+    },
+  });
+
+  const removeAttachmentMutation = api.sponsor.removeAttachment.useMutation({
+    onSuccess: () => {
+      utils.sponsor.getAttachments.invalidate({ sponsorId });
+      onUpdate();
+      toast.success("تم حذف المرفق بنجاح");
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء حذف المرفق");
+    },
+  });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = [
+      // Documents
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      // Images
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("نوع الملف غير مدعوم");
+      return;
+    }
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast.error("حجم الملف يتجاوز الحد المسموح (10 ميجابايت)");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const { uploadUrl, publicUrl } = await getPresignedUrl.mutateAsync({
+        imageType: "sponsorAttachment",
+        fileName: file.name,
+        contentType: file.type,
+        fileSize: file.size,
+        entityId: sponsorId,
+      });
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("فشل رفع الملف");
+      }
+
+      // Add attachment metadata to sponsor
+      await addAttachmentMutation.mutateAsync({
+        sponsorId,
+        filename: file.name,
+        url: publicUrl,
+        contentType: file.type,
+        size: file.size,
+      });
+    } catch (error) {
+      console.error("Attachment upload error:", error);
+      toast.error("حدث خطأ أثناء رفع الملف");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const getFileIcon = (contentType: string) => {
+    if (contentType.startsWith("image/")) {
+      return <FileImage className="h-4 w-4 text-blue-500" />;
+    }
+    if (contentType === "application/pdf") {
+      return <FileText className="h-4 w-4 text-red-500" />;
+    }
+    if (
+      contentType.includes("spreadsheet") ||
+      contentType.includes("excel")
+    ) {
+      return <FileSpreadsheet className="h-4 w-4 text-green-500" />;
+    }
+    if (contentType.includes("word") || contentType.includes("document")) {
+      return <FileText className="h-4 w-4 text-blue-600" />;
+    }
+    return <File className="h-4 w-4 text-gray-500" />;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Paperclip className="h-5 w-5" />
+          المرفقات
+          {attachments && attachments.length > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              {attachments.length}
+            </Badge>
+          )}
+        </CardTitle>
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp"
+            onChange={handleFileUpload}
+            className="hidden"
+            disabled={isUploading}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            {isUploading ? (
+              <Loader2 className="h-3 w-3 me-1 animate-spin" />
+            ) : (
+              <Upload className="h-3 w-3 me-1" />
+            )}
+            {isUploading ? "جاري الرفع..." : "إضافة"}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="py-4 text-center">
+            <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+          </div>
+        ) : attachments && attachments.length > 0 ? (
+          <div className="space-y-2">
+            {attachments.map((attachment) => (
+              <AttachmentItem
+                key={attachment.id}
+                attachment={attachment}
+                onRemove={() =>
+                  removeAttachmentMutation.mutate({
+                    sponsorId,
+                    attachmentId: attachment.id,
+                  })
+                }
+                onPreview={() => setPreviewAttachment(attachment)}
+                isRemoving={removeAttachmentMutation.isPending}
+                getFileIcon={getFileIcon}
+                formatFileSize={formatFileSize}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="py-6 text-center text-muted-foreground">
+            <Paperclip className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">لا توجد مرفقات</p>
+            <p className="text-xs mt-1">
+              PDF, Word, Excel, صور (حد أقصى 10 ميجابايت)
+            </p>
+          </div>
+        )}
+      </CardContent>
+
+      {/* Preview Dialog */}
+      <AttachmentPreviewDialog
+        attachment={previewAttachment}
+        onClose={() => setPreviewAttachment(null)}
+        getFileIcon={getFileIcon}
+        formatFileSize={formatFileSize}
+      />
+    </Card>
+  );
+}
+
+// Attachment Preview Dialog component
+function AttachmentPreviewDialog({
+  attachment,
+  onClose,
+  getFileIcon,
+  formatFileSize,
+}: {
+  attachment: AttachmentData | null;
+  onClose: () => void;
+  getFileIcon: (contentType: string) => React.ReactNode;
+  formatFileSize: (bytes: number) => string;
+}) {
+  const { url: presignedUrl, isLoading: isUrlLoading } = usePresignedUrl(attachment?.url ?? null);
+
+  if (!attachment) return null;
+
+  const isImage = attachment.contentType.startsWith("image/");
+  const isPdf = attachment.contentType === "application/pdf";
+  const canPreviewInline = isImage || isPdf;
+
+  // For non-previewable files, open in new tab
+  const handleOpenExternal = () => {
+    if (presignedUrl) {
+      window.open(presignedUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  return (
+    <Dialog open={!!attachment} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className={cn(
+        "max-w-4xl max-h-[90vh] flex flex-col",
+        canPreviewInline ? "p-0" : "p-6"
+      )}>
+        {canPreviewInline ? (
+          <>
+            {/* Header for inline preview */}
+            <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+              <div className="flex items-center gap-3 min-w-0">
+                {getFileIcon(attachment.contentType)}
+                <div className="min-w-0">
+                  <p className="font-medium truncate" title={attachment.filename}>
+                    {attachment.filename}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatFileSize(attachment.size)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                >
+                  <a
+                    href={presignedUrl || attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download={attachment.filename}
+                  >
+                    <Download className="h-4 w-4 me-2" />
+                    تنزيل
+                  </a>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenExternal}
+                >
+                  <ExternalLink className="h-4 w-4 me-2" />
+                  فتح في نافذة جديدة
+                </Button>
+              </div>
+            </div>
+
+            {/* Preview content */}
+            <div className="flex-1 overflow-auto min-h-0 bg-muted/10">
+              {isUrlLoading ? (
+                <div className="flex items-center justify-center h-96">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : isImage ? (
+                <div className="flex items-center justify-center p-4">
+                  <img
+                    src={presignedUrl || attachment.url}
+                    alt={attachment.filename}
+                    className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+                  />
+                </div>
+              ) : isPdf ? (
+                <iframe
+                  src={presignedUrl || attachment.url}
+                  className="w-full h-[70vh] border-0"
+                  title={attachment.filename}
+                />
+              ) : null}
+            </div>
+          </>
+        ) : (
+          /* Non-previewable file dialog */
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                {getFileIcon(attachment.contentType)}
+                <span className="truncate">{attachment.filename}</span>
+              </DialogTitle>
+              <DialogDescription>
+                {formatFileSize(attachment.size)} • لا يمكن معاينة هذا النوع من الملفات مباشرة
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-8 text-center">
+              <File className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground mb-4">
+                هذا النوع من الملفات لا يدعم المعاينة المباشرة
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <Button asChild>
+                  <a
+                    href={presignedUrl || attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download={attachment.filename}
+                  >
+                    <Download className="h-4 w-4 me-2" />
+                    تنزيل الملف
+                  </a>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleOpenExternal}
+                >
+                  <ExternalLink className="h-4 w-4 me-2" />
+                  فتح في نافذة جديدة
+                </Button>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={onClose}>
+                إغلاق
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Attachment Item component with presigned URL support
+function AttachmentItem({
+  attachment,
+  onRemove,
+  onPreview,
+  isRemoving,
+  getFileIcon,
+  formatFileSize,
+}: {
+  attachment: AttachmentData;
+  onRemove: () => void;
+  onPreview: () => void;
+  isRemoving: boolean;
+  getFileIcon: (contentType: string) => React.ReactNode;
+  formatFileSize: (bytes: number) => string;
+}) {
+  const { url: presignedUrl } = usePresignedUrl(attachment.url);
+
+  return (
+    <div
+      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 group cursor-pointer"
+      onClick={onPreview}
+    >
+      <div className="flex-shrink-0">{getFileIcon(attachment.contentType)}</div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate" title={attachment.filename}>
+          {attachment.filename}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {formatFileSize(attachment.size)}
+        </p>
+      </div>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPreview();
+          }}
+          title="معاينة"
+        >
+          <Eye className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          asChild
+          title="تنزيل"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <a
+            href={presignedUrl || attachment.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            download={attachment.filename}
+          >
+            <Download className="h-3.5 w-3.5" />
+          </a>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-destructive hover:text-destructive"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          disabled={isRemoving}
+          title="حذف"
+        >
+          {isRemoving ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Trash2 className="h-3.5 w-3.5" />
+          )}
+        </Button>
+      </div>
+    </div>
   );
 }

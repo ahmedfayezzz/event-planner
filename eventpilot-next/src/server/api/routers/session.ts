@@ -156,11 +156,12 @@ export const sessionRouter = createTRPCRouter({
 
   /**
    * Get session by ID (public - only returns active/published sessions)
+   * Admins can use adminPreview=true to view unpublished sessions
    */
   getById: publicProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.string(), adminPreview: z.boolean().optional() }))
     .query(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session: userSession } = ctx;
 
       const session = await db.session.findUnique({
         where: { id: input.id },
@@ -194,8 +195,12 @@ export const sessionRouter = createTRPCRouter({
         });
       }
 
-      // Only return active (published) sessions in public view
-      if (session.visibilityStatus !== "active") {
+      // Check if admin preview mode is requested
+      const isAdmin = userSession?.user?.role === "ADMIN" || userSession?.user?.role === "SUPER_ADMIN";
+      const isAdminPreview = input.adminPreview && isAdmin;
+
+      // Only return active (published) sessions in public view (unless admin preview)
+      if (session.visibilityStatus !== "active" && !isAdminPreview) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "الحدث غير موجود",

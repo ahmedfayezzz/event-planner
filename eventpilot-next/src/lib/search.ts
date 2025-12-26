@@ -2,6 +2,15 @@
  * Search utilities for Arabic text normalization and smart search
  */
 
+import { Prisma } from "@prisma/client";
+
+/**
+ * Arabic character mappings for PostgreSQL translate() function.
+ * These must be the same length and in corresponding order.
+ */
+const ARABIC_FROM_CHARS = "أإآٱؤئةى";
+const ARABIC_TO_CHARS = "ااااوييي";
+
 /**
  * Normalizes Arabic text for consistent search matching.
  * Handles:
@@ -87,4 +96,41 @@ export function createSearchFilter(
       },
     })),
   };
+}
+
+/**
+ * Creates a Prisma SQL fragment for Arabic-aware text search.
+ * Uses PostgreSQL translate() function to normalize Arabic characters in the database column.
+ *
+ * @param column - The database column path (e.g., '"User"."name"' or '"Sponsor"."name"')
+ * @param search - The search term
+ * @returns Prisma.Sql fragment for use in raw queries
+ */
+export function arabicContains(column: string, search: string): Prisma.Sql {
+  const normalized = normalizeArabic(search);
+  // Use PostgreSQL translate() to normalize Arabic chars in database, then compare with ILIKE
+  return Prisma.sql`translate(lower(COALESCE(${Prisma.raw(column)}, '')), ${ARABIC_FROM_CHARS}, ${ARABIC_TO_CHARS}) LIKE '%' || ${normalized} || '%'`;
+}
+
+/**
+ * Creates a combined OR condition for multiple columns with Arabic search.
+ *
+ * @param columns - Array of database column paths
+ * @param search - The search term
+ * @returns Prisma.Sql fragment with OR conditions
+ */
+export function arabicSearchOr(columns: string[], search: string): Prisma.Sql {
+  if (columns.length === 0) {
+    return Prisma.sql`FALSE`;
+  }
+
+  const conditions = columns.map(col => arabicContains(col, search));
+
+  // Join conditions with OR
+  let result = conditions[0]!;
+  for (let i = 1; i < conditions.length; i++) {
+    result = Prisma.sql`${result} OR ${conditions[i]}`;
+  }
+
+  return Prisma.sql`(${result})`;
 }

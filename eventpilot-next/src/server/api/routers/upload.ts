@@ -13,7 +13,7 @@ import {
 } from "@/lib/s3";
 
 // Zod schema for image types
-const imageTypeSchema = z.enum(["avatar", "banner", "logo", "sponsorLogo"]);
+const imageTypeSchema = z.enum(["avatar", "banner", "logo", "sponsorLogo", "sponsorAttachment"]);
 
 export const uploadRouter = createTRPCRouter({
   /**

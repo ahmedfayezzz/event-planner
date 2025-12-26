@@ -282,6 +282,7 @@ model Sponsor {
   eventSponsorships    EventSponsorship[]
   notes                SponsorNote[]
   labels               SponsorLabel[] @relation("SponsorToLabel")
+  sponsorAttachments   SponsorAttachment[]
 
   @@index([userId])
   @@index([type])
@@ -399,6 +400,37 @@ model SponsorLabel {
   sponsors  Sponsor[] @relation("SponsorToLabel")
 
   @@index([name])
+}
+
+// Attachment entity - can be linked to various entities via pivot tables
+model Attachment {
+  id          String   @id @default(cuid())
+  filename    String
+  url         String
+  contentType String
+  size        Int
+  uploadedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  // Pivot relations
+  sponsors    SponsorAttachment[]
+  // Future: users UserAttachment[]
+  // Future: sessions SessionAttachment[]
+}
+
+// Pivot table linking Attachments to Sponsors
+model SponsorAttachment {
+  id           String     @id @default(cuid())
+  sponsorId    String
+  attachmentId String
+  createdAt    DateTime   @default(now())
+
+  sponsor      Sponsor    @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+  attachment   Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+
+  @@unique([sponsorId, attachmentId])
+  @@index([sponsorId])
+  @@index([attachmentId])
 }
 
 model EmailLog {

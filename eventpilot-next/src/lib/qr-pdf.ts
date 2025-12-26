@@ -74,8 +74,7 @@ function getSponsorLink(socialMediaLinks: Record<string, string> | null | undefi
 let templateBuffer: Buffer | null = null;
 
 /**
- * Render Arabic text to a PNG buffer using canvas
- * Canvas properly handles Arabic shaping and RTL automatically
+ * Render Arabic text to a PNG buffer using canvas with word wrapping
  */
 function renderArabicTextToImage(
   text: string,
@@ -101,14 +100,36 @@ function renderArabicTextToImage(
   const fontString = `${fontSize}px "${fontFamily}"`;
   measureCtx.font = fontString;
 
-  // Measure the text
-  const metrics = measureCtx.measureText(text);
-  const textWidth = Math.min(metrics.width, maxWidth);
-  const textHeight = fontSize * 1.4; // Approximate height with buffer
+  // Split text into words and wrap lines
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let currentLine = "";
 
-  // Create the actual canvas with proper dimensions
-  const canvasWidth = Math.ceil(textWidth + padding * 2);
-  const canvasHeight = Math.ceil(textHeight + padding * 2);
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const testWidth = measureCtx.measureText(testLine).width;
+
+    if (testWidth <= maxWidth || !currentLine) {
+      currentLine = testLine;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  // Calculate dimensions
+  const lineHeight = fontSize * 1.4;
+  let maxLineWidth = 0;
+  for (const line of lines) {
+    const lineWidth = measureCtx.measureText(line).width;
+    if (lineWidth > maxLineWidth) maxLineWidth = lineWidth;
+  }
+
+  const canvasWidth = Math.ceil(Math.min(maxLineWidth, maxWidth) + padding * 2);
+  const canvasHeight = Math.ceil(lines.length * lineHeight + padding * 2);
 
   const canvas = createCanvas(canvasWidth, canvasHeight);
   const ctx = canvas.getContext("2d");
@@ -122,14 +143,54 @@ function renderArabicTextToImage(
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  // Draw text centered
-  ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
+  // Draw each line centered
+  for (let i = 0; i < lines.length; i++) {
+    const y = padding + lineHeight * (i + 0.5);
+    ctx.fillText(lines[i], canvasWidth / 2, y);
+  }
 
   return {
     buffer: canvas.toBuffer("image/png"),
     width: canvasWidth,
     height: canvasHeight,
   };
+}
+
+/**
+ * Convert image to TEXT_COLOR while preserving alpha channel
+ */
+async function convertImageToTextColor(imageBuffer: Buffer): Promise<Buffer> {
+  const img = await loadImage(imageBuffer);
+  const canvas = createCanvas(img.width, img.height);
+  const ctx = canvas.getContext("2d");
+
+  // Draw original image
+  ctx.drawImage(img, 0, 0);
+
+  // Get image data
+  const imageData = ctx.getImageData(0, 0, img.width, img.height);
+  const data = imageData.data;
+
+  // Parse TEXT_COLOR (#E8DFC9) to RGB
+  const r = 0xe8; // 232
+  const g = 0xdf; // 223
+  const b = 0xc9; // 201
+
+  // Convert all non-transparent pixels to TEXT_COLOR
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3];
+    if (alpha > 0) {
+      // Set RGB to TEXT_COLOR, preserve alpha
+      data[i] = r;
+      data[i + 1] = g;
+      data[i + 2] = b;
+    }
+  }
+
+  // Put modified image data back
+  ctx.putImageData(imageData, 0, 0);
+
+  return canvas.toBuffer("image/png");
 }
 
 /**
@@ -553,8 +614,11 @@ export async function generateBrandedQRPdf(
                   pngBuffer = canvas.toBuffer("image/png");
                 }
 
-                // Use original image without circular cropping
-                const logoImage = await pdfDoc.embedPng(pngBuffer);
+                // Convert logo to TEXT_COLOR for dark background
+                const coloredPngBuffer = await convertImageToTextColor(pngBuffer);
+
+                // Embed the colored logo
+                const logoImage = await pdfDoc.embedPng(coloredPngBuffer);
 
                 // Calculate logo dimensions to fit cell
                 const aspectRatio = logoImage.width / logoImage.height;

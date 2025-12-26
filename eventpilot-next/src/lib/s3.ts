@@ -80,6 +80,24 @@ export const IMAGE_TYPES = {
     ],
     dimensions: { width: 400, height: 400 },
   },
+  sponsorAttachment: {
+    folder: "sponsors/attachments",
+    maxSizeBytes: 10 * 1024 * 1024, // 10MB
+    allowedContentTypes: [
+      // Documents
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      // Images
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ],
+    dimensions: null, // No dimension restrictions for attachments
+  },
 } as const;
 
 export type ImageType = keyof typeof IMAGE_TYPES;

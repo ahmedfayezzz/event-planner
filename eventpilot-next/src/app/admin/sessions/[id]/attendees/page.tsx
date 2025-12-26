@@ -21,7 +21,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { formatArabicDate, formatArabicTime, formatArabicDateTime, getWhatsAppUrl } from "@/lib/utils";
+import {
+  formatArabicDate,
+  formatArabicTime,
+  formatArabicDateTime,
+  getWhatsAppUrl,
+} from "@/lib/utils";
 import { normalizeArabic } from "@/lib/search";
 import {
   AlertDialog,
@@ -166,7 +171,9 @@ export default function SessionAttendeesPage({
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(filteredRegistrations.map((r: RegistrationItem) => r.id)));
+      setSelectedIds(
+        new Set(filteredRegistrations.map((r: RegistrationItem) => r.id))
+      );
     } else {
       setSelectedIds(new Set());
     }
@@ -246,14 +253,19 @@ export default function SessionAttendeesPage({
 
   // Get selected registrations data
   const selectedRegistrations = useMemo(() => {
-    return filteredRegistrations.filter((r: RegistrationItem) => selectedIds.has(r.id));
+    return filteredRegistrations.filter((r: RegistrationItem) =>
+      selectedIds.has(r.id)
+    );
   }, [filteredRegistrations, selectedIds]);
 
   // Get pending selected registrations (for approve action)
-  const pendingSelectedCount = selectedRegistrations.filter((r: RegistrationItem) => !r.isApproved).length;
+  const pendingSelectedCount = selectedRegistrations.filter(
+    (r: RegistrationItem) => !r.isApproved
+  ).length;
 
   // Check if all filtered items are selected
-  const isAllSelected = filteredRegistrations.length > 0 &&
+  const isAllSelected =
+    filteredRegistrations.length > 0 &&
     filteredRegistrations.every((r: RegistrationItem) => selectedIds.has(r.id));
   const isSomeSelected = selectedIds.size > 0 && !isAllSelected;
 
@@ -267,13 +279,14 @@ export default function SessionAttendeesPage({
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
     const qrPageUrl = `${baseUrl}/qr/${reg.id}`;
 
-    const message = `السلام عليكم ${reg.name || ""}،
+    const message = `السلام عليكم
+${reg.name || ""}،
 
-تم تأكيد تسجيلكم في حدث "${session?.title}"
-📅 التاريخ: ${session ? formatArabicDate(new Date(session.date)) : ""}
-📍 المكان: ${session?.location || "سيتم تحديده"}
+نتشرف بحضوركم لحدث "${session?.title}"
+التاريخ: ${session ? formatArabicDate(new Date(session.date)) : ""}
+المكان: ${session?.location || "سيتم تحديده"}
 
-🎫 رمز الحضور (QR):
+رمز الحضور (QR):
 ${qrPageUrl}
 
 نتشرف بحضوركم.
@@ -286,7 +299,9 @@ ${qrPageUrl}
 
   // Handle bulk WhatsApp - opens first selected with phone
   const handleBulkWhatsApp = () => {
-    const withPhone = selectedRegistrations.filter((r: RegistrationItem) => r.phone);
+    const withPhone = selectedRegistrations.filter(
+      (r: RegistrationItem) => r.phone
+    );
     if (withPhone.length === 0) {
       toast.error("لا يوجد أرقام هاتف للمحددين");
       return;
@@ -308,14 +323,23 @@ ${qrPageUrl}
       return;
     }
 
-    const headers = ["الاسم", "البريد", "الهاتف", "الشركة", "المنصب", "النوع", "الحالة", "تاريخ التسجيل"];
+    const headers = [
+      "الاسم",
+      "البريد",
+      "الهاتف",
+      "الشركة",
+      "المنصب",
+      "النوع",
+      "الحالة",
+      "تاريخ التسجيل",
+    ];
     const rows = selectedRegistrations.map((r: RegistrationItem) => [
       r.name || "",
       r.email || "",
       r.phone || "",
       r.companyName || "",
       r.position || "",
-      r.isInvited ? "مرافق" : (r.isGuest ? "زائر" : "عضو"),
+      r.isInvited ? "مرافق" : r.isGuest ? "زائر" : "عضو",
       r.isApproved ? "مؤكد" : "معلق",
       formatArabicDateTime(new Date(r.registeredAt)),
     ]);
@@ -325,7 +349,9 @@ ${qrPageUrl}
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
     ].join("\n");
 
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `selected-attendees-${session?.sessionNumber || id}.csv`;
@@ -402,7 +428,9 @@ ${qrPageUrl}
           {stats.pending > 0 && (
             <Button
               variant="outline"
-              onClick={() => setConfirmAction({ type: "approveAll", count: stats.pending })}
+              onClick={() =>
+                setConfirmAction({ type: "approveAll", count: stats.pending })
+              }
               disabled={approveAllMutation.isPending}
             >
               <CheckCheck className="me-2 h-4 w-4" />
@@ -425,9 +453,7 @@ ${qrPageUrl}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {stats.total}
-            </div>
+            <div className="text-2xl font-bold">{stats.total}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {stats.direct} مباشر + {stats.invited} مرافق
             </p>
@@ -435,7 +461,9 @@ ${qrPageUrl}
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">المسجلين مباشرة</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              المسجلين مباشرة
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -467,20 +495,21 @@ ${qrPageUrl}
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4">
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterType)} className="w-fit">
+        <Tabs
+          value={filter}
+          onValueChange={(v) => setFilter(v as FilterType)}
+          className="w-fit"
+        >
           <TabsList>
-            <TabsTrigger value="all">
-              الكل ({stats.total})
-            </TabsTrigger>
-            <TabsTrigger value="direct">
-              مباشر ({stats.direct})
-            </TabsTrigger>
-            <TabsTrigger value="invited">
-              مرافقين ({stats.invited})
-            </TabsTrigger>
+            <TabsTrigger value="all">الكل ({stats.total})</TabsTrigger>
+            <TabsTrigger value="direct">مباشر ({stats.direct})</TabsTrigger>
+            <TabsTrigger value="invited">مرافقين ({stats.invited})</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilterType)}>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as StatusFilterType)}
+        >
           <SelectTrigger className="w-40">
             <SelectValue placeholder="الحالة" />
           </SelectTrigger>
@@ -520,7 +549,12 @@ ${qrPageUrl}
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setConfirmAction({ type: "approveSelected", count: pendingSelectedCount })}
+                    onClick={() =>
+                      setConfirmAction({
+                        type: "approveSelected",
+                        count: pendingSelectedCount,
+                      })
+                    }
                     disabled={approveSelectedMutation.isPending}
                   >
                     {approveSelectedMutation.isPending ? (
@@ -531,11 +565,19 @@ ${qrPageUrl}
                     تأكيد ({pendingSelectedCount})
                   </Button>
                 )}
-                <Button variant="outline" size="sm" onClick={handleBulkWhatsApp}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkWhatsApp}
+                >
                   <MessageCircle className="h-4 w-4 me-1" />
                   واتساب
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExportSelected}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportSelected}
+                >
                   <Download className="h-4 w-4 me-1" />
                   تصدير المحدد
                 </Button>
@@ -576,7 +618,8 @@ ${qrPageUrl}
                         checked={isAllSelected}
                         ref={(el) => {
                           if (el) {
-                            (el as unknown as HTMLInputElement).indeterminate = isSomeSelected;
+                            (el as unknown as HTMLInputElement).indeterminate =
+                              isSomeSelected;
                           }
                         }}
                         onCheckedChange={handleSelectAll}
@@ -584,15 +627,35 @@ ${qrPageUrl}
                       />
                     </TableHead>
                     <TableHead>الاسم</TableHead>
-                    <TableHead className="hidden md:table-cell">التواصل</TableHead>
-                    <TableHead className="hidden lg:table-cell">الشركة</TableHead>
-                    <TableHead className="hidden lg:table-cell">التصنيفات</TableHead>
-                    <TableHead className="hidden lg:table-cell">النوع</TableHead>
-                    {filter !== "invited" && <TableHead className="hidden lg:table-cell">المرافقين</TableHead>}
-                    {filter !== "direct" && <TableHead className="hidden lg:table-cell">مدعو من</TableHead>}
+                    <TableHead className="hidden md:table-cell">
+                      التواصل
+                    </TableHead>
+                    <TableHead className="hidden lg:table-cell">
+                      الشركة
+                    </TableHead>
+                    <TableHead className="hidden lg:table-cell">
+                      التصنيفات
+                    </TableHead>
+                    <TableHead className="hidden lg:table-cell">
+                      النوع
+                    </TableHead>
+                    {filter !== "invited" && (
+                      <TableHead className="hidden lg:table-cell">
+                        المرافقين
+                      </TableHead>
+                    )}
+                    {filter !== "direct" && (
+                      <TableHead className="hidden lg:table-cell">
+                        مدعو من
+                      </TableHead>
+                    )}
                     <TableHead>الحالة</TableHead>
-                    <TableHead className="hidden md:table-cell">تاريخ التسجيل</TableHead>
-                    <TableHead className="hidden md:table-cell">الإجراءات</TableHead>
+                    <TableHead className="hidden md:table-cell">
+                      تاريخ التسجيل
+                    </TableHead>
+                    <TableHead className="hidden md:table-cell">
+                      الإجراءات
+                    </TableHead>
                     {/* Mobile expand button */}
                     <TableHead className="md:hidden w-10"></TableHead>
                   </TableRow>
@@ -608,277 +671,327 @@ ${qrPageUrl}
                             expanded && "md:border-b border-b-0"
                           )}
                         >
-                            <TableCell>
-                              <Checkbox
-                                checked={selectedIds.has(reg.id)}
-                                onCheckedChange={(checked) => handleSelectOne(reg.id, checked as boolean)}
-                                aria-label={`تحديد ${reg.name}`}
-                              />
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {reg.userId ? (
-                                <Link
-                                  href={`/admin/users/${reg.userId}`}
-                                  className="text-primary hover:underline"
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedIds.has(reg.id)}
+                              onCheckedChange={(checked) =>
+                                handleSelectOne(reg.id, checked as boolean)
+                              }
+                              aria-label={`تحديد ${reg.name}`}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {reg.userId ? (
+                              <Link
+                                href={`/admin/users/${reg.userId}`}
+                                className="text-primary hover:underline"
+                              >
+                                {reg.name}
+                              </Link>
+                            ) : (
+                              reg.name
+                            )}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <div className="text-sm">
+                              {reg.email && <div>{reg.email}</div>}
+                              {reg.phone && (
+                                <div
+                                  className="text-muted-foreground"
+                                  dir="ltr"
                                 >
-                                  {reg.name}
-                                </Link>
-                              ) : (
-                                reg.name
-                              )}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              <div className="text-sm">
-                                {reg.email && <div>{reg.email}</div>}
-                                {reg.phone && (
-                                  <div className="text-muted-foreground" dir="ltr">{reg.phone}</div>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell">
-                              <div>
-                                <p>{reg.companyName || "-"}</p>
-                                {reg.position && (
-                                  <p className="text-sm text-muted-foreground">{reg.position}</p>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell">
-                              {reg.labels && reg.labels.length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {reg.labels.map((label) => (
-                                    <Badge
-                                      key={label.id}
-                                      variant="outline"
-                                      className="text-xs"
-                                      style={{
-                                        backgroundColor: label.color + "20",
-                                        color: label.color,
-                                        borderColor: label.color + "40",
-                                      }}
-                                    >
-                                      {label.name}
-                                    </Badge>
-                                  ))}
+                                  {reg.phone}
                                 </div>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
                               )}
-                            </TableCell>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            <div>
+                              <p>{reg.companyName || "-"}</p>
+                              {reg.position && (
+                                <p className="text-sm text-muted-foreground">
+                                  {reg.position}
+                                </p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {reg.labels && reg.labels.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {reg.labels.map((label) => (
+                                  <Badge
+                                    key={label.id}
+                                    variant="outline"
+                                    className="text-xs"
+                                    style={{
+                                      backgroundColor: label.color + "20",
+                                      color: label.color,
+                                      borderColor: label.color + "40",
+                                    }}
+                                  >
+                                    {label.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {reg.isInvited ? (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-purple-500/10 text-purple-600 border-purple-200"
+                                >
+                                  <UserPlus className="me-1 h-3 w-3" />
+                                  مرافق
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant={
+                                    reg.isGuest ? "secondary" : "default"
+                                  }
+                                >
+                                  {reg.isGuest ? "زائر" : "عضو"}
+                                </Badge>
+                              )}
+                              {reg.isManual && (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-blue-500/10 text-blue-600 border-blue-200"
+                                >
+                                  يدوي
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          {filter !== "invited" && (
                             <TableCell className="hidden lg:table-cell">
-                              <div className="flex items-center gap-1 flex-wrap">
-                                {reg.isInvited ? (
-                                  <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200">
-                                    <UserPlus className="me-1 h-3 w-3" />
-                                    مرافق
-                                  </Badge>
-                                ) : (
-                                  <Badge variant={reg.isGuest ? "secondary" : "default"}>
-                                    {reg.isGuest ? "زائر" : "عضو"}
-                                  </Badge>
-                                )}
-                                {reg.isManual && (
-                                  <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-200">
-                                    يدوي
-                                  </Badge>
-                                )}
-                              </div>
+                              {reg.companionCount || 0}
                             </TableCell>
-                            {filter !== "invited" && (
-                              <TableCell className="hidden lg:table-cell">{reg.companionCount || 0}</TableCell>
-                            )}
-                            {filter !== "direct" && (
-                              <TableCell className="hidden lg:table-cell text-muted-foreground">
-                                {reg.invitedByName || "-"}
-                              </TableCell>
-                            )}
-                            <TableCell>
-                              <Badge
-                                variant={reg.isApproved ? "default" : "outline"}
-                                className={
-                                  reg.isApproved
-                                    ? "bg-green-500/10 text-green-600 border-green-200"
-                                    : "bg-orange-500/10 text-orange-600 border-orange-200"
-                                }
-                              >
-                                {reg.isApproved ? "مؤكد" : "معلق"}
-                              </Badge>
+                          )}
+                          {filter !== "direct" && (
+                            <TableCell className="hidden lg:table-cell text-muted-foreground">
+                              {reg.invitedByName || "-"}
                             </TableCell>
-                            <TableCell className="hidden md:table-cell text-muted-foreground">
-                              <div className="text-sm">
-                                {formatArabicDate(new Date(reg.registeredAt))}
-                              </div>
-                              <div className="text-xs">
-                                {formatArabicTime(new Date(reg.registeredAt))}
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              <div className="flex items-center gap-1">
-                                {!reg.isApproved && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() =>
-                                      approveMutation.mutate({
-                                        registrationId: reg.id,
-                                      })
-                                    }
-                                    disabled={approveMutation.isPending}
-                                    title="تأكيد التسجيل"
-                                  >
-                                    <Check className="h-4 w-4 text-green-600" />
-                                  </Button>
-                                )}
-                                {reg.phone && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleSendWhatsApp(reg)}
-                                    title="إرسال رسالة واتساب"
-                                  >
-                                    <MessageCircle className="h-4 w-4 text-green-600" />
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                            {/* Mobile expand button */}
-                            <TableCell className="md:hidden">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => toggleRow(reg.id)}
-                              >
-                                {expanded ? (
-                                  <ChevronUp className="h-4 w-4" />
-                                ) : (
-                                  <ChevronDown className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                          {/* Mobile expanded content */}
-                          <tr className="md:hidden">
-                            <td colSpan={4} className="p-0">
-                              <div
-                                className={cn(
-                                  "grid transition-all duration-300 ease-in-out",
-                                  expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-                                )}
-                              >
-                                <div className="overflow-hidden">
-                                  <div className="p-4 bg-muted/30 border-b">
-                                    <div className="grid grid-cols-2 gap-3 text-sm">
-                                      <div className="flex items-center gap-2">
-                                        <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
-                                        <span className="truncate">{reg.email || "-"}</span>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
-                                        <span dir="ltr">{reg.phone || "-"}</span>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                                        <div className="flex items-center gap-1 flex-wrap">
-                                          {reg.isInvited ? (
-                                            <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200">
-                                              <UserPlus className="me-1 h-3 w-3" />
-                                              مرافق
-                                            </Badge>
-                                          ) : (
-                                            <Badge variant={reg.isGuest ? "secondary" : "default"}>
-                                              {reg.isGuest ? "زائر" : "عضو"}
-                                            </Badge>
-                                          )}
-                                          {reg.isManual && (
-                                            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-200">
-                                              يدوي
-                                            </Badge>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                                        <span>{formatArabicDate(new Date(reg.registeredAt))} - {formatArabicTime(new Date(reg.registeredAt))}</span>
-                                      </div>
-                                      {reg.companyName && (
-                                        <div className="flex items-center gap-2">
-                                          <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                                          <span>{reg.companyName}</span>
-                                        </div>
-                                      )}
-                                      {reg.position && (
-                                        <div className="flex items-center gap-2">
-                                          <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
-                                          <span>{reg.position}</span>
-                                        </div>
-                                      )}
-                                      {reg.labels && reg.labels.length > 0 && (
-                                        <div className="flex items-center gap-2 col-span-2">
-                                          <Tag className="h-4 w-4 text-muted-foreground shrink-0" />
-                                          <div className="flex flex-wrap gap-1">
-                                            {reg.labels.map((label) => (
-                                              <Badge
-                                                key={label.id}
-                                                variant="outline"
-                                                className="text-xs"
-                                                style={{
-                                                  backgroundColor: label.color + "20",
-                                                  color: label.color,
-                                                  borderColor: label.color + "40",
-                                                }}
-                                              >
-                                                {label.name}
-                                              </Badge>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                      {!reg.isInvited && (
-                                        <div className="flex items-center gap-2 col-span-2">
-                                          <Users className="h-4 w-4 text-muted-foreground shrink-0" />
-                                          <span>المرافقين: {reg.companionCount || 0}</span>
-                                        </div>
-                                      )}
-                                      {reg.isInvited && reg.invitedByName && (
-                                        <div className="flex items-center gap-2 col-span-2">
-                                          <UserPlus className="h-4 w-4 text-muted-foreground shrink-0" />
-                                          <span>مدعو من: {reg.invitedByName}</span>
-                                        </div>
-                                      )}
+                          )}
+                          <TableCell>
+                            <Badge
+                              variant={reg.isApproved ? "default" : "outline"}
+                              className={
+                                reg.isApproved
+                                  ? "bg-green-500/10 text-green-600 border-green-200"
+                                  : "bg-orange-500/10 text-orange-600 border-orange-200"
+                              }
+                            >
+                              {reg.isApproved ? "مؤكد" : "معلق"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-muted-foreground">
+                            <div className="text-sm">
+                              {formatArabicDate(new Date(reg.registeredAt))}
+                            </div>
+                            <div className="text-xs">
+                              {formatArabicTime(new Date(reg.registeredAt))}
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <div className="flex items-center gap-1">
+                              {!reg.isApproved && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() =>
+                                    approveMutation.mutate({
+                                      registrationId: reg.id,
+                                    })
+                                  }
+                                  disabled={approveMutation.isPending}
+                                  title="تأكيد التسجيل"
+                                >
+                                  <Check className="h-4 w-4 text-green-600" />
+                                </Button>
+                              )}
+                              {reg.phone && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleSendWhatsApp(reg)}
+                                  title="إرسال رسالة واتساب"
+                                >
+                                  <MessageCircle className="h-4 w-4 text-green-600" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                          {/* Mobile expand button */}
+                          <TableCell className="md:hidden">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => toggleRow(reg.id)}
+                            >
+                              {expanded ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        {/* Mobile expanded content */}
+                        <tr className="md:hidden">
+                          <td colSpan={4} className="p-0">
+                            <div
+                              className={cn(
+                                "grid transition-all duration-300 ease-in-out",
+                                expanded
+                                  ? "grid-rows-[1fr] opacity-100"
+                                  : "grid-rows-[0fr] opacity-0"
+                              )}
+                            >
+                              <div className="overflow-hidden">
+                                <div className="p-4 bg-muted/30 border-b">
+                                  <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                                      <span className="truncate">
+                                        {reg.email || "-"}
+                                      </span>
                                     </div>
-                                    {/* Actions */}
-                                    <div className="mt-3 pt-3 border-t flex flex-wrap items-center gap-2">
-                                      {!reg.isApproved && (
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() =>
-                                            approveMutation.mutate({
-                                              registrationId: reg.id,
-                                            })
-                                          }
-                                          disabled={approveMutation.isPending}
-                                        >
-                                          <Check className="me-2 h-4 w-4" />
-                                          تأكيد
-                                        </Button>
-                                      )}
-                                      {reg.phone && (
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => handleSendWhatsApp(reg)}
-                                        >
-                                          <MessageCircle className="me-2 h-4 w-4" />
-                                          واتساب
-                                        </Button>
-                                      )}
+                                    <div className="flex items-center gap-2">
+                                      <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                                      <span dir="ltr">{reg.phone || "-"}</span>
                                     </div>
+                                    <div className="flex items-center gap-2">
+                                      <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                                      <div className="flex items-center gap-1 flex-wrap">
+                                        {reg.isInvited ? (
+                                          <Badge
+                                            variant="outline"
+                                            className="bg-purple-500/10 text-purple-600 border-purple-200"
+                                          >
+                                            <UserPlus className="me-1 h-3 w-3" />
+                                            مرافق
+                                          </Badge>
+                                        ) : (
+                                          <Badge
+                                            variant={
+                                              reg.isGuest
+                                                ? "secondary"
+                                                : "default"
+                                            }
+                                          >
+                                            {reg.isGuest ? "زائر" : "عضو"}
+                                          </Badge>
+                                        )}
+                                        {reg.isManual && (
+                                          <Badge
+                                            variant="outline"
+                                            className="bg-blue-500/10 text-blue-600 border-blue-200"
+                                          >
+                                            يدوي
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                                      <span>
+                                        {formatArabicDate(
+                                          new Date(reg.registeredAt)
+                                        )}{" "}
+                                        -{" "}
+                                        {formatArabicTime(
+                                          new Date(reg.registeredAt)
+                                        )}
+                                      </span>
+                                    </div>
+                                    {reg.companyName && (
+                                      <div className="flex items-center gap-2">
+                                        <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span>{reg.companyName}</span>
+                                      </div>
+                                    )}
+                                    {reg.position && (
+                                      <div className="flex items-center gap-2">
+                                        <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span>{reg.position}</span>
+                                      </div>
+                                    )}
+                                    {reg.labels && reg.labels.length > 0 && (
+                                      <div className="flex items-center gap-2 col-span-2">
+                                        <Tag className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <div className="flex flex-wrap gap-1">
+                                          {reg.labels.map((label) => (
+                                            <Badge
+                                              key={label.id}
+                                              variant="outline"
+                                              className="text-xs"
+                                              style={{
+                                                backgroundColor:
+                                                  label.color + "20",
+                                                color: label.color,
+                                                borderColor: label.color + "40",
+                                              }}
+                                            >
+                                              {label.name}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {!reg.isInvited && (
+                                      <div className="flex items-center gap-2 col-span-2">
+                                        <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span>
+                                          المرافقين: {reg.companionCount || 0}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {reg.isInvited && reg.invitedByName && (
+                                      <div className="flex items-center gap-2 col-span-2">
+                                        <UserPlus className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span>
+                                          مدعو من: {reg.invitedByName}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {/* Actions */}
+                                  <div className="mt-3 pt-3 border-t flex flex-wrap items-center gap-2">
+                                    {!reg.isApproved && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                          approveMutation.mutate({
+                                            registrationId: reg.id,
+                                          })
+                                        }
+                                        disabled={approveMutation.isPending}
+                                      >
+                                        <Check className="me-2 h-4 w-4" />
+                                        تأكيد
+                                      </Button>
+                                    )}
+                                    {reg.phone && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleSendWhatsApp(reg)}
+                                      >
+                                        <MessageCircle className="me-2 h-4 w-4" />
+                                        واتساب
+                                      </Button>
+                                    )}
                                   </div>
                                 </div>
                               </div>
-                            </td>
-                          </tr>
+                            </div>
+                          </td>
+                        </tr>
                       </React.Fragment>
                     );
                   })}
@@ -890,7 +1003,10 @@ ${qrPageUrl}
       </Card>
 
       {/* Confirmation Dialog */}
-      <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
+      <AlertDialog
+        open={!!confirmAction}
+        onOpenChange={() => setConfirmAction(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>تأكيد التسجيلات</AlertDialogTitle>

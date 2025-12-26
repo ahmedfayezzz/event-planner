@@ -49,9 +49,14 @@ export async function generateMetadata({
 
 export default async function SessionDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ preview?: string }>;
 }) {
   const { id } = await params;
-  return <SessionDetailClient id={id} />;
+  const { preview } = await searchParams;
+  const isAdminPreview = preview === "true";
+
+  return <SessionDetailClient id={id} adminPreview={isAdminPreview} />;
 }

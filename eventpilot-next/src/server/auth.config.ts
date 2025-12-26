@@ -21,15 +21,48 @@ export const authConfig = {
                 token.canAccessAnalytics = user.canAccessAnalytics;
                 token.canAccessCheckin = user.canAccessCheckin;
                 token.canAccessSettings = user.canAccessSettings;
+                token.canAccessSuggestions = user.canAccessSuggestions;
+                token.canAccessEmailCampaigns = user.canAccessEmailCampaigns;
             }
 
-            // Handle session update (e.g., after avatar or profile change)
+            // Handle session update (e.g., after avatar, profile, or permission change)
             if (trigger === "update" && sessionUpdate) {
                 if (sessionUpdate.avatarUrl !== undefined) {
                     token.avatarUrl = sessionUpdate.avatarUrl;
                 }
                 if (sessionUpdate.name !== undefined) {
                     token.name = sessionUpdate.name;
+                }
+                // Handle permission updates
+                if (sessionUpdate.canAccessDashboard !== undefined) {
+                    token.canAccessDashboard = sessionUpdate.canAccessDashboard;
+                }
+                if (sessionUpdate.canAccessSessions !== undefined) {
+                    token.canAccessSessions = sessionUpdate.canAccessSessions;
+                }
+                if (sessionUpdate.canAccessUsers !== undefined) {
+                    token.canAccessUsers = sessionUpdate.canAccessUsers;
+                }
+                if (sessionUpdate.canAccessHosts !== undefined) {
+                    token.canAccessHosts = sessionUpdate.canAccessHosts;
+                }
+                if (sessionUpdate.canAccessAnalytics !== undefined) {
+                    token.canAccessAnalytics = sessionUpdate.canAccessAnalytics;
+                }
+                if (sessionUpdate.canAccessCheckin !== undefined) {
+                    token.canAccessCheckin = sessionUpdate.canAccessCheckin;
+                }
+                if (sessionUpdate.canAccessSettings !== undefined) {
+                    token.canAccessSettings = sessionUpdate.canAccessSettings;
+                }
+                if (sessionUpdate.canAccessSuggestions !== undefined) {
+                    token.canAccessSuggestions = sessionUpdate.canAccessSuggestions;
+                }
+                if (sessionUpdate.canAccessEmailCampaigns !== undefined) {
+                    token.canAccessEmailCampaigns = sessionUpdate.canAccessEmailCampaigns;
+                }
+                if (sessionUpdate.role !== undefined) {
+                    token.role = sessionUpdate.role;
                 }
             }
 
@@ -48,6 +81,8 @@ export const authConfig = {
                 session.user.canAccessAnalytics = token.canAccessAnalytics as boolean;
                 session.user.canAccessCheckin = token.canAccessCheckin as boolean;
                 session.user.canAccessSettings = token.canAccessSettings as boolean;
+                session.user.canAccessSuggestions = token.canAccessSuggestions as boolean;
+                session.user.canAccessEmailCampaigns = token.canAccessEmailCampaigns as boolean;
             }
             return session;
         },

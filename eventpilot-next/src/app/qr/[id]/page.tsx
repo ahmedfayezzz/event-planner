@@ -4,20 +4,40 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QRCodeImage } from "@/components/qr-display";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
-import { Download, MapPin, Calendar, ArrowRight, Loader2, ExternalLink, Eye } from "lucide-react";
+import {
+  Download,
+  MapPin,
+  Calendar,
+  ArrowRight,
+  Loader2,
+  ExternalLink,
+  Eye,
+} from "lucide-react";
 import { toast } from "sonner";
 
-export default function PublicQRPage({ params }: { params: Promise<{ id: string }> }) {
+export default function PublicQRPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const { data: qrData, isLoading, error } = api.attendance.getPublicQR.useQuery(
-    { registrationId: id },
-  );
+  const {
+    data: qrData,
+    isLoading,
+    error,
+  } = api.attendance.getPublicQR.useQuery({ registrationId: id });
 
   const utils = api.useUtils();
 
@@ -25,7 +45,9 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
     setIsDownloading(true);
     try {
       // Fetch branded QR code for download
-      const brandedQR = await utils.attendance.getPublicBrandedQR.fetch({ registrationId: id });
+      const brandedQR = await utils.attendance.getPublicBrandedQR.fetch({
+        registrationId: id,
+      });
 
       if (brandedQR?.qrCode) {
         // Convert data URL to Blob for better Safari compatibility
@@ -41,7 +63,10 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
         // Create a link to download the PDF
         const link = document.createElement("a");
         link.href = blobUrl;
-        link.download = `qr-${brandedQR.session.title.replace(/\s+/g, "-")}.pdf`;
+        link.download = `qr-${brandedQR.session.title.replace(
+          /\s+/g,
+          "-"
+        )}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -83,7 +108,8 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
             <CardContent className="py-8">
               <h1 className="text-2xl font-bold mb-4">رمز QR غير متوفر</h1>
               <p className="text-muted-foreground mb-6">
-                {error?.message || "لم يتم العثور على التسجيل أو أنه غير مؤكد بعد"}
+                {error?.message ||
+                  "لم يتم العثور على التسجيل أو أنه غير مؤكد بعد"}
               </p>
               <Button asChild>
                 <Link href="/">
@@ -156,7 +182,12 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
 
             {/* Download & Preview Buttons */}
             <div className="flex gap-2">
-              <Button onClick={handleDownload} className="flex-1" size="lg" disabled={isDownloading}>
+              <Button
+                onClick={handleDownload}
+                className="flex-1"
+                size="lg"
+                disabled={isDownloading}
+              >
                 {isDownloading ? (
                   <>
                     <Loader2 className="h-4 w-4 me-2 animate-spin" />
@@ -169,12 +200,12 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
                   </>
                 )}
               </Button>
-              <Button variant="outline" size="lg" asChild>
+              {/* <Button variant="outline" size="lg" asChild>
                 <Link href={`/qr/${id}/pdf-preview`}>
                   <Eye className="h-4 w-4 me-2" />
                   معاينة
                 </Link>
-              </Button>
+              </Button> */}
             </div>
           </CardContent>
         </Card>
@@ -195,9 +226,7 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
         {/* Footer Link */}
         <div className="text-center">
           <Button variant="ghost" asChild>
-            <Link href={`/session/${qrData.session.id}`}>
-              عرض تفاصيل الحدث
-            </Link>
+            <Link href={`/session/${qrData.session.id}`}>عرض تفاصيل الحدث</Link>
           </Button>
         </div>
       </div>

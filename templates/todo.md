@@ -12,9 +12,20 @@
 - update logos display to have dynamic container
 
 high priority:
-- manual email sending
+<!-- - manual email sending -->
 - 
 
+- add guest image
+- add a way to view session as admin even if it's not published 
+- there should be a way to add multiple guests to the event
+- date is clickable not location in pdf
+- remvove sponsor name in details page of event and add name only in case there is no logo
+
+- add guest profiles and link them to events
+
+- add sponsor profile (links, attachments, about etc)
+
+- admin role updates not being reflected properly without re-login (even after login for email campaign) (no appearing in side menu)
 
 sponsors:
 - calender for sponsors

@@ -31,6 +31,7 @@ import {
   Link2,
   Twitter,
   Building2,
+  Eye,
 } from "lucide-react";
 import { usePresignedUrl } from "@/hooks/use-presigned-url";
 import { copyToClipboard, shareOnTwitter, shareOnWhatsApp } from "@/lib/utils";
@@ -73,9 +74,12 @@ function SponsorLogo({
   const { url, isLoading } = usePresignedUrl(logoUrl);
 
   if (!logoUrl) {
+    // Show sponsor name as the logo when no image is available
     return (
-      <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg bg-primary/10 flex items-center justify-center">
-        <Building2 className="w-6 h-6 md:w-8 md:h-8 text-primary/60" />
+      <div className="h-12 md:h-16 px-3 md:px-4 rounded-lg bg-primary/10 flex items-center justify-center">
+        <span className="text-xs md:text-sm font-semibold text-primary text-center line-clamp-2">
+          {name}
+        </span>
       </div>
     );
   }
@@ -104,9 +108,9 @@ function SponsorLogo({
   );
 }
 
-export function SessionDetailClient({ id }: { id: string }) {
+export function SessionDetailClient({ id, adminPreview = false }: { id: string; adminPreview?: boolean }) {
   const { status: authStatus } = useSession();
-  const { data: session, isLoading } = api.session.getById.useQuery({ id });
+  const { data: session, isLoading } = api.session.getById.useQuery({ id, adminPreview });
   const { data: registration } = api.session.checkRegistration.useQuery(
     { sessionId: id },
     { enabled: authStatus === "authenticated" }
@@ -168,6 +172,16 @@ export function SessionDetailClient({ id }: { id: string }) {
 
   return (
     <div className="min-h-screen bg-muted/30">
+      {/* Admin Preview Banner */}
+      {adminPreview && session.visibilityStatus !== "active" && (
+        <div className="bg-amber-500 text-white py-2 px-4 text-center text-sm font-medium">
+          <span className="inline-flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            وضع المعاينة - هذا الحدث غير منشور للعامة
+          </span>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="relative h-40 md:h-56 lg:h-72 bg-primary overflow-hidden">
         <div className="absolute inset-0 bg-pattern-sadu-chain opacity-[0.06]"></div>
@@ -523,16 +537,11 @@ export function SessionDetailClient({ id }: { id: string }) {
                       {session.sponsors.map((sponsor) => {
                         const sponsorLink = getSponsorLink(sponsor.socialMediaLinks);
                         const logoContent = (
-                          <>
-                            <SponsorLogo
-                              logoUrl={sponsor.logoUrl}
-                              name={sponsor.name}
-                              logoBackground={sponsor.logoBackground}
-                            />
-                            <span className="text-xs md:text-sm font-medium text-foreground text-center max-w-[80px] md:max-w-[100px] line-clamp-2">
-                              {sponsor.name}
-                            </span>
-                          </>
+                          <SponsorLogo
+                            logoUrl={sponsor.logoUrl}
+                            name={sponsor.name}
+                            logoBackground={sponsor.logoBackground}
+                          />
                         );
 
                         return sponsorLink ? (

@@ -1,15 +1,17 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { Prisma } from "@prisma/client";
+// import { createId } from "@paralleldrive/cuid2";
+import { createTRPCRouter, adminProcedure, publicProcedure } from "../trpc";
 import {
-  createTRPCRouter,
-  adminProcedure,
-  publicProcedure,
-} from "../trpc";
-import { getSponsorshipTypeLabel, getSponsorTypeLabel, getSponsorStatusLabel } from "@/lib/constants";
+  getSponsorshipTypeLabel,
+  getSponsorTypeLabel,
+  getSponsorStatusLabel,
+} from "@/lib/constants";
 import { exportToCSV } from "@/lib/utils";
 import { toSaudiTime } from "@/lib/timezone";
-import { normalizeArabic } from "@/lib/search";
+import { arabicSearchOr } from "@/lib/search";
+import { deleteImage, extractKeyFromUrl } from "@/lib/s3";
 
 export const sponsorRouter = createTRPCRouter({
   /**
@@ -17,15 +19,25 @@ export const sponsorRouter = createTRPCRouter({
    */
   getAll: adminProcedure
     .input(
-      z.object({
-        search: z.string().optional(),
-        type: z.enum(["person", "company"]).optional(),
-        status: z.enum(["new", "contacted", "sponsored", "interested_again", "interested_permanent"]).optional(),
-        isActive: z.boolean().optional(),
-        isArchived: z.boolean().optional(),
-        limit: z.number().min(1).max(100).default(50),
-        cursor: z.string().optional(),
-      }).optional()
+      z
+        .object({
+          search: z.string().optional(),
+          type: z.enum(["person", "company"]).optional(),
+          status: z
+            .enum([
+              "new",
+              "contacted",
+              "sponsored",
+              "interested_again",
+              "interested_permanent",
+            ])
+            .optional(),
+          isActive: z.boolean().optional(),
+          isArchived: z.boolean().optional(),
+          limit: z.number().min(1).max(100).default(50),
+          cursor: z.string().optional(),
+        })
+        .optional()
     )
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
@@ -34,14 +46,17 @@ export const sponsorRouter = createTRPCRouter({
       const where: Record<string, any> = {};
 
       if (input?.search) {
-        const normalizedSearch = normalizeArabic(input.search);
-        where.OR = [
-          { name: { contains: normalizedSearch, mode: "insensitive" } },
-          { email: { contains: normalizedSearch, mode: "insensitive" } },
-          { phone: { contains: normalizedSearch, mode: "insensitive" } },
-          // Search by linked user's name
-          { user: { name: { contains: normalizedSearch, mode: "insensitive" } } },
-        ];
+        // Use raw SQL for Arabic-aware search (handles أ/ا matching etc)
+        const matchingIds = await db.$queryRaw<{ id: string }[]>`
+          SELECT DISTINCT s."id"
+          FROM "Sponsor" s
+          LEFT JOIN "User" u ON s."userId" = u."id"
+          WHERE ${arabicSearchOr(
+            ['s."name"', 's."email"', 's."phone"', 'u."name"'],
+            input.search
+          )}
+        `;
+        where.id = { in: matchingIds.map((m) => m.id) };
       }
 
       if (input?.type) {
@@ -186,7 +201,10 @@ export const sponsorRouter = createTRPCRouter({
 
       // Check if active (sponsored in last 3 months)
       const lastSponsorship = sponsor.eventSponsorships[0];
-      if (lastSponsorship && new Date(lastSponsorship.createdAt) >= threeMonthsAgo) {
+      if (
+        lastSponsorship &&
+        new Date(lastSponsorship.createdAt) >= threeMonthsAgo
+      ) {
         activeSponsors++;
       }
 
@@ -194,7 +212,8 @@ export const sponsorRouter = createTRPCRouter({
       if (
         sponsor.status === "contacted" &&
         new Date(sponsor.updatedAt) <= sevenDaysAgo &&
-        (!lastSponsorship || new Date(lastSponsorship.createdAt) < new Date(sponsor.updatedAt))
+        (!lastSponsorship ||
+          new Date(lastSponsorship.createdAt) < new Date(sponsor.updatedAt))
       ) {
         needsFollowUp++;
       }
@@ -221,7 +240,9 @@ export const sponsorRouter = createTRPCRouter({
     let noSponsorship = 0;
 
     for (const session of upcomingSessions) {
-      const types = new Set(session.eventSponsorships.map((s) => s.sponsorshipType));
+      const types = new Set(
+        session.eventSponsorships.map((s) => s.sponsorshipType)
+      );
       const hasDinner = types.has("dinner");
       const hasBeverage = types.has("beverage");
       const hasDessert = types.has("dessert");
@@ -345,10 +366,22 @@ export const sponsorRouter = createTRPCRouter({
     .input(
       z.object({
         name: z.string().min(1, "الاسم مطلوب"),
-        email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable(),
+        email: z
+          .string()
+          .email("البريد الإلكتروني غير صالح")
+          .optional()
+          .nullable(),
         phone: z.string().optional().nullable(),
         type: z.enum(["person", "company"]).default("person"),
-        status: z.enum(["new", "contacted", "sponsored", "interested_again", "interested_permanent"]).default("new"),
+        status: z
+          .enum([
+            "new",
+            "contacted",
+            "sponsored",
+            "interested_again",
+            "interested_permanent",
+          ])
+          .default("new"),
         logoUrl: z.string().optional().nullable(),
         logoBackground: z.string().default("transparent"), // Can be preset value or custom hex color
         sponsorshipTypes: z.array(z.string()).default([]),
@@ -409,10 +442,22 @@ export const sponsorRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         name: z.string().min(1, "الاسم مطلوب").optional(),
-        email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable(),
+        email: z
+          .string()
+          .email("البريد الإلكتروني غير صالح")
+          .optional()
+          .nullable(),
         phone: z.string().optional().nullable(),
         type: z.enum(["person", "company"]).optional(),
-        status: z.enum(["new", "contacted", "sponsored", "interested_again", "interested_permanent"]).optional(),
+        status: z
+          .enum([
+            "new",
+            "contacted",
+            "sponsored",
+            "interested_again",
+            "interested_permanent",
+          ])
+          .optional(),
         logoUrl: z.string().optional().nullable(),
         logoBackground: z.string().optional(), // Can be preset value or custom hex color
         sponsorshipTypes: z.array(z.string()).optional(),
@@ -883,12 +928,17 @@ export const sponsorRouter = createTRPCRouter({
       الهاتف: s.phone || "",
       النوع: getSponsorTypeLabel(s.type),
       الحالة: getSponsorStatusLabel(s.status),
-      "أنواع الرعاية": s.sponsorshipTypes.map(getSponsorshipTypeLabel).join(", "),
+      "أنواع الرعاية": s.sponsorshipTypes
+        .map(getSponsorshipTypeLabel)
+        .join(", "),
       "تفاصيل أخرى": s.sponsorshipOtherText || "",
       "مرتبط بمستخدم": s.user ? "نعم" : "لا",
       "عدد الرعايات": s.eventSponsorships.length,
-      "الفعاليات": s.eventSponsorships.map((e) => e.session.title).join(", "),
-      "تاريخ الإنشاء": toSaudiTime(s.createdAt)?.toLocaleDateString("ar-SA", { numberingSystem: "latn" }) ?? "",
+      الفعاليات: s.eventSponsorships.map((e) => e.session.title).join(", "),
+      "تاريخ الإنشاء":
+        toSaudiTime(s.createdAt)?.toLocaleDateString("ar-SA", {
+          numberingSystem: "latn",
+        }) ?? "",
     }));
 
     const csv = exportToCSV(data);
@@ -929,15 +979,36 @@ export const sponsorRouter = createTRPCRouter({
 
       // Search by title or session number
       if (input.search) {
-        const normalizedSearch = normalizeArabic(input.search);
         const searchNum = parseInt(input.search);
         if (!isNaN(searchNum)) {
-          where.OR = [
-            { title: { contains: normalizedSearch, mode: "insensitive" } },
-            { sessionNumber: searchNum },
-          ];
+          // If numeric, search by session number or title
+          const matchingIds = await db.$queryRaw<{ id: string }[]>`
+            SELECT "id" FROM "Session"
+            WHERE "sessionNumber" = ${searchNum}
+            OR ${arabicSearchOr(['"title"'], input.search)}
+          `;
+          where.id = {
+            ...where.id,
+            in: [
+              ...(where.id?.notIn ? [] : []),
+              ...matchingIds.map((m) => m.id),
+            ],
+          };
         } else {
-          where.title = { contains: normalizedSearch, mode: "insensitive" };
+          // Use raw SQL for Arabic-aware search
+          const matchingIds = await db.$queryRaw<{ id: string }[]>`
+            SELECT "id" FROM "Session"
+            WHERE ${arabicSearchOr(['"title"'], input.search)}
+          `;
+          if (where.id?.notIn) {
+            // Combine with existing notIn filter
+            const filteredIds = matchingIds
+              .map((m) => m.id)
+              .filter((id) => !where.id.notIn.includes(id));
+            where.id = { in: filteredIds };
+          } else {
+            where.id = { in: matchingIds.map((m) => m.id) };
+          }
         }
       }
 
@@ -978,12 +1049,13 @@ export const sponsorRouter = createTRPCRouter({
       };
 
       if (input.search) {
-        const normalizedSearch = normalizeArabic(input.search);
-        where.OR = [
-          { name: { contains: normalizedSearch, mode: "insensitive" } },
-          { email: { contains: normalizedSearch, mode: "insensitive" } },
-          { phone: { contains: normalizedSearch, mode: "insensitive" } },
-        ];
+        // Use raw SQL for Arabic-aware search
+        const matchingIds = await db.$queryRaw<{ id: string }[]>`
+          SELECT "id" FROM "Sponsor"
+          WHERE "isActive" = true AND "isArchived" = false
+          AND ${arabicSearchOr(['"name"', '"email"', '"phone"'], input.search)}
+        `;
+        where.id = { in: matchingIds.map((m) => m.id) };
       }
 
       if (input.sponsorshipType) {
@@ -1109,7 +1181,13 @@ export const sponsorRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
-        status: z.enum(["new", "contacted", "sponsored", "interested_again", "interested_permanent"]),
+        status: z.enum([
+          "new",
+          "contacted",
+          "sponsored",
+          "interested_again",
+          "interested_permanent",
+        ]),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -1146,17 +1224,20 @@ export const sponsorRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
-      const normalizedSearch = normalizeArabic(input.search);
+
+      // Use raw SQL for Arabic-aware search
+      const matchingIds = await db.$queryRaw<{ id: string }[]>`
+        SELECT "id" FROM "User"
+        WHERE "isActive" = true
+        AND ${arabicSearchOr(
+          ['"name"', '"email"', '"phone"', '"username"'],
+          input.search
+        )}
+      `;
 
       const users = await db.user.findMany({
         where: {
-          isActive: true,
-          OR: [
-            { name: { contains: normalizedSearch, mode: "insensitive" } },
-            { email: { contains: normalizedSearch, mode: "insensitive" } },
-            { phone: { contains: normalizedSearch, mode: "insensitive" } },
-            { username: { contains: normalizedSearch, mode: "insensitive" } },
-          ],
+          id: { in: matchingIds.map((m) => m.id) },
         },
         select: {
           id: true,
@@ -1177,6 +1258,164 @@ export const sponsorRouter = createTRPCRouter({
         ...u,
         sponsorCount: u._count.sponsors,
         _count: undefined,
+      }));
+    }),
+
+  // =====================
+  // ATTACHMENTS PROCEDURES
+  // =====================
+
+  /**
+   * Add an attachment to a sponsor (admin only)
+   */
+  addAttachment: adminProcedure
+    .input(
+      z.object({
+        sponsorId: z.string(),
+        filename: z.string().min(1),
+        url: z.string().url(),
+        contentType: z.string().min(1),
+        size: z.number().positive(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Verify sponsor exists
+      const sponsor = await db.sponsor.findUnique({
+        where: { id: input.sponsorId },
+      });
+
+      if (!sponsor) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الراعي غير موجود",
+        });
+      }
+
+      // Create attachment and link to sponsor in a transaction
+      const result = await db.$transaction(async (tx) => {
+        // Create the attachment record
+        const attachment = await tx.attachment.create({
+          data: {
+            filename: input.filename,
+            url: input.url,
+            contentType: input.contentType,
+            size: input.size,
+          },
+        });
+
+        // Create the pivot record linking to sponsor
+        await tx.sponsorAttachment.create({
+          data: {
+            sponsorId: input.sponsorId,
+            attachmentId: attachment.id,
+          },
+        });
+
+        return attachment;
+      });
+
+      return result;
+    }),
+
+  /**
+   * Remove an attachment from a sponsor (admin only)
+   */
+  removeAttachment: adminProcedure
+    .input(
+      z.object({
+        sponsorId: z.string(),
+        attachmentId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Find the pivot record
+      const pivotRecord = await db.sponsorAttachment.findFirst({
+        where: {
+          sponsorId: input.sponsorId,
+          attachmentId: input.attachmentId,
+        },
+        include: {
+          attachment: true,
+        },
+      });
+
+      if (!pivotRecord) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "المرفق غير موجود",
+        });
+      }
+
+      // Delete pivot record first
+      await db.sponsorAttachment.delete({
+        where: { id: pivotRecord.id },
+      });
+
+      // Check if attachment is orphaned (no more relations)
+      const remainingLinks = await db.sponsorAttachment.count({
+        where: { attachmentId: input.attachmentId },
+      });
+
+      // If orphaned, delete from S3 and delete the attachment record
+      if (remainingLinks === 0) {
+        const key = extractKeyFromUrl(pivotRecord.attachment.url);
+        if (key) {
+          try {
+            await deleteImage(key);
+          } catch (error) {
+            console.error("Failed to delete attachment from S3:", error);
+          }
+        }
+
+        await db.attachment.delete({
+          where: { id: input.attachmentId },
+        });
+      }
+
+      return { success: true };
+    }),
+
+  /**
+   * Get attachments for a sponsor (admin only)
+   */
+  getAttachments: adminProcedure
+    .input(z.object({ sponsorId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Verify sponsor exists
+      const sponsor = await db.sponsor.findUnique({
+        where: { id: input.sponsorId },
+      });
+
+      if (!sponsor) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الراعي غير موجود",
+        });
+      }
+
+      // Get attachments through pivot table
+      const sponsorAttachments = await db.sponsorAttachment.findMany({
+        where: { sponsorId: input.sponsorId },
+        include: {
+          attachment: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      // Return attachment data in the expected format
+      return sponsorAttachments.map((sa) => ({
+        id: sa.attachment.id,
+        filename: sa.attachment.filename,
+        url: sa.attachment.url,
+        contentType: sa.attachment.contentType,
+        size: sa.attachment.size,
+        uploadedAt: sa.attachment.uploadedAt.toISOString(),
       }));
     }),
 
@@ -1289,7 +1528,10 @@ export const sponsorRouter = createTRPCRouter({
     .input(
       z.object({
         sponsorId: z.string(),
-        socialMediaLinks: z.record(z.string(), z.string().url().or(z.literal(""))),
+        socialMediaLinks: z.record(
+          z.string(),
+          z.string().url().or(z.literal(""))
+        ),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -1318,7 +1560,10 @@ export const sponsorRouter = createTRPCRouter({
       const updatedSponsor = await db.sponsor.update({
         where: { id: input.sponsorId },
         data: {
-          socialMediaLinks: Object.keys(filteredLinks).length > 0 ? filteredLinks : Prisma.JsonNull,
+          socialMediaLinks:
+            Object.keys(filteredLinks).length > 0
+              ? filteredLinks
+              : Prisma.JsonNull,
         },
       });
 
@@ -1614,7 +1859,7 @@ export const sponsorRouter = createTRPCRouter({
 
       // Helper to find sponsorship by type
       const findByType = (
-        sponsorships: typeof sessions[0]["eventSponsorships"],
+        sponsorships: (typeof sessions)[0]["eventSponsorships"],
         type: string
       ) => {
         const found = sponsorships.find((s) => s.sponsorshipType === type);
@@ -1632,7 +1877,7 @@ export const sponsorRouter = createTRPCRouter({
 
       // Helper to filter sponsorships by type (for "other" which can have multiple)
       const filterByType = (
-        sponsorships: typeof sessions[0]["eventSponsorships"],
+        sponsorships: (typeof sessions)[0]["eventSponsorships"],
         type: string
       ) => {
         return sponsorships
@@ -1650,7 +1895,7 @@ export const sponsorRouter = createTRPCRouter({
 
       // Calculate completion rate (dinner, beverage, dessert = 3 main types)
       const calculateCompletion = (
-        sponsorships: typeof sessions[0]["eventSponsorships"]
+        sponsorships: (typeof sessions)[0]["eventSponsorships"]
       ) => {
         const mainTypes = ["dinner", "beverage", "dessert"];
         const filled = mainTypes.filter((type) =>
@@ -1678,11 +1923,13 @@ export const sponsorRouter = createTRPCRouter({
       // Calculate stats
       const stats = {
         totalSessions: calendarSessions.length,
-        fullySponsored: calendarSessions.filter((s) => s.completionRate === 100).length,
+        fullySponsored: calendarSessions.filter((s) => s.completionRate === 100)
+          .length,
         partiallySponsored: calendarSessions.filter(
           (s) => s.completionRate > 0 && s.completionRate < 100
         ).length,
-        noSponsorship: calendarSessions.filter((s) => s.completionRate === 0).length,
+        noSponsorship: calendarSessions.filter((s) => s.completionRate === 0)
+          .length,
       };
 
       return {
@@ -1697,9 +1944,11 @@ export const sponsorRouter = createTRPCRouter({
    */
   getSponsorshipStats: adminProcedure
     .input(
-      z.object({
-        sessionCount: z.number().min(1).max(50).default(12),
-      }).optional()
+      z
+        .object({
+          sessionCount: z.number().min(1).max(50).default(12),
+        })
+        .optional()
     )
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
@@ -1736,7 +1985,9 @@ export const sponsorRouter = createTRPCRouter({
           dessert: types.includes("dessert") ? 1 : 0,
           other: types.filter((t) => t === "other").length,
           total: session.eventSponsorships.length,
-          selfSponsored: session.eventSponsorships.filter((s) => s.isSelfSponsored).length,
+          selfSponsored: session.eventSponsorships.filter(
+            (s) => s.isSelfSponsored
+          ).length,
         };
       });
 

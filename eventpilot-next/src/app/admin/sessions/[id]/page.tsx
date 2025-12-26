@@ -198,7 +198,7 @@ export default function SessionDetailPage({
             </Button>
           )}
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/session/${session.id}`} target="_blank">
+            <Link href={`/session/${session.id}?preview=true`} target="_blank">
               <Eye className="ml-2 h-4 w-4" />
               معاينة
               <ExternalLink className="mr-2 h-3 w-3" />
