@@ -76,8 +76,8 @@ function SponsorLogo({
   if (!logoUrl) {
     // Show sponsor name as the logo when no image is available
     return (
-      <div className="h-12 md:h-16 px-3 md:px-4 rounded-lg bg-white border border-border flex items-center justify-center">
-        <span className="text-xs md:text-sm font-semibold text-primary text-center line-clamp-2">
+      <div className="w-20 md:w-24 h-12 md:h-16 rounded-lg bg-white border border-border flex items-center justify-center p-1">
+        <span className="text-[10px] md:text-xs font-semibold text-primary text-center line-clamp-2">
           {name}
         </span>
       </div>
@@ -86,7 +86,7 @@ function SponsorLogo({
 
   if (isLoading) {
     return (
-      <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg bg-muted animate-pulse" />
+      <div className="w-20 md:w-24 h-12 md:h-16 rounded-lg bg-muted animate-pulse" />
     );
   }
 
@@ -96,7 +96,7 @@ function SponsorLogo({
 
   return (
     <div
-      className={`h-12 md:h-16 max-w-[80px] md:max-w-[100px] flex items-center justify-center rounded-lg shadow-sm p-1 ${bgStyle}`}
+      className={`w-20 md:w-24 h-12 md:h-16 flex items-center justify-center rounded-lg shadow-sm p-1 ${bgStyle}`}
       style={isCustomColor ? { backgroundColor: logoBackground } : undefined}
     >
       <img
@@ -593,7 +593,7 @@ export function SessionDetailClient({ id, adminPreview = false }: { id: string; 
                         الرعاة
                       </h3>
                     </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4 justify-items-center">
+                    <div className="flex flex-wrap justify-evenly gap-4 md:gap-6">
                       {session.sponsors.map((sponsor) => {
                         const sponsorLink = getSponsorLink(sponsor.socialMediaLinks);
                         const logoContent = (
