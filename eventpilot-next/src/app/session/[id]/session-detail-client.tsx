@@ -46,6 +46,29 @@ const LOGO_BACKGROUND_STYLES: Record<string, string> = {
 // Helper to check if value is a custom hex color
 const isHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value);
 
+// Helper to distribute items evenly across rows (first rows get more if odd)
+function distributeIntoRows<T>(items: T[], maxPerRow = 5): T[][] {
+  const total = items.length;
+  if (total === 0) return [];
+  if (total <= maxPerRow) return [items];
+
+  const numRows = Math.ceil(total / maxPerRow);
+  const basePerRow = Math.floor(total / numRows);
+  const remainder = total % numRows;
+
+  const rows: T[][] = [];
+  let index = 0;
+
+  for (let i = 0; i < numRows; i++) {
+    // First 'remainder' rows get one extra item
+    const rowSize = basePerRow + (i < remainder ? 1 : 0);
+    rows.push(items.slice(index, index + rowSize));
+    index += rowSize;
+  }
+
+  return rows;
+}
+
 // Helper to get the primary sponsor link (website first, then social media)
 function getSponsorLink(socialMediaLinks: Record<string, string> | null | undefined): string | null {
   if (!socialMediaLinks) return null;
@@ -593,36 +616,40 @@ export function SessionDetailClient({ id, adminPreview = false }: { id: string; 
                         الرعاة
                       </h3>
                     </div>
-                    <div className="flex flex-wrap justify-evenly gap-4 md:gap-6">
-                      {session.sponsors.map((sponsor) => {
-                        const sponsorLink = getSponsorLink(sponsor.socialMediaLinks);
-                        const logoContent = (
-                          <SponsorLogo
-                            logoUrl={sponsor.logoUrl}
-                            name={sponsor.name}
-                            logoBackground={sponsor.logoBackground}
-                          />
-                        );
+                    <div className="flex flex-col gap-4 md:gap-5">
+                      {distributeIntoRows(session.sponsors, 5).map((row, rowIndex) => (
+                        <div key={rowIndex} className="flex justify-center gap-4 md:gap-6">
+                          {row.map((sponsor) => {
+                            const sponsorLink = getSponsorLink(sponsor.socialMediaLinks);
+                            const logoContent = (
+                              <SponsorLogo
+                                logoUrl={sponsor.logoUrl}
+                                name={sponsor.name}
+                                logoBackground={sponsor.logoBackground}
+                              />
+                            );
 
-                        return sponsorLink ? (
-                          <a
-                            key={sponsor.id}
-                            href={sponsorLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex flex-col items-center gap-2 transition-transform hover:scale-105"
-                          >
-                            {logoContent}
-                          </a>
-                        ) : (
-                          <div
-                            key={sponsor.id}
-                            className="flex flex-col items-center gap-2"
-                          >
-                            {logoContent}
-                          </div>
-                        );
-                      })}
+                            return sponsorLink ? (
+                              <a
+                                key={sponsor.id}
+                                href={sponsorLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col items-center gap-2 transition-transform hover:scale-105"
+                              >
+                                {logoContent}
+                              </a>
+                            ) : (
+                              <div
+                                key={sponsor.id}
+                                className="flex flex-col items-center gap-2"
+                              >
+                                {logoContent}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
