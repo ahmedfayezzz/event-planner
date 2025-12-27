@@ -64,6 +64,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { GuestSelector } from "./guest-selector";
 import { Controller, useForm } from "react-hook-form";
 
 // Re-export for backward compatibility
@@ -219,13 +220,23 @@ function ToggleCard({
   );
 }
 
+// Type for selected guests in the form
+interface SelectedGuest {
+  id: string;
+  name: string;
+  title: string | null;
+  jobTitle: string | null;
+  company: string | null;
+  imageUrl: string | null;
+}
+
 // Session preview card
 function SessionPreview({
   formData,
-  hasGuest,
+  selectedGuests,
 }: {
   formData: SessionFormData;
-  hasGuest: boolean;
+  selectedGuests: SelectedGuest[];
 }) {
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "التاريخ";
@@ -280,10 +291,15 @@ function SessionPreview({
         )}
 
         {/* Guest */}
-        {hasGuest && formData.guestName && (
+        {selectedGuests.length > 0 && (
           <div className="flex items-center gap-2 text-sm">
             <User className="h-4 w-4 text-primary" />
-            <span>الضيف: {formData.guestName}</span>
+            <span>
+              الضيوف:{" "}
+              {selectedGuests.length === 1
+                ? selectedGuests[0].name
+                : `${selectedGuests[0].name} +${selectedGuests.length - 1}`}
+            </span>
           </div>
         )}
 
@@ -392,7 +408,7 @@ export function SessionForm({
   const getInitialHasGuest = (): boolean => {
     // If initialData is provided, check for guest info
     if (initialData && Object.keys(initialData).length > 0) {
-      return !!(initialData?.guestName || initialData?.guestProfile);
+      return !!(initialData?.guestIds && initialData.guestIds.length > 0);
     }
     // Otherwise, check for saved draft in create mode
     if (mode === "create" && typeof window !== "undefined") {
@@ -406,7 +422,7 @@ export function SessionForm({
         }
       }
     }
-    return !!(initialData?.guestName || initialData?.guestProfile);
+    return !!(initialData?.guestIds && initialData.guestIds.length > 0);
   };
 
   const getInitialSelectedTemplate = (): string | null => {
@@ -446,7 +462,7 @@ export function SessionForm({
   } = form;
   const formValues = watch();
 
-  const [hasGuest, setHasGuest] = useState(getInitialHasGuest);
+  const [selectedGuests, setSelectedGuests] = useState<SelectedGuest[]>([]);
   // const [slugManuallyEdited, setSlugManuallyEdited] = useState(
   //   !!initialData?.slug
   // ); // Commented out - used for slug field
@@ -480,7 +496,7 @@ export function SessionForm({
         DRAFT_KEY,
         JSON.stringify({
           formData: formValues,
-          hasGuest,
+          selectedGuests,
           selectedTemplate,
           savedAt: new Date().toISOString(),
         })
@@ -490,7 +506,7 @@ export function SessionForm({
     }, 30000);
 
     return () => clearInterval(saveInterval);
-  }, [mode, formValues, hasGuest, selectedTemplate]);
+  }, [mode, formValues, selectedGuests, selectedTemplate]);
 
   // Clear draft on successful submit
   const clearDraft = useCallback(() => {
@@ -498,9 +514,11 @@ export function SessionForm({
   }, []);
 
   const onFormSubmit = async (data: SessionFormData) => {
-    const submitData = hasGuest
-      ? data
-      : { ...data, guestName: "", guestProfile: "" };
+    // Set guestIds from selected guests
+    const submitData = {
+      ...data,
+      guestIds: selectedGuests.map((g) => g.id),
+    };
 
     await onSubmit(submitData);
     if (mode === "create") {
@@ -684,45 +702,19 @@ export function SessionForm({
       case 1:
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/50">
-              <div className="space-y-0.5">
-                <Label htmlFor="hasGuest" className="text-sm font-medium">
-                  إضافة ضيف للحدث
-                </Label>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
+              <div className="space-y-1 mb-4">
+                <Label className="text-sm font-medium">ضيوف الحدث</Label>
                 <p className="text-xs text-muted-foreground">
-                  تفعيل هذا الخيار لإضافة معلومات ضيف الحدث
+                  اختر ضيوف الحدث من القائمة أو أنشئ ضيف جديد
                 </p>
               </div>
-              <Switch
-                id="hasGuest"
-                checked={hasGuest}
-                onCheckedChange={setHasGuest}
+              <GuestSelector
+                selectedGuests={selectedGuests}
+                onChange={setSelectedGuests}
                 disabled={isPending}
               />
             </div>
-
-            {hasGuest && (
-              <div className="grid gap-4 md:grid-cols-2 animate-in fade-in-0 slide-in-from-top-2 duration-200">
-                <div className="space-y-2">
-                  <Label htmlFor="guestName">اسم الضيف</Label>
-                  <Input
-                    id="guestName"
-                    {...register("guestName")}
-                    placeholder="مثال: د. أحمد محمد"
-                    disabled={isPending}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="guestProfile">نبذة عن الضيف</Label>
-                  <Input
-                    id="guestProfile"
-                    {...register("guestProfile")}
-                    placeholder="مثال: خبير في ريادة الأعمال"
-                    disabled={isPending}
-                  />
-                </div>
-              </div>
-            )}
           </div>
         );
 
@@ -1033,10 +1025,14 @@ export function SessionForm({
                   <span className="text-muted-foreground">المرافقين</span>
                   <span>{formValues.maxCompanions} لكل مشارك</span>
                 </div>
-                {hasGuest && formValues.guestName && (
+                {selectedGuests.length > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">الضيف</span>
-                    <span>{formValues.guestName}</span>
+                    <span className="text-muted-foreground">الضيوف</span>
+                    <span>
+                      {selectedGuests.length === 1
+                        ? selectedGuests[0].name
+                        : `${selectedGuests.length} ضيوف`}
+                    </span>
                   </div>
                 )}
               </CardContent>
@@ -1175,7 +1171,7 @@ export function SessionForm({
 
           {/* Preview Panel */}
           <div className="hidden lg:block">
-            <SessionPreview formData={formValues} hasGuest={hasGuest} />
+            <SessionPreview formData={formValues} selectedGuests={selectedGuests} />
           </div>
         </div>
       </TooltipProvider>
@@ -1360,46 +1356,11 @@ export function SessionForm({
                 </AccordionTrigger>
                 <AccordionContent className="px-6 pb-6">
                   <div className="space-y-4 pt-2">
-                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/50">
-                      <div className="space-y-0.5">
-                        <Label
-                          htmlFor="hasGuest"
-                          className="text-sm font-medium"
-                        >
-                          إضافة ضيف للحدث
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          تفعيل هذا الخيار لإضافة معلومات ضيف الحدث
-                        </p>
-                      </div>
-                      <Switch
-                        id="hasGuest"
-                        checked={hasGuest}
-                        onCheckedChange={setHasGuest}
-                        disabled={isPending}
-                      />
-                    </div>
-
-                    {hasGuest && (
-                      <div className="grid gap-4 md:grid-cols-2 animate-in fade-in-0 slide-in-from-top-2 duration-200">
-                        <div className="space-y-2">
-                          <Label htmlFor="guestName">اسم الضيف</Label>
-                          <Input
-                            id="guestName"
-                            {...register("guestName")}
-                            disabled={isPending}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="guestProfile">نبذة عن الضيف</Label>
-                          <Input
-                            id="guestProfile"
-                            {...register("guestProfile")}
-                            disabled={isPending}
-                          />
-                        </div>
-                      </div>
-                    )}
+                    <GuestSelector
+                      selectedGuests={selectedGuests}
+                      onChange={setSelectedGuests}
+                      disabled={isPending}
+                    />
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -1698,7 +1659,7 @@ export function SessionForm({
 
         {/* Preview Panel */}
         <div className="hidden lg:block">
-          <SessionPreview formData={formValues} hasGuest={hasGuest} />
+          <SessionPreview formData={formValues} selectedGuests={selectedGuests} />
         </div>
       </div>
     </TooltipProvider>

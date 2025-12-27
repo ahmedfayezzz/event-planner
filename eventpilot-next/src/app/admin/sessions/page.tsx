@@ -150,12 +150,20 @@ export default function AdminSessionsPage() {
           <h1 className="text-2xl font-bold">الأحداث</h1>
           <p className="text-muted-foreground">إدارة أحداث ثلوثية الأعمال</p>
         </div>
-        <Button asChild>
-          <Link href="/admin/sessions/new">
-            <Plus className="me-2 h-4 w-4" />
-            حدث جديد
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/admin/guests">
+              <Users className="me-2 h-4 w-4" />
+              الضيوف
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/admin/sessions/new">
+              <Plus className="me-2 h-4 w-4" />
+              حدث جديد
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Tabs and Filters */}

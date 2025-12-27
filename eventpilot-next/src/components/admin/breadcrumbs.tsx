@@ -10,6 +10,7 @@ const pathLabels: Record<string, string> = {
   sessions: "الأحداث",
   users: "المستخدمين",
   sponsors: "الرعاة",
+  guests: "الضيوف",
   checkin: "تسجيل الحضور",
   settings: "الإعدادات",
   analytics: "الإحصائيات",
@@ -40,10 +41,25 @@ export function Breadcrumbs() {
   const isValidSessionId =
     sessionId && /^[0-9a-f-]{36}$|^c[a-z0-9]{24,}$/.test(sessionId);
 
+  // Extract guest ID if we're on a guest-related page
+  const guestIndex = segments.indexOf("guests");
+  const guestId =
+    guestIndex !== -1 && segments[guestIndex + 1]
+      ? segments[guestIndex + 1]
+      : null;
+  const isValidGuestId =
+    guestId && /^[0-9a-f-]{36}$|^c[a-z0-9]{24,}$/.test(guestId);
+
   // Fetch session data if we have a valid session ID
   const { data: session } = api.session.getAdminDetails.useQuery(
     { id: sessionId! },
     { enabled: !!isValidSessionId }
+  );
+
+  // Fetch guest data if we have a valid guest ID
+  const { data: guest } = api.guest.getById.useQuery(
+    { id: guestId! },
+    { enabled: !!isValidGuestId }
   );
 
   // Don't show breadcrumbs on the main admin page
@@ -61,6 +77,9 @@ export function Breadcrumbs() {
         if (isId && segment === sessionId && session) {
           // Show session title for session IDs
           label = session.title;
+        } else if (isId && segment === guestId && guest) {
+          // Show guest name for guest IDs
+          label = guest.name;
         } else if (isId) {
           label = "تفاصيل";
         } else {

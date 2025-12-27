@@ -104,10 +104,6 @@ model Session {
   description     String?
   date            DateTime
 
-  // Guest info
-  guestName       String?
-  guestProfile    String?
-
   // Capacity
   maxParticipants Int      @default(50)
   maxCompanions   Int      @default(5)
@@ -149,6 +145,7 @@ model Session {
   invites           Invite[]
   eventCaterings    EventCatering[]
   eventSponsorships EventSponsorship[]
+  sessionGuests     SessionGuest[]
 }
 
 model Registration {
@@ -309,6 +306,49 @@ model EventSponsorship {
 
   @@index([sessionId])
   @@index([sponsorId])
+}
+
+// Guest entity - event speakers/guests with reusable profiles
+model Guest {
+  id               String    @id @default(cuid())
+  title            String?   // "Dr.", "Eng.", "Prof." or custom
+  name             String
+  jobTitle         String?
+  company          String?
+  description      String?   @db.Text
+  imageUrl         String?
+  socialMediaLinks Json?     // { "twitter": "url", "linkedin": "url", ... }
+
+  isPublic         Boolean   @default(false)  // Admin controls public visibility
+  isActive         Boolean   @default(true)   // Soft delete
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  sessionGuests    SessionGuest[]
+
+  @@index([isActive])
+  @@index([isPublic])
+  @@index([name])
+}
+
+// Join table for many-to-many Session <-> Guest relationship
+model SessionGuest {
+  id           String   @id @default(cuid())
+  sessionId    String
+  guestId      String
+  displayOrder Int      @default(0)  // For ordering multiple guests
+
+  createdAt    DateTime @default(now())
+
+  // Relations
+  session      Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  guest        Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, guestId])
+  @@index([sessionId])
+  @@index([guestId])
 }
 
 model Settings {

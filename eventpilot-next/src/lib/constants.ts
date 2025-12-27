@@ -81,3 +81,24 @@ export function getSponsorStatusColor(value: string): string {
 export const HOSTING_TYPES = SPONSORSHIP_TYPES;
 export type HostingType = SponsorshipType;
 export const getHostingTypeLabel = getSponsorshipTypeLabel;
+
+/**
+ * Guest titles (honorifics)
+ */
+export const GUEST_TITLES = [
+  { value: "د.", label: "د." },
+  { value: "م.", label: "م." },
+  { value: "أ.د.", label: "أ.د." },
+  { value: "أ.", label: "أ." },
+  { value: "الشيخ", label: "الشيخ" },
+] as const;
+
+export type GuestTitle = (typeof GUEST_TITLES)[number]["value"];
+
+/**
+ * Get the label for a guest title value
+ */
+export function getGuestTitleLabel(value: string): string {
+  const title = GUEST_TITLES.find((t) => t.value === value);
+  return title?.label || value;
+}

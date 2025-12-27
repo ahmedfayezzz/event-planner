@@ -5,6 +5,16 @@ import { SessionCard } from "@/components/session-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+interface SessionGuest {
+  guest: {
+    id: string;
+    name: string;
+    title: string | null;
+    imageUrl: string | null;
+    isPublic: boolean;
+  };
+}
+
 interface SessionItem {
   id: string;
   title: string;
@@ -14,7 +24,7 @@ interface SessionItem {
   maxParticipants: number;
   registrationCount: number | null;
   isFull: boolean;
-  guestName: string | null;
+  sessionGuests?: SessionGuest[];
   location: string | null;
   canRegister?: boolean;
   requiresApproval?: boolean;

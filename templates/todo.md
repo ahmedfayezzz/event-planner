@@ -10,16 +10,23 @@
 - provide a way to register as a sponsor from public site
 
 - update logos display to have dynamic container
+- تحديث
 
 high priority:
 <!-- - manual email sending -->
-- 
+
+
+- sponsor display when it's 6 or more
+- fix sponsor logo display when there is no logo (background should be white not gray) 
+
+
+
 
 - add guest image
-- add a way to view session as admin even if it's not published 
+<!-- - add a way to view session as admin even if it's not published  -->
 - there should be a way to add multiple guests to the event
-- date is clickable not location in pdf
-- remvove sponsor name in details page of event and add name only in case there is no logo
+<!-- - date is clickable not location in pdf -->
+<!-- - remvove sponsor name in details page of event and add name only in case there is no logo -->
 
 - add guest profiles and link them to events
 
@@ -37,7 +44,7 @@ sponsors:
 <!-- - add a way to archive sponsors -->
 - sponsor search by text arabic support (ا أ)
 - date of last sponsorship in sponsors list is not right
-- sponsor attachments
+<!-- - sponsor attachments -->
 
 
 - fix hyper link on invitation pdf

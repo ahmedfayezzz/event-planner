@@ -7,8 +7,7 @@ export const sessionFormSchema = z.object({
   date: z.string().min(1, "التاريخ مطلوب"),
   time: z.string().min(1, "الوقت مطلوب"),
   location: z.string().optional(),
-  guestName: z.string().optional(),
-  guestProfile: z.string().optional(),
+  guestIds: z.array(z.string()).optional(),
   maxParticipants: z.string().refine(
     (v) => !v || parseInt(v) > 0,
     "يجب أن يكون رقم صحيح موجب"
@@ -43,8 +42,7 @@ export const defaultSessionFormData: SessionFormData = {
   date: "",
   time: "18:00",
   location: "",
-  guestName: "",
-  guestProfile: "",
+  guestIds: [],
   maxParticipants: "50",
   maxCompanions: "5",
   status: "open",

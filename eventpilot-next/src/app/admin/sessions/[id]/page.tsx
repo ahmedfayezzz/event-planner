@@ -271,14 +271,20 @@ export default function SessionDetailPage({
                 </div>
               </div>
             )}
-            {session.guestName && (
+            {session.sessionGuests && session.sessionGuests.length > 0 && (
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-orange-500/10">
                   <Users className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">الضيف</p>
-                  <p className="font-medium">{session.guestName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {session.sessionGuests.length > 1 ? "الضيوف" : "الضيف"}
+                  </p>
+                  <p className="font-medium">
+                    {session.sessionGuests.map((sg: { guest: { name: string; title: string | null } }) =>
+                      sg.guest.title ? `${sg.guest.title} ${sg.guest.name}` : sg.guest.name
+                    ).join("، ")}
+                  </p>
                 </div>
               </div>
             )}

@@ -76,7 +76,7 @@ function SponsorLogo({
   if (!logoUrl) {
     // Show sponsor name as the logo when no image is available
     return (
-      <div className="h-12 md:h-16 px-3 md:px-4 rounded-lg bg-primary/10 flex items-center justify-center">
+      <div className="h-12 md:h-16 px-3 md:px-4 rounded-lg bg-white border border-border flex items-center justify-center">
         <span className="text-xs md:text-sm font-semibold text-primary text-center line-clamp-2">
           {name}
         </span>
@@ -106,6 +106,73 @@ function SponsorLogo({
       />
     </div>
   );
+}
+
+interface GuestInfo {
+  id: string;
+  name: string;
+  title: string | null;
+  jobTitle: string | null;
+  company: string | null;
+  imageUrl: string | null;
+  isPublic: boolean;
+}
+
+function GuestImage({ imageUrl, name }: { imageUrl: string | null; name: string }) {
+  const { url, isLoading } = usePresignedUrl(imageUrl);
+
+  if (!imageUrl) {
+    return (
+      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-accent/20 flex items-center justify-center text-accent-foreground shrink-0">
+        <User className="w-5 h-5 md:w-6 md:h-6" />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-muted animate-pulse shrink-0" />
+    );
+  }
+
+  return (
+    <img
+      src={url || undefined}
+      alt={name}
+      className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover shrink-0"
+    />
+  );
+}
+
+function GuestDisplayCard({ guest }: { guest: GuestInfo }) {
+  const content = (
+    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors">
+      <GuestImage imageUrl={guest.imageUrl} name={guest.name} />
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-base md:text-lg text-foreground">
+          {guest.title ? `${guest.title} ${guest.name}` : guest.name}
+        </p>
+        {(guest.jobTitle || guest.company) && (
+          <p className="text-xs md:text-sm text-muted-foreground mt-0.5 truncate">
+            {[guest.jobTitle, guest.company].filter(Boolean).join(" • ")}
+          </p>
+        )}
+      </div>
+      {guest.isPublic && (
+        <ArrowLeft className="w-4 h-4 text-muted-foreground shrink-0" />
+      )}
+    </div>
+  );
+
+  if (guest.isPublic) {
+    return (
+      <Link href={`/guest/${guest.id}`} className="block">
+        {content}
+      </Link>
+    );
+  }
+
+  return content;
 }
 
 export function SessionDetailClient({ id, adminPreview = false }: { id: string; adminPreview?: boolean }) {
@@ -453,24 +520,17 @@ export function SessionDetailClient({ id, adminPreview = false }: { id: string; 
                     </div>
                   )}
 
-                  {session.guestName && (
-                    <div className="flex items-center gap-2 md:gap-3 col-span-2">
-                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent-foreground shrink-0">
-                        <User className="w-4 h-4 md:w-5 md:h-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] md:text-xs text-muted-foreground">
-                          ضيف الحدث
-                        </p>
-                        <p className="font-medium text-base md:text-lg text-foreground">
-                          {session.guestName}
-                        </p>
-                        {session.guestProfile && (
-                          <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1 line-clamp-2">
-                            {session.guestProfile}
-                          </p>
-                        )}
-                      </div>
+                  {session.sessionGuests && session.sessionGuests.length > 0 && (
+                    <div className="col-span-2 space-y-3">
+                      <p className="text-[10px] md:text-xs text-muted-foreground">
+                        {session.sessionGuests.length > 1 ? "ضيوف الحدث" : "ضيف الحدث"}
+                      </p>
+                      {session.sessionGuests.map((sg) => (
+                        <GuestDisplayCard
+                          key={sg.guest.id}
+                          guest={sg.guest}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
@@ -533,7 +593,7 @@ export function SessionDetailClient({ id, adminPreview = false }: { id: string; 
                         الرعاة
                       </h3>
                     </div>
-                    <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4 justify-items-center">
                       {session.sponsors.map((sponsor) => {
                         const sponsorLink = getSponsorLink(sponsor.socialMediaLinks);
                         const logoContent = (

@@ -5,6 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
 import { MapPin, User, ArrowLeft, Users, Calendar } from "lucide-react";
 
+interface SessionGuest {
+  guest: {
+    id: string;
+    name: string;
+    title: string | null;
+    imageUrl: string | null;
+    isPublic: boolean;
+  };
+}
+
 interface SessionCardProps {
   session: {
     id: string;
@@ -13,7 +23,7 @@ interface SessionCardProps {
     date: Date;
     location: string | null;
     status: string;
-    guestName: string | null;
+    sessionGuests?: SessionGuest[];
     registrationCount?: number | null;
     maxParticipants: number;
     isFull?: boolean;
@@ -86,13 +96,21 @@ export function SessionCard({
             </div>
           )}
 
-          {session.guestName && (
+          {session.sessionGuests && session.sessionGuests.length > 0 && (
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
                 <User className="w-3.5 h-3.5 text-primary" />
               </div>
-              <span className="text-foreground font-medium">
-                {session.guestName}
+              <span className="text-foreground font-medium truncate max-w-[200px]">
+                {session.sessionGuests[0].guest.title
+                  ? `${session.sessionGuests[0].guest.title} ${session.sessionGuests[0].guest.name}`
+                  : session.sessionGuests[0].guest.name}
+                {session.sessionGuests.length > 1 && (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    +{session.sessionGuests.length - 1}
+                  </span>
+                )}
               </span>
             </div>
           )}

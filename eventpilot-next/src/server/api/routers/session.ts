@@ -84,6 +84,20 @@ export const sessionRouter = createTRPCRouter({
           _count: {
             select: { registrations: { where: { isApproved: true } } },
           },
+          sessionGuests: {
+            orderBy: { displayOrder: "asc" },
+            include: {
+              guest: {
+                select: {
+                  id: true,
+                  name: true,
+                  title: true,
+                  imageUrl: true,
+                  isPublic: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -136,6 +150,20 @@ export const sessionRouter = createTRPCRouter({
           _count: {
             select: { registrations: { where: { isApproved: true } } },
           },
+          sessionGuests: {
+            orderBy: { displayOrder: "asc" },
+            include: {
+              guest: {
+                select: {
+                  id: true,
+                  name: true,
+                  title: true,
+                  imageUrl: true,
+                  isPublic: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -181,6 +209,22 @@ export const sessionRouter = createTRPCRouter({
                   logoBackground: true,
                   type: true,
                   socialMediaLinks: true,
+                },
+              },
+            },
+          },
+          sessionGuests: {
+            orderBy: { displayOrder: "asc" },
+            include: {
+              guest: {
+                select: {
+                  id: true,
+                  name: true,
+                  title: true,
+                  jobTitle: true,
+                  company: true,
+                  imageUrl: true,
+                  isPublic: true,
                 },
               },
             },
@@ -265,6 +309,20 @@ export const sessionRouter = createTRPCRouter({
               invitedRegistrations: true,
             },
           },
+          sessionGuests: {
+            orderBy: { displayOrder: "asc" },
+            include: {
+              guest: {
+                select: {
+                  id: true,
+                  name: true,
+                  title: true,
+                  imageUrl: true,
+                  isPublic: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -334,6 +392,20 @@ export const sessionRouter = createTRPCRouter({
           _count: {
             select: { registrations: { where: { isApproved: true } } },
           },
+          sessionGuests: {
+            orderBy: { displayOrder: "asc" },
+            include: {
+              guest: {
+                select: {
+                  id: true,
+                  name: true,
+                  title: true,
+                  imageUrl: true,
+                  isPublic: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -391,8 +463,7 @@ export const sessionRouter = createTRPCRouter({
         title: z.string().min(1),
         description: z.string().optional(),
         date: z.date(),
-        guestName: z.string().optional(),
-        guestProfile: z.string().optional(),
+        guestIds: z.array(z.string()).default([]),
         maxParticipants: z.number().int().positive().default(50),
         maxCompanions: z.number().int().min(0).default(5),
         requiresApproval: z.boolean().default(false),
@@ -416,7 +487,7 @@ export const sessionRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
-      const sessionData = input;
+      const { guestIds, ...sessionData } = input;
 
       // Auto-generate session number (highest + 1)
       const lastSession = await db.session.findFirst({
@@ -446,6 +517,12 @@ export const sessionRouter = createTRPCRouter({
           ...sessionData,
           sessionNumber,
           slug: slug || null,
+          sessionGuests: guestIds.length > 0 ? {
+            create: guestIds.map((guestId, index) => ({
+              guestId,
+              displayOrder: index,
+            })),
+          } : undefined,
         },
       });
 
@@ -463,8 +540,7 @@ export const sessionRouter = createTRPCRouter({
         title: z.string().min(1).optional(),
         description: z.string().optional(),
         date: z.date().optional(),
-        guestName: z.string().optional(),
-        guestProfile: z.string().optional(),
+        guestIds: z.array(z.string()).optional(),
         maxParticipants: z.number().int().positive().optional(),
         maxCompanions: z.number().int().min(0).optional(),
         status: z.enum(["open", "closed", "completed"]).optional(),
@@ -490,7 +566,7 @@ export const sessionRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
-      const { id, ...data } = input;
+      const { id, guestIds, ...data } = input;
 
       // Check if session exists
       const existing = await db.session.findUnique({
@@ -525,6 +601,23 @@ export const sessionRouter = createTRPCRouter({
           throw new TRPCError({
             code: "CONFLICT",
             message: "رابط الحدث موجود مسبقاً",
+          });
+        }
+      }
+
+      // Update session guests if guestIds is provided
+      if (guestIds !== undefined) {
+        // Delete existing session guests and create new ones
+        await db.sessionGuest.deleteMany({
+          where: { sessionId: id },
+        });
+        if (guestIds.length > 0) {
+          await db.sessionGuest.createMany({
+            data: guestIds.map((guestId, index) => ({
+              sessionId: id,
+              guestId,
+              displayOrder: index,
+            })),
           });
         }
       }

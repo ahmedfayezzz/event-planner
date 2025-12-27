@@ -162,10 +162,16 @@ export default function EventEmbedPage({ params }: { params: Promise<{ slug: str
           )}
 
           {/* Guest Info */}
-          {displaySession.guestName && displaySession.showGuestProfile && (
+          {displaySession.sessionGuests && displaySession.sessionGuests.length > 0 && displaySession.showGuestProfile && (
             <div className="pt-2 border-t text-center">
-              <p className="text-xs text-muted-foreground">ضيف الحدث</p>
-              <p className="font-medium text-sm">{displaySession.guestName}</p>
+              <p className="text-xs text-muted-foreground">
+                {displaySession.sessionGuests.length > 1 ? "ضيوف الحدث" : "ضيف الحدث"}
+              </p>
+              <p className="font-medium text-sm">
+                {displaySession.sessionGuests.map((sg: { guest: { name: string; title: string | null } }) =>
+                  sg.guest.title ? `${sg.guest.title} ${sg.guest.name}` : sg.guest.name
+                ).join("، ")}
+              </p>
             </div>
           )}
         </CardContent>

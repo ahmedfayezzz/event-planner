@@ -10,6 +10,16 @@ import { SessionCard } from "@/components/session-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, Lightbulb, Zap, Calendar, ArrowLeft } from "lucide-react";
 
+interface SessionGuest {
+  guest: {
+    id: string;
+    name: string;
+    title: string | null;
+    imageUrl: string | null;
+    isPublic: boolean;
+  };
+}
+
 interface SessionItem {
   id: string;
   title: string;
@@ -20,7 +30,7 @@ interface SessionItem {
   registrationCount: number | null;
   isFull: boolean;
   canRegister: boolean;
-  guestName: string | null;
+  sessionGuests?: SessionGuest[];
   showGuestProfile?: boolean;
   description?: string | null;
   location: string | null;
