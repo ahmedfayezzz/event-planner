@@ -88,6 +88,7 @@ interface RegistrationItem {
 
 type FilterType = "all" | "direct" | "invited";
 type StatusFilterType = "all" | "approved" | "pending";
+type TagFilterType = "all" | string;
 
 export default function SessionAttendeesPage({
   params,
@@ -98,6 +99,7 @@ export default function SessionAttendeesPage({
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
+  const [tagFilter, setTagFilter] = useState<TagFilterType>("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { isExpanded, toggleRow } = useExpandableRows();
   const [confirmAction, setConfirmAction] = useState<{
@@ -117,6 +119,7 @@ export default function SessionAttendeesPage({
     { sessionId: id, includeInvited: true },
     { enabled: !!id }
   );
+  const { data: allLabels } = api.label.getAll.useQuery();
 
   const approveMutation = api.registration.approve.useMutation({
     onSuccess: () => {
@@ -193,7 +196,7 @@ export default function SessionAttendeesPage({
     setSelectedIds(new Set());
   };
 
-  // Filter registrations by search, type, and status
+  // Filter registrations by search, type, status, and tag
   const filteredRegistrations = useMemo(() => {
     if (!registrations) return [];
 
@@ -213,6 +216,13 @@ export default function SessionAttendeesPage({
       filtered = filtered.filter((reg: RegistrationItem) => !reg.isApproved);
     }
 
+    // Filter by tag
+    if (tagFilter !== "all") {
+      filtered = filtered.filter((reg: RegistrationItem) =>
+        reg.labels?.some((label) => label.id === tagFilter)
+      );
+    }
+
     // Filter by search (with Arabic normalization)
     if (debouncedSearch.trim()) {
       const normalizedSearch = normalizeArabic(debouncedSearch);
@@ -226,7 +236,7 @@ export default function SessionAttendeesPage({
     }
 
     return filtered;
-  }, [registrations, debouncedSearch, filter, statusFilter]);
+  }, [registrations, debouncedSearch, filter, statusFilter, tagFilter]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -519,6 +529,33 @@ ${qrPageUrl}
             <SelectItem value="pending">معلق ({stats.pending})</SelectItem>
           </SelectContent>
         </Select>
+        {allLabels && allLabels.length > 0 && (
+          <Select
+            value={tagFilter}
+            onValueChange={(v) => setTagFilter(v as TagFilterType)}
+          >
+            <SelectTrigger className="w-44">
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                <SelectValue placeholder="التصنيف" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل التصنيفات</SelectItem>
+              {allLabels.map((label) => (
+                <SelectItem key={label.id} value={label.id}>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: label.color }}
+                    />
+                    {label.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <div className="relative flex-1">
           <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input

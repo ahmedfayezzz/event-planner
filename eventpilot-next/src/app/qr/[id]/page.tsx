@@ -224,11 +224,11 @@ export default function PublicQRPage({
         </Card>
 
         {/* Footer Link */}
-        <div className="text-center">
+        {/* <div className="text-center">
           <Button variant="ghost" asChild>
             <Link href={`/session/${qrData.session.id}`}>عرض تفاصيل الحدث</Link>
           </Button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

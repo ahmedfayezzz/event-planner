@@ -9,30 +9,34 @@
 - only send confirmation email to companion no need for registration
 - provide a way to register as a sponsor from public site
 
-- update logos display to have dynamic container
-- تحديث
+<!-- - update logos display to have dynamic container -->
 
 high priority:
 <!-- - manual email sending -->
 
 
-- sponsor display when it's 6 or more
-- fix sponsor logo display when there is no logo (background should be white not gray) 
+<!-- - fix sponsor display when it's 6 or more, wrap to next line but make it look good not 1 in line and 5 in another
+- fix sponsor logo display when there is no logo (background should be white not gray)  -->
 
+- sponsors display on mobile
+- history ui in mobile
+- remove veiw on qr code
+- button text on session card when user is already registered to say view instead of register
+- in attendees, add filter by tag
 
+- make manual registration approval based on option
 
-
-- add guest image
+<!-- - add guest image -->
 <!-- - add a way to view session as admin even if it's not published  -->
-- there should be a way to add multiple guests to the event
+<!-- - there should be a way to add multiple guests to the event -->
 <!-- - date is clickable not location in pdf -->
 <!-- - remvove sponsor name in details page of event and add name only in case there is no logo -->
 
-- add guest profiles and link them to events
+<!-- - add guest profiles and link them to events -->
 
 - add sponsor profile (links, attachments, about etc)
 
-- admin role updates not being reflected properly without re-login (even after login for email campaign) (no appearing in side menu)
+<!-- - admin role updates not being reflected properly without re-login (even after login for email campaign) (no appearing in side menu) -->
 
 sponsors:
 - calender for sponsors
@@ -47,7 +51,7 @@ sponsors:
 <!-- - sponsor attachments -->
 
 
-- fix hyper link on invitation pdf
+<!-- - fix hyper link on invitation pdf -->
 
 - check slug when session titles have similar names
 

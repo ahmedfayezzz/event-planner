@@ -6,18 +6,32 @@ import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QRCodeImage } from "@/components/qr-display";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
 import { ArrowRight, Download, Loader2, ExternalLink } from "lucide-react";
 
-export default function UserQRPage({ params }: { params: Promise<{ id: string }> }) {
+export default function UserQRPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const { status: authStatus } = useSession();
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const { data: qrData, isLoading, error } = api.attendance.getMyQR.useQuery(
+  const {
+    data: qrData,
+    isLoading,
+    error,
+  } = api.attendance.getMyQR.useQuery(
     { sessionId: id },
     { enabled: authStatus === "authenticated" }
   );
@@ -28,7 +42,9 @@ export default function UserQRPage({ params }: { params: Promise<{ id: string }>
     setIsDownloading(true);
     try {
       // Fetch branded QR code
-      const brandedQR = await utils.attendance.getBrandedQR.fetch({ sessionId: id });
+      const brandedQR = await utils.attendance.getBrandedQR.fetch({
+        sessionId: id,
+      });
 
       if (brandedQR?.qrCode) {
         // Convert data URL to Blob for better Safari compatibility
@@ -44,7 +60,10 @@ export default function UserQRPage({ params }: { params: Promise<{ id: string }>
         // Create download link for PDF
         const link = document.createElement("a");
         link.href = blobUrl;
-        link.download = `qr-${brandedQR.session.title.replace(/\s+/g, "-")}.pdf`;
+        link.download = `qr-${brandedQR.session.title.replace(
+          /\s+/g,
+          "-"
+        )}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -186,9 +205,9 @@ export default function UserQRPage({ params }: { params: Promise<{ id: string }>
               </>
             )}
           </Button>
-          <Button variant="outline" asChild>
+          {/* <Button variant="outline" asChild>
             <Link href={`/session/${id}`}>عرض تفاصيل الحدث</Link>
-          </Button>
+          </Button> */}
           <Button variant="ghost" asChild>
             <Link href="/user/registrations">العودة لتسجيلاتي</Link>
           </Button>

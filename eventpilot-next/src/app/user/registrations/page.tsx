@@ -49,11 +49,11 @@ export default function UserRegistrationsPage() {
   return (
     <div className="min-h-screen bg-muted/30 pb-20">
       {/* Header Section */}
-      <div className="bg-primary text-white pt-20 pb-32 relative overflow-hidden">
+      <div className="bg-primary text-white pt-12 sm:pt-20 pb-24 sm:pb-32 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10"></div>
-        <div className="container relative z-10">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
+        <div className="container relative z-10 px-4 sm:px-6">
+          <div className="flex flex-col items-center text-center md:flex-row md:text-start md:items-center md:justify-between gap-4 md:gap-6">
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
               <UserAvatar
                 avatarUrl={dashboard?.user.avatarUrl}
                 name={dashboard?.user.name}
@@ -62,15 +62,15 @@ export default function UserRegistrationsPage() {
                 className="rounded-2xl border-2 border-white/20 shadow-xl"
               />
               <div>
-                <h1 className="text-3xl font-bold">مرحباً، {dashboard?.user.name}</h1>
-                <p className="text-white/80 mt-1">تسجيلاتي في الأحداث</p>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">مرحباً، {dashboard?.user.name}</h1>
+                <p className="text-white/80 mt-1 text-sm sm:text-base">تسجيلاتي في الأحداث</p>
               </div>
             </div>
-            <div className="flex gap-3">
-              <Button variant="secondary" className="shadow-lg hover:shadow-xl transition-all" asChild>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+              <Button variant="secondary" className="shadow-lg hover:shadow-xl transition-all w-full sm:w-auto" asChild>
                 <Link href="/sessions">تصفح الأحداث</Link>
               </Button>
-              <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm" asChild>
+              <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm w-full sm:w-auto" asChild>
                 <Link href="/user/profile">إعدادات الحساب</Link>
               </Button>
             </div>
@@ -78,37 +78,37 @@ export default function UserRegistrationsPage() {
         </div>
       </div>
 
-      <div className="container -mt-20 relative z-20 space-y-8">
+      <div className="container px-4 sm:px-6 -mt-16 sm:-mt-20 relative z-20 space-y-6 sm:space-y-8">
         {/* Stats */}
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-3 sm:gap-6 grid-cols-3">
           <Card className="border-none shadow-lg bg-white/80 backdrop-blur-md hover:transform hover:-translate-y-1 transition-all duration-300">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-primary/60 font-medium">إجمالي التسجيلات</CardDescription>
-              <CardTitle className="text-4xl font-bold text-primary">{dashboard?.stats.totalRegistrations ?? 0}</CardTitle>
+            <CardHeader className="p-3 sm:p-6 pb-2">
+              <CardDescription className="text-primary/60 font-medium text-xs sm:text-sm">إجمالي التسجيلات</CardDescription>
+              <CardTitle className="text-2xl sm:text-4xl font-bold text-primary">{dashboard?.stats.totalRegistrations ?? 0}</CardTitle>
             </CardHeader>
           </Card>
           <Card className="border-none shadow-lg bg-white/80 backdrop-blur-md hover:transform hover:-translate-y-1 transition-all duration-300">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-primary/60 font-medium">الأحداث القادمة</CardDescription>
-              <CardTitle className="text-4xl font-bold text-accent">{dashboard?.stats.upcomingEvents ?? 0}</CardTitle>
+            <CardHeader className="p-3 sm:p-6 pb-2">
+              <CardDescription className="text-primary/60 font-medium text-xs sm:text-sm">الأحداث القادمة</CardDescription>
+              <CardTitle className="text-2xl sm:text-4xl font-bold text-accent">{dashboard?.stats.upcomingEvents ?? 0}</CardTitle>
             </CardHeader>
           </Card>
           <Card className="border-none shadow-lg bg-white/80 backdrop-blur-md hover:transform hover:-translate-y-1 transition-all duration-300">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-primary/60 font-medium">الأحداث المحضورة</CardDescription>
-              <CardTitle className="text-4xl font-bold text-primary">{dashboard?.stats.attendedEvents ?? 0}</CardTitle>
+            <CardHeader className="p-3 sm:p-6 pb-2">
+              <CardDescription className="text-primary/60 font-medium text-xs sm:text-sm">الأحداث المحضورة</CardDescription>
+              <CardTitle className="text-2xl sm:text-4xl font-bold text-primary">{dashboard?.stats.attendedEvents ?? 0}</CardTitle>
             </CardHeader>
           </Card>
         </div>
 
         {/* Profile Card */}
         <Card className="border-none shadow-lg bg-white/80 backdrop-blur-md">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-xl">معلومات الحساب</CardTitle>
-              <CardDescription>معلوماتك الشخصية والمهنية</CardDescription>
+              <CardTitle className="text-lg sm:text-xl">معلومات الحساب</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">معلوماتك الشخصية والمهنية</CardDescription>
             </div>
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
               <Link href="/user/profile">
                 <Edit className="ml-2 h-4 w-4" />
                 تعديل
@@ -197,16 +197,16 @@ export default function UserRegistrationsPage() {
         </Card>
 
         {/* Registrations */}
-        <div className="bg-white rounded-3xl shadow-xl border border-border/50 overflow-hidden">
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-border/50 overflow-hidden">
           <Tabs defaultValue="upcoming" className="w-full">
-            <div className="border-b px-6 py-4 bg-muted/30">
-              <TabsList className="bg-white border shadow-sm">
-                <TabsTrigger value="upcoming" className="data-[state=active]:bg-primary data-[state=active]:text-white">الأحداث القادمة</TabsTrigger>
-                <TabsTrigger value="past" className="data-[state=active]:bg-primary data-[state=active]:text-white">الأرشيف</TabsTrigger>
+            <div className="border-b px-3 sm:px-6 py-3 sm:py-4 bg-muted/30">
+              <TabsList className="bg-white border shadow-sm w-full sm:w-auto grid grid-cols-2 sm:inline-flex">
+                <TabsTrigger value="upcoming" className="data-[state=active]:bg-primary data-[state=active]:text-white text-xs sm:text-sm">الأحداث القادمة</TabsTrigger>
+                <TabsTrigger value="past" className="data-[state=active]:bg-primary data-[state=active]:text-white text-xs sm:text-sm">الأرشيف</TabsTrigger>
               </TabsList>
             </div>
 
-            <TabsContent value="upcoming" className="p-6 m-0 space-y-4 min-h-[300px]">
+            <TabsContent value="upcoming" className="p-3 sm:p-6 m-0 space-y-4 min-h-[300px]">
               {dashboard?.upcomingRegistrations && dashboard.upcomingRegistrations.length > 0 ? (
                 dashboard.upcomingRegistrations.map((reg: RegistrationItem) => (
                   <RegistrationCard key={reg.id} registration={reg} />
@@ -225,7 +225,7 @@ export default function UserRegistrationsPage() {
               )}
             </TabsContent>
 
-            <TabsContent value="past" className="p-6 m-0 space-y-4 min-h-[300px]">
+            <TabsContent value="past" className="p-3 sm:p-6 m-0 space-y-4 min-h-[300px]">
               {dashboard?.pastRegistrations && dashboard.pastRegistrations.length > 0 ? (
                 dashboard.pastRegistrations.map((reg: RegistrationItem) => (
                   <RegistrationCard key={reg.id} registration={reg} isPast />
@@ -265,96 +265,100 @@ function RegistrationCard({
 }) {
   return (
     <Card className="border border-border/50 shadow-sm hover:shadow-md transition-all duration-200 group">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <CardTitle className="text-xl text-primary group-hover:text-accent transition-colors">{registration.session.title}</CardTitle>
-            <CardDescription className="font-medium">التجمع رقم {registration.session.sessionNumber}</CardDescription>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
-              <CalendarCheck className="w-3.5 h-3.5" />
-              <span>تم التسجيل: {formatArabicDate(new Date(registration.registeredAt))} - {formatArabicTime(new Date(registration.registeredAt))}</span>
+      <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
+          <div className="space-y-1 order-2 sm:order-1">
+            <CardTitle className="text-base sm:text-xl text-primary group-hover:text-accent transition-colors">{registration.session.title}</CardTitle>
+            <CardDescription className="font-medium text-xs sm:text-sm">التجمع رقم {registration.session.sessionNumber}</CardDescription>
+            <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground pt-1">
+              <CalendarCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+              <span>تم التسجيل: {formatArabicDate(new Date(registration.registeredAt))}</span>
+              <span className="hidden sm:inline">- {formatArabicTime(new Date(registration.registeredAt))}</span>
             </div>
           </div>
-          <Badge variant={registration.isApproved ? "default" : "secondary"} className="px-3 py-1">
+          <Badge
+            variant={registration.isApproved ? "default" : "secondary"}
+            className="px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs order-1 sm:order-2 self-start shrink-0"
+          >
             {registration.isApproved ? "مؤكد" : "في انتظار الموافقة"}
           </Badge>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="grid gap-6 md:grid-cols-2 bg-muted/20 p-4 rounded-xl">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <Calendar className="w-4 h-4" />
+      <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+        <div className="grid gap-3 sm:gap-6 md:grid-cols-2 bg-muted/20 p-3 sm:p-4 rounded-lg sm:rounded-xl">
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">التاريخ</p>
-                <p className="font-medium">{formatArabicDate(new Date(registration.session.date))}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">التاريخ</p>
+                <p className="font-medium text-xs sm:text-sm truncate">{formatArabicDate(new Date(registration.session.date))}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <Clock className="w-4 h-4" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">الوقت</p>
-                <p className="font-medium">{formatArabicTime(new Date(registration.session.date))}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">الوقت</p>
+                <p className="font-medium text-xs sm:text-sm">{formatArabicTime(new Date(registration.session.date))}</p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {registration.session.location && (
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <MapPin className="w-4 h-4" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">المكان</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">المكان</p>
                   {registration.session.locationUrl ? (
                     <a
                       href={registration.session.locationUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium text-primary hover:underline inline-flex items-center gap-1"
+                      className="font-medium text-xs sm:text-sm text-primary hover:underline inline-flex items-center gap-1"
                     >
-                      {registration.session.location}
-                      <ExternalLink className="h-3 w-3" />
+                      <span className="truncate">{registration.session.location}</span>
+                      <ExternalLink className="h-3 w-3 shrink-0" />
                     </a>
                   ) : (
-                    <p className="font-medium">{registration.session.location}</p>
+                    <p className="font-medium text-xs sm:text-sm truncate">{registration.session.location}</p>
                   )}
                 </div>
               </div>
             )}
             {registration.companions.length > 0 && (
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <Users className="w-4 h-4" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">المرافقين</p>
-                  <p className="font-medium">{registration.companions.map((c) => c.name).join(", ")}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">المرافقين</p>
+                  <p className="font-medium text-xs sm:text-sm truncate">{registration.companions.map((c) => c.name).join(", ")}</p>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6 justify-end">
-          <Button variant="outline" size="sm" asChild className="hover:bg-primary hover:text-white transition-colors">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6 sm:justify-end">
+          <Button variant="outline" size="sm" asChild className="hover:bg-primary hover:text-white transition-colors w-full sm:w-auto text-xs sm:text-sm">
             <Link href={`/session/${registration.session.id}`}>عرض التفاصيل</Link>
           </Button>
           {!isPast && (
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" asChild className="w-full sm:w-auto text-xs sm:text-sm">
               <Link href={`/user/registrations/${registration.id}/edit`}>
-                <Edit className="w-4 h-4 ml-2" />
+                <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1.5 sm:ml-2" />
                 تعديل التسجيل
               </Link>
             </Button>
           )}
           {registration.isApproved && !isPast && (
-            <Button variant="default" size="sm" asChild className="bg-secondary hover:bg-secondary/90 text-primary font-bold">
+            <Button variant="default" size="sm" asChild className="bg-secondary hover:bg-secondary/90 text-primary font-bold w-full sm:w-auto text-xs sm:text-sm">
               <Link href={`/user/qr/${registration.session.id}`}>بطاقة الدخول (QR)</Link>
             </Button>
           )}
@@ -366,20 +370,20 @@ function RegistrationCard({
 
 function DashboardSkeleton() {
   return (
-    <div className="container py-8">
-      <div className="space-y-8">
+    <div className="container px-4 sm:px-6 py-6 sm:py-8">
+      <div className="space-y-6 sm:space-y-8">
         <div className="space-y-2">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-8 sm:h-10 w-40 sm:w-48" />
+          <Skeleton className="h-4 sm:h-5 w-28 sm:w-32" />
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-24" />
+            <Skeleton key={i} className="h-16 sm:h-24" />
           ))}
         </div>
-        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-8 sm:h-10 w-48 sm:w-64" />
         {[1, 2].map((i) => (
-          <Skeleton key={i} className="h-40" />
+          <Skeleton key={i} className="h-32 sm:h-40" />
         ))}
       </div>
     </div>

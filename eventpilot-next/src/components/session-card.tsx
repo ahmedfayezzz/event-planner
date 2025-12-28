@@ -29,6 +29,7 @@ interface SessionCardProps {
     isFull?: boolean;
     canRegister?: boolean;
     requiresApproval?: boolean;
+    isRegistered?: boolean;
   };
   showRegisterButton?: boolean;
 }
@@ -142,13 +143,17 @@ export function SessionCard({
           <Button
             asChild
             className={`w-full h-11 text-sm font-semibold gap-2 rounded-lg ${
-              session.canRegister
+              session.isRegistered
+                ? "bg-accent hover:bg-accent/90 text-primary shadow-md hover:shadow-lg"
+                : session.canRegister
                 ? "bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >
             <Link href={`/session/${session.id}`}>
-              {session.isFull
+              {session.isRegistered
+                ? "عرض التسجيل"
+                : session.isFull
                 ? "الحدث مكتمل"
                 : session.canRegister
                 ? session.requiresApproval

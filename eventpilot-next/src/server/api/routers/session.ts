@@ -107,6 +107,21 @@ export const sessionRouter = createTRPCRouter({
         nextCursor = nextItem?.id;
       }
 
+      // Check if user is registered for any of these sessions
+      const userId = ctx.session?.user?.id;
+      let userRegistrations: Set<string> = new Set();
+
+      if (userId) {
+        const registrations = await db.registration.findMany({
+          where: {
+            userId,
+            sessionId: { in: sessions.map((s) => s.id) },
+          },
+          select: { sessionId: true },
+        });
+        userRegistrations = new Set(registrations.map((r) => r.sessionId));
+      }
+
       const now = new Date();
       return {
         sessions: sessions.map((s) => ({
@@ -120,6 +135,7 @@ export const sessionRouter = createTRPCRouter({
             new Date(s.date) > now && // Session must be in the future
             s._count.registrations < s.maxParticipants &&
             (!s.registrationDeadline || now < s.registrationDeadline),
+          isRegistered: userRegistrations.has(s.id),
         })),
         nextCursor,
       };
@@ -167,6 +183,21 @@ export const sessionRouter = createTRPCRouter({
         },
       });
 
+      // Check if user is registered for any of these sessions
+      const userId = ctx.session?.user?.id;
+      let userRegistrations: Set<string> = new Set();
+
+      if (userId) {
+        const registrations = await db.registration.findMany({
+          where: {
+            userId,
+            sessionId: { in: sessions.map((s) => s.id) },
+          },
+          select: { sessionId: true },
+        });
+        userRegistrations = new Set(registrations.map((r) => r.sessionId));
+      }
+
       const now = new Date();
       return sessions.map((s) => ({
         ...s,
@@ -179,6 +210,7 @@ export const sessionRouter = createTRPCRouter({
           new Date(s.date) > now && // Session must be in the future
           s._count.registrations < s.maxParticipants &&
           (!s.registrationDeadline || now < s.registrationDeadline),
+        isRegistered: userRegistrations.has(s.id),
       }));
     }),
 

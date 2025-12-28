@@ -47,7 +47,9 @@ const LOGO_BACKGROUND_STYLES: Record<string, string> = {
 const isHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value);
 
 // Helper to get the primary sponsor link (website first, then social media)
-function getSponsorLink(socialMediaLinks: Record<string, string> | null | undefined): string | null {
+function getSponsorLink(
+  socialMediaLinks: Record<string, string> | null | undefined
+): string | null {
   if (!socialMediaLinks) return null;
 
   // Priority order: website > twitter > instagram > linkedin > other
@@ -77,7 +79,7 @@ function SponsorLogo({
     // Show sponsor name as the logo when no image is available
     return (
       <div className="w-16 sm:w-20 md:w-24 h-10 sm:h-12 md:h-16 rounded-lg bg-white border border-border flex items-center justify-center p-1">
-        <span className="text-[9px] sm:text-[10px] md:text-xs font-semibold text-primary text-center line-clamp-2">
+        <span className="text-[12px] sm:text-[15px] md:text-xs font-semibold text-primary text-center line-clamp-2">
           {name}
         </span>
       </div>
@@ -92,7 +94,10 @@ function SponsorLogo({
 
   // Check if it's a custom hex color or a preset
   const isCustomColor = isHexColor(logoBackground);
-  const bgStyle = isCustomColor ? "" : (LOGO_BACKGROUND_STYLES[logoBackground] || LOGO_BACKGROUND_STYLES.transparent);
+  const bgStyle = isCustomColor
+    ? ""
+    : LOGO_BACKGROUND_STYLES[logoBackground] ||
+      LOGO_BACKGROUND_STYLES.transparent;
 
   return (
     <div
@@ -118,20 +123,26 @@ interface GuestInfo {
   isPublic: boolean;
 }
 
-function GuestImage({ imageUrl, name }: { imageUrl: string | null; name: string }) {
+function GuestImage({
+  imageUrl,
+  name,
+}: {
+  imageUrl: string | null;
+  name: string;
+}) {
   const { url, isLoading } = usePresignedUrl(imageUrl);
 
   if (!imageUrl) {
     return (
-      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-accent/20 flex items-center justify-center text-accent-foreground shrink-0">
-        <User className="w-5 h-5 md:w-6 md:h-6" />
+      <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-accent/20 flex items-center justify-center text-accent-foreground shrink-0">
+        <User className="w-7 h-7 md:w-8 md:h-8" />
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-muted animate-pulse shrink-0" />
+      <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-muted animate-pulse shrink-0" />
     );
   }
 
@@ -139,7 +150,7 @@ function GuestImage({ imageUrl, name }: { imageUrl: string | null; name: string 
     <img
       src={url || undefined}
       alt={name}
-      className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover shrink-0"
+      className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover shrink-0"
     />
   );
 }
@@ -175,9 +186,18 @@ function GuestDisplayCard({ guest }: { guest: GuestInfo }) {
   return content;
 }
 
-export function SessionDetailClient({ id, adminPreview = false }: { id: string; adminPreview?: boolean }) {
+export function SessionDetailClient({
+  id,
+  adminPreview = false,
+}: {
+  id: string;
+  adminPreview?: boolean;
+}) {
   const { status: authStatus } = useSession();
-  const { data: session, isLoading } = api.session.getById.useQuery({ id, adminPreview });
+  const { data: session, isLoading } = api.session.getById.useQuery({
+    id,
+    adminPreview,
+  });
   const { data: registration } = api.session.checkRegistration.useQuery(
     { sessionId: id },
     { enabled: authStatus === "authenticated" }
@@ -217,8 +237,14 @@ export function SessionDetailClient({ id, adminPreview = false }: { id: string; 
   const saudiDate = toSaudiTime(sessionDate);
   const day = saudiDate?.getDate() ?? sessionDate.getDate();
   const month =
-    saudiDate?.toLocaleDateString("ar-SA", { month: "long", numberingSystem: "latn" }) ??
-    sessionDate.toLocaleDateString("ar-SA", { month: "long", numberingSystem: "latn" });
+    saudiDate?.toLocaleDateString("ar-SA", {
+      month: "long",
+      numberingSystem: "latn",
+    }) ??
+    sessionDate.toLocaleDateString("ar-SA", {
+      month: "long",
+      numberingSystem: "latn",
+    });
 
   const isUpcoming = sessionDate > new Date();
 
@@ -258,9 +284,7 @@ export function SessionDetailClient({ id, adminPreview = false }: { id: string; 
         <div className="absolute top-4 left-4 md:top-6 md:left-6 flex flex-wrap gap-2 md:gap-3">
           <Badge
             variant="secondary"
-            className={`${
-              statusColors[displayStatus]
-            } backdrop-blur-md shadow-lg text-xs md:text-base px-2.5 py-1 md:px-4 md:py-1.5`}
+            className={`${statusColors[displayStatus]} backdrop-blur-md shadow-lg text-xs md:text-base px-2.5 py-1 md:px-4 md:py-1.5`}
           >
             {statusLabels[displayStatus]}
           </Badge>
@@ -374,7 +398,8 @@ export function SessionDetailClient({ id, adminPreview = false }: { id: string; 
 
                       {/* CTA Section */}
                       <div className="w-full lg:flex-1">
-                        {registration?.registered && registration.registration ? (
+                        {registration?.registered &&
+                        registration.registration ? (
                           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4">
                             <div className="flex items-center gap-2 md:gap-3">
                               <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 text-emerald-600 shrink-0" />
@@ -520,19 +545,22 @@ export function SessionDetailClient({ id, adminPreview = false }: { id: string; 
                     </div>
                   )}
 
-                  {session.sessionGuests && session.sessionGuests.length > 0 && (
-                    <div className="col-span-2 space-y-3">
-                      <p className="text-[10px] md:text-xs text-muted-foreground">
-                        {session.sessionGuests.length > 1 ? "ضيوف الحدث" : "ضيف الحدث"}
-                      </p>
-                      {session.sessionGuests.map((sg) => (
-                        <GuestDisplayCard
-                          key={sg.guest.id}
-                          guest={sg.guest}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  {session.sessionGuests &&
+                    session.sessionGuests.length > 0 && (
+                      <div className="col-span-2 space-y-3">
+                        <p className="text-[10px] md:text-xs text-muted-foreground">
+                          {session.sessionGuests.length > 1
+                            ? "ضيوف الحدث"
+                            : "ضيف الحدث"}
+                        </p>
+                        {session.sessionGuests.map((sg) => (
+                          <GuestDisplayCard
+                            key={sg.guest.id}
+                            guest={sg.guest}
+                          />
+                        ))}
+                      </div>
+                    )}
                 </div>
 
                 {/* Description */}
@@ -595,7 +623,9 @@ export function SessionDetailClient({ id, adminPreview = false }: { id: string; 
                     </div>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-4 md:gap-5 justify-items-center">
                       {session.sponsors.map((sponsor) => {
-                        const sponsorLink = getSponsorLink(sponsor.socialMediaLinks);
+                        const sponsorLink = getSponsorLink(
+                          sponsor.socialMediaLinks
+                        );
                         const logoContent = (
                           <SponsorLogo
                             logoUrl={sponsor.logoUrl}
