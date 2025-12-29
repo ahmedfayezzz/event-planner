@@ -10,10 +10,12 @@ import {
   generatePendingContent,
   generateConfirmedContent,
   generateCompanionContent,
+  generateCompanionApprovedNotificationContent,
   generateWelcomeContent,
   generatePasswordResetContent,
   generateInvitationContent,
   generateQrOnlyContent,
+  generateSponsorThankYouContent,
   type EmailSettings,
   type SessionInfo,
 } from "./email-templates";
@@ -613,6 +615,41 @@ export async function sendCompanionEmail(
 }
 
 /**
+ * Send notification to inviter when their companion is approved
+ */
+export async function sendCompanionApprovedNotification(
+  inviterEmail: string,
+  inviterName: string,
+  companionName: string,
+  session: SessionInfo,
+  registrationId?: string
+): Promise<boolean> {
+  const settings = await getEmailSettings();
+  const dateStr = formatSessionDate(session.date);
+
+  const content = generateCompanionApprovedNotificationContent(
+    inviterName,
+    companionName,
+    session.title,
+    dateStr,
+    session.location
+  );
+
+  const html = createEmailTemplate({ content, settings });
+  const text = createPlainText(content, undefined, undefined, settings);
+
+  return sendEmail({
+    to: inviterEmail,
+    subject: `تم تأكيد تسجيل المرافق - ${session.title}`,
+    html,
+    text,
+    type: "companion_approved_notification",
+    registrationId,
+    sessionId: session.id,
+  });
+}
+
+/**
  * Send welcome email to new user
  */
 export async function sendWelcomeEmail(
@@ -852,5 +889,29 @@ export async function sendQrOnlyEmail(
     type: "qr_only",
     registrationId,
     sessionId: session.id,
+  });
+}
+
+/**
+ * Send thank you email to sponsor interest form submitter
+ */
+export async function sendSponsorThankYouEmail(
+  emailAddress: string,
+  name: string
+): Promise<boolean> {
+  const settings = await getEmailSettings();
+  const siteName = settings.siteName ?? "ثلوثية الأعمال";
+
+  const content = generateSponsorThankYouContent(name, siteName);
+
+  const html = createEmailTemplate({ content, settings });
+  const text = createPlainText(content, undefined, undefined, settings);
+
+  return sendEmail({
+    to: emailAddress,
+    subject: `شكراً لاهتمامك بالرعاية - ${siteName}`,
+    html,
+    text,
+    type: "sponsor_thank_you",
   });
 }

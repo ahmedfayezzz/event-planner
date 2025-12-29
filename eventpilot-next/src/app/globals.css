@@ -438,6 +438,11 @@
   outline: none;
 }
 
+/* Phone input error state */
+.phone-input-error {
+  border-color: hsl(var(--destructive)) !important;
+}
+
 /* Country select dropdown styling */
 .PhoneInputCountrySelect {
   position: absolute;

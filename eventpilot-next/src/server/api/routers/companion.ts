@@ -141,27 +141,8 @@ export const companionRouter = createTRPCRouter({
         },
       });
 
-      // Send invite email if email provided and parent registration is approved
-      if (invitedRegistration.guestEmail && parentRegistration.isApproved) {
-        const user = await db.user.findUnique({
-          where: { id: session.user.id },
-        });
-
-        const qrData = createQRCheckInData({
-          type: "attendance",
-          registrationId: invitedRegistration.id,
-          sessionId: parentRegistration.session.id,
-        });
-
-        await sendCompanionEmail(
-          invitedRegistration.guestEmail,
-          invitedRegistration.guestName || "المرافق",
-          user?.name || "المسجل",
-          parentRegistration.session,
-          true,
-          qrData
-        );
-      }
+      // Note: No email is sent when companion is added.
+      // Companion will receive email only when approved by admin.
 
       return invitedRegistration;
     }),

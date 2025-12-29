@@ -25,12 +25,15 @@ import {
   Briefcase,
   Instagram,
   Twitter,
+  Ghost,
   Camera,
   Loader2,
   Trash2,
   Building2,
   ExternalLink,
 } from "lucide-react";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 import { Badge } from "@/components/ui/badge";
 import { usePresignedUrl } from "@/hooks/use-presigned-url";
 import { formatArabicDate } from "@/lib/utils";
@@ -124,7 +127,7 @@ export default function UserProfilePage() {
     onSuccess: async (_data, variables) => {
       toast.success("تم تحديث الملف الشخصي بنجاح");
       // Update session so changes reflect immediately in navbar/header
-      await updateSession({ name: variables.name });
+      await updateSession({ name: variables.name, email: variables.email });
     },
     onError: (error) => {
       toast.error(error.message || "حدث خطأ أثناء تحديث الملف الشخصي");
@@ -213,11 +216,13 @@ export default function UserProfilePage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "",
     bio: "",
     jobTitle: "",
     company: "",
     instagram: "",
     twitter: "",
+    snapchat: "",
   });
 
   // Update form data when profile loads
@@ -226,11 +231,13 @@ export default function UserProfilePage() {
       setFormData({
         name: profile.name || "",
         email: profile.email || "",
+        phone: profile.phone || "",
         bio: profile.goal || "",
         jobTitle: profile.position || "",
         company: profile.companyName || "",
         instagram: profile.instagram || "",
         twitter: profile.twitter || "",
+        snapchat: profile.snapchat || "",
       });
     }
   }, [profile]);
@@ -238,10 +245,13 @@ export default function UserProfilePage() {
   const handleSave = async () => {
     updateProfileMutation.mutate({
       name: formData.name,
+      email: formData.email,
+      phone: formData.phone || undefined,
       position: formData.jobTitle,
       companyName: formData.company,
       instagram: formData.instagram || undefined,
       twitter: formData.twitter || undefined,
+      snapchat: formData.snapchat || undefined,
       goal: formData.bio || undefined,
     });
   };
@@ -373,12 +383,29 @@ export default function UserProfilePage() {
                       <Mail className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="email"
+                        type="email"
                         value={formData.email}
-                        disabled
-                        className="pr-10 bg-muted/50"
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                        className="pr-10"
                       />
                     </div>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">رقم الهاتف</Label>
+                  <PhoneInput
+                    id="phone"
+                    international
+                    defaultCountry="SA"
+                    value={formData.phone}
+                    onChange={(value) =>
+                      setFormData({ ...formData, phone: value || "" })
+                    }
+                    className="phone-input-container flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -423,7 +450,7 @@ export default function UserProfilePage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="instagram">Instagram</Label>
                     <div className="relative">
@@ -452,6 +479,21 @@ export default function UserProfilePage() {
                         value={formData.twitter}
                         onChange={(e) =>
                           setFormData({ ...formData, twitter: e.target.value })
+                        }
+                        className="pr-10"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="snapchat">Snapchat</Label>
+                    <div className="relative">
+                      <Ghost className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="snapchat"
+                        placeholder="@username"
+                        value={formData.snapchat}
+                        onChange={(e) =>
+                          setFormData({ ...formData, snapchat: e.target.value })
                         }
                         className="pr-10"
                       />

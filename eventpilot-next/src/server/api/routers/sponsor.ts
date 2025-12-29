@@ -12,6 +12,7 @@ import { exportToCSV } from "@/lib/utils";
 import { toSaudiTime } from "@/lib/timezone";
 import { arabicSearchOr } from "@/lib/search";
 import { deleteImage, extractKeyFromUrl } from "@/lib/s3";
+import { sendSponsorThankYouEmail } from "@/lib/email";
 
 export const sponsorRouter = createTRPCRouter({
   /**
@@ -2004,5 +2005,59 @@ export const sponsorRouter = createTRPCRouter({
         chartData,
         totals,
       };
+    }),
+
+  /**
+   * Public sponsor interest form submission (no auth required)
+   */
+  publicSubmit: publicProcedure
+    .input(
+      z.object({
+        name: z.string().min(1, "الاسم مطلوب"),
+        email: z.string().email("البريد الإلكتروني غير صالح"),
+        phone: z.string().min(1, "رقم الهاتف مطلوب"),
+        type: z.enum(["person", "company"]).default("person"),
+        companyName: z.string().optional().nullable(),
+        sponsorshipTypes: z.array(z.string()).default([]),
+        sponsorshipOtherText: z.string().optional().nullable(),
+        notes: z.string().optional().nullable(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Determine the name to use (company name or person name)
+      const sponsorName =
+        input.type === "company" && input.companyName
+          ? input.companyName
+          : input.name;
+
+      // Combine notes and other text if both provided
+      const combinedNotes = [input.sponsorshipOtherText, input.notes]
+        .filter(Boolean)
+        .join("\n\n");
+
+      // Create sponsor record with status "new"
+      const sponsor = await db.sponsor.create({
+        data: {
+          name: sponsorName,
+          email: input.email,
+          phone: input.phone,
+          type: input.type,
+          status: "new",
+          sponsorshipTypes: input.sponsorshipTypes,
+          sponsorshipOtherText: combinedNotes || null,
+          isActive: true,
+        },
+      });
+
+      // Send thank you email (don't fail if email fails)
+      try {
+        await sendSponsorThankYouEmail(input.email, input.name);
+      } catch (error) {
+        console.error("Failed to send sponsor thank you email:", error);
+      }
+
+      return { success: true, sponsorId: sponsor.id };
     }),
 });

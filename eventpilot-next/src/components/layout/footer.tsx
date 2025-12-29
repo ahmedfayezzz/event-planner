@@ -128,6 +128,15 @@ export function Footer() {
                   تسجيل الدخول
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/become-sponsor"
+                  className="text-white/80 hover:text-accent transition-colors flex items-center gap-2"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent/50"></span>
+                  كن راعياً
+                </Link>
+              </li>
             </ul>
           </div>
 

@@ -663,6 +663,92 @@ export function generateQrOnlyContent(
   `;
 }
 
+/**
+ * Generate notification email content for inviter when their companion is approved
+ */
+export function generateCompanionApprovedNotificationContent(
+  inviterName: string,
+  companionName: string,
+  sessionTitle: string,
+  dateStr: string,
+  location: string | null
+): string {
+  return `
+    <p style="margin: 0 0 16px 0;">مرحباً <strong>${inviterName}</strong>,</p>
+    <p style="margin: 0 0 8px 0; padding: 12px 16px; background-color: #E8F5E9; border-radius: 8px; color: #2E7D32; border: 1px solid #C8E6C9;">
+      تم تأكيد تسجيل المرافق!
+    </p>
+    <p style="margin: 0 0 16px 0; line-height: 1.7;">
+      نود إعلامك بأن المرافق <strong>${companionName}</strong> تم تأكيد تسجيله في الحدث القادم.
+    </p>
+    <p style="margin: 16px 0 8px 0;"><strong style="font-size: 18px; color: ${BRAND.primary};">${sessionTitle}</strong></p>
+
+    <!-- Event Details Box -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
+      <tr>
+        <td style="background-color: ${BRAND.primary}; width: 4px;"></td>
+        <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
+          <p style="margin: 0 0 8px 0;"><strong>التاريخ:</strong> ${dateStr}</p>
+          <p style="margin: 0;"><strong>المكان:</strong> ${location || "سيتم الإعلان عنه لاحقاً"}</p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Decorative Divider -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
+      <tr>
+        <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
+      </tr>
+    </table>
+
+    <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">نتطلع لرؤيتكم معنا!</p>
+  `;
+}
+
+// =============================================================================
+// SPONSOR THANK YOU
+// =============================================================================
+
+/**
+ * Generate sponsor thank you email content (for public sponsor interest form)
+ */
+export function generateSponsorThankYouContent(
+  name: string,
+  siteName: string
+): string {
+  return `
+    <p style="margin: 0 0 16px 0;">مرحباً <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 16px 0; line-height: 1.7;">
+      شكراً لاهتمامك بأن تكون راعياً لفعاليات <strong style="color: ${BRAND.primary};">${siteName}</strong>!
+    </p>
+    <p style="margin: 0 0 16px 0; line-height: 1.7;">
+      تم استلام طلبك بنجاح وسيتواصل معك فريقنا قريباً لمناقشة تفاصيل الرعاية.
+    </p>
+
+    <!-- Info Box -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%; border-radius: 8px; overflow: hidden;">
+      <tr>
+        <td style="background-color: ${BRAND.primary}; width: 4px;"></td>
+        <td style="padding: 16px; background-color: ${BRAND.infoBoxBg};">
+          <p style="margin: 0 0 8px 0; font-weight: bold; color: ${BRAND.primary};">ماذا بعد؟</p>
+          <p style="margin: 0; color: ${BRAND.textMuted}; font-size: 14px; line-height: 1.6;">
+            سيتواصل معك أحد أعضاء فريقنا خلال الأيام القادمة لمناقشة فرص الرعاية المتاحة وكيف يمكننا التعاون معاً.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Decorative Divider -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
+      <tr>
+        <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
+      </tr>
+    </table>
+
+    <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">نتطلع للتعاون معك!</p>
+  `;
+}
+
 // =============================================================================
 // QR CODE SECTION
 // =============================================================================

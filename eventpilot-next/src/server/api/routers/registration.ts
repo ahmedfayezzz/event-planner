@@ -13,6 +13,7 @@ import {
   sendPendingEmail,
   sendConfirmedEmail,
   sendCompanionEmail,
+  sendCompanionApprovedNotification,
   sendWelcomeEmail,
 } from "@/lib/email";
 import bcrypt from "bcryptjs";
@@ -827,12 +828,14 @@ export const registrationRouter = createTRPCRouter({
 
         // Check if this is a companion registration
         if (registration.invitedByRegistrationId) {
-          // Get parent name for companion email
+          // Get parent registration for companion email
           const parentReg = await db.registration.findUnique({
             where: { id: registration.invitedByRegistrationId },
             include: { user: true },
           });
           const parentName = parentReg?.user?.name || parentReg?.guestName || "المسجل";
+
+          // Send confirmation email to companion
           await sendCompanionEmail(
             email,
             name,
@@ -841,6 +844,18 @@ export const registrationRouter = createTRPCRouter({
             true,
             qrData
           );
+
+          // Notify the inviter that their companion was approved
+          const inviterEmail = parentReg?.user?.email || parentReg?.guestEmail;
+          if (inviterEmail && parentName) {
+            await sendCompanionApprovedNotification(
+              inviterEmail,
+              parentName,
+              name,
+              registration.session,
+              registration.id
+            );
+          }
         } else {
           await sendConfirmedEmail(email, name, registration.session, qrData);
         }
@@ -981,12 +996,14 @@ export const registrationRouter = createTRPCRouter({
               registrationId: registration.id,
               sessionId: session.id,
             });
-            // Get parent name for companion email
+            // Get parent registration for companion email
             const parentReg = await db.registration.findUnique({
               where: { id: registration.invitedByRegistrationId },
               include: { user: true },
             });
             const parentName = parentReg?.user?.name || parentReg?.guestName || "المسجل";
+
+            // Send confirmation email to companion
             await sendCompanionEmail(
               email,
               name,
@@ -995,6 +1012,18 @@ export const registrationRouter = createTRPCRouter({
               true,
               companionQrData
             );
+
+            // Notify the inviter that their companion was approved
+            const inviterEmail = parentReg?.user?.email || parentReg?.guestEmail;
+            if (inviterEmail && parentName) {
+              await sendCompanionApprovedNotification(
+                inviterEmail,
+                parentName,
+                name,
+                session,
+                registration.id
+              );
+            }
           }
         }
       }
@@ -1094,7 +1123,8 @@ export const registrationRouter = createTRPCRouter({
           });
         } else {
           // Create new companion with user matching/creation
-          const companionApproved = registration.isApproved;
+          // Companions always require approval if session requires approval, regardless of parent's status
+          const companionApproved = registration.session.requiresApproval ? false : true;
 
           // Find or create user for companion
           const { userId: companionUserId } = await findOrCreateCompanionUser(

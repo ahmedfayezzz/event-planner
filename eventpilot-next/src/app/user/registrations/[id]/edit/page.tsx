@@ -1,9 +1,12 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useForm, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { api } from "@/trpc/react";
 import { formatArabicDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -22,14 +25,31 @@ import { ArrowLeft, UserPlus, X, Loader2 } from "lucide-react";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 
-interface Companion {
-  id?: string;
-  name: string;
-  company: string;
-  title: string;
-  phone: string;
-  email: string;
-}
+// Validation schema for companion
+const companionSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(2, "الاسم مطلوب"),
+  phone: z.string().min(9, "رقم الهاتف مطلوب"),
+  company: z.string().min(1, "اسم الشركة مطلوب"),
+  title: z.string().min(1, "المنصب مطلوب"),
+  email: z
+    .string()
+    .email("البريد الإلكتروني غير صحيح")
+    .optional()
+    .or(z.literal("")),
+});
+
+// Shared input styling
+const inputClassName =
+  "bg-white/60 backdrop-blur-sm border border-primary/10 focus:border-primary/50 focus:bg-white/80 h-10 md:h-11 transition-all shadow-none";
+const inputErrorClassName =
+  "bg-white/60 backdrop-blur-sm border border-destructive focus:border-destructive focus:bg-white/80 h-10 md:h-11 transition-all shadow-none";
+
+const formSchema = z.object({
+  companions: z.array(companionSchema),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 export default function EditRegistrationPage({
   params,
@@ -40,8 +60,23 @@ export default function EditRegistrationPage({
   const router = useRouter();
   const { status: authStatus } = useSession();
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [companions, setCompanions] = useState<Companion[]>([]);
+  // Form setup with react-hook-form
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      companions: [],
+    },
+    mode: "onChange",
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "companions",
+  });
+
+  const {
+    formState: { errors, isSubmitting },
+  } = form;
 
   // Fetch registration data
   const { data: registration, isLoading } =
@@ -62,22 +97,24 @@ export default function EditRegistrationPage({
   // Load companions when registration data is available
   useEffect(() => {
     if (registration?.companions) {
-      setCompanions(
-        registration.companions.map((c) => ({
+      form.reset({
+        companions: registration.companions.map((c) => ({
           id: c.id,
           name: c.name || "",
           company: c.company || "",
           title: c.title || "",
           phone: c.phone || "",
           email: c.email || "",
-        }))
-      );
+        })),
+      });
     }
-  }, [registration]);
+  }, [registration, form]);
 
   // Redirect if not authenticated
   if (authStatus === "unauthenticated") {
-    router.push(`/user/login?callbackUrl=/user/registrations/${registrationId}/edit`);
+    router.push(
+      `/user/login?callbackUrl=/user/registrations/${registrationId}/edit`
+    );
     return null;
   }
 
@@ -126,54 +163,27 @@ export default function EditRegistrationPage({
   }
 
   const addCompanion = () => {
-    if (companions.length >= (registration.session?.maxCompanions || 5)) {
+    if (fields.length >= (registration.session?.maxCompanions || 5)) {
       toast.error("لقد وصلت للحد الأقصى من المرافقين");
       return;
     }
-    setCompanions([
-      ...companions,
-      { name: "", company: "", title: "", phone: "", email: "" },
-    ]);
+    append({ name: "", company: "", title: "", phone: "", email: "" });
   };
 
-  const removeCompanion = (index: number) => {
-    setCompanions(companions.filter((_, i) => i !== index));
-  };
+  const handleSubmit = async (data: FormData) => {
+    const validCompanions = data.companions.map((c) => ({
+      id: c.id,
+      name: c.name,
+      phone: c.phone,
+      company: c.company || undefined,
+      title: c.title || undefined,
+      email: c.email || undefined,
+    }));
 
-  const updateCompanion = (
-    index: number,
-    field: keyof Companion,
-    value: string
-  ) => {
-    const updated = [...companions];
-    updated[index] = { ...updated[index], [field]: value };
-    setCompanions(updated);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      // Filter out companions without required fields (name and phone)
-      const validCompanions = companions
-        .filter((c) => c.name.trim().length >= 2 && c.phone.trim().length >= 9)
-        .map((c) => ({
-          id: c.id,
-          name: c.name,
-          phone: c.phone,
-          company: c.company || undefined,
-          title: c.title || undefined,
-          email: c.email || undefined,
-        }));
-
-      await updateMutation.mutateAsync({
-        registrationId,
-        companions: validCompanions,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    await updateMutation.mutateAsync({
+      registrationId,
+      companions: validCompanions,
+    });
   };
 
   return (
@@ -194,7 +204,7 @@ export default function EditRegistrationPage({
           <p className="text-muted-foreground">{registration.session.title}</p>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={form.handleSubmit(handleSubmit)}>
           <div className="space-y-6">
             {/* Registration Info Card */}
             <Card>
@@ -202,7 +212,7 @@ export default function EditRegistrationPage({
                 <CardTitle className="text-lg">معلومات التسجيل</CardTitle>
                 <CardDescription>
                   تم التسجيل في{" "}
-{formatArabicDate(new Date(registration.registeredAt))}
+                  {formatArabicDate(new Date(registration.registeredAt))}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -211,11 +221,11 @@ export default function EditRegistrationPage({
                     حالة التسجيل
                   </span>
                   <Badge
-                    variant={
-                      registration.isApproved ? "default" : "secondary"
-                    }
+                    variant={registration.isApproved ? "default" : "secondary"}
                   >
-                    {registration.isApproved ? "✓ مؤكد" : "⏳ في انتظار الموافقة"}
+                    {registration.isApproved
+                      ? "✓ مؤكد"
+                      : "⏳ في انتظار الموافقة"}
                   </Badge>
                 </div>
               </CardContent>
@@ -234,119 +244,178 @@ export default function EditRegistrationPage({
                       يمكنك تعديل معلومات المرافقين أو إضافة/حذف مرافقين
                     </CardDescription>
                   </div>
-                  <Badge variant="outline">
-                    {companions.length}
-                  </Badge>
+                  <Badge variant="outline">{fields.length}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {companions.map((companion, index) => (
+                {fields.map((field, index) => (
                   <div
-                    key={index}
-                    className="p-4 border rounded-lg bg-muted/30 space-y-3"
+                    key={field.id}
+                    className="p-4 md:p-5 border border-primary/10 rounded-xl bg-gradient-to-br from-white/80 to-primary/5 backdrop-blur-sm space-y-4"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="font-semibold">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-primary text-sm md:text-base flex items-center gap-2">
+                        <span className="w-1.5 h-4 bg-accent rounded-full inline-block"></span>
                         المرافق {index + 1}
-                      </Label>
+                      </span>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        onClick={() => removeCompanion(index)}
+                        onClick={() => remove(index)}
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
 
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor={`companion-${index}-name`}>
-                          الاسم *
+                    <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                      <div className="space-y-1.5 md:space-y-2">
+                        <Label
+                          htmlFor={`companion-${index}-name`}
+                          className="text-sm"
+                        >
+                          الاسم <span className="text-destructive">*</span>
                         </Label>
                         <Input
                           id={`companion-${index}-name`}
-                          value={companion.name}
-                          onChange={(e) =>
-                            updateCompanion(index, "name", e.target.value)
-                          }
-                          required
+                          {...form.register(`companions.${index}.name`)}
                           placeholder="الاسم الكامل"
+                          className={
+                            errors.companions?.[index]?.name
+                              ? inputErrorClassName
+                              : inputClassName
+                          }
                         />
+                        {errors.companions?.[index]?.name && (
+                          <p className="text-sm text-destructive">
+                            {errors.companions[index].name.message}
+                          </p>
+                        )}
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor={`companion-${index}-phone`}>
-                          رقم الهاتف *
+                      <div className="space-y-1.5 md:space-y-2">
+                        <Label
+                          htmlFor={`companion-${index}-phone`}
+                          className="text-sm"
+                        >
+                          رقم الهاتف <span className="text-destructive">*</span>
                         </Label>
                         <PhoneInput
                           id={`companion-${index}-phone`}
                           international
                           defaultCountry="SA"
-                          value={companion.phone}
-                          onChange={(value) =>
-                            updateCompanion(index, "phone", value || "")
-                          }
-                          className="phone-input-container"
+                          value={form.watch(`companions.${index}.phone`)}
+                          onChange={(value) => {
+                            form.setValue(
+                              `companions.${index}.phone`,
+                              value || "",
+                              {
+                                shouldValidate: true,
+                              }
+                            );
+                          }}
+                          className={`phone-input-container bg-white/60 backdrop-blur-sm border focus-within:border-primary/50 focus-within:bg-white/80 h-10 md:h-11 transition-all shadow-none rounded-md px-3 ${
+                            errors.companions?.[index]?.phone
+                              ? "border-destructive"
+                              : "border-primary/10"
+                          }`}
                         />
+                        {errors.companions?.[index]?.phone && (
+                          <p className="text-sm text-destructive">
+                            {errors.companions[index].phone.message}
+                          </p>
+                        )}
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor={`companion-${index}-company`}>
-                          الشركة
+                      <div className="space-y-1.5 md:space-y-2">
+                        <Label
+                          htmlFor={`companion-${index}-company`}
+                          className="text-sm"
+                        >
+                          الشركة <span className="text-destructive">*</span>
                         </Label>
                         <Input
                           id={`companion-${index}-company`}
-                          value={companion.company}
-                          onChange={(e) =>
-                            updateCompanion(index, "company", e.target.value)
-                          }
+                          {...form.register(`companions.${index}.company`)}
                           placeholder="اسم الشركة"
+                          className={
+                            errors.companions?.[index]?.company
+                              ? inputErrorClassName
+                              : inputClassName
+                          }
                         />
+                        {errors.companions?.[index]?.company && (
+                          <p className="text-sm text-destructive">
+                            {errors.companions[index].company.message}
+                          </p>
+                        )}
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor={`companion-${index}-title`}>
-                          المنصب
+                      <div className="space-y-1.5 md:space-y-2">
+                        <Label
+                          htmlFor={`companion-${index}-title`}
+                          className="text-sm"
+                        >
+                          المنصب <span className="text-destructive">*</span>
                         </Label>
                         <Input
                           id={`companion-${index}-title`}
-                          value={companion.title}
-                          onChange={(e) =>
-                            updateCompanion(index, "title", e.target.value)
-                          }
+                          {...form.register(`companions.${index}.title`)}
                           placeholder="المنصب الوظيفي"
+                          className={
+                            errors.companions?.[index]?.title
+                              ? inputErrorClassName
+                              : inputClassName
+                          }
                         />
+                        {errors.companions?.[index]?.title && (
+                          <p className="text-sm text-destructive">
+                            {errors.companions[index].title.message}
+                          </p>
+                        )}
                       </div>
 
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor={`companion-${index}-email`}>
+                      <div className="space-y-1.5 md:space-y-2 md:col-span-2">
+                        <Label
+                          htmlFor={`companion-${index}-email`}
+                          className="text-sm"
+                        >
                           البريد الإلكتروني
                         </Label>
                         <Input
                           id={`companion-${index}-email`}
                           type="email"
-                          value={companion.email}
-                          onChange={(e) =>
-                            updateCompanion(index, "email", e.target.value)
-                          }
+                          {...form.register(`companions.${index}.email`)}
                           placeholder="example@email.com"
                           dir="ltr"
+                          className={
+                            errors.companions?.[index]?.email
+                              ? inputErrorClassName
+                              : inputClassName
+                          }
                         />
+                        {errors.companions?.[index]?.email && (
+                          <p className="text-sm text-destructive">
+                            {errors.companions[index].email.message}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
                 ))}
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addCompanion}
-                  className="w-full"
-                >
-                  <UserPlus className="w-4 h-4 ml-2" />
-                  إضافة مرافق
-                </Button>
+                {fields.length < (registration.session?.maxCompanions || 5) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addCompanion}
+                    className="w-full h-11 border-dashed border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all"
+                  >
+                    <UserPlus className="w-4 h-4 ml-2" />
+                    إضافة مرافق
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
@@ -356,13 +425,17 @@ export default function EditRegistrationPage({
                 type="button"
                 variant="outline"
                 onClick={() => router.push("/user/registrations")}
-                disabled={isSubmitting}
+                disabled={isSubmitting || updateMutation.isPending}
                 className="flex-1"
               >
                 إلغاء
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="flex-1">
-                {isSubmitting ? (
+              <Button
+                type="submit"
+                disabled={isSubmitting || updateMutation.isPending}
+                className="flex-1"
+              >
+                {isSubmitting || updateMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 ml-2 animate-spin" />
                     جارٍ الحفظ...

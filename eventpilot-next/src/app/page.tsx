@@ -346,6 +346,14 @@ export default function HomePage() {
             <Button
               size="default"
               variant="outline"
+              className="btn-lift bg-transparent border-accent text-accent hover:bg-accent/10 w-full sm:w-auto"
+              asChild
+            >
+              <Link href="/become-sponsor">كن راعياً</Link>
+            </Button>
+            <Button
+              size="default"
+              variant="outline"
               className="btn-lift bg-transparent border-white text-white hover:bg-white/10 w-full sm:w-auto"
               asChild
             >

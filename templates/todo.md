@@ -7,9 +7,13 @@
 - companion added in this case should be registered as a guest (already done)
 - companio email should only be sent to the user email, not companion email
 - only send confirmation email to companion no need for registration
+
 - provide a way to register as a sponsor from public site
 
+- allow user to edit all their info in profile edit
+
 <!-- - update logos display to have dynamic container -->
+
 
 high priority:
 <!-- - manual email sending -->
@@ -18,11 +22,11 @@ high priority:
 <!-- - fix sponsor display when it's 6 or more, wrap to next line but make it look good not 1 in line and 5 in another
 - fix sponsor logo display when there is no logo (background should be white not gray)  -->
 
-- sponsors display on mobile
+<!-- - sponsors display on mobile
 - history ui in mobile
 - remove veiw on qr code
 - button text on session card when user is already registered to say view instead of register
-- in attendees, add filter by tag
+- in attendees, add filter by tag -->
 
 - make manual registration approval based on option
 
@@ -34,7 +38,7 @@ high priority:
 
 <!-- - add guest profiles and link them to events -->
 
-- add sponsor profile (links, attachments, about etc)
+<!-- - add sponsor profile (links, attachments, about etc) -->
 
 <!-- - admin role updates not being reflected properly without re-login (even after login for email campaign) (no appearing in side menu) -->
 

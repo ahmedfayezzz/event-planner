@@ -92,7 +92,16 @@ export function Navbar() {
             {status === "loading" ? (
               <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
             ) : session ? (
-              <DropdownMenu>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full border-accent text-accent hover:bg-accent/10 hover:text-accent"
+                  asChild
+                >
+                  <Link href="/become-sponsor">كن راعياً</Link>
+                </Button>
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
@@ -152,8 +161,17 @@ export function Navbar() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </>
             ) : (
               <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full border-accent text-accent hover:bg-accent/10 hover:text-accent"
+                  asChild
+                >
+                  <Link href="/become-sponsor">كن راعياً</Link>
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -218,6 +236,13 @@ export function Navbar() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     الأحداث
+                  </Link>
+                  <Link
+                    href="/become-sponsor"
+                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-accent rounded-lg hover:bg-accent/5 transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    كن راعياً
                   </Link>
 
                   {(session?.user?.role === "ADMIN" ||

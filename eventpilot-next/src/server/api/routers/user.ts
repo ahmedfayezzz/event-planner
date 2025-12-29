@@ -137,6 +137,7 @@ export const userRouter = createTRPCRouter({
     .input(
       z.object({
         name: z.string().min(2).optional(),
+        email: z.string().email().optional(),
         phone: z.string().min(9).optional(),
         instagram: z.string().optional(),
         snapchat: z.string().optional(),
@@ -173,8 +174,27 @@ export const userRouter = createTRPCRouter({
         });
       }
 
-      // Format phone if provided
+      // Build update data
       const updateData: Record<string, unknown> = { ...input };
+
+      // Check email uniqueness if provided
+      if (input.email) {
+        const existingEmail = await db.user.findFirst({
+          where: {
+            email: input.email,
+            id: { not: session.user.id },
+          },
+        });
+
+        if (existingEmail) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "البريد الإلكتروني مستخدم من قبل مستخدم آخر",
+          });
+        }
+      }
+
+      // Format phone if provided
       if (input.phone) {
         updateData.phone = formatPhoneNumber(input.phone);
 
