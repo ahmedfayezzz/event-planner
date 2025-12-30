@@ -8,6 +8,7 @@ import {
   createEmailTemplate,
   generateConfirmationContent,
   generatePendingContent,
+  generateRejectionContent,
   generateConfirmedContent,
   generateCompanionContent,
   generateCompanionApprovedNotificationContent,
@@ -447,6 +448,41 @@ export async function sendPendingEmail(
     html,
     text,
     type: "pending",
+    registrationId,
+    sessionId: session.id,
+  });
+}
+
+/**
+ * Send rejection email (registration rejected)
+ */
+export async function sendRejectionEmail(
+  emailAddress: string,
+  name: string,
+  session: SessionInfo,
+  registrationId?: string,
+  reason?: string | null
+): Promise<boolean> {
+  const settings = await getEmailSettings();
+  const dateStr = formatSessionDate(session.date);
+
+  const content = generateRejectionContent(
+    name,
+    session.title,
+    dateStr,
+    session.location,
+    reason
+  );
+
+  const html = createEmailTemplate({ content, settings });
+  const text = createPlainText(content, undefined, undefined, settings);
+
+  return sendEmail({
+    to: emailAddress,
+    subject: `${session.title} | حياكم الله`,
+    html,
+    text,
+    type: "rejection",
     registrationId,
     sessionId: session.id,
   });

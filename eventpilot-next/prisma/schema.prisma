@@ -154,7 +154,9 @@ model Registration {
   sessionId   String
   registeredAt DateTime @default(now())
   isApproved  Boolean  @default(true)
-  approvalNotes String?
+  isRejected      Boolean  @default(false)
+  rejectionReason String?
+  approvalNotes   String?
 
   // Guest registration fields (used when userId is NULL)
   guestName         String?

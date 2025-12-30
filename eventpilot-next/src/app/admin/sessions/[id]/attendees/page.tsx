@@ -7,6 +7,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useExpandableRows } from "@/hooks/use-expandable-rows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -79,6 +80,7 @@ interface RegistrationItem {
   labels?: Array<{ id: string; name: string; color: string }>;
   isGuest: boolean;
   isApproved: boolean;
+  isRejected?: boolean;
   registeredAt: Date;
   isInvited?: boolean;
   invitedByName?: string | null;
@@ -87,7 +89,7 @@ interface RegistrationItem {
 }
 
 type FilterType = "all" | "direct" | "invited";
-type StatusFilterType = "all" | "approved" | "pending";
+type StatusFilterType = "all" | "approved" | "pending" | "rejected";
 type TagFilterType = "all" | string;
 
 export default function SessionAttendeesPage({
@@ -103,8 +105,11 @@ export default function SessionAttendeesPage({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { isExpanded, toggleRow } = useExpandableRows();
   const [confirmAction, setConfirmAction] = useState<{
-    type: "approveAll" | "approveSelected";
-    count: number;
+    type: "approveAll" | "approveSelected" | "approve" | "reject";
+    count?: number;
+    registrationId?: string;
+    name?: string;
+    reason?: string;
   } | null>(null);
   const debouncedSearch = useDebounce(search, 300);
 
@@ -145,6 +150,16 @@ export default function SessionAttendeesPage({
     onSuccess: (data) => {
       toast.success(`تم تأكيد ${data.approvedCount} تسجيل`);
       setSelectedIds(new Set());
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ");
+    },
+  });
+
+  const rejectMutation = api.registration.reject.useMutation({
+    onSuccess: () => {
+      toast.success("تم رفض التسجيل");
       refetch();
     },
     onError: (error) => {
@@ -213,7 +228,9 @@ export default function SessionAttendeesPage({
     if (statusFilter === "approved") {
       filtered = filtered.filter((reg: RegistrationItem) => reg.isApproved);
     } else if (statusFilter === "pending") {
-      filtered = filtered.filter((reg: RegistrationItem) => !reg.isApproved);
+      filtered = filtered.filter((reg: RegistrationItem) => !reg.isApproved && !reg.isRejected);
+    } else if (statusFilter === "rejected") {
+      filtered = filtered.filter((reg: RegistrationItem) => reg.isRejected);
     }
 
     // Filter by tag
@@ -241,7 +258,7 @@ export default function SessionAttendeesPage({
   // Calculate stats
   const stats = useMemo(() => {
     if (!registrations)
-      return { total: 0, direct: 0, invited: 0, approved: 0, pending: 0 };
+      return { total: 0, direct: 0, invited: 0, approved: 0, pending: 0, rejected: 0 };
 
     const direct = registrations.filter(
       (r: RegistrationItem) => !r.isInvited
@@ -256,7 +273,9 @@ export default function SessionAttendeesPage({
       invited,
       approved: registrations.filter((r: RegistrationItem) => r.isApproved)
         .length,
-      pending: registrations.filter((r: RegistrationItem) => !r.isApproved)
+      pending: registrations.filter((r: RegistrationItem) => !r.isApproved && !r.isRejected)
+        .length,
+      rejected: registrations.filter((r: RegistrationItem) => r.isRejected)
         .length,
     };
   }, [registrations]);
@@ -270,7 +289,7 @@ export default function SessionAttendeesPage({
 
   // Get pending selected registrations (for approve action)
   const pendingSelectedCount = selectedRegistrations.filter(
-    (r: RegistrationItem) => !r.isApproved
+    (r: RegistrationItem) => !r.isApproved && !r.isRejected
   ).length;
 
   // Check if all filtered items are selected
@@ -350,7 +369,7 @@ ${qrPageUrl}
       r.companyName || "",
       r.position || "",
       r.isInvited ? "مرافق" : r.isGuest ? "زائر" : "عضو",
-      r.isApproved ? "مؤكد" : "معلق",
+      r.isRejected ? "مرفوض" : r.isApproved ? "مؤكد" : "معلق",
       formatArabicDateTime(new Date(r.registeredAt)),
     ]);
 
@@ -383,6 +402,13 @@ ${qrPageUrl}
         .filter((r: RegistrationItem) => !r.isApproved)
         .map((r: RegistrationItem) => r.id);
       approveSelectedMutation.mutate({ registrationIds: pendingIds });
+    } else if (confirmAction.type === "approve" && confirmAction.registrationId) {
+      approveMutation.mutate({ registrationId: confirmAction.registrationId });
+    } else if (confirmAction.type === "reject" && confirmAction.registrationId) {
+      rejectMutation.mutate({
+        registrationId: confirmAction.registrationId,
+        reason: confirmAction.reason || undefined
+      });
     }
     setConfirmAction(null);
   };
@@ -527,6 +553,7 @@ ${qrPageUrl}
             <SelectItem value="all">كل الحالات</SelectItem>
             <SelectItem value="approved">مؤكد ({stats.approved})</SelectItem>
             <SelectItem value="pending">معلق ({stats.pending})</SelectItem>
+            <SelectItem value="rejected">مرفوض ({stats.rejected})</SelectItem>
           </SelectContent>
         </Select>
         {allLabels && allLabels.length > 0 && (
@@ -817,12 +844,14 @@ ${qrPageUrl}
                             <Badge
                               variant={reg.isApproved ? "default" : "outline"}
                               className={
-                                reg.isApproved
+                                reg.isRejected
+                                  ? "bg-red-500/10 text-red-600 border-red-200"
+                                  : reg.isApproved
                                   ? "bg-green-500/10 text-green-600 border-green-200"
                                   : "bg-orange-500/10 text-orange-600 border-orange-200"
                               }
                             >
-                              {reg.isApproved ? "مؤكد" : "معلق"}
+                              {reg.isRejected ? "مرفوض" : reg.isApproved ? "مؤكد" : "معلق"}
                             </Badge>
                           </TableCell>
                           <TableCell className="hidden md:table-cell text-muted-foreground">
@@ -835,20 +864,39 @@ ${qrPageUrl}
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             <div className="flex items-center gap-1">
-                              {!reg.isApproved && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() =>
-                                    approveMutation.mutate({
-                                      registrationId: reg.id,
-                                    })
-                                  }
-                                  disabled={approveMutation.isPending}
-                                  title="تأكيد التسجيل"
-                                >
-                                  <Check className="h-4 w-4 text-green-600" />
-                                </Button>
+                              {!reg.isApproved && !reg.isRejected && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      setConfirmAction({
+                                        type: "approve",
+                                        registrationId: reg.id,
+                                        name: reg.name || undefined,
+                                      })
+                                    }
+                                    disabled={approveMutation.isPending}
+                                    title="تأكيد التسجيل"
+                                  >
+                                    <Check className="h-4 w-4 text-green-600" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      setConfirmAction({
+                                        type: "reject",
+                                        registrationId: reg.id,
+                                        name: reg.name || undefined,
+                                      })
+                                    }
+                                    disabled={rejectMutation.isPending}
+                                    title="رفض التسجيل"
+                                  >
+                                    <X className="h-4 w-4 text-red-600" />
+                                  </Button>
+                                </>
                               )}
                               {reg.phone && (
                                 <Button
@@ -998,20 +1046,40 @@ ${qrPageUrl}
                                   </div>
                                   {/* Actions */}
                                   <div className="mt-3 pt-3 border-t flex flex-wrap items-center gap-2">
-                                    {!reg.isApproved && (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                          approveMutation.mutate({
-                                            registrationId: reg.id,
-                                          })
-                                        }
-                                        disabled={approveMutation.isPending}
-                                      >
-                                        <Check className="me-2 h-4 w-4" />
-                                        تأكيد
-                                      </Button>
+                                    {!reg.isApproved && !reg.isRejected && (
+                                      <>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() =>
+                                            setConfirmAction({
+                                              type: "approve",
+                                              registrationId: reg.id,
+                                              name: reg.name || undefined,
+                                            })
+                                          }
+                                          disabled={approveMutation.isPending}
+                                        >
+                                          <Check className="me-2 h-4 w-4" />
+                                          تأكيد
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() =>
+                                            setConfirmAction({
+                                              type: "reject",
+                                              registrationId: reg.id,
+                                              name: reg.name || undefined,
+                                            })
+                                          }
+                                          disabled={rejectMutation.isPending}
+                                          className="text-red-600 border-red-200 hover:bg-red-50"
+                                        >
+                                          <X className="me-2 h-4 w-4" />
+                                          رفض
+                                        </Button>
+                                      </>
                                     )}
                                     {reg.phone && (
                                       <Button
@@ -1046,18 +1114,45 @@ ${qrPageUrl}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد التسجيلات</AlertDialogTitle>
+            <AlertDialogTitle>
+              {confirmAction?.type === "reject" ? "رفض التسجيل" : "تأكيد التسجيل"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction?.type === "approveAll" &&
                 `هل أنت متأكد من تأكيد ${confirmAction.count} تسجيل معلق؟`}
               {confirmAction?.type === "approveSelected" &&
                 `هل أنت متأكد من تأكيد ${confirmAction?.count} تسجيل محدد؟`}
+              {confirmAction?.type === "approve" &&
+                `هل أنت متأكد من تأكيد تسجيل ${confirmAction?.name || "هذا المستخدم"}؟`}
+              {confirmAction?.type === "reject" &&
+                `هل أنت متأكد من رفض تسجيل ${confirmAction?.name || "هذا المستخدم"}؟ سيتم إرسال إشعار بالرفض.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {confirmAction?.type === "reject" && (
+            <div className="py-2">
+              <label className="text-sm text-muted-foreground mb-2 block">
+                سبب الرفض (اختياري)
+              </label>
+              <Textarea
+                placeholder="أدخل سبب الرفض إن وجد..."
+                value={confirmAction?.reason || ""}
+                onChange={(e) =>
+                  setConfirmAction((prev) =>
+                    prev ? { ...prev, reason: e.target.value } : null
+                  )
+                }
+                className="resize-none"
+                rows={3}
+              />
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmedAction}>
-              تأكيد
+            <AlertDialogAction
+              onClick={handleConfirmedAction}
+              className={confirmAction?.type === "reject" ? "bg-red-600 hover:bg-red-700" : ""}
+            >
+              {confirmAction?.type === "reject" ? "رفض" : "تأكيد"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

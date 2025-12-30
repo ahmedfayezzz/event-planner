@@ -359,6 +359,41 @@ export function generatePendingContent(
 }
 
 /**
+ * Generate rejection email content (registration rejected)
+ */
+export function generateRejectionContent(
+  _name: string,
+  _sessionTitle: string,
+  _dateStr: string,
+  _location: string | null,
+  _reason?: string | null
+): string {
+  // Parameters kept for future use - reason is stored in DB but hidden from email for now
+
+  return `
+    <p style="margin: 0 0 16px 0;">أهلاً وسهلاً،،</p>
+
+    <p style="margin: 0 0 16px 0; line-height: 1.8;">
+      نشكر لكم اهتمامكم وتقديمكم، ونعتذر عن عدم إمكانية قبولكم في هذه الثلوثية نظراً لاكتمال العدد ومحدودية الحضور و ظروف التنظيم.
+    </p>
+
+    <p style="margin: 0 0 24px 0; line-height: 1.8;">
+      سعدنا بتواصلكم، ونتطلع لمشاركتكم في الثلوثيات القادمة بإذن الله.
+    </p>
+
+    <!-- Decorative Divider -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 16px 0; width: 100%;">
+      <tr>
+        <td style="border-bottom: 2px dashed ${BRAND.accentLight};">&nbsp;</td>
+      </tr>
+    </table>
+
+    <p style="margin: 0 0 4px 0; color: ${BRAND.textLight}; font-style: italic;">شاكرين مقدرين تفهمكم،</p>
+    <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">فريق لفت</p>
+  `;
+}
+
+/**
  * Generate confirmed email content (registration approved)
  */
 export function generateConfirmedContent(

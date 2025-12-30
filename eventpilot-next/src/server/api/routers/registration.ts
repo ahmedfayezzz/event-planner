@@ -12,6 +12,7 @@ import { generateQRCode, createQRCheckInData } from "@/lib/qr";
 import {
   sendPendingEmail,
   sendConfirmedEmail,
+  sendRejectionEmail,
   sendCompanionEmail,
   sendCompanionApprovedNotification,
   sendWelcomeEmail,
@@ -1032,6 +1033,74 @@ export const registrationRouter = createTRPCRouter({
         success: true,
         approvedCount: pendingRegistrations.length,
       };
+    }),
+
+  /**
+   * Reject single registration (admin only)
+   * Sends rejection email and marks registration as rejected
+   */
+  reject: adminProcedure
+    .input(z.object({ registrationId: z.string(), reason: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const registration = await db.registration.findUnique({
+        where: { id: input.registrationId },
+        include: {
+          session: true,
+          user: true,
+          invitedRegistrations: true,
+        },
+      });
+
+      if (!registration) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "التسجيل غير موجود",
+        });
+      }
+
+      if (registration.isApproved) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "لا يمكن رفض تسجيل تمت الموافقة عليه مسبقاً",
+        });
+      }
+
+      if (registration.isRejected) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "التسجيل مرفوض مسبقاً",
+        });
+      }
+
+      // Get email and name
+      const email = registration.user?.email || registration.guestEmail;
+      const name = registration.user?.name || registration.guestName;
+
+      // Mark companion registrations as rejected
+      if (registration.invitedRegistrations.length > 0) {
+        await db.registration.updateMany({
+          where: { invitedByRegistrationId: registration.id },
+          data: { isRejected: true },
+        });
+      }
+
+      // Mark registration as rejected
+      await db.registration.update({
+        where: { id: input.registrationId },
+        data: {
+          isRejected: true,
+          rejectionReason: input.reason || null,
+        },
+      });
+
+      // Send rejection email
+      if (email && name) {
+        await sendRejectionEmail(email, name, registration.session, registration.id, input.reason);
+      }
+
+      return { success: true };
     }),
 
   /**
