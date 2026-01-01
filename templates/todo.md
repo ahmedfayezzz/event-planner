@@ -3,14 +3,14 @@
 - email log system
 - resend confirmation email
 
-- when a user edits registration to add a companion, if user is already acceoted, companion shouldn't be accepted automatically
+<!-- - when a user edits registration to add a companion, if user is already acceoted, companion shouldn't be accepted automatically
 - companion added in this case should be registered as a guest (already done)
 - companio email should only be sent to the user email, not companion email
-- only send confirmation email to companion no need for registration
+- only send confirmation email to companion no need for registration -->
 
-- provide a way to register as a sponsor from public site
+<!-- - provide a way to register as a sponsor from public site -->
 
-- allow user to edit all their info in profile edit
+<!-- - allow user to edit all their info in profile edit -->
 
 <!-- - update logos display to have dynamic container -->
 
@@ -64,3 +64,26 @@ sponsors:
 - whatsapp with qr code
 
 
+نظام المرافقين:
+-المرافق الجديد يحتاج موافقة الأدمن حتى لو كان التسجيل الأصلي مؤكد
+-لا يُرسل إيميل عند إضافة المرافق
+-عند موافقة الأدمن: يوصل للمرافق إيميل تأكيد يوضح أنه مدعو من اليوزر المسجل
+-عند موافقة الأدمن: يوصل لليوزر اللي أضاف المرافق نوتيفكيشن بالموافقة
+
+فورم تعديل المرافقين:
+-الحقول الإلزامية: الاسم، رقم الهاتف، الشركة، المنصب
+-الحقل الاختياري: الإيميل فقط
+-رسائل error واضحة عند عدم تعبئة الحقول المطلوبة
+-ديزاين موحد مع باقي صفحات التسجيل
+
+تسجيل الرعاة:
+-إضافة صفحة "كن راعياً" لتقديم طلبات الرعاية
+-إرسال إيميل شكر تلقائي عند استلام الطلب
+-إضافة روابط الوصول للصفحة في النافبار والقائمة الجانبية والفوتر والصفحة الرئيسية
+-ظهور الطلبات في لوحة تحكم الأدمن تحت قسم "الرعاة" بحالة "جديد" للمتابعة
+
+
+تعديل البروفايل:
+-إمكانية تعديل الإيميل ورقم الهاتف
+-إضافة حقل سناب شات (مع انستغرام وتويتر)
+-التحقق من عدم تكرار الإيميل أو الهاتف مع يوزر آخر

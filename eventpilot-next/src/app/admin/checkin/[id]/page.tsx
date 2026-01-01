@@ -420,7 +420,7 @@ export default function CheckInPage({
                                   </Badge>
                                 )}
                               </div>
-                              <p className="text-xs text-muted-foreground hidden md:block">
+                              <p className="text-xs text-muted-foreground hidden md:block truncate">
                                 {attendee.email}
                               </p>
                               {attendee.isInvited && attendee.invitedByName && (
@@ -506,7 +506,7 @@ export default function CheckInPage({
                                     {attendee.email && (
                                       <div>
                                         <span className="text-muted-foreground">البريد:</span>
-                                        <span className="mr-1">{attendee.email}</span>
+                                        <span className="mr-1 truncate" dir="ltr">{attendee.email}</span>
                                       </div>
                                     )}
                                     {attendee.isInvited && attendee.invitedByName && (

@@ -437,15 +437,15 @@ export default function SponsorshipPage({ params }: PageProps) {
                               {sponsorship.sponsor.phone ? (
                                 <a
                                   href={`tel:${sponsorship.sponsor.phone}`}
-                                  className="flex items-center gap-1 text-primary hover:underline"
+                                  className="flex items-center gap-1 text-primary hover:underline truncate"
                                 >
-                                  <Phone className="h-3 w-3" />
-                                  {sponsorship.sponsor.phone}
+                                  <Phone className="h-3 w-3 shrink-0" />
+                                  <span className="truncate">{sponsorship.sponsor.phone}</span>
                                 </a>
                               ) : sponsorship.sponsor.email ? (
                                 <a
                                   href={`mailto:${sponsorship.sponsor.email}`}
-                                  className="text-primary hover:underline"
+                                  className="text-primary hover:underline truncate block"
                                 >
                                   {sponsorship.sponsor.email}
                                 </a>
@@ -648,9 +648,9 @@ export default function SponsorshipPage({ params }: PageProps) {
                             name={sponsor.name}
                             type={sponsor.type}
                           />
-                          <div className="flex-1">
-                            <p className="font-medium">{sponsor.name}</p>
-                            <p className="text-sm text-muted-foreground">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{sponsor.name}</p>
+                            <p className="text-sm text-muted-foreground truncate">
                               {getSponsorTypeLabel(sponsor.type)}
                               {sponsor.email && ` • ${sponsor.email}`}
                             </p>

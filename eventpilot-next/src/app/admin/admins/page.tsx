@@ -372,7 +372,7 @@ export default function AdminsPage() {
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-sm text-muted-foreground hidden md:block">
+                            <p className="text-sm text-muted-foreground hidden md:block truncate">
                               {admin.email}
                             </p>
                           </div>
@@ -502,7 +502,7 @@ export default function AdminsPage() {
                                 <div className="text-sm space-y-2">
                                   <div>
                                     <span className="text-muted-foreground">البريد:</span>
-                                    <span className="mr-1" dir="ltr">{admin.email}</span>
+                                    <span className="mr-1 truncate" dir="ltr">{admin.email}</span>
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground">الصلاحيات:</span>

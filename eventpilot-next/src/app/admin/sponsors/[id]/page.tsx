@@ -607,7 +607,7 @@ export default function SponsorProfilePage({
                 {sponsor.email ? (
                   <a
                     href={`mailto:${sponsor.email}`}
-                    className="text-sm hover:underline"
+                    className="text-sm hover:underline truncate block"
                     dir="ltr"
                   >
                     {sponsor.email}
@@ -773,14 +773,14 @@ export default function SponsorProfilePage({
                   href={`/admin/users/${sponsor.user.id}`}
                   className="block hover:bg-blue-50 -mx-2 px-2 py-2 rounded-lg transition-colors"
                 >
-                  <p className="font-medium hover:underline">
+                  <p className="font-medium hover:underline truncate">
                     {sponsor.user.name}
                   </p>
-                  <p className="text-sm text-muted-foreground" dir="ltr">
+                  <p className="text-sm text-muted-foreground truncate" dir="ltr">
                     {sponsor.user.email}
                   </p>
                   {sponsor.user.phone && (
-                    <p className="text-sm text-muted-foreground" dir="ltr">
+                    <p className="text-sm text-muted-foreground truncate" dir="ltr">
                       {sponsor.user.phone}
                     </p>
                   )}
@@ -1337,14 +1337,14 @@ export default function SponsorProfilePage({
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{user.name}</p>
                             <p
-                              className="text-sm text-muted-foreground"
+                              className="text-sm text-muted-foreground truncate"
                               dir="ltr"
                             >
                               {user.email}
                             </p>
                             {user.phone && (
                               <p
-                                className="text-xs text-muted-foreground"
+                                className="text-xs text-muted-foreground truncate"
                                 dir="ltr"
                               >
                                 {user.phone}
