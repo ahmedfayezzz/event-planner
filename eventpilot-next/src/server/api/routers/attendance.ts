@@ -311,7 +311,7 @@ export const attendanceRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { db, session } = ctx;
 
-      // Find user's registration with user info and session sponsors
+      // Find user's registration with user info, session sponsors, and session guests
       const registration = await db.registration.findFirst({
         where: {
           userId: session.user.id,
@@ -325,6 +325,20 @@ export const attendanceRouter = createTRPCRouter({
                 orderBy: { displayOrder: "asc" },
                 include: {
                   sponsor: true,
+                },
+              },
+              sessionGuests: {
+                orderBy: { displayOrder: "asc" },
+                include: {
+                  guest: {
+                    select: {
+                      name: true,
+                      title: true,
+                      jobTitle: true,
+                      company: true,
+                      imageUrl: true,
+                    },
+                  },
                 },
               },
             },
@@ -365,6 +379,15 @@ export const attendanceRouter = createTRPCRouter({
           socialMediaLinks: es.sponsor!.socialMediaLinks as Record<string, string> | null,
         }));
 
+      // Extract session guests
+      const sessionGuests = registration.session.sessionGuests.map((sg) => ({
+        name: sg.guest.name,
+        title: sg.guest.title,
+        jobTitle: sg.guest.jobTitle,
+        company: sg.guest.company,
+        imageUrl: sg.guest.imageUrl,
+      }));
+
       // Generate branded QR as PDF
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionTitle: registration.session.title,
@@ -372,6 +395,7 @@ export const attendanceRouter = createTRPCRouter({
         attendeeName,
         locationUrl: registration.session.locationUrl ?? undefined,
         sponsors,
+        sessionGuests,
       });
 
       if (!pdfBuffer) {
@@ -468,6 +492,20 @@ export const attendanceRouter = createTRPCRouter({
                   sponsor: true,
                 },
               },
+              sessionGuests: {
+                orderBy: { displayOrder: "asc" },
+                include: {
+                  guest: {
+                    select: {
+                      name: true,
+                      title: true,
+                      jobTitle: true,
+                      company: true,
+                      imageUrl: true,
+                    },
+                  },
+                },
+              },
             },
           },
           user: {
@@ -513,6 +551,15 @@ export const attendanceRouter = createTRPCRouter({
           socialMediaLinks: es.sponsor!.socialMediaLinks as Record<string, string> | null,
         }));
 
+      // Extract session guests
+      const sessionGuests = registration.session.sessionGuests.map((sg) => ({
+        name: sg.guest.name,
+        title: sg.guest.title,
+        jobTitle: sg.guest.jobTitle,
+        company: sg.guest.company,
+        imageUrl: sg.guest.imageUrl,
+      }));
+
       // Generate branded QR as PDF
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionTitle: registration.session.title,
@@ -520,6 +567,7 @@ export const attendanceRouter = createTRPCRouter({
         attendeeName,
         locationUrl: registration.session.locationUrl ?? undefined,
         sponsors,
+        sessionGuests,
       });
 
       if (!pdfBuffer) {

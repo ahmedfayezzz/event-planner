@@ -19,7 +19,7 @@ export async function GET(
 
     const { id } = await params;
 
-    // Get session details
+    // Get session details with guests
     const eventSession = await db.session.findUnique({
       where: { id },
       select: {
@@ -28,6 +28,20 @@ export async function GET(
         date: true,
         location: true,
         locationUrl: true,
+        sessionGuests: {
+          orderBy: { displayOrder: "asc" },
+          include: {
+            guest: {
+              select: {
+                name: true,
+                title: true,
+                jobTitle: true,
+                company: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -60,6 +74,15 @@ export async function GET(
         socialMediaLinks: s.sponsor!.socialMediaLinks as Record<string, string> | null,
       }));
 
+    // Extract session guests info
+    const sessionGuests = eventSession.sessionGuests.map((sg) => ({
+      name: sg.guest.name,
+      title: sg.guest.title,
+      jobTitle: sg.guest.jobTitle,
+      company: sg.guest.company,
+      imageUrl: sg.guest.imageUrl,
+    }));
+
     // Generate the PDF
     const pdfBuffer = await generateInvitationPdf({
       sessionTitle: eventSession.title,
@@ -67,6 +90,7 @@ export async function GET(
       location: eventSession.location || undefined,
       locationUrl: eventSession.locationUrl || undefined,
       sponsors,
+      sessionGuests,
     });
 
     if (!pdfBuffer) {

@@ -24,11 +24,13 @@ export async function generateQRCode(data: string): Promise<string | null> {
 /**
  * Generate QR code as Buffer (for server-side use)
  */
-export async function generateQRCodeBuffer(data: string): Promise<Buffer | null> {
+export async function generateQRCodeBuffer(
+  data: string
+): Promise<Buffer | null> {
   try {
     return await QRCode.toBuffer(data, {
       errorCorrectionLevel: "L",
-      margin: 4,
+      margin: 1,
       width: 200,
       color: {
         dark: "#000000",
@@ -64,7 +66,11 @@ export function createQRCheckInData(data: QRCheckInData): string {
 export function parseQRData(data: string): QRCheckInData | null {
   try {
     const parsed = JSON.parse(data);
-    if (parsed.type === "attendance" && parsed.registrationId && parsed.sessionId) {
+    if (
+      parsed.type === "attendance" &&
+      parsed.registrationId &&
+      parsed.sessionId
+    ) {
       return parsed as QRCheckInData;
     }
     return null;

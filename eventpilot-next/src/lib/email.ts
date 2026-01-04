@@ -751,6 +751,14 @@ interface InvitationEmailOptions {
     name: string;
     logoUrl?: string | null;
     type: string;
+    socialMediaLinks?: Record<string, string> | null;
+  }>;
+  sessionGuests?: Array<{
+    name: string;
+    title?: string | null;
+    jobTitle?: string | null;
+    company?: string | null;
+    imageUrl?: string | null;
   }>;
   useHtml?: boolean;
 }
@@ -768,7 +776,7 @@ export async function sendInvitationEmail(
   const opts: InvitationEmailOptions = typeof options === 'boolean'
     ? { useHtml: options }
     : options;
-  const { attachPdf = false, sponsors = [], useHtml = true } = opts;
+  const { attachPdf = false, sponsors = [], sessionGuests = [], useHtml = true } = opts;
 
   const settings = await getEmailSettings();
   const siteName = settings.siteName ?? "ثلوثية الأعمال";
@@ -785,6 +793,7 @@ export async function sendInvitationEmail(
         location: session.location ?? undefined,
         locationUrl: session.locationUrl ?? undefined,
         sponsors,
+        sessionGuests,
       });
       if (pdfBuffer) {
         attachments = [

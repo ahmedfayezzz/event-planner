@@ -144,8 +144,9 @@ export const invitationRouter = createTRPCRouter({
         });
       }
 
-      // Fetch sponsors if attaching PDF
-      let sponsors: Array<{ name: string; logoUrl: string | null; type: string }> = [];
+      // Fetch sponsors and session guests if attaching PDF
+      let sponsors: Array<{ name: string; logoUrl: string | null; type: string; socialMediaLinks?: Record<string, string> | null }> = [];
+      let sessionGuests: Array<{ name: string; title?: string | null; jobTitle?: string | null; company?: string | null; imageUrl?: string | null }> = [];
       if (input.attachPdf) {
         const sponsorships = await db.eventSponsorship.findMany({
           where: { sessionId: input.sessionId },
@@ -158,7 +159,32 @@ export const invitationRouter = createTRPCRouter({
             name: s.sponsor!.name,
             logoUrl: s.sponsor!.logoUrl,
             type: s.sponsorshipType,
+            socialMediaLinks: s.sponsor!.socialMediaLinks as Record<string, string> | null,
           }));
+
+        // Fetch session guests
+        const guests = await db.sessionGuest.findMany({
+          where: { sessionId: input.sessionId },
+          orderBy: { displayOrder: "asc" },
+          include: {
+            guest: {
+              select: {
+                name: true,
+                title: true,
+                jobTitle: true,
+                company: true,
+                imageUrl: true,
+              },
+            },
+          },
+        });
+        sessionGuests = guests.map((sg) => ({
+          name: sg.guest.name,
+          title: sg.guest.title,
+          jobTitle: sg.guest.jobTitle,
+          company: sg.guest.company,
+          imageUrl: sg.guest.imageUrl,
+        }));
       }
 
       // Use session's registration deadline or 7 days if not set
@@ -208,7 +234,7 @@ export const invitationRouter = createTRPCRouter({
             email,
             session,
             registrationLink,
-            { attachPdf: input.attachPdf, sponsors }
+            { attachPdf: input.attachPdf, sponsors, sessionGuests }
           );
 
           results.push({

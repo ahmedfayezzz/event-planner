@@ -139,6 +139,7 @@ const wizardSteps = [
 interface SessionFormProps {
   mode: "create" | "edit";
   initialData?: Partial<SessionFormData>;
+  initialSelectedGuests?: SelectedGuest[];
   onSubmit: (data: SessionFormData) => Promise<void>;
   isPending: boolean;
   onCancel: () => void;
@@ -378,6 +379,7 @@ function FieldError({ message }: { message?: string }) {
 export function SessionForm({
   mode,
   initialData,
+  initialSelectedGuests,
   onSubmit,
   isPending,
   onCancel,
@@ -462,7 +464,9 @@ export function SessionForm({
   } = form;
   const formValues = watch();
 
-  const [selectedGuests, setSelectedGuests] = useState<SelectedGuest[]>([]);
+  const [selectedGuests, setSelectedGuests] = useState<SelectedGuest[]>(
+    initialSelectedGuests ?? []
+  );
   // const [slugManuallyEdited, setSlugManuallyEdited] = useState(
   //   !!initialData?.slug
   // ); // Commented out - used for slug field

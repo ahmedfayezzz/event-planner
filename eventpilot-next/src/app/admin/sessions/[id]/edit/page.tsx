@@ -151,6 +151,14 @@ export default function SessionEditPage({
         <SessionForm
           mode="edit"
           initialData={initialFormData}
+          initialSelectedGuests={session?.sessionGuests?.map((sg) => ({
+            id: sg.guest.id,
+            name: sg.guest.name,
+            title: sg.guest.title,
+            jobTitle: null,
+            company: null,
+            imageUrl: sg.guest.imageUrl,
+          })) ?? []}
           onSubmit={handleSubmit}
           isPending={updateMutation.isPending}
           onCancel={() => router.push(`/admin/sessions/${id}`)}
