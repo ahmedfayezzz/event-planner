@@ -14,9 +14,7 @@ export default async function EventRegisterRedirect({
   const decodedSlug = decodeURIComponent(slug);
 
   const session = await db.session.findFirst({
-    where: {
-      OR: [{ slug: decodedSlug }, { id: decodedSlug }],
-    },
+    where: { slug: decodedSlug },
     select: { id: true },
   });
 
@@ -24,6 +22,7 @@ export default async function EventRegisterRedirect({
     redirect("/sessions");
   }
 
+  // Accept legacy ?token= param for backward compatibility with old invite links
   const inviteParam = token ?? invite;
   const queryString = inviteParam ? `?invite=${encodeURIComponent(inviteParam)}` : "";
 
