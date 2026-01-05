@@ -95,6 +95,7 @@ model User {
   emailTemplates EmailTemplate[] @relation("TemplateCreator")
   emailCampaignsCreated  EmailCampaign[]          @relation("CampaignCreator")
   emailCampaignsReceived EmailCampaignRecipient[] @relation("RecipientUser")
+  approvedRegistrations Registration[] @relation("RegistrationApprovedBy")
 }
 
 model Session {
@@ -157,6 +158,8 @@ model Registration {
   isRejected      Boolean  @default(false)
   rejectionReason String?
   approvalNotes   String?
+  approvedById    String?
+  approvedBy      User?    @relation("RegistrationApprovedBy", fields: [approvedById], references: [id])
 
   // Guest registration fields (used when userId is NULL)
   guestName         String?

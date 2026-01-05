@@ -741,6 +741,13 @@ export const registrationRouter = createTRPCRouter({
               },
             },
           },
+          approvedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
           invitedRegistrations: true,
           invitedByRegistration: {
             include: {
@@ -769,6 +776,14 @@ export const registrationRouter = createTRPCRouter({
         isInvited: !!r.invitedByRegistrationId,
         invitedByName: r.invitedByRegistration?.user?.name || r.invitedByRegistration?.guestName,
         companionCount: r.invitedRegistrations.length,
+        approvedBy: r.approvedBy
+          ? {
+              id: r.approvedBy.id,
+              name: r.approvedBy.name,
+              email: r.approvedBy.email,
+            }
+          : null,
+        approvedByName: r.approvedBy?.name || null,
       }));
     }),
 
@@ -783,7 +798,8 @@ export const registrationRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+      const approverId = session.user.id;
 
       const registration = await db.registration.findUnique({
         where: { id: input.registrationId },
@@ -813,6 +829,7 @@ export const registrationRouter = createTRPCRouter({
         data: {
           isApproved: true,
           approvalNotes: input.approvalNotes || null,
+          approvedById: approverId,
         },
       });
 
@@ -874,7 +891,8 @@ export const registrationRouter = createTRPCRouter({
   approveAll: adminProcedure
     .input(z.object({ sessionId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+      const approverId = session.user.id;
 
       const session = await db.session.findUnique({
         where: { id: input.sessionId },
@@ -907,7 +925,7 @@ export const registrationRouter = createTRPCRouter({
           isApproved: false,
           invitedByRegistrationId: null,
         },
-        data: { isApproved: true },
+        data: { isApproved: true, approvedById: approverId },
       });
 
       // Note: Companions are NOT auto-approved when parent is approved
@@ -941,7 +959,8 @@ export const registrationRouter = createTRPCRouter({
   approveMultiple: adminProcedure
     .input(z.object({ registrationIds: z.array(z.string()).min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+      const approverId = session.user.id;
 
       // Get all pending registrations that match the IDs
       const pendingRegistrations = await db.registration.findMany({
@@ -969,7 +988,7 @@ export const registrationRouter = createTRPCRouter({
           id: { in: input.registrationIds },
           isApproved: false,
         },
-        data: { isApproved: true },
+        data: { isApproved: true, approvedById: approverId },
       });
 
       // Note: Companions are NOT auto-approved when parent is approved
