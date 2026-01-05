@@ -389,7 +389,7 @@ export function generateRejectionContent(
     </table>
 
     <p style="margin: 0 0 4px 0; color: ${BRAND.textLight}; font-style: italic;">شاكرين مقدرين تفهمكم،</p>
-    <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">فريق لفت</p>
+    <p style="margin: 0; color: ${BRAND.textLight}; font-style: italic;">فريق شتوية لفت</p>
   `;
 }
 
