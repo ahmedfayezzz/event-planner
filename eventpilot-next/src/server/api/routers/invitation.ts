@@ -229,7 +229,7 @@ export const invitationRouter = createTRPCRouter({
 
           // Send email
           const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-          const registrationLink = `${baseUrl}/event/${session.slug}/register?token=${token}`;
+          const registrationLink = `${baseUrl}/session/${session.id}/guest-register?invite=${token}`;
           const sent = await sendInvitationEmail(
             email,
             session,
@@ -316,7 +316,7 @@ export const invitationRouter = createTRPCRouter({
             },
           });
 
-          const registrationUrl = `${baseUrl}/event/${session.slug || session.id}/register?token=${token}`;
+          const registrationUrl = `${baseUrl}/session/${session.id}/guest-register?invite=${token}`;
 
           const saudiDate = toSaudiTime(session.date);
 
