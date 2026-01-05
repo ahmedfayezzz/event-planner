@@ -23,7 +23,7 @@ export default async function EventRegisterRedirect({
   }
 
   // Accept legacy ?token= param for backward compatibility with old invite links
-  const inviteParam = (token || invite)?.trim();
+  const inviteParam = (token || invite || "").trim();
   const queryString = inviteParam ? `?invite=${encodeURIComponent(inviteParam)}` : "";
 
   redirect(`/session/${session.id}/guest-register${queryString}`);
