@@ -19,11 +19,11 @@ export default async function EventRegisterRedirect({
   });
 
   if (!session) {
-    redirect("/sessions");
+    redirect("/not-found");
   }
 
   // Accept legacy ?token= param for backward compatibility with old invite links
-  const inviteParam = token ?? invite;
+  const inviteParam = (token ?? invite)?.trim();
   const queryString = inviteParam ? `?invite=${encodeURIComponent(inviteParam)}` : "";
 
   redirect(`/session/${session.id}/guest-register${queryString}`);
