@@ -181,7 +181,7 @@ function generateEmailHtml(type: EmailType): string {
         SAMPLE_SESSION.location
       );
       buttonText = "التسجيل الآن";
-      buttonUrl = `${baseUrl}/event/${SAMPLE_SESSION.slug}/register?token=sample-invitation-token`;
+      buttonUrl = `${baseUrl}/session/${SAMPLE_SESSION.id}/guest-register?invite=sample-invitation-token`;
       break;
   }
 
