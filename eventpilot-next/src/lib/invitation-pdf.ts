@@ -52,30 +52,37 @@ const FIXED_TEXTS = {
   locationSublabel: "إلى الموقع",
 };
 
-// Position constants (percentage from bottom of page)
-// Tuned to match the reference design layout
-const POSITIONS = {
-  mainTitle: 0.82, // "دعوة خاصة"
-  subtitle: 0.77, // "ندعوكم لحضور"
-  sessionTitle: 0.72, // Session title from DB
-  description: 0.62, // Fixed description text
-  greeting: 0.52, // "حياكم الله"
-  sessionGuests: 0.4, // VIP/speakers names
-  infoIcons: 0.3, // Location, date, people icons
-  sponsorsHeader: 0.18, // "الرعاة" ribbon
-  sponsorsArea: 0.12, // Sponsor logos
+// Layout configuration - relative spacing system
+// All sections flow from top to bottom with consistent gaps between them
+const LAYOUT = {
+  // Anchor points (percentage from bottom of page)
+  topStart: 0.85, // Where first element (mainTitle) starts
+  bottomMargin: 0.02, // Bottom margin for sponsors
+
+  // Spacing between sections (in points)
+  // Each value is the gap between the bottom of one section and top of next
+  spacing: {
+    afterMainTitle: 20, // gap after "دعوة خاصة"
+    afterSubtitle: 18, // gap after "ندعوكم لحضور"
+    afterSessionTitle: 22, // gap after session title
+    afterDescription: 28, // gap after description paragraph
+    afterGreeting: 25, // gap after "حياكم الله"
+    afterGuestTitle: 15, // gap after "ضيف هذه الثلوثية"
+    afterSessionGuests: 40, // gap after guest names
+    afterIcons: 80, // gap after info icons row
+  },
 };
 
-// Font sizes tuned to match reference design
+// Font sizes matching qr-pdf.ts
 const FONT_SIZES = {
-  mainTitle: 80, // "دعوة خاصة"
-  subtitle: 44, // "ندعوكم لحضور"
-  sessionTitle: 65, // Session title
-  description: 34, // Description text
-  greeting: 48, // "حياكم الله"
-  sessionGuests: 24, // Guest names
-  iconLabel: 32, // Icon labels
-  sponsorsHeader: 65, // "الرعاة"
+  mainTitle: 50,
+  subtitle: 35,
+  sessionTitle: 90,
+  description: 34,
+  greeting: 50,
+  sessionGuests: 24,
+  iconLabel: 32,
+  sponsorsHeader: 65,
 };
 
 export interface InvitationPdfOptions {
@@ -264,7 +271,9 @@ export function renderArabicTextToImage(
  * Convert image to cream color (#E8DFC9) while preserving alpha channel
  * Used for sponsor logos on dark backgrounds
  */
-export async function convertImageToTextColor(imageBuffer: Buffer): Promise<Buffer> {
+export async function convertImageToTextColor(
+  imageBuffer: Buffer
+): Promise<Buffer> {
   const img = await loadImage(imageBuffer);
   const canvas = createCanvas(img.width, img.height);
   const ctx = canvas.getContext("2d");
@@ -463,7 +472,12 @@ export async function generateInvitationPdf(
     // RENDER ALL CONTENT FROM CODE (blank_template.pdf)
     // Template only contains: background image + header logos
     // All text, icons, and content are rendered dynamically
+    // Uses relative positioning - each section flows from the previous one
     // ====================================
+
+    // currentY tracks position as we flow down the page (PDF Y: 0 = bottom)
+    let currentY = height * LAYOUT.topStart;
+    const { spacing } = LAYOUT;
 
     // ====================================
     // 1. DRAW MAIN TITLE ("دعوة خاصة")
@@ -476,37 +490,39 @@ export async function generateInvitationPdf(
     const mainTitleImage = await pdfDoc.embedPng(mainTitleImageData.buffer);
     page.drawImage(mainTitleImage, {
       x: (width - mainTitleImageData.width) / 2,
-      y: height * POSITIONS.mainTitle - mainTitleImageData.height / 2,
+      y: currentY - mainTitleImageData.height / 2,
       width: mainTitleImageData.width,
       height: mainTitleImageData.height,
     });
+    currentY -= mainTitleImageData.height / 2 + spacing.afterMainTitle;
 
     // ====================================
     // 2. DRAW SUBTITLE ("ندعوكم لحضور")
     // ====================================
     const subtitleImageData = renderArabicTextToImage(FIXED_TEXTS.subtitle, {
-      fontFamily: "Abar",
+      fontFamily: "AbarBold",
       fontSize: FONT_SIZES.subtitle,
       color: ACCENT_COLOR,
     });
     const subtitleImage = await pdfDoc.embedPng(subtitleImageData.buffer);
+    currentY -= subtitleImageData.height / 2;
     page.drawImage(subtitleImage, {
       x: (width - subtitleImageData.width) / 2,
-      y: height * POSITIONS.subtitle - subtitleImageData.height / 2,
+      y: currentY - subtitleImageData.height / 2,
       width: subtitleImageData.width,
       height: subtitleImageData.height,
     });
+    currentY -= subtitleImageData.height / 2 + spacing.afterSubtitle;
 
     // ====================================
     // 3. DRAW SESSION TITLE (from DB) - ACCENT COLOR
-    // Dynamic font size to fit on single line
     // ====================================
-    const sessionTitleMaxWidth = width * 0.7;
+    const sessionTitleMaxWidth = width * 0.75;
     const sessionTitleFontSize = calculateFitFontSize(
       options.sessionTitle,
       "AbarBold",
-      FONT_SIZES.sessionTitle, // max font size
-      40, // min font size
+      FONT_SIZES.sessionTitle,
+      35,
       sessionTitleMaxWidth
     );
     const sessionTitleImageData = renderArabicTextToImage(
@@ -521,12 +537,14 @@ export async function generateInvitationPdf(
     const sessionTitleImage = await pdfDoc.embedPng(
       sessionTitleImageData.buffer
     );
+    currentY -= sessionTitleImageData.height / 2;
     page.drawImage(sessionTitleImage, {
       x: (width - sessionTitleImageData.width) / 2,
-      y: height * POSITIONS.sessionTitle - sessionTitleImageData.height / 2,
+      y: currentY - sessionTitleImageData.height / 2,
       width: sessionTitleImageData.width,
       height: sessionTitleImageData.height,
     });
+    currentY -= sessionTitleImageData.height / 2 + spacing.afterSessionTitle;
 
     // ====================================
     // 4. DRAW DESCRIPTION (fixed text)
@@ -535,15 +553,17 @@ export async function generateInvitationPdf(
       fontFamily: "AbarBold",
       fontSize: FONT_SIZES.description,
       color: WHITE_COLOR,
-      maxWidth: width * 0.65,
+      maxWidth: width * 0.7,
     });
     const descImage = await pdfDoc.embedPng(descImageData.buffer);
+    currentY -= descImageData.height / 2;
     page.drawImage(descImage, {
       x: (width - descImageData.width) / 2,
-      y: height * POSITIONS.description - descImageData.height / 2,
+      y: currentY - descImageData.height / 2,
       width: descImageData.width,
       height: descImageData.height,
     });
+    currentY -= descImageData.height / 2 + spacing.afterDescription;
 
     // ====================================
     // 5. DRAW GREETING ("حياكم الله") - ACCENT COLOR
@@ -554,44 +574,47 @@ export async function generateInvitationPdf(
       color: ACCENT_COLOR,
     });
     const greetingImage = await pdfDoc.embedPng(greetingImageData.buffer);
+    currentY -= greetingImageData.height / 2;
     page.drawImage(greetingImage, {
       x: (width - greetingImageData.width) / 2,
-      y: height * POSITIONS.greeting - greetingImageData.height / 2,
+      y: currentY - greetingImageData.height / 2,
       width: greetingImageData.width,
       height: greetingImageData.height,
     });
+    currentY -= greetingImageData.height / 2 + spacing.afterGreeting;
 
     // ====================================
-    // 6. DRAW SESSION GUESTS (VIP/speakers) - Grid layout like sponsors
+    // 6. DRAW SESSION GUESTS (VIP/speakers) - Grid layout
     // ====================================
     if (options.sessionGuests && options.sessionGuests.length > 0) {
-      const guestSectionY = height * POSITIONS.sessionGuests;
-      const nameFontSize = FONT_SIZES.sessionGuests + 8; // Larger for names
-      const jobTitleFontSize = FONT_SIZES.sessionGuests; // Smaller for job title
+      const nameFontSize = FONT_SIZES.sessionGuests + 10;
+      const jobTitleFontSize = FONT_SIZES.sessionGuests;
 
-      // Draw header "ضيوف" title (no background)
+      // Draw header "ضيف هذه الثلوثية" title
       const guestTitleFontSize = 44;
-      const guestTitleY = guestSectionY + 70;
-
       const guestTitleImageData = renderArabicTextToImage("ضيف هذه الثلوثية", {
         fontFamily: "AbarBold",
         fontSize: guestTitleFontSize,
-        color: TEXT_COLOR,
+        color: WHITE_COLOR,
       });
       const guestTitleImage = await pdfDoc.embedPng(guestTitleImageData.buffer);
+      currentY -= guestTitleImageData.height / 2;
       page.drawImage(guestTitleImage, {
         x: (width - guestTitleImageData.width) / 2,
-        y: guestTitleY - guestTitleImageData.height / 2,
+        y: currentY - guestTitleImageData.height / 2,
         width: guestTitleImageData.width,
         height: guestTitleImageData.height,
       });
+      currentY -= guestTitleImageData.height / 2 + spacing.afterGuestTitle;
 
       // Draw guests in a horizontal layout (RTL)
       const guestCount = Math.min(options.sessionGuests.length, 5);
       const guestAreaWidth = width * 0.85;
       const guestCellWidth = guestAreaWidth / guestCount;
       const guestStartX = (width - guestAreaWidth) / 2;
-      const guestContentY = guestSectionY - 10;
+
+      // Calculate max guest content height for consistent spacing
+      let maxGuestHeight = 0;
 
       for (let i = 0; i < guestCount; i++) {
         const guest = options.sessionGuests[i];
@@ -601,7 +624,7 @@ export async function generateInvitationPdf(
         const colFromRight = guestCount - 1 - i;
         const cellCenterX = guestStartX + (colFromRight + 0.5) * guestCellWidth;
 
-        // Draw guest name (accent color, larger)
+        // Draw guest name
         const guestName = guest.title
           ? `${guest.title} ${guest.name}`
           : guest.name;
@@ -612,14 +635,17 @@ export async function generateInvitationPdf(
           maxWidth: guestCellWidth - 20,
         });
         const nameImage = await pdfDoc.embedPng(nameImageData.buffer);
+
+        let guestContentHeight = nameImageData.height;
+
         page.drawImage(nameImage, {
           x: cellCenterX - nameImageData.width / 2,
-          y: guestContentY,
+          y: currentY - nameImageData.height,
           width: nameImageData.width,
           height: nameImageData.height,
         });
 
-        // Draw job title below name (white color, smaller)
+        // Draw job title below name
         if (guest.jobTitle || guest.company) {
           const jobText = [guest.jobTitle, guest.company]
             .filter(Boolean)
@@ -633,21 +659,25 @@ export async function generateInvitationPdf(
           const jobImage = await pdfDoc.embedPng(jobImageData.buffer);
           page.drawImage(jobImage, {
             x: cellCenterX - jobImageData.width / 2,
-            y: guestContentY - nameImageData.height - 8,
+            y: currentY - nameImageData.height - 5 - jobImageData.height,
             width: jobImageData.width,
             height: jobImageData.height,
           });
+          guestContentHeight += 5 + jobImageData.height;
         }
+
+        maxGuestHeight = Math.max(maxGuestHeight, guestContentHeight);
       }
+
+      currentY -= maxGuestHeight + spacing.afterSessionGuests;
     }
 
     // ====================================
-    // 7. DRAW INFO ICONS ROW (location, calendar, people)
+    // 7. DRAW INFO ICONS ROW (no background)
     // ====================================
     const iconSize = 120;
     const iconFontSize = FONT_SIZES.iconLabel;
-    const iconsY = height * POSITIONS.infoIcons;
-    const iconSpacing = width / 4; // Divide width into 4 parts for 3 icons
+    const iconSpacing = width / 4;
 
     // Load icons
     const [locationIcon, calendarIcon, peopleIcon] = await Promise.all([
@@ -660,13 +690,36 @@ export async function generateInvitationPdf(
     const dayNameText = formatDayNameForInvitation(options.sessionDate);
     const dateText = formatDateForInvitation(options.sessionDate);
 
-    // Location icon (right side - RTL)
+    // Pre-render all icons to get max height for consistent positioning
     const locationIconData = await renderIconWithLabel(
       locationIcon,
       FIXED_TEXTS.clickForLocation,
       FIXED_TEXTS.locationSublabel,
       { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
     );
+    const calendarIconData = await renderIconWithLabel(
+      calendarIcon,
+      dateText,
+      dayNameText,
+      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
+    );
+    const peopleIconData = await renderIconWithLabel(
+      peopleIcon,
+      FIXED_TEXTS.menOnlyLabel,
+      FIXED_TEXTS.menOnlySublabel,
+      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
+    );
+
+    const maxIconHeight = Math.max(
+      locationIconData.height,
+      calendarIconData.height,
+      peopleIconData.height
+    );
+
+    // Position icons row using currentY
+    const iconsY = currentY - maxIconHeight / 2;
+
+    // Location icon (right side - RTL)
     const locationIconImage = await pdfDoc.embedPng(locationIconData.buffer);
     const locationX = width - iconSpacing;
     page.drawImage(locationIconImage, {
@@ -709,12 +762,6 @@ export async function generateInvitationPdf(
     }
 
     // Calendar icon (center)
-    const calendarIconData = await renderIconWithLabel(
-      calendarIcon,
-      dateText,
-      dayNameText,
-      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
-    );
     const calendarIconImage = await pdfDoc.embedPng(calendarIconData.buffer);
     const calendarX = width / 2;
     page.drawImage(calendarIconImage, {
@@ -725,12 +772,6 @@ export async function generateInvitationPdf(
     });
 
     // People icon (left side - RTL)
-    const peopleIconData = await renderIconWithLabel(
-      peopleIcon,
-      FIXED_TEXTS.menOnlyLabel,
-      FIXED_TEXTS.menOnlySublabel,
-      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
-    );
     const peopleIconImage = await pdfDoc.embedPng(peopleIconData.buffer);
     const peopleX = iconSpacing;
     page.drawImage(peopleIconImage, {
@@ -740,19 +781,22 @@ export async function generateInvitationPdf(
       height: peopleIconData.height,
     });
 
+    // Update currentY after icons
+    currentY -= maxIconHeight + spacing.afterIcons;
+
     // ====================================
-    // 8. DRAW SPONSORS SECTION (RTL Dynamic Grid) with ribbon on top
+    // 8. DRAW SPONSORS SECTION (with its own container)
     // ====================================
     if (options.sponsors && options.sponsors.length > 0) {
       // Filter sponsors that have logos or names
       const validSponsors = options.sponsors.filter((s) => s.name || s.logoUrl);
 
       if (validSponsors.length > 0) {
-        // Define sponsor container area (the blue placeholder below "الرعاة" ribbon)
+        // Define sponsor container area - flows from currentY
         const containerLeft = width * 0.1;
         const containerRight = width * 0.9;
         const containerWidth = containerRight - containerLeft;
-        const containerTop = height * 0.2; // Just below the ribbon - anchor point
+        const containerTop = currentY; // Use currentY as anchor point
 
         // Calculate grid layout based on sponsor count (1-10 sponsors)
         // For even counts > 3: divide evenly (4→2,2; 6→3,3; 8→4,4; 10→5,5)
@@ -773,7 +817,7 @@ export async function generateInvitationPdf(
         }
 
         // Calculate available height from containerTop to bottom margin
-        const bottomMargin = height * 0.02;
+        const bottomMargin = height * LAYOUT.bottomMargin;
         const maxContainerHeight = containerTop - bottomMargin;
 
         // Calculate ideal row height based on fixed logo size
@@ -858,13 +902,22 @@ export async function generateInvitationPdf(
         const arrowWidth = ribbonHeight * 0.6;
         const diamondSize = ribbonHeight * 0.45;
         const diamondGap = 8;
-        const totalWidth = ribbonBodyWidth + (arrowWidth + diamondGap + diamondSize) * 2;
+        const totalWidth =
+          ribbonBodyWidth + (arrowWidth + diamondGap + diamondSize) * 2;
         const ribbonY = containerTop + bgPadding;
 
         const ribbonScale = 2;
-        const ribbonCanvas = createCanvas(totalWidth * ribbonScale, ribbonHeight * ribbonScale);
+        const ribbonCanvas = createCanvas(
+          totalWidth * ribbonScale,
+          ribbonHeight * ribbonScale
+        );
         const ribbonCtx = ribbonCanvas.getContext("2d");
-        ribbonCtx.clearRect(0, 0, totalWidth * ribbonScale, ribbonHeight * ribbonScale);
+        ribbonCtx.clearRect(
+          0,
+          0,
+          totalWidth * ribbonScale,
+          ribbonHeight * ribbonScale
+        );
 
         const fillColor = "#cba890";
         const rcenterX = (totalWidth * ribbonScale) / 2;
@@ -887,7 +940,8 @@ export async function generateInvitationPdf(
         ribbonCtx.fill();
 
         // Draw left diamond
-        const leftDiamondX = rcenterX - bodyHalfWidth - arrowW - dgap - diamondS / 2;
+        const leftDiamondX =
+          rcenterX - bodyHalfWidth - arrowW - dgap - diamondS / 2;
         ribbonCtx.beginPath();
         ribbonCtx.moveTo(leftDiamondX, rcenterY - diamondS / 2);
         ribbonCtx.lineTo(leftDiamondX + diamondS / 2, rcenterY);
@@ -898,7 +952,8 @@ export async function generateInvitationPdf(
         ribbonCtx.fill();
 
         // Draw right diamond
-        const rightDiamondX = rcenterX + bodyHalfWidth + arrowW + dgap + diamondS / 2;
+        const rightDiamondX =
+          rcenterX + bodyHalfWidth + arrowW + dgap + diamondS / 2;
         ribbonCtx.beginPath();
         ribbonCtx.moveTo(rightDiamondX, rcenterY - diamondS / 2);
         ribbonCtx.lineTo(rightDiamondX + diamondS / 2, rcenterY);

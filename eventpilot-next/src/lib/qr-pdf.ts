@@ -62,30 +62,37 @@ const FIXED_TEXTS = {
   locationSublabel: "إلى الموقع",
 };
 
-// Position constants (percentage from bottom of page)
-// Order: mainTitle -> greeting -> subtitle -> sessionTitle -> description -> sessionGuests -> simpleGreeting -> qrCode -> icons -> sponsors
-const POSITIONS = {
-  mainTitle: 0.85,
-  greeting: 0.8, // Greeting with name comes right after main title
-  subtitle: 0.76, // "ندعوكم لحضور"
-  sessionTitle: 0.71, // Session title (dynamic)
-  description: 0.64, // Description paragraph
-  sessionGuests: 0.55, // Session guests (VIP/speakers)
-  simpleGreeting: 0.47, // "حياكم الله" simple greeting before QR
-  qrCode: 0.38,
-  infoIcons: 0.23,
-  sponsorsHeader: 0.15, // Ribbon position for sponsors header
-  sponsorsArea: 0.02,
+// Layout configuration - relative spacing system
+// All sections flow from top to bottom with consistent gaps between them
+const LAYOUT = {
+  // Anchor points (percentage from bottom of page)
+  topStart: 0.85, // Where first element (mainTitle) starts
+  bottomMargin: 0.01, // Bottom margin for sponsors
+
+  // Spacing between sections (in points)
+  // Each value is the gap between the bottom of one section and top of next
+  spacing: {
+    afterMainTitle: 20, // gap after "دعوة خاصة"
+    afterGreeting: 12, // gap after attendee name
+    afterSubtitle: 12, // gap after "ندعوكم لحضور"
+    afterSessionTitle: 22, // gap after session title
+    afterDescription: 28, // gap after description paragraph
+    afterGuestTitle: 15, // gap after "ضيف هذه الثلوثية"
+    afterSessionGuests: 25, // gap after guest names
+    afterSimpleGreeting: 18, // gap after "حياكم الله"
+    afterQrCode: -12, // gap after QR code
+    afterIcons: 22, // gap after info icons row
+  },
 };
 
 // Font sizes
 const FONT_SIZES = {
-  mainTitle: 80,
-  subtitle: 44,
-  sessionTitle: 65,
+  mainTitle: 50,
+  subtitle: 35,
+  sessionTitle: 90,
   description: 34,
-  greeting: 44,
-  simpleGreeting: 55,
+  greeting: 65,
+  simpleGreeting: 50,
   sessionGuests: 24,
   iconLabel: 32,
   sponsorsHeader: 65,
@@ -163,8 +170,12 @@ export async function generateBrandedQRPdf(
     // RENDER ALL CONTENT FROM CODE (blank_template.pdf)
     // Template only contains: background image + header logos
     // All text, icons, and content are rendered dynamically
-    // Order matches reference: mainTitle -> greeting -> subtitle -> sessionTitle -> description -> simpleGreeting -> qrCode -> icons -> sponsors
+    // Uses relative positioning - each section flows from the previous one
     // ====================================
+
+    // currentY tracks position as we flow down the page (PDF Y: 0 = bottom)
+    let currentY = height * LAYOUT.topStart;
+    const { spacing } = LAYOUT;
 
     // ====================================
     // 1. DRAW MAIN TITLE ("دعوة خاصة")
@@ -177,16 +188,17 @@ export async function generateBrandedQRPdf(
     const mainTitleImage = await pdfDoc.embedPng(mainTitleImageData.buffer);
     page.drawImage(mainTitleImage, {
       x: (width - mainTitleImageData.width) / 2,
-      y: height * POSITIONS.mainTitle - mainTitleImageData.height / 2,
+      y: currentY - mainTitleImageData.height / 2,
       width: mainTitleImageData.width,
       height: mainTitleImageData.height,
     });
+    currentY -= mainTitleImageData.height / 2 + spacing.afterMainTitle;
 
     // ====================================
-    // 2. DRAW GREETING WITH ATTENDEE NAME - ACCENT COLOR (right after main title)
+    // 2. DRAW GREETING WITH ATTENDEE NAME (right after main title)
     // ====================================
     const greetingText = options.attendeeName
-      ? `${FIXED_TEXTS.greetingPrefix} ${options.attendeeName}`
+      ? `${options.attendeeName}`
       : FIXED_TEXTS.greetingPrefix;
     const greetingImageData = renderArabicTextToImage(greetingText, {
       fontFamily: "AbarBold",
@@ -194,28 +206,32 @@ export async function generateBrandedQRPdf(
       color: TEXT_COLOR,
     });
     const greetingImage = await pdfDoc.embedPng(greetingImageData.buffer);
+    currentY -= greetingImageData.height / 2;
     page.drawImage(greetingImage, {
       x: (width - greetingImageData.width) / 2,
-      y: height * POSITIONS.greeting - greetingImageData.height / 2,
+      y: currentY - greetingImageData.height / 2,
       width: greetingImageData.width,
       height: greetingImageData.height,
     });
+    currentY -= greetingImageData.height / 2 + spacing.afterGreeting;
 
     // ====================================
     // 3. DRAW SUBTITLE ("ندعوكم لحضور")
     // ====================================
     const subtitleImageData = renderArabicTextToImage(FIXED_TEXTS.subtitle, {
-      fontFamily: "Abar",
+      fontFamily: "AbarBold",
       fontSize: FONT_SIZES.subtitle,
       color: ACCENT_COLOR,
     });
     const subtitleImage = await pdfDoc.embedPng(subtitleImageData.buffer);
+    currentY -= subtitleImageData.height / 2;
     page.drawImage(subtitleImage, {
       x: (width - subtitleImageData.width) / 2,
-      y: height * POSITIONS.subtitle - subtitleImageData.height / 2,
+      y: currentY - subtitleImageData.height / 2,
       width: subtitleImageData.width,
       height: subtitleImageData.height,
     });
+    currentY -= subtitleImageData.height / 2 + spacing.afterSubtitle;
 
     // ====================================
     // 4. DRAW SESSION TITLE (from DB) - ACCENT COLOR
@@ -240,12 +256,14 @@ export async function generateBrandedQRPdf(
     const sessionTitleImage = await pdfDoc.embedPng(
       sessionTitleImageData.buffer
     );
+    currentY -= sessionTitleImageData.height / 2;
     page.drawImage(sessionTitleImage, {
       x: (width - sessionTitleImageData.width) / 2,
-      y: height * POSITIONS.sessionTitle - sessionTitleImageData.height / 2,
+      y: currentY - sessionTitleImageData.height / 2,
       width: sessionTitleImageData.width,
       height: sessionTitleImageData.height,
     });
+    currentY -= sessionTitleImageData.height / 2 + spacing.afterSessionTitle;
 
     // ====================================
     // 5. DRAW DESCRIPTION (fixed text)
@@ -257,44 +275,47 @@ export async function generateBrandedQRPdf(
       maxWidth: width * 0.7,
     });
     const descImage = await pdfDoc.embedPng(descImageData.buffer);
+    currentY -= descImageData.height / 2;
     page.drawImage(descImage, {
       x: (width - descImageData.width) / 2,
-      y: height * POSITIONS.description - descImageData.height / 2,
+      y: currentY - descImageData.height / 2,
       width: descImageData.width,
       height: descImageData.height,
     });
+    currentY -= descImageData.height / 2 + spacing.afterDescription;
 
     // ====================================
     // 6. DRAW SESSION GUESTS (VIP/speakers) - Grid layout
     // ====================================
     if (options.sessionGuests && options.sessionGuests.length > 0) {
-      const guestSectionY = height * POSITIONS.sessionGuests;
       const nameFontSize = FONT_SIZES.sessionGuests + 10;
       const jobTitleFontSize = FONT_SIZES.sessionGuests;
 
       // Draw header "ضيف هذه الثلوثية" title
       const guestTitleFontSize = 44;
-      const guestTitleY = guestSectionY + 65;
-
       const guestTitleImageData = renderArabicTextToImage("ضيف هذه الثلوثية", {
         fontFamily: "AbarBold",
         fontSize: guestTitleFontSize,
         color: WHITE_COLOR,
       });
       const guestTitleImage = await pdfDoc.embedPng(guestTitleImageData.buffer);
+      currentY -= guestTitleImageData.height / 2;
       page.drawImage(guestTitleImage, {
         x: (width - guestTitleImageData.width) / 2,
-        y: guestTitleY - guestTitleImageData.height / 2,
+        y: currentY - guestTitleImageData.height / 2,
         width: guestTitleImageData.width,
         height: guestTitleImageData.height,
       });
+      currentY -= guestTitleImageData.height / 2 + spacing.afterGuestTitle;
 
       // Draw guests in a horizontal layout (RTL)
       const guestCount = Math.min(options.sessionGuests.length, 5);
       const guestAreaWidth = width * 0.85;
       const guestCellWidth = guestAreaWidth / guestCount;
       const guestStartX = (width - guestAreaWidth) / 2;
-      const guestContentY = guestSectionY - 40;
+
+      // Calculate max guest content height for consistent spacing
+      let maxGuestHeight = 0;
 
       for (let i = 0; i < guestCount; i++) {
         const guest = options.sessionGuests[i];
@@ -304,7 +325,7 @@ export async function generateBrandedQRPdf(
         const colFromRight = guestCount - 1 - i;
         const cellCenterX = guestStartX + (colFromRight + 0.5) * guestCellWidth;
 
-        // Draw guest name (accent color, larger)
+        // Draw guest name
         const guestName = guest.title
           ? `${guest.title} ${guest.name}`
           : guest.name;
@@ -315,14 +336,17 @@ export async function generateBrandedQRPdf(
           maxWidth: guestCellWidth - 20,
         });
         const nameImage = await pdfDoc.embedPng(nameImageData.buffer);
+
+        let guestContentHeight = nameImageData.height;
+
         page.drawImage(nameImage, {
           x: cellCenterX - nameImageData.width / 2,
-          y: guestContentY,
+          y: currentY - nameImageData.height,
           width: nameImageData.width,
           height: nameImageData.height,
         });
 
-        // Draw job title below name (white color, smaller)
+        // Draw job title below name
         if (guest.jobTitle || guest.company) {
           const jobText = [guest.jobTitle, guest.company]
             .filter(Boolean)
@@ -336,12 +360,17 @@ export async function generateBrandedQRPdf(
           const jobImage = await pdfDoc.embedPng(jobImageData.buffer);
           page.drawImage(jobImage, {
             x: cellCenterX - jobImageData.width / 2,
-            y: guestContentY - nameImageData.height - 5,
+            y: currentY - nameImageData.height - 5 - jobImageData.height,
             width: jobImageData.width,
             height: jobImageData.height,
           });
+          guestContentHeight += 5 + jobImageData.height;
         }
+
+        maxGuestHeight = Math.max(maxGuestHeight, guestContentHeight);
       }
+
+      currentY -= maxGuestHeight + spacing.afterSessionGuests;
     }
 
     // ====================================
@@ -358,20 +387,24 @@ export async function generateBrandedQRPdf(
     const simpleGreetingImage = await pdfDoc.embedPng(
       simpleGreetingImageData.buffer
     );
+    currentY -= simpleGreetingImageData.height / 2;
     page.drawImage(simpleGreetingImage, {
       x: (width - simpleGreetingImageData.width) / 2,
-      y: height * POSITIONS.simpleGreeting - simpleGreetingImageData.height / 2,
+      y: currentY - simpleGreetingImageData.height / 2,
       width: simpleGreetingImageData.width,
       height: simpleGreetingImageData.height,
     });
+    currentY -=
+      simpleGreetingImageData.height / 2 + spacing.afterSimpleGreeting;
 
     // ====================================
     // 8. DRAW QR CODE
     // ====================================
     const qrImage = await pdfDoc.embedPng(qrBuffer);
-    const qrSize = 250;
+    const qrSize = 200;
     const qrX = (width - qrSize) / 2;
-    const qrY = height * POSITIONS.qrCode - qrSize / 2;
+    currentY -= qrSize / 2;
+    const qrY = currentY - qrSize / 2;
 
     page.drawImage(qrImage, {
       x: qrX,
@@ -379,14 +412,15 @@ export async function generateBrandedQRPdf(
       width: qrSize,
       height: qrSize,
     });
+    currentY -= qrSize / 2 + spacing.afterQrCode;
 
     // ====================================
-    // 9. DRAW INFO ICONS ROW (like invitation-pdf.ts - no background)
+    // 9. DRAW INFO ICONS ROW (no background)
     // ====================================
     const iconSize = 120;
     const iconFontSize = FONT_SIZES.iconLabel;
-    const iconsY = height * POSITIONS.infoIcons;
     const iconSpacing = width / 4;
+
     // Load icons
     const [locationIcon, calendarIcon, peopleIcon] = await Promise.all([
       loadIcon("location"),
@@ -398,13 +432,36 @@ export async function generateBrandedQRPdf(
     const dayNameText = formatDayNameForInvitation(options.sessionDate);
     const dateText = formatDateForInvitation(options.sessionDate);
 
-    // Location icon (right side - RTL)
+    // Pre-render all icons to get max height for consistent positioning
     const locationIconData = await renderIconWithLabel(
       locationIcon,
       FIXED_TEXTS.clickForLocation,
       FIXED_TEXTS.locationSublabel,
       { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
     );
+    const calendarIconData = await renderIconWithLabel(
+      calendarIcon,
+      dateText,
+      dayNameText,
+      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
+    );
+    const peopleIconData = await renderIconWithLabel(
+      peopleIcon,
+      FIXED_TEXTS.menOnlyLabel,
+      FIXED_TEXTS.menOnlySublabel,
+      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
+    );
+
+    const maxIconHeight = Math.max(
+      locationIconData.height,
+      calendarIconData.height,
+      peopleIconData.height
+    );
+
+    // Position icons row using currentY
+    const iconsY = currentY - maxIconHeight / 2;
+
+    // Location icon (right side - RTL)
     const locationIconImage = await pdfDoc.embedPng(locationIconData.buffer);
     const locationX = width - iconSpacing;
     page.drawImage(locationIconImage, {
@@ -447,12 +504,6 @@ export async function generateBrandedQRPdf(
     }
 
     // Calendar icon (center)
-    const calendarIconData = await renderIconWithLabel(
-      calendarIcon,
-      dateText,
-      dayNameText,
-      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
-    );
     const calendarIconImage = await pdfDoc.embedPng(calendarIconData.buffer);
     const calendarX = width / 2;
     page.drawImage(calendarIconImage, {
@@ -463,12 +514,6 @@ export async function generateBrandedQRPdf(
     });
 
     // People icon (left side - RTL)
-    const peopleIconData = await renderIconWithLabel(
-      peopleIcon,
-      FIXED_TEXTS.menOnlyLabel,
-      FIXED_TEXTS.menOnlySublabel,
-      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
-    );
     const peopleIconImage = await pdfDoc.embedPng(peopleIconData.buffer);
     const peopleX = iconSpacing;
     page.drawImage(peopleIconImage, {
@@ -478,19 +523,22 @@ export async function generateBrandedQRPdf(
       height: peopleIconData.height,
     });
 
+    // Update currentY after icons
+    currentY -= maxIconHeight + spacing.afterIcons;
+
     // ====================================
-    // 10. DRAW SPONSORS SECTION (like invitation-pdf.ts with its own container)
+    // 10. DRAW SPONSORS SECTION (with its own container)
     // ====================================
     if (options.sponsors && options.sponsors.length > 0) {
       // Filter sponsors that have logos or names
       const validSponsors = options.sponsors.filter((s) => s.name || s.logoUrl);
 
       if (validSponsors.length > 0) {
-        // Define sponsor container area (like invitation-pdf.ts)
+        // Define sponsor container area - flows from currentY
         const containerLeft = width * 0.1;
         const containerRight = width * 0.9;
         const containerWidth = containerRight - containerLeft;
-        const containerTop = height * POSITIONS.sponsorsHeader; // Anchor point
+        const containerTop = currentY; // Use currentY as anchor point
 
         // Calculate grid layout based on sponsor count
         const count = Math.min(validSponsors.length, 10);
@@ -509,7 +557,7 @@ export async function generateBrandedQRPdf(
         }
 
         // Calculate available height from containerTop to bottom margin
-        const bottomMargin = height * 0.02;
+        const bottomMargin = height * LAYOUT.bottomMargin;
         const maxContainerHeight = containerTop - bottomMargin;
 
         // Calculate ideal row height based on fixed logo size
@@ -598,85 +646,85 @@ export async function generateBrandedQRPdf(
           ribbonBodyWidth + (arrowWidth + diamondGap + diamondSize) * 2;
         const ribbonY = containerTop + bgPadding;
 
-      const ribbonScale = 2;
-      const ribbonCanvas = createCanvas(
-        totalWidth * ribbonScale,
-        ribbonHeight * ribbonScale
-      );
-      const ribbonCtx = ribbonCanvas.getContext("2d");
-      ribbonCtx.clearRect(
-        0,
-        0,
-        totalWidth * ribbonScale,
-        ribbonHeight * ribbonScale
-      );
+        const ribbonScale = 2;
+        const ribbonCanvas = createCanvas(
+          totalWidth * ribbonScale,
+          ribbonHeight * ribbonScale
+        );
+        const ribbonCtx = ribbonCanvas.getContext("2d");
+        ribbonCtx.clearRect(
+          0,
+          0,
+          totalWidth * ribbonScale,
+          ribbonHeight * ribbonScale
+        );
 
-      const fillColor = "#cba890";
-      const rcenterX = (totalWidth * ribbonScale) / 2;
-      const rcenterY = (ribbonHeight * ribbonScale) / 2;
-      const bodyHalfWidth = (ribbonBodyWidth * ribbonScale) / 2;
-      const arrowW = arrowWidth * ribbonScale;
-      const diamondS = diamondSize * ribbonScale;
-      const dgap = diamondGap * ribbonScale;
+        const fillColor = "#cba890";
+        const rcenterX = (totalWidth * ribbonScale) / 2;
+        const rcenterY = (ribbonHeight * ribbonScale) / 2;
+        const bodyHalfWidth = (ribbonBodyWidth * ribbonScale) / 2;
+        const arrowW = arrowWidth * ribbonScale;
+        const diamondS = diamondSize * ribbonScale;
+        const dgap = diamondGap * ribbonScale;
 
-      // Draw main ribbon body with arrow ends
-      ribbonCtx.beginPath();
-      // Start at left arrow point
-      ribbonCtx.moveTo(rcenterX - bodyHalfWidth - arrowW, rcenterY);
-      // Top left corner
-      ribbonCtx.lineTo(rcenterX - bodyHalfWidth, 0);
-      // Top right corner
-      ribbonCtx.lineTo(rcenterX + bodyHalfWidth, 0);
-      // Right arrow point
-      ribbonCtx.lineTo(rcenterX + bodyHalfWidth + arrowW, rcenterY);
-      // Bottom right corner
-      ribbonCtx.lineTo(rcenterX + bodyHalfWidth, ribbonHeight * ribbonScale);
-      // Bottom left corner
-      ribbonCtx.lineTo(rcenterX - bodyHalfWidth, ribbonHeight * ribbonScale);
-      // Back to left arrow point
-      ribbonCtx.closePath();
-      ribbonCtx.fillStyle = fillColor;
-      ribbonCtx.fill();
+        // Draw main ribbon body with arrow ends
+        ribbonCtx.beginPath();
+        // Start at left arrow point
+        ribbonCtx.moveTo(rcenterX - bodyHalfWidth - arrowW, rcenterY);
+        // Top left corner
+        ribbonCtx.lineTo(rcenterX - bodyHalfWidth, 0);
+        // Top right corner
+        ribbonCtx.lineTo(rcenterX + bodyHalfWidth, 0);
+        // Right arrow point
+        ribbonCtx.lineTo(rcenterX + bodyHalfWidth + arrowW, rcenterY);
+        // Bottom right corner
+        ribbonCtx.lineTo(rcenterX + bodyHalfWidth, ribbonHeight * ribbonScale);
+        // Bottom left corner
+        ribbonCtx.lineTo(rcenterX - bodyHalfWidth, ribbonHeight * ribbonScale);
+        // Back to left arrow point
+        ribbonCtx.closePath();
+        ribbonCtx.fillStyle = fillColor;
+        ribbonCtx.fill();
 
-      // Draw left diamond
-      const leftDiamondX =
-        rcenterX - bodyHalfWidth - arrowW - dgap - diamondS / 2;
-      ribbonCtx.beginPath();
-      ribbonCtx.moveTo(leftDiamondX, rcenterY - diamondS / 2); // Top
-      ribbonCtx.lineTo(leftDiamondX + diamondS / 2, rcenterY); // Right
-      ribbonCtx.lineTo(leftDiamondX, rcenterY + diamondS / 2); // Bottom
-      ribbonCtx.lineTo(leftDiamondX - diamondS / 2, rcenterY); // Left
-      ribbonCtx.closePath();
-      ribbonCtx.fillStyle = fillColor;
-      ribbonCtx.fill();
+        // Draw left diamond
+        const leftDiamondX =
+          rcenterX - bodyHalfWidth - arrowW - dgap - diamondS / 2;
+        ribbonCtx.beginPath();
+        ribbonCtx.moveTo(leftDiamondX, rcenterY - diamondS / 2); // Top
+        ribbonCtx.lineTo(leftDiamondX + diamondS / 2, rcenterY); // Right
+        ribbonCtx.lineTo(leftDiamondX, rcenterY + diamondS / 2); // Bottom
+        ribbonCtx.lineTo(leftDiamondX - diamondS / 2, rcenterY); // Left
+        ribbonCtx.closePath();
+        ribbonCtx.fillStyle = fillColor;
+        ribbonCtx.fill();
 
-      // Draw right diamond
-      const rightDiamondX =
-        rcenterX + bodyHalfWidth + arrowW + dgap + diamondS / 2;
-      ribbonCtx.beginPath();
-      ribbonCtx.moveTo(rightDiamondX, rcenterY - diamondS / 2); // Top
-      ribbonCtx.lineTo(rightDiamondX + diamondS / 2, rcenterY); // Right
-      ribbonCtx.lineTo(rightDiamondX, rcenterY + diamondS / 2); // Bottom
-      ribbonCtx.lineTo(rightDiamondX - diamondS / 2, rcenterY); // Left
-      ribbonCtx.closePath();
-      ribbonCtx.fillStyle = fillColor;
-      ribbonCtx.fill();
+        // Draw right diamond
+        const rightDiamondX =
+          rcenterX + bodyHalfWidth + arrowW + dgap + diamondS / 2;
+        ribbonCtx.beginPath();
+        ribbonCtx.moveTo(rightDiamondX, rcenterY - diamondS / 2); // Top
+        ribbonCtx.lineTo(rightDiamondX + diamondS / 2, rcenterY); // Right
+        ribbonCtx.lineTo(rightDiamondX, rcenterY + diamondS / 2); // Bottom
+        ribbonCtx.lineTo(rightDiamondX - diamondS / 2, rcenterY); // Left
+        ribbonCtx.closePath();
+        ribbonCtx.fillStyle = fillColor;
+        ribbonCtx.fill();
 
-      // Draw text
-      ribbonCtx.font = `bold ${FONT_SIZES.sponsorsHeader}px "AbarBold"`;
-      ribbonCtx.fillStyle = "#7b4227";
-      ribbonCtx.textAlign = "center";
-      ribbonCtx.textBaseline = "middle";
-      ribbonCtx.fillText(FIXED_TEXTS.sponsorsHeader, rcenterX, rcenterY);
+        // Draw text
+        ribbonCtx.font = `bold ${FONT_SIZES.sponsorsHeader}px "AbarBold"`;
+        ribbonCtx.fillStyle = "#7b4227";
+        ribbonCtx.textAlign = "center";
+        ribbonCtx.textBaseline = "middle";
+        ribbonCtx.fillText(FIXED_TEXTS.sponsorsHeader, rcenterX, rcenterY);
 
-      const ribbonBuffer = ribbonCanvas.toBuffer("image/png");
-      const ribbonImage = await pdfDoc.embedPng(ribbonBuffer);
-      page.drawImage(ribbonImage, {
-        x: (width - totalWidth) / 2,
-        y: ribbonY - ribbonHeight / 2,
-        width: totalWidth,
-        height: ribbonHeight,
-      });
+        const ribbonBuffer = ribbonCanvas.toBuffer("image/png");
+        const ribbonImage = await pdfDoc.embedPng(ribbonBuffer);
+        page.drawImage(ribbonImage, {
+          x: (width - totalWidth) / 2,
+          y: ribbonY - ribbonHeight / 2,
+          width: totalWidth,
+          height: ribbonHeight,
+        });
 
         // Draw sponsors in RTL order (like invitation-pdf.ts)
         for (let i = 0; i < count; i++) {
@@ -709,7 +757,8 @@ export async function generateBrandedQRPdf(
 
           // Calculate position (RTL: start from right)
           const colFromRight = colsInThisRow - 1 - colInRow;
-          const cellCenterX = containerLeft + (colFromRight + 0.5) * rowCellWidth;
+          const cellCenterX =
+            containerLeft + (colFromRight + 0.5) * rowCellWidth;
           const cellCenterY = containerTop - (row + 0.5) * cellHeight;
 
           // Try to load and embed sponsor logo
@@ -731,14 +780,21 @@ export async function generateBrandedQRPdf(
 
               const logoResponse = await fetch(logoUrl);
               if (logoResponse.ok) {
-                const logoBuffer = Buffer.from(await logoResponse.arrayBuffer());
-                const contentType = logoResponse.headers.get("content-type") || "";
+                const logoBuffer = Buffer.from(
+                  await logoResponse.arrayBuffer()
+                );
+                const contentType =
+                  logoResponse.headers.get("content-type") || "";
 
                 const lowerUrl = logoUrl.toLowerCase();
-                const isPng = contentType.includes("png") || lowerUrl.includes(".png");
-                const isWebp = contentType.includes("webp") || lowerUrl.includes(".webp");
-                const isSvg = contentType.includes("svg") || lowerUrl.includes(".svg");
-                const isGif = contentType.includes("gif") || lowerUrl.includes(".gif");
+                const isPng =
+                  contentType.includes("png") || lowerUrl.includes(".png");
+                const isWebp =
+                  contentType.includes("webp") || lowerUrl.includes(".webp");
+                const isSvg =
+                  contentType.includes("svg") || lowerUrl.includes(".svg");
+                const isGif =
+                  contentType.includes("gif") || lowerUrl.includes(".gif");
 
                 let pngBuffer: Buffer;
                 if (isSvg || isWebp || isGif) {
@@ -758,7 +814,9 @@ export async function generateBrandedQRPdf(
                 }
 
                 // Convert logo to cream color for dark background
-                const coloredPngBuffer = await convertImageToTextColor(pngBuffer);
+                const coloredPngBuffer = await convertImageToTextColor(
+                  pngBuffer
+                );
                 const logoImage = await pdfDoc.embedPng(coloredPngBuffer);
 
                 const aspectRatio = logoImage.width / logoImage.height;
@@ -797,18 +855,27 @@ export async function generateBrandedQRPdf(
                     A: actionDict,
                   });
 
-                  const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+                  const existingAnnots = page.node.lookup(
+                    PDFName.of("Annots"),
+                    PDFArray
+                  );
                   if (existingAnnots) {
                     existingAnnots.push(linkAnnotation);
                   } else {
-                    page.node.set(PDFName.of("Annots"), pdfDoc.context.obj([linkAnnotation]));
+                    page.node.set(
+                      PDFName.of("Annots"),
+                      pdfDoc.context.obj([linkAnnotation])
+                    );
                   }
                 }
               } else {
                 throw new Error("Failed to fetch logo");
               }
             } catch (logoError) {
-              console.error(`Failed to load sponsor logo: ${sponsor.logoUrl}`, logoError);
+              console.error(
+                `Failed to load sponsor logo: ${sponsor.logoUrl}`,
+                logoError
+              );
               // Fall back to text
               const nameImageData = renderArabicTextToImage(sponsor.name, {
                 fontFamily: "AbarBold",
@@ -839,16 +906,27 @@ export async function generateBrandedQRPdf(
                 const linkAnnotation = pdfDoc.context.obj({
                   Type: "Annot",
                   Subtype: "Link",
-                  Rect: [linkX, linkY, linkX + nameImageData.width, linkY + nameImageData.height],
+                  Rect: [
+                    linkX,
+                    linkY,
+                    linkX + nameImageData.width,
+                    linkY + nameImageData.height,
+                  ],
                   Border: [0, 0, 0],
                   A: actionDict,
                 });
 
-                const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+                const existingAnnots = page.node.lookup(
+                  PDFName.of("Annots"),
+                  PDFArray
+                );
                 if (existingAnnots) {
                   existingAnnots.push(linkAnnotation);
                 } else {
-                  page.node.set(PDFName.of("Annots"), pdfDoc.context.obj([linkAnnotation]));
+                  page.node.set(
+                    PDFName.of("Annots"),
+                    pdfDoc.context.obj([linkAnnotation])
+                  );
                 }
               }
             }
@@ -883,16 +961,27 @@ export async function generateBrandedQRPdf(
               const linkAnnotation = pdfDoc.context.obj({
                 Type: "Annot",
                 Subtype: "Link",
-                Rect: [linkX, linkY, linkX + nameImageData.width, linkY + nameImageData.height],
+                Rect: [
+                  linkX,
+                  linkY,
+                  linkX + nameImageData.width,
+                  linkY + nameImageData.height,
+                ],
                 Border: [0, 0, 0],
                 A: actionDict,
               });
 
-              const existingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+              const existingAnnots = page.node.lookup(
+                PDFName.of("Annots"),
+                PDFArray
+              );
               if (existingAnnots) {
                 existingAnnots.push(linkAnnotation);
               } else {
-                page.node.set(PDFName.of("Annots"), pdfDoc.context.obj([linkAnnotation]));
+                page.node.set(
+                  PDFName.of("Annots"),
+                  pdfDoc.context.obj([linkAnnotation])
+                );
               }
             }
           }
