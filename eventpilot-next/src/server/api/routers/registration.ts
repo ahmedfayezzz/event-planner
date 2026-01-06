@@ -58,9 +58,19 @@ async function findOrCreateCompanionUser(
     });
 
     if (existingReg) {
+      // Log details for debugging registration conflicts
+      console.error("[Companion Registration Error]", {
+        companionPhone: formattedPhone,
+        companionEmail: email,
+        matchedUserId: existingUser.id,
+        matchedUserPhone: existingUser.phone,
+        matchedUserEmail: existingUser.email,
+        existingRegId: existingReg.id,
+        sessionId,
+      });
       throw new TRPCError({
         code: "CONFLICT",
-        message: `المرافق ${companion.name} مسجل مسبقاً في هذا الحدث`,
+        message: `المرافق ${companion.name} (${formattedPhone}) مسجل مسبقاً في هذا الحدث`,
       });
     }
 
@@ -236,6 +246,31 @@ export const registrationRouter = createTRPCRouter({
           code: "NOT_FOUND",
           message: "المستخدم غير موجود",
         });
+      }
+
+      // Validate companions: check for self-registration and duplicates
+      if (input.companions.length > 0) {
+        const companionPhones = input.companions.map((c) => formatPhoneNumber(c.phone));
+
+        // Check if any companion matches the registrant
+        for (const companion of input.companions) {
+          const companionPhone = formatPhoneNumber(companion.phone);
+          if (companionPhone === user.phone) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "لا يمكنك إضافة نفسك كمرافق",
+            });
+          }
+        }
+
+        // Check for duplicate phones within companions array
+        const uniquePhones = new Set(companionPhones);
+        if (uniquePhones.size !== companionPhones.length) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "لا يمكن إضافة مرافقين بنفس رقم الهاتف",
+          });
+        }
       }
 
       // Create sponsor record if user wants to sponsor and doesn't have one yet
@@ -489,6 +524,31 @@ export const registrationRouter = createTRPCRouter({
       const formattedPhone = formatPhoneNumber(input.phone);
 
       const email = input.email.toLowerCase();
+
+      // Validate companions: check for self-registration and duplicates
+      if (input.companions.length > 0) {
+        const companionPhones = input.companions.map((c) => formatPhoneNumber(c.phone));
+
+        // Check if any companion matches the registrant
+        for (const companion of input.companions) {
+          const companionPhone = formatPhoneNumber(companion.phone);
+          if (companionPhone === formattedPhone) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "لا يمكنك إضافة نفسك كمرافق",
+            });
+          }
+        }
+
+        // Check for duplicate phones within companions array
+        const uniquePhones = new Set(companionPhones);
+        if (uniquePhones.size !== companionPhones.length) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "لا يمكن إضافة مرافقين بنفس رقم الهاتف",
+          });
+        }
+      }
 
       let userId: string;
       let isNewAccount = false;
@@ -1158,6 +1218,39 @@ export const registrationRouter = createTRPCRouter({
           code: "BAD_REQUEST",
           message: `الحد الأقصى للمرافقين هو ${registration.session.maxCompanions}`,
         });
+      }
+
+      // Validate companions: check for self-registration and duplicates
+      if (input.companions.length > 0) {
+        // Get user phone for comparison
+        const user = await db.user.findUnique({
+          where: { id: userSession.user.id },
+          select: { phone: true },
+        });
+
+        const companionPhones = input.companions.map((c) => formatPhoneNumber(c.phone));
+
+        // Check if any companion matches the registrant
+        if (user?.phone) {
+          for (const companion of input.companions) {
+            const companionPhone = formatPhoneNumber(companion.phone);
+            if (companionPhone === user.phone) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "لا يمكنك إضافة نفسك كمرافق",
+              });
+            }
+          }
+        }
+
+        // Check for duplicate phones within companions array
+        const uniquePhones = new Set(companionPhones);
+        if (uniquePhones.size !== companionPhones.length) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "لا يمكن إضافة مرافقين بنفس رقم الهاتف",
+          });
+        }
       }
 
       // Get existing companion IDs
