@@ -117,7 +117,7 @@ export default function SessionAttendeesPage({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { isExpanded, toggleRow } = useExpandableRows();
   const [confirmAction, setConfirmAction] = useState<{
-    type: "approveAll" | "approveSelected" | "approve" | "reject" | "markNotComing";
+    type: "approveAll" | "approveSelected" | "approve" | "reject" | "markNotComing" | "cancelRejection";
     count?: number;
     registrationId?: string;
     name?: string;
@@ -198,6 +198,16 @@ export default function SessionAttendeesPage({
     },
     onError: (error) => {
       toast.error(error.message || "حدث خطأ");
+    },
+  });
+
+  const cancelRejectionMutation = api.registration.cancelRejection.useMutation({
+    onSuccess: () => {
+      toast.success("تم إلغاء الرفض بنجاح");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || "فشل إلغاء الرفض");
     },
   });
 
@@ -456,6 +466,10 @@ ${qrPageUrl}
       markNotComingMutation.mutate({
         registrationId: confirmAction.registrationId,
         reason: confirmAction.reason || undefined
+      });
+    } else if (confirmAction.type === "cancelRejection" && confirmAction.registrationId) {
+      cancelRejectionMutation.mutate({
+        registrationId: confirmAction.registrationId,
       });
     }
     setConfirmAction(null);
@@ -1019,6 +1033,24 @@ ${qrPageUrl}
                                   <Undo2 className="h-3.5 w-3.5 text-green-600" />
                                 </Button>
                               )}
+                              {reg.isRejected && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() =>
+                                    setConfirmAction({
+                                      type: "cancelRejection",
+                                      registrationId: reg.id,
+                                      name: reg.name || undefined,
+                                    })
+                                  }
+                                  disabled={cancelRejectionMutation.isPending}
+                                  title="إلغاء الرفض"
+                                >
+                                  <Undo2 className="h-3.5 w-3.5 text-orange-600" />
+                                </Button>
+                              )}
                               {reg.phone && (
                                 <Button
                                   variant="ghost"
@@ -1203,6 +1235,24 @@ ${qrPageUrl}
                                         </Button>
                                       </>
                                     )}
+                                    {reg.isRejected && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                          setConfirmAction({
+                                            type: "cancelRejection",
+                                            registrationId: reg.id,
+                                            name: reg.name || undefined,
+                                          })
+                                        }
+                                        disabled={cancelRejectionMutation.isPending}
+                                        className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                                      >
+                                        <Undo2 className="me-2 h-4 w-4" />
+                                        إلغاء الرفض
+                                      </Button>
+                                    )}
                                     {reg.phone && (
                                       <Button
                                         variant="outline"
@@ -1241,6 +1291,8 @@ ${qrPageUrl}
                 ? "رفض التسجيل"
                 : confirmAction?.type === "markNotComing"
                 ? "تعيين كـ لن يحضر"
+                : confirmAction?.type === "cancelRejection"
+                ? "إلغاء الرفض"
                 : "تأكيد التسجيل"}
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -1254,6 +1306,8 @@ ${qrPageUrl}
                 `هل أنت متأكد من رفض تسجيل ${confirmAction?.name || "هذا المستخدم"}؟ سيتم إرسال إشعار بالرفض.`}
               {confirmAction?.type === "markNotComing" &&
                 `هل أنت متأكد من تعيين ${confirmAction?.name || "هذا المستخدم"} كـ "لن يحضر"؟`}
+              {confirmAction?.type === "cancelRejection" &&
+                `هل أنت متأكد من إلغاء رفض تسجيل ${confirmAction?.name || "هذا المستخدم"}؟ سيعود التسجيل إلى حالة الانتظار.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {(confirmAction?.type === "reject" || confirmAction?.type === "markNotComing") && (
@@ -1283,6 +1337,8 @@ ${qrPageUrl}
                   ? "bg-red-600 hover:bg-red-700"
                   : confirmAction?.type === "markNotComing"
                   ? "bg-gray-600 hover:bg-gray-700"
+                  : confirmAction?.type === "cancelRejection"
+                  ? "bg-orange-600 hover:bg-orange-700"
                   : ""
               }
             >
@@ -1290,6 +1346,8 @@ ${qrPageUrl}
                 ? "رفض"
                 : confirmAction?.type === "markNotComing"
                 ? "تعيين كـ لن يحضر"
+                : confirmAction?.type === "cancelRejection"
+                ? "إلغاء الرفض"
                 : "تأكيد"}
             </AlertDialogAction>
           </AlertDialogFooter>

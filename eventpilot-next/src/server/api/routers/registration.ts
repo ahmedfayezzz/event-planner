@@ -1292,6 +1292,44 @@ export const registrationRouter = createTRPCRouter({
     }),
 
   /**
+   * Cancel rejection - revert rejected registration back to pending (admin only)
+   */
+  cancelRejection: adminProcedure
+    .input(z.object({ registrationId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const registration = await db.registration.findUnique({
+        where: { id: input.registrationId },
+      });
+
+      if (!registration) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "التسجيل غير موجود",
+        });
+      }
+
+      if (!registration.isRejected) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "التسجيل ليس مرفوضاً",
+        });
+      }
+
+      await db.registration.update({
+        where: { id: input.registrationId },
+        data: {
+          isRejected: false,
+          rejectedAt: null,
+          rejectedById: null,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
    * Update registration (for logged-in users to edit their registration)
    */
   updateRegistration: protectedProcedure
