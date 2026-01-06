@@ -776,6 +776,7 @@ export const registrationRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
+      const isSuperAdmin = ctx.session.user.role === "SUPER_ADMIN";
 
       const registrations = await db.registration.findMany({
         where: {
@@ -812,6 +813,16 @@ export const registrationRouter = createTRPCRouter({
               },
             },
           },
+          // Include admin tracking info
+          approvedBy: {
+            select: { id: true, name: true },
+          },
+          rejectedBy: {
+            select: { id: true, name: true },
+          },
+          markedNotComingBy: {
+            select: { id: true, name: true },
+          },
         },
         orderBy: { registeredAt: "desc" },
       });
@@ -829,6 +840,12 @@ export const registrationRouter = createTRPCRouter({
         isInvited: !!r.invitedByRegistrationId,
         invitedByName: r.invitedByRegistration?.user?.name || r.invitedByRegistration?.guestName,
         companionCount: r.invitedRegistrations.length,
+        // Admin tracking info (only for SUPER_ADMIN)
+        ...(isSuperAdmin && {
+          approvedByName: r.approvedBy?.name,
+          rejectedByName: r.rejectedBy?.name,
+          markedNotComingByName: r.markedNotComingBy?.name,
+        }),
       }));
     }),
 
@@ -873,6 +890,8 @@ export const registrationRouter = createTRPCRouter({
         data: {
           isApproved: true,
           approvalNotes: input.approvalNotes || null,
+          approvedAt: new Date(),
+          approvedById: ctx.session.user.id,
         },
       });
 
@@ -967,7 +986,11 @@ export const registrationRouter = createTRPCRouter({
           isApproved: false,
           invitedByRegistrationId: null,
         },
-        data: { isApproved: true },
+        data: {
+          isApproved: true,
+          approvedAt: new Date(),
+          approvedById: ctx.session.user.id,
+        },
       });
 
       // Note: Companions are NOT auto-approved when parent is approved
@@ -1029,7 +1052,11 @@ export const registrationRouter = createTRPCRouter({
           id: { in: input.registrationIds },
           isApproved: false,
         },
-        data: { isApproved: true },
+        data: {
+          isApproved: true,
+          approvedAt: new Date(),
+          approvedById: ctx.session.user.id,
+        },
       });
 
       // Note: Companions are NOT auto-approved when parent is approved
@@ -1142,7 +1169,11 @@ export const registrationRouter = createTRPCRouter({
       if (registration.invitedRegistrations.length > 0) {
         await db.registration.updateMany({
           where: { invitedByRegistrationId: registration.id },
-          data: { isRejected: true },
+          data: {
+            isRejected: true,
+            rejectedAt: new Date(),
+            rejectedById: ctx.session.user.id,
+          },
         });
       }
 
@@ -1152,6 +1183,8 @@ export const registrationRouter = createTRPCRouter({
         data: {
           isRejected: true,
           rejectionReason: input.reason || null,
+          rejectedAt: new Date(),
+          rejectedById: ctx.session.user.id,
         },
       });
 
@@ -1159,6 +1192,101 @@ export const registrationRouter = createTRPCRouter({
       if (email && name) {
         await sendRejectionEmail(email, name, registration.session, registration.id, input.reason);
       }
+
+      return { success: true };
+    }),
+
+  /**
+   * Mark registration as "not coming" (admin only)
+   * Can only be applied to approved registrations
+   */
+  markNotComing: adminProcedure
+    .input(z.object({ registrationId: z.string(), reason: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const registration = await db.registration.findUnique({
+        where: { id: input.registrationId },
+        include: { attendance: true },
+      });
+
+      if (!registration) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "التسجيل غير موجود",
+        });
+      }
+
+      if (!registration.isApproved) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "يمكن تعيين 'لن يحضر' فقط للتسجيلات المؤكدة",
+        });
+      }
+
+      if (registration.isNotComing) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "التسجيل معين مسبقاً كـ 'لن يحضر'",
+        });
+      }
+
+      // Prevent marking as not coming if already checked in
+      if (registration.attendance?.attended) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "لا يمكن تعيين 'لن يحضر' لشخص حضر بالفعل",
+        });
+      }
+
+      await db.registration.update({
+        where: { id: input.registrationId },
+        data: {
+          isNotComing: true,
+          notComingReason: input.reason || null,
+          markedNotComingAt: new Date(),
+          markedNotComingById: ctx.session.user.id,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Revert "not coming" status back to attending (admin only)
+   */
+  revertNotComing: adminProcedure
+    .input(z.object({ registrationId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const registration = await db.registration.findUnique({
+        where: { id: input.registrationId },
+      });
+
+      if (!registration) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "التسجيل غير موجود",
+        });
+      }
+
+      if (!registration.isNotComing) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "التسجيل ليس معيناً كـ 'لن يحضر'",
+        });
+      }
+
+      await db.registration.update({
+        where: { id: input.registrationId },
+        data: {
+          isNotComing: false,
+          notComingReason: null,
+          markedNotComingAt: null,
+          markedNotComingById: null,
+        },
+      });
 
       return { success: true };
     }),

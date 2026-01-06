@@ -299,18 +299,18 @@ export default function SessionDetailPage({
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              المسجلين الموافق عليهم
+              المتوقع حضورهم
             </CardTitle>
             <UserCheck className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.approvedRegistrations}</div>
+            <div className="text-2xl font-bold text-green-600">{stats.expectedAttendees}</div>
             <p className="text-xs text-muted-foreground">
-              من أصل {session.maxParticipants} مقعد
+              {stats.approvedRegistrations} مؤكد + {stats.pendingRegistrations} معلق
             </p>
             <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
               <div
@@ -329,9 +329,22 @@ export default function SessionDetailPage({
             <UserX className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingRegistrations}</div>
+            <div className="text-2xl font-bold text-yellow-600">{stats.pendingRegistrations}</div>
             <p className="text-xs text-muted-foreground">
               {stats.guestRegistrations} ضيوف
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">لن يحضر</CardTitle>
+            <UserX className="h-4 w-4 text-gray-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-500">{stats.notComingRegistrations}</div>
+            <p className="text-xs text-muted-foreground">
+              اعتذروا عن الحضور
             </p>
           </CardContent>
         </Card>
@@ -342,7 +355,7 @@ export default function SessionDetailPage({
             <CheckCircle className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.attendance}</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.attendance}</div>
             <p className="text-xs text-muted-foreground">
               نسبة الحضور {stats.attendanceRate}%
             </p>
@@ -361,7 +374,7 @@ export default function SessionDetailPage({
             <MailCheck className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.invitesSent}</div>
+            <div className="text-2xl font-bold text-purple-600">{stats.invitesSent}</div>
             <p className="text-xs text-muted-foreground">
               {stats.availableSpots} مقعد متاح
             </p>

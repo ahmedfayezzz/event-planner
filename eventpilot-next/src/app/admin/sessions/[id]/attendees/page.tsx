@@ -67,7 +67,10 @@ import {
   Building2,
   Briefcase,
   Tag,
+  UserMinus,
+  Undo2,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 interface RegistrationItem {
   id: string;
@@ -81,15 +84,24 @@ interface RegistrationItem {
   isGuest: boolean;
   isApproved: boolean;
   isRejected?: boolean;
+  isNotComing?: boolean;
+  notComingReason?: string | null;
   registeredAt: Date;
   isInvited?: boolean;
   invitedByName?: string | null;
   companionCount?: number;
   isManual?: boolean;
+  // Admin tracking (super admin only)
+  approvedByName?: string | null;
+  approvedAt?: Date | null;
+  rejectedByName?: string | null;
+  rejectedAt?: Date | null;
+  markedNotComingByName?: string | null;
+  markedNotComingAt?: Date | null;
 }
 
 type FilterType = "all" | "direct" | "invited";
-type StatusFilterType = "all" | "approved" | "pending" | "rejected";
+type StatusFilterType = "all" | "coming" | "notcoming" | "pending" | "rejected";
 type TagFilterType = "all" | string;
 
 export default function SessionAttendeesPage({
@@ -105,13 +117,15 @@ export default function SessionAttendeesPage({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { isExpanded, toggleRow } = useExpandableRows();
   const [confirmAction, setConfirmAction] = useState<{
-    type: "approveAll" | "approveSelected" | "approve" | "reject";
+    type: "approveAll" | "approveSelected" | "approve" | "reject" | "markNotComing";
     count?: number;
     registrationId?: string;
     name?: string;
     reason?: string;
   } | null>(null);
   const debouncedSearch = useDebounce(search, 300);
+  const { data: sessionData } = useSession();
+  const isSuperAdmin = sessionData?.user?.role === "SUPER_ADMIN";
 
   const { data: session, isLoading: sessionLoading } =
     api.session.getAdminDetails.useQuery({ id });
@@ -160,6 +174,26 @@ export default function SessionAttendeesPage({
   const rejectMutation = api.registration.reject.useMutation({
     onSuccess: () => {
       toast.success("تم رفض التسجيل");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ");
+    },
+  });
+
+  const markNotComingMutation = api.registration.markNotComing.useMutation({
+    onSuccess: () => {
+      toast.success("تم تعيين المسجل كـ 'لن يحضر'");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ");
+    },
+  });
+
+  const revertNotComingMutation = api.registration.revertNotComing.useMutation({
+    onSuccess: () => {
+      toast.success("تم إرجاع المسجل إلى 'سيحضر'");
       refetch();
     },
     onError: (error) => {
@@ -225,8 +259,13 @@ export default function SessionAttendeesPage({
     }
 
     // Filter by status
-    if (statusFilter === "approved") {
-      filtered = filtered.filter((reg: RegistrationItem) => reg.isApproved);
+    if (statusFilter === "all") {
+      // "All" shows expected attendees only (excludes not coming and rejected)
+      filtered = filtered.filter((reg: RegistrationItem) => !reg.isNotComing && !reg.isRejected);
+    } else if (statusFilter === "coming") {
+      filtered = filtered.filter((reg: RegistrationItem) => reg.isApproved && !reg.isNotComing);
+    } else if (statusFilter === "notcoming") {
+      filtered = filtered.filter((reg: RegistrationItem) => reg.isNotComing);
     } else if (statusFilter === "pending") {
       filtered = filtered.filter((reg: RegistrationItem) => !reg.isApproved && !reg.isRejected);
     } else if (statusFilter === "rejected") {
@@ -258,7 +297,7 @@ export default function SessionAttendeesPage({
   // Calculate stats
   const stats = useMemo(() => {
     if (!registrations)
-      return { total: 0, direct: 0, invited: 0, approved: 0, pending: 0, rejected: 0 };
+      return { total: 0, expectedAttendees: 0, direct: 0, invited: 0, coming: 0, notComing: 0, pending: 0, rejected: 0 };
 
     const direct = registrations.filter(
       (r: RegistrationItem) => !r.isInvited
@@ -266,17 +305,21 @@ export default function SessionAttendeesPage({
     const invited = registrations.filter(
       (r: RegistrationItem) => r.isInvited
     ).length;
+    const coming = registrations.filter((r: RegistrationItem) => r.isApproved && !r.isNotComing).length;
+    const notComing = registrations.filter((r: RegistrationItem) => r.isNotComing).length;
+    const pending = registrations.filter((r: RegistrationItem) => !r.isApproved && !r.isRejected).length;
+    const rejected = registrations.filter((r: RegistrationItem) => r.isRejected).length;
 
     return {
       total: registrations.length,
+      // Expected attendees = confirmed coming only (excludes pending, not coming, and rejected)
+      expectedAttendees: coming,
       direct,
       invited,
-      approved: registrations.filter((r: RegistrationItem) => r.isApproved)
-        .length,
-      pending: registrations.filter((r: RegistrationItem) => !r.isApproved && !r.isRejected)
-        .length,
-      rejected: registrations.filter((r: RegistrationItem) => r.isRejected)
-        .length,
+      coming,
+      notComing,
+      pending,
+      rejected,
     };
   }, [registrations]);
 
@@ -409,6 +452,11 @@ ${qrPageUrl}
         registrationId: confirmAction.registrationId,
         reason: confirmAction.reason || undefined
       });
+    } else if (confirmAction.type === "markNotComing" && confirmAction.registrationId) {
+      markNotComingMutation.mutate({
+        registrationId: confirmAction.registrationId,
+        reason: confirmAction.reason || undefined
+      });
     }
     setConfirmAction(null);
   };
@@ -481,17 +529,17 @@ ${qrPageUrl}
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              إجمالي المسجلين
+              المتوقع حضورهم
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="text-2xl font-bold text-green-600">{stats.expectedAttendees}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {stats.direct} مباشر + {stats.invited} مرافق
+              {stats.coming} مؤكد + {stats.pending} معلق
             </p>
           </CardContent>
         </Card>
@@ -527,33 +575,44 @@ ${qrPageUrl}
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">لن يحضر</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-500">
+              {stats.notComing}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4">
         <Tabs
-          value={filter}
-          onValueChange={(v) => setFilter(v as FilterType)}
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as StatusFilterType)}
           className="w-fit"
         >
           <TabsList>
             <TabsTrigger value="all">الكل ({stats.total})</TabsTrigger>
-            <TabsTrigger value="direct">مباشر ({stats.direct})</TabsTrigger>
-            <TabsTrigger value="invited">مرافقين ({stats.invited})</TabsTrigger>
+            <TabsTrigger value="coming">سيحضر ({stats.coming})</TabsTrigger>
+            <TabsTrigger value="notcoming">لن يحضر ({stats.notComing})</TabsTrigger>
+            <TabsTrigger value="pending">معلق ({stats.pending})</TabsTrigger>
+            <TabsTrigger value="rejected">مرفوض ({stats.rejected})</TabsTrigger>
           </TabsList>
         </Tabs>
         <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v as StatusFilterType)}
+          value={filter}
+          onValueChange={(v) => setFilter(v as FilterType)}
         >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="الحالة" />
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder="نوع التسجيل" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">كل الحالات</SelectItem>
-            <SelectItem value="approved">مؤكد ({stats.approved})</SelectItem>
-            <SelectItem value="pending">معلق ({stats.pending})</SelectItem>
-            <SelectItem value="rejected">مرفوض ({stats.rejected})</SelectItem>
+            <SelectItem value="all">كل الأنواع</SelectItem>
+            <SelectItem value="direct">مباشر ({stats.direct})</SelectItem>
+            <SelectItem value="invited">مرافقين ({stats.invited})</SelectItem>
           </SelectContent>
         </Select>
         {allLabels && allLabels.length > 0 && (
@@ -674,7 +733,7 @@ ${qrPageUrl}
                   جاري التحميل...
                 </div>
               )}
-              <Table>
+              <Table className="table-fixed">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
@@ -690,34 +749,34 @@ ${qrPageUrl}
                         aria-label="تحديد الكل"
                       />
                     </TableHead>
-                    <TableHead>الاسم</TableHead>
-                    <TableHead className="hidden md:table-cell">
+                    <TableHead className="max-w-[140px]">الاسم</TableHead>
+                    <TableHead className="hidden md:table-cell max-w-[180px]">
                       التواصل
                     </TableHead>
-                    <TableHead className="hidden lg:table-cell">
+                    <TableHead className="hidden lg:table-cell max-w-[140px]">
                       الشركة
                     </TableHead>
-                    <TableHead className="hidden lg:table-cell">
+                    <TableHead className="hidden lg:table-cell max-w-[120px]">
                       التصنيفات
                     </TableHead>
-                    <TableHead className="hidden lg:table-cell">
+                    <TableHead className="hidden lg:table-cell w-[80px]">
                       النوع
                     </TableHead>
                     {filter !== "invited" && (
-                      <TableHead className="hidden lg:table-cell">
+                      <TableHead className="hidden lg:table-cell w-[70px]">
                         المرافقين
                       </TableHead>
                     )}
                     {filter !== "direct" && (
-                      <TableHead className="hidden lg:table-cell">
+                      <TableHead className="hidden lg:table-cell max-w-[120px]">
                         مدعو من
                       </TableHead>
                     )}
-                    <TableHead>الحالة</TableHead>
-                    <TableHead className="hidden md:table-cell">
+                    <TableHead className="w-[90px]">الحالة</TableHead>
+                    <TableHead className="hidden md:table-cell w-[100px]">
                       تاريخ التسجيل
                     </TableHead>
-                    <TableHead className="hidden md:table-cell">
+                    <TableHead className="hidden md:table-cell w-[100px]">
                       الإجراءات
                     </TableHead>
                     {/* Mobile expand button */}
@@ -744,24 +803,31 @@ ${qrPageUrl}
                               aria-label={`تحديد ${reg.name}`}
                             />
                           </TableCell>
-                          <TableCell className="font-medium">
-                            {reg.userId ? (
-                              <Link
-                                href={`/admin/users/${reg.userId}`}
-                                className="text-primary hover:underline"
-                              >
-                                {reg.name}
-                              </Link>
-                            ) : (
-                              reg.name
-                            )}
+                          <TableCell className="font-medium max-w-[140px]">
+                            <div className="truncate">
+                              {reg.userId ? (
+                                <Link
+                                  href={`/admin/users/${reg.userId}`}
+                                  className="text-primary hover:underline"
+                                  title={reg.name || undefined}
+                                >
+                                  {reg.name}
+                                </Link>
+                              ) : (
+                                <span title={reg.name || undefined}>{reg.name}</span>
+                              )}
+                            </div>
                           </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <div className="text-sm">
-                              {reg.email && <div>{reg.email}</div>}
+                          <TableCell className="hidden md:table-cell max-w-[180px]">
+                            <div className="text-sm space-y-0.5">
+                              {reg.email && (
+                                <div className="truncate text-xs" title={reg.email}>
+                                  {reg.email}
+                                </div>
+                              )}
                               {reg.phone && (
                                 <div
-                                  className="text-muted-foreground"
+                                  className="text-muted-foreground text-xs"
                                   dir="ltr"
                                 >
                                   {reg.phone}
@@ -769,24 +835,26 @@ ${qrPageUrl}
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            <div>
-                              <p>{reg.companyName || "-"}</p>
+                          <TableCell className="hidden lg:table-cell max-w-[140px]">
+                            <div className="space-y-0.5">
+                              <p className="truncate text-sm" title={reg.companyName || undefined}>
+                                {reg.companyName || "-"}
+                              </p>
                               {reg.position && (
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-xs text-muted-foreground truncate" title={reg.position}>
                                   {reg.position}
                                 </p>
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="hidden lg:table-cell">
+                          <TableCell className="hidden lg:table-cell max-w-[120px]">
                             {reg.labels && reg.labels.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {reg.labels.map((label) => (
+                              <div className="flex flex-wrap gap-0.5">
+                                {reg.labels.slice(0, 2).map((label) => (
                                   <Badge
                                     key={label.id}
                                     variant="outline"
-                                    className="text-xs"
+                                    className="text-[10px] px-1.5 py-0"
                                     style={{
                                       backgroundColor: label.color + "20",
                                       color: label.color,
@@ -796,26 +864,29 @@ ${qrPageUrl}
                                     {label.name}
                                   </Badge>
                                 ))}
+                                {reg.labels.length > 2 && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                    +{reg.labels.length - 2}
+                                  </Badge>
+                                )}
                               </div>
                             ) : (
-                              <span className="text-muted-foreground">-</span>
+                              <span className="text-muted-foreground text-xs">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            <div className="flex items-center gap-1 flex-wrap">
+                          <TableCell className="hidden lg:table-cell w-[80px]">
+                            <div className="flex flex-col gap-0.5">
                               {reg.isInvited ? (
                                 <Badge
                                   variant="outline"
-                                  className="bg-purple-500/10 text-purple-600 border-purple-200"
+                                  className="bg-purple-500/10 text-purple-600 border-purple-200 text-[10px] px-1.5 py-0 w-fit"
                                 >
-                                  <UserPlus className="me-1 h-3 w-3" />
                                   مرافق
                                 </Badge>
                               ) : (
                                 <Badge
-                                  variant={
-                                    reg.isGuest ? "secondary" : "default"
-                                  }
+                                  variant={reg.isGuest ? "secondary" : "default"}
+                                  className="text-[10px] px-1.5 py-0 w-fit"
                                 >
                                   {reg.isGuest ? "زائر" : "عضو"}
                                 </Badge>
@@ -823,7 +894,7 @@ ${qrPageUrl}
                               {reg.isManual && (
                                 <Badge
                                   variant="outline"
-                                  className="bg-blue-500/10 text-blue-600 border-blue-200"
+                                  className="bg-blue-500/10 text-blue-600 border-blue-200 text-[10px] px-1.5 py-0 w-fit"
                                 >
                                   يدوي
                                 </Badge>
@@ -831,44 +902,61 @@ ${qrPageUrl}
                             </div>
                           </TableCell>
                           {filter !== "invited" && (
-                            <TableCell className="hidden lg:table-cell">
+                            <TableCell className="hidden lg:table-cell w-[70px] text-center text-sm">
                               {reg.companionCount || 0}
                             </TableCell>
                           )}
                           {filter !== "direct" && (
-                            <TableCell className="hidden lg:table-cell text-muted-foreground">
-                              {reg.invitedByName || "-"}
+                            <TableCell className="hidden lg:table-cell max-w-[120px] text-muted-foreground">
+                              <span className="truncate block text-sm" title={reg.invitedByName || undefined}>
+                                {reg.invitedByName || "-"}
+                              </span>
                             </TableCell>
                           )}
-                          <TableCell>
+                          <TableCell className="w-[90px]">
                             <Badge
                               variant={reg.isApproved ? "default" : "outline"}
-                              className={
-                                reg.isRejected
+                              className={cn(
+                                "text-[10px] px-1.5 py-0",
+                                reg.isNotComing
+                                  ? "bg-gray-500/10 text-gray-600 border-gray-200"
+                                  : reg.isRejected
                                   ? "bg-red-500/10 text-red-600 border-red-200"
                                   : reg.isApproved
                                   ? "bg-green-500/10 text-green-600 border-green-200"
                                   : "bg-orange-500/10 text-orange-600 border-orange-200"
-                              }
+                              )}
                             >
-                              {reg.isRejected ? "مرفوض" : reg.isApproved ? "مؤكد" : "معلق"}
+                              {reg.isNotComing ? "لن يحضر" : reg.isRejected ? "مرفوض" : reg.isApproved ? "سيحضر" : "معلق"}
                             </Badge>
+                            {isSuperAdmin && (reg.approvedByName || reg.rejectedByName || reg.markedNotComingByName) && (
+                              <div className="text-[10px] text-muted-foreground mt-0.5 truncate max-w-[80px]" title={
+                                reg.approvedByName ? `أكده: ${reg.approvedByName}` :
+                                reg.rejectedByName ? `رفضه: ${reg.rejectedByName}` :
+                                reg.markedNotComingByName ? `عيّنه: ${reg.markedNotComingByName}` : undefined
+                              }>
+                                {reg.approvedByName && `أكده: ${reg.approvedByName}`}
+                                {reg.rejectedByName && `رفضه: ${reg.rejectedByName}`}
+                                {reg.markedNotComingByName && `عيّنه: ${reg.markedNotComingByName}`}
+                              </div>
+                            )}
                           </TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground">
-                            <div className="text-sm">
+                          <TableCell className="hidden md:table-cell text-muted-foreground w-[100px]">
+                            <div className="text-xs">
                               {formatArabicDate(new Date(reg.registeredAt))}
                             </div>
-                            <div className="text-xs">
+                            <div className="text-[10px]">
                               {formatArabicTime(new Date(reg.registeredAt))}
                             </div>
                           </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <div className="flex items-center gap-1">
+                          <TableCell className="hidden md:table-cell w-[100px]">
+                            <div className="flex items-center gap-0.5">
                               {!reg.isApproved && !reg.isRejected && (
                                 <>
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-7 w-7"
                                     onClick={() =>
                                       setConfirmAction({
                                         type: "approve",
@@ -879,11 +967,12 @@ ${qrPageUrl}
                                     disabled={approveMutation.isPending}
                                     title="تأكيد التسجيل"
                                   >
-                                    <Check className="h-4 w-4 text-green-600" />
+                                    <Check className="h-3.5 w-3.5 text-green-600" />
                                   </Button>
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-7 w-7"
                                     onClick={() =>
                                       setConfirmAction({
                                         type: "reject",
@@ -894,18 +983,51 @@ ${qrPageUrl}
                                     disabled={rejectMutation.isPending}
                                     title="رفض التسجيل"
                                   >
-                                    <X className="h-4 w-4 text-red-600" />
+                                    <X className="h-3.5 w-3.5 text-red-600" />
                                   </Button>
                                 </>
+                              )}
+                              {reg.isApproved && !reg.isNotComing && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() =>
+                                    setConfirmAction({
+                                      type: "markNotComing",
+                                      registrationId: reg.id,
+                                      name: reg.name || undefined,
+                                    })
+                                  }
+                                  disabled={markNotComingMutation.isPending}
+                                  title="تعيين كـ لن يحضر"
+                                >
+                                  <UserMinus className="h-3.5 w-3.5 text-gray-600" />
+                                </Button>
+                              )}
+                              {reg.isNotComing && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() =>
+                                    revertNotComingMutation.mutate({ registrationId: reg.id })
+                                  }
+                                  disabled={revertNotComingMutation.isPending}
+                                  title="إرجاع إلى سيحضر"
+                                >
+                                  <Undo2 className="h-3.5 w-3.5 text-green-600" />
+                                </Button>
                               )}
                               {reg.phone && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-7 w-7"
                                   onClick={() => handleSendWhatsApp(reg)}
                                   title="إرسال رسالة واتساب"
                                 >
-                                  <MessageCircle className="h-4 w-4 text-green-600" />
+                                  <MessageCircle className="h-3.5 w-3.5 text-green-600" />
                                 </Button>
                               )}
                             </div>
@@ -1115,7 +1237,11 @@ ${qrPageUrl}
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmAction?.type === "reject" ? "رفض التسجيل" : "تأكيد التسجيل"}
+              {confirmAction?.type === "reject"
+                ? "رفض التسجيل"
+                : confirmAction?.type === "markNotComing"
+                ? "تعيين كـ لن يحضر"
+                : "تأكيد التسجيل"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction?.type === "approveAll" &&
@@ -1126,15 +1252,17 @@ ${qrPageUrl}
                 `هل أنت متأكد من تأكيد تسجيل ${confirmAction?.name || "هذا المستخدم"}؟`}
               {confirmAction?.type === "reject" &&
                 `هل أنت متأكد من رفض تسجيل ${confirmAction?.name || "هذا المستخدم"}؟ سيتم إرسال إشعار بالرفض.`}
+              {confirmAction?.type === "markNotComing" &&
+                `هل أنت متأكد من تعيين ${confirmAction?.name || "هذا المستخدم"} كـ "لن يحضر"؟`}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {confirmAction?.type === "reject" && (
+          {(confirmAction?.type === "reject" || confirmAction?.type === "markNotComing") && (
             <div className="py-2">
               <label className="text-sm text-muted-foreground mb-2 block">
-                سبب الرفض (اختياري)
+                {confirmAction?.type === "reject" ? "سبب الرفض (اختياري)" : "سبب عدم الحضور (اختياري)"}
               </label>
               <Textarea
-                placeholder="أدخل سبب الرفض إن وجد..."
+                placeholder={confirmAction?.type === "reject" ? "أدخل سبب الرفض إن وجد..." : "أدخل سبب عدم الحضور إن وجد..."}
                 value={confirmAction?.reason || ""}
                 onChange={(e) =>
                   setConfirmAction((prev) =>
@@ -1150,9 +1278,19 @@ ${qrPageUrl}
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmedAction}
-              className={confirmAction?.type === "reject" ? "bg-red-600 hover:bg-red-700" : ""}
+              className={
+                confirmAction?.type === "reject"
+                  ? "bg-red-600 hover:bg-red-700"
+                  : confirmAction?.type === "markNotComing"
+                  ? "bg-gray-600 hover:bg-gray-700"
+                  : ""
+              }
             >
-              {confirmAction?.type === "reject" ? "رفض" : "تأكيد"}
+              {confirmAction?.type === "reject"
+                ? "رفض"
+                : confirmAction?.type === "markNotComing"
+                ? "تعيين كـ لن يحضر"
+                : "تأكيد"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

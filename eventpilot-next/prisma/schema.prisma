@@ -85,6 +85,11 @@ model User {
   // Relations
   registrations Registration[]
   eventCaterings EventCatering[]
+
+  // Admin action tracking relations
+  approvedRegistrations        Registration[] @relation("ApprovedRegistrations")
+  rejectedRegistrations        Registration[] @relation("RejectedRegistrations")
+  markedNotComingRegistrations Registration[] @relation("MarkedNotComing")
   labels UserLabel[]
   notes         UserNote[] @relation("UserNotes")
   notesCreated  UserNote[] @relation("NotesCreated")
@@ -185,6 +190,22 @@ model Registration {
   isManual       Boolean   @default(false)  // true if created via manual registration
   manualAddedBy  String?                    // Admin user ID who added it manually
   manualAddedAt  DateTime?                  // When it was manually added
+
+  // Admin action tracking
+  approvedAt          DateTime?
+  approvedById        String?
+  approvedBy          User?     @relation("ApprovedRegistrations", fields: [approvedById], references: [id])
+
+  rejectedAt          DateTime?
+  rejectedById        String?
+  rejectedBy          User?     @relation("RejectedRegistrations", fields: [rejectedById], references: [id])
+
+  // "Not Coming" status
+  isNotComing         Boolean   @default(false)
+  notComingReason     String?
+  markedNotComingAt   DateTime?
+  markedNotComingById String?
+  markedNotComingBy   User?     @relation("MarkedNotComing", fields: [markedNotComingById], references: [id])
 
   // Companion/Invited relationship (self-referential)
   invitedByRegistrationId  String?

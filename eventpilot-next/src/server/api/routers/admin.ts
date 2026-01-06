@@ -12,6 +12,7 @@ import { ADMIN_PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 import { toSaudiTime } from "@/lib/timezone";
 import { deleteImage, extractKeyFromUrl } from "@/lib/s3";
 import { arabicSearchOr } from "@/lib/search";
+import { formatPhoneNumber } from "@/lib/validation";
 
 export const adminRouter = createTRPCRouter({
   /**
@@ -1585,10 +1586,13 @@ export const adminRouter = createTRPCRouter({
         }
       }
 
+      // Format phone for comparison and storage
+      const formattedPhone = formatPhoneNumber(input.phone);
+
       // Check if phone is being changed and if it's already in use
-      if (input.phone !== user.phone) {
+      if (formattedPhone !== user.phone) {
         const existingPhone = await db.user.findFirst({
-          where: { phone: input.phone, id: { not: input.userId } },
+          where: { phone: formattedPhone, id: { not: input.userId } },
         });
         if (existingPhone) {
           throw new TRPCError({
@@ -1603,7 +1607,7 @@ export const adminRouter = createTRPCRouter({
         data: {
           name: input.name,
           email: input.email ? input.email.toLowerCase() : user.email,
-          phone: input.phone,
+          phone: formattedPhone,
           companyName: input.companyName || null,
           position: input.position || null,
         },
@@ -1680,10 +1684,13 @@ export const adminRouter = createTRPCRouter({
         }
       }
 
+      // Format phone for comparison and storage
+      const formattedPhone = formatPhoneNumber(input.phone);
+
       // Check if phone is being changed and if it's already in use
-      if (input.phone !== user.phone) {
+      if (formattedPhone !== user.phone) {
         const existingPhone = await db.user.findFirst({
-          where: { phone: input.phone, id: { not: input.userId } },
+          where: { phone: formattedPhone, id: { not: input.userId } },
         });
         if (existingPhone) {
           throw new TRPCError({
@@ -1698,7 +1705,7 @@ export const adminRouter = createTRPCRouter({
         data: {
           name: input.name,
           email: input.email.toLowerCase(),
-          phone: input.phone,
+          phone: formattedPhone,
           companyName: input.companyName ?? null,
           position: input.position ?? null,
           activityType: input.activityType ?? null,

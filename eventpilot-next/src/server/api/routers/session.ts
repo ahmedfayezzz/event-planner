@@ -366,24 +366,32 @@ export const sessionRouter = createTRPCRouter({
       }
 
       // Get registration stats
-      const [approvedCount, pendingCount, guestCount] = await Promise.all([
+      const [approvedCount, pendingCount, guestCount, notComingCount] = await Promise.all([
         db.registration.count({
-          where: { sessionId: input.id, isApproved: true },
+          where: { sessionId: input.id, isApproved: true, isNotComing: false },
         }),
         db.registration.count({
-          where: { sessionId: input.id, isApproved: false },
+          where: { sessionId: input.id, isApproved: false, isRejected: false },
         }),
         db.registration.count({
           where: { sessionId: input.id, userId: null },
         }),
+        db.registration.count({
+          where: { sessionId: input.id, isNotComing: true },
+        }),
       ]);
+
+      // Expected attendees = approved (coming) only
+      const expectedAttendees = approvedCount;
 
       return {
         ...session,
         stats: {
           totalRegistrations: session._count.registrations,
+          expectedAttendees,
           approvedRegistrations: approvedCount,
           pendingRegistrations: pendingCount,
+          notComingRegistrations: notComingCount,
           guestRegistrations: guestCount,
           attendance: session._count.attendances,
           invitesSent: session._count.invites,
