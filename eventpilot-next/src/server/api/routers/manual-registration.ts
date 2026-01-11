@@ -183,6 +183,12 @@ export const manualRegistrationRouter = createTRPCRouter({
         name: string;
         registrationId: string;
       }> = [];
+      const createdRegistrations: Array<{
+        id: string;
+        name: string;
+        email: string | null;
+        phone: string | null;
+      }> = [];
 
       // ============================================
       // BULK REGISTER EXISTING USERS (Optimized)
@@ -228,19 +234,25 @@ export const manualRegistrationRouter = createTRPCRouter({
           });
           registeredCount += userRegistrationData.length;
 
-          // If sendQrEmail is enabled, fetch created registrations and queue emails
-          if (input.sendQrEmail) {
-            const createdRegistrations = await db.registration.findMany({
-              where: {
-                sessionId: input.sessionId,
-                userId: { in: validUserIdsToRegister },
-              },
-              select: { id: true, userId: true },
-            });
+          // Fetch created registrations for tracking and emails
+          const newUserRegistrations = await db.registration.findMany({
+            where: {
+              sessionId: input.sessionId,
+              userId: { in: validUserIdsToRegister },
+            },
+            select: { id: true, userId: true },
+          });
 
-            for (const reg of createdRegistrations) {
-              const user = userMap.get(reg.userId!);
-              if (user && user.email && !user.email.includes("@placeholder.local")) {
+          for (const reg of newUserRegistrations) {
+            const user = userMap.get(reg.userId!);
+            if (user) {
+              createdRegistrations.push({
+                id: reg.id,
+                name: user.name,
+                email: user.email,
+                phone: null,
+              });
+              if (input.sendQrEmail && user.email && !user.email.includes("@placeholder.local")) {
                 emailsToSend.push({
                   email: user.email,
                   name: user.name,
@@ -334,19 +346,25 @@ export const manualRegistrationRouter = createTRPCRouter({
         });
         registeredCount += existingUserRegistrationData.length;
 
-        // Queue emails for existing users found by phone
-        if (input.sendQrEmail) {
-          const createdRegs = await db.registration.findMany({
-            where: {
-              sessionId: input.sessionId,
-              userId: { in: existingUserIds },
-            },
-            select: { id: true, userId: true },
-          });
+        // Fetch created registrations for tracking and emails
+        const phoneUserRegs = await db.registration.findMany({
+          where: {
+            sessionId: input.sessionId,
+            userId: { in: existingUserIds },
+          },
+          select: { id: true, userId: true },
+        });
 
-          for (const reg of createdRegs) {
-            const user = existingUserMap.get(reg.userId!);
-            if (user && user.email && !user.email.includes("@placeholder.local")) {
+        for (const reg of phoneUserRegs) {
+          const user = existingUserMap.get(reg.userId!);
+          if (user) {
+            createdRegistrations.push({
+              id: reg.id,
+              name: user.name,
+              email: user.email,
+              phone: user.phone,
+            });
+            if (input.sendQrEmail && user.email && !user.email.includes("@placeholder.local")) {
               emailsToSend.push({
                 email: user.email,
                 name: user.name,
@@ -393,6 +411,14 @@ export const manualRegistrationRouter = createTRPCRouter({
         });
 
         registeredCount++;
+
+        // Track created registration
+        createdRegistrations.push({
+          id: registration.id,
+          name: guest.name,
+          email: guest.email || null,
+          phone: guest.phone,
+        });
 
         // Queue QR-only email for guests with valid email
         if (input.sendQrEmail && guest.email && !guest.email.includes("@placeholder.local")) {
@@ -452,6 +478,7 @@ export const manualRegistrationRouter = createTRPCRouter({
         registered: registeredCount,
         skipped: skippedCount,
         emailsQueued,
+        registrations: createdRegistrations,
       };
     }),
 

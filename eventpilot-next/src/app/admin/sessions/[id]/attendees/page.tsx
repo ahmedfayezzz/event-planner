@@ -69,6 +69,7 @@ import {
   Tag,
   UserMinus,
   Undo2,
+  QrCode,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -1062,6 +1063,17 @@ ${qrPageUrl}
                                   <MessageCircle className="h-3.5 w-3.5 text-green-600" />
                                 </Button>
                               )}
+                              {reg.isApproved && !reg.isRejected && !reg.isNotComing && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => window.open(`/api/registrations/${reg.id}/qr-pdf?download=true`, '_blank')}
+                                  title="تحميل بطاقة الدعوة"
+                                >
+                                  <QrCode className="h-3.5 w-3.5 text-primary" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                           {/* Mobile expand button */}
@@ -1261,6 +1273,16 @@ ${qrPageUrl}
                                       >
                                         <MessageCircle className="me-2 h-4 w-4" />
                                         واتساب
+                                      </Button>
+                                    )}
+                                    {reg.isApproved && !reg.isRejected && !reg.isNotComing && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => window.open(`/api/registrations/${reg.id}/qr-pdf?download=true`, '_blank')}
+                                      >
+                                        <QrCode className="me-2 h-4 w-4" />
+                                        بطاقة الدعوة
                                       </Button>
                                     )}
                                   </div>

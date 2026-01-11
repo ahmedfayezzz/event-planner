@@ -102,11 +102,12 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams;
     const download = searchParams.get("download") === "true";
 
-    // Return PDF
-    const safeFilename = `qr-${registration.id}.pdf`;
-    const encodedFilename = encodeURIComponent(
-      `qr-${registration.session.title}.pdf`
-    );
+    // Return PDF with attendee name in filename
+    const fileNameBase = attendeeName
+      ? `${attendeeName}-${registration.session.title}`
+      : `qr-${registration.session.title}`;
+    const safeFilename = `qr-${registration.id}.pdf`; // Keep safe ASCII fallback
+    const encodedFilename = encodeURIComponent(`${fileNameBase}.pdf`);
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {

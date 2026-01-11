@@ -3,6 +3,19 @@
 - email log system
 - resend confirmation email
 
+-------
+- valet employee (account for unregistered attendees)
+- admin
+- attendee
+
+- add option to download qr code (with design or as just an image)
+- add list preview for newly added manual registrations (with option to download pdf/qr code)
+
+- add loading indication on icon actions in table (approve/reject/mark not coming, etc)
+
+- if qr code is scanned twice, show message "this ticket has already been used to check in"
+------
+
 <!-- - when a user edits registration to add a companion, if user is already acceoted, companion shouldn't be accepted automatically
 - companion added in this case should be registered as a guest (already done)
 - companio email should only be sent to the user email, not companion email

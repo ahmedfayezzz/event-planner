@@ -51,6 +51,9 @@ import {
   Trash2,
   Upload,
   AlertCircle,
+  QrCode,
+  Mail,
+  Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -84,6 +87,13 @@ interface CSVRow {
   error?: string;
 }
 
+interface NewRegistration {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+}
+
 export default function ManualRegistrationPage({
   params,
 }: {
@@ -115,6 +125,9 @@ export default function ManualRegistrationPage({
   // Send QR email option
   const [sendQrEmail, setSendQrEmail] = useState(true);
 
+  // Newly registered attendees (for preview/download)
+  const [newRegistrations, setNewRegistrations] = useState<NewRegistration[]>([]);
+
   // Queries
   const { data: session, isLoading: loadingSession } = api.session.getAdminDetails.useQuery(
     { id: sessionId },
@@ -142,6 +155,10 @@ export default function ManualRegistrationPage({
       );
       if (data.emailsQueued > 0) {
         toast.info(`جاري إرسال ${data.emailsQueued} بريد إلكتروني`);
+      }
+      // Store newly registered attendees for preview
+      if (data.registrations && data.registrations.length > 0) {
+        setNewRegistrations(data.registrations);
       }
       // Reset state
       setSelectedUserIds([]);
@@ -803,6 +820,73 @@ export default function ManualRegistrationPage({
           </div>
         </CardContent>
       </Card>
+
+      {/* Newly Registered Preview */}
+      {newRegistrations.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">المسجلين الجدد</CardTitle>
+                <CardDescription>
+                  تم تسجيل {newRegistrations.length} شخص بنجاح
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setNewRegistrations([])}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="max-h-[300px]">
+              <div className="space-y-2">
+                {newRegistrations.map((reg) => (
+                  <div
+                    key={reg.id}
+                    className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{reg.name}</p>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        {reg.email && (
+                          <span className="flex items-center gap-1 truncate">
+                            <Mail className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{reg.email}</span>
+                          </span>
+                        )}
+                        {reg.phone && (
+                          <span className="flex items-center gap-1" dir="ltr">
+                            <Phone className="h-3 w-3 shrink-0" />
+                            {reg.phone}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        window.open(
+                          `/api/registrations/${reg.id}/qr-pdf?download=true`,
+                          "_blank"
+                        )
+                      }
+                    >
+                      <QrCode className="h-4 w-4 me-2" />
+                      <span className="hidden sm:inline">تحميل QR</span>
+                      <span className="sm:hidden">QR</span>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
