@@ -3,6 +3,11 @@
 - email log system
 - resend confirmation email
 
+
+kaalbi family website
+
+
+
 -------
 - valet employee (account for unregistered attendees)
 - admin
@@ -12,6 +17,8 @@
 - add list preview for newly added manual registrations (with option to download pdf/qr code)
 
 - add loading indication on icon actions in table (approve/reject/mark not coming, etc)
+
+- add filter by label and type in checked in attendees list
 
 - if qr code is scanned twice, show message "this ticket has already been used to check in"
 ------
