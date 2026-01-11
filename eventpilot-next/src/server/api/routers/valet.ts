@@ -240,6 +240,128 @@ export const valetRouter = createTRPCRouter({
     }),
 
   /**
+   * Assign employee to session
+   */
+  assignEmployeeToSession: adminProcedure
+    .input(
+      z.object({
+        employeeId: z.string(),
+        sessionId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if already assigned
+      const existing = await ctx.db.valetEmployeeSession.findUnique({
+        where: {
+          employeeId_sessionId: {
+            employeeId: input.employeeId,
+            sessionId: input.sessionId,
+          },
+        },
+      });
+
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "الموظف مسجل مسبقاً لهذا الحدث",
+        });
+      }
+
+      const assignment = await ctx.db.valetEmployeeSession.create({
+        data: {
+          employeeId: input.employeeId,
+          sessionId: input.sessionId,
+          assignedBy: ctx.session.user.id,
+        },
+        include: {
+          employee: {
+            select: { id: true, name: true, username: true },
+          },
+        },
+      });
+
+      return assignment;
+    }),
+
+  /**
+   * Unassign employee from session
+   */
+  unassignEmployeeFromSession: adminProcedure
+    .input(
+      z.object({
+        employeeId: z.string(),
+        sessionId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.valetEmployeeSession.delete({
+        where: {
+          employeeId_sessionId: {
+            employeeId: input.employeeId,
+            sessionId: input.sessionId,
+          },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Get all employees assigned to a session
+   */
+  getSessionEmployees: adminProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const assignments = await ctx.db.valetEmployeeSession.findMany({
+        where: { sessionId: input.sessionId },
+        include: {
+          employee: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              phone: true,
+              isActive: true,
+            },
+          },
+        },
+        orderBy: { assignedAt: "desc" },
+      });
+
+      return assignments.map((a) => ({
+        ...a.employee,
+        assignedAt: a.assignedAt,
+      }));
+    }),
+
+  /**
+   * Get all sessions assigned to current valet employee (for valet portal)
+   */
+  getMyAssignedSessions: valetProcedure.query(async ({ ctx }) => {
+    const assignments = await ctx.db.valetEmployeeSession.findMany({
+      where: { employeeId: ctx.valetEmployee.id },
+      include: {
+        session: {
+          select: {
+            id: true,
+            title: true,
+            date: true,
+            valetEnabled: true,
+            valetLotCapacity: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: { session: { date: "desc" } },
+    });
+
+    // Filter to only active valet-enabled sessions
+    return assignments
+      .filter((a) => a.session.valetEnabled)
+      .map((a) => a.session);
+  }),
+
+  /**
    * Update session valet configuration
    */
   updateSessionConfig: adminProcedure

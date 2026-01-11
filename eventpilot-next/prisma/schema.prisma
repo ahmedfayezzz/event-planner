@@ -166,6 +166,7 @@ model Session {
   eventSponsorships EventSponsorship[]
   sessionGuests     SessionGuest[]
   valetRecords      ValetRecord[]
+  valetEmployees    ValetEmployeeSession[]
 }
 
 model Registration {
@@ -652,10 +653,28 @@ model ValetEmployee {
   updatedAt DateTime @updatedAt
 
   // Relations
-  valetRecords ValetRecord[] @relation("ParkedByEmployee")
+  valetRecords     ValetRecord[]          @relation("ParkedByEmployee")
+  assignedSessions ValetEmployeeSession[]
 
   @@index([username])
   @@index([isActive])
+}
+
+// Join table for ValetEmployee <-> Session assignment
+model ValetEmployeeSession {
+  id         String @id @default(cuid())
+  employeeId String
+  sessionId  String
+
+  assignedAt DateTime @default(now())
+  assignedBy String? // Admin user ID who made the assignment
+
+  employee ValetEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  session  Session       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, sessionId])
+  @@index([employeeId])
+  @@index([sessionId])
 }
 
 model ValetRecord {

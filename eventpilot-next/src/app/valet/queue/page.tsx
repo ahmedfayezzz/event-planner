@@ -33,16 +33,32 @@ interface QueueItem {
   retrievalPriority: number;
 }
 
+// Get valet token from localStorage
+function useValetToken() {
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    setToken(localStorage.getItem("valet-token"));
+  }, []);
+
+  return token;
+}
+
 export default function ValetQueuePage() {
+  const token = useValetToken();
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
-  // Fetch active sessions with valet enabled
-  const { data: sessions, isLoading: sessionsLoading } = api.session.getActive.useQuery(undefined, {
-    refetchInterval: 30000,
-  });
+  // Fetch assigned sessions for this valet employee
+  const { data: assignedSessions, isLoading: sessionsLoading } = api.valet.getMyAssignedSessions.useQuery(
+    undefined,
+    {
+      enabled: !!token,
+      refetchInterval: 30000,
+    }
+  );
 
-  // Filter sessions with valet enabled
-  const valetSessions = sessions?.filter((s) => s.valetEnabled) ?? [];
+  // Only show active sessions
+  const valetSessions = assignedSessions?.filter((s) => s.status !== "completed") ?? [];
 
   // Fetch retrieval queue
   const {
@@ -121,7 +137,8 @@ export default function ValetQueuePage() {
           ) : valetSessions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Car className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>لا توجد أحداث مفعلة فيها خدمة الفاليه</p>
+              <p>لا توجد أحداث مسجل فيها</p>
+              <p className="text-sm mt-1">تواصل مع المدير لتسجيلك في الأحداث</p>
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">

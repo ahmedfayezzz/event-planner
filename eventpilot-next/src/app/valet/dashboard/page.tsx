@@ -68,13 +68,17 @@ export default function ValetDashboardPage() {
     slot: "",
   });
 
-  // Fetch active sessions with valet enabled
-  const { data: sessions, isLoading: sessionsLoading } = api.session.getActive.useQuery(undefined, {
-    refetchInterval: 30000, // Refetch every 30 seconds
-  });
+  // Fetch assigned sessions for this valet employee
+  const { data: assignedSessions, isLoading: sessionsLoading } = api.valet.getMyAssignedSessions.useQuery(
+    undefined,
+    {
+      enabled: !!token,
+      refetchInterval: 30000, // Refetch every 30 seconds
+    }
+  );
 
-  // Filter sessions with valet enabled
-  const valetSessions = sessions?.filter((s) => s.valetEnabled) ?? [];
+  // Only show active sessions
+  const valetSessions = assignedSessions?.filter((s) => s.status !== "completed") ?? [];
 
   // Search guests
   const searchMutation = api.valet.searchGuests.useMutation({
@@ -181,7 +185,8 @@ export default function ValetDashboardPage() {
           ) : valetSessions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Car className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>لا توجد أحداث مفعلة فيها خدمة الفاليه</p>
+              <p>لا توجد أحداث مسجل فيها</p>
+              <p className="text-sm mt-1">تواصل مع المدير لتسجيلك في الأحداث</p>
             </div>
           ) : (
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
