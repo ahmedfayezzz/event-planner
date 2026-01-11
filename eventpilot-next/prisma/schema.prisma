@@ -67,6 +67,7 @@ model User {
   canAccessSettings   Boolean  @default(false)
   canAccessSuggestions Boolean @default(false)
   canAccessEmailCampaigns Boolean @default(false)
+  canAccessValet Boolean @default(false)
 
   // Password reset
   resetToken        String?
@@ -684,6 +685,12 @@ model ValetRecord {
   retrievalPriority    Int       @default(0) // Higher = more priority
   vehicleReadyAt       DateTime?
   retrievedAt          DateTime?
+
+  // Admin action tracking
+  lastAdminActionAt     DateTime?
+  lastAdminActionBy     String?    // Admin user ID
+  lastAdminActionType   String?    // "status_override", "vip_toggle", "details_update"
+  lastAdminActionReason String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

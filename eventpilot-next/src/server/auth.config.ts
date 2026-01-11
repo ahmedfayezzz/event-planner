@@ -23,6 +23,7 @@ export const authConfig = {
                 token.canAccessSettings = user.canAccessSettings;
                 token.canAccessSuggestions = user.canAccessSuggestions;
                 token.canAccessEmailCampaigns = user.canAccessEmailCampaigns;
+                token.canAccessValet = user.canAccessValet;
             }
 
             // Handle session update (e.g., after avatar, profile, or permission change)
@@ -61,6 +62,9 @@ export const authConfig = {
                 if (sessionUpdate.canAccessEmailCampaigns !== undefined) {
                     token.canAccessEmailCampaigns = sessionUpdate.canAccessEmailCampaigns;
                 }
+                if (sessionUpdate.canAccessValet !== undefined) {
+                    token.canAccessValet = sessionUpdate.canAccessValet;
+                }
                 if (sessionUpdate.role !== undefined) {
                     token.role = sessionUpdate.role;
                 }
@@ -83,6 +87,7 @@ export const authConfig = {
                 session.user.canAccessSettings = token.canAccessSettings as boolean;
                 session.user.canAccessSuggestions = token.canAccessSuggestions as boolean;
                 session.user.canAccessEmailCampaigns = token.canAccessEmailCampaigns as boolean;
+                session.user.canAccessValet = token.canAccessValet as boolean;
             }
             return session;
         },

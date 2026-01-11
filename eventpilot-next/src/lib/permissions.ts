@@ -16,6 +16,7 @@ export const ADMIN_PERMISSIONS = {
   settings: 'canAccessSettings',
   suggestions: 'canAccessSuggestions',
   emailCampaigns: 'canAccessEmailCampaigns',
+  valet: 'canAccessValet',
 } as const;
 
 export type PermissionKey = keyof typeof ADMIN_PERMISSIONS;
@@ -32,6 +33,7 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   settings: 'الإعدادات',
   suggestions: 'الاقتراحات',
   emailCampaigns: 'حملات البريد',
+  valet: 'خدمة الفاليه',
 };
 
 // User type that includes permission fields
@@ -47,6 +49,7 @@ export interface AdminUser {
   canAccessSettings: boolean;
   canAccessSuggestions: boolean;
   canAccessEmailCampaigns: boolean;
+  canAccessValet: boolean;
 }
 
 /**

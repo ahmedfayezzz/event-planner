@@ -51,7 +51,6 @@ import {
   UserCheck,
   Loader2,
   Pencil,
-  Trash2,
 } from "lucide-react";
 
 interface ValetEmployee {
@@ -177,13 +176,6 @@ export default function ValetEmployeesPage() {
     }
   };
 
-  const handleToggleActive = (employee: ValetEmployee) => {
-    updateMutation.mutate({
-      id: employee.id,
-      isActive: !employee.isActive,
-    });
-  };
-
   const handleConfirmedAction = () => {
     if (!confirmAction) return;
 
@@ -209,8 +201,8 @@ export default function ValetEmployeesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">موظفي الفاليه</h1>
-          <p className="text-muted-foreground">إدارة حسابات موظفي خدمة الفاليه</p>
+          <h2 className="text-lg font-semibold">إدارة الموظفين</h2>
+          <p className="text-sm text-muted-foreground">إنشاء وتعديل حسابات موظفي الفاليه</p>
         </div>
         <Button onClick={handleOpenCreate}>
           <Plus className="me-2 h-4 w-4" />

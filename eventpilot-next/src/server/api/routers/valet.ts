@@ -459,6 +459,155 @@ export const valetRouter = createTRPCRouter({
       return { sent: sentCount };
     }),
 
+  /**
+   * Get all valet records for a session (admin view)
+   */
+  getAllRecords: adminProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const records = await ctx.db.valetRecord.findMany({
+        where: { sessionId: input.sessionId },
+        orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+        include: {
+          parkedByEmployee: {
+            select: { id: true, name: true },
+          },
+        },
+      });
+
+      return records;
+    }),
+
+  /**
+   * Admin override: Change valet record status
+   */
+  adminOverrideStatus: adminProcedure
+    .input(
+      z.object({
+        valetRecordId: z.string(),
+        newStatus: z.enum(["expected", "parked", "requested", "ready", "retrieved"]),
+        reason: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const record = await ctx.db.valetRecord.findUnique({
+        where: { id: input.valetRecordId },
+      });
+
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Valet record not found",
+        });
+      }
+
+      // Set appropriate timestamps based on new status
+      const timestamps: Record<string, Date | null> = {};
+      if (input.newStatus === "parked" && !record.parkedAt) {
+        timestamps.parkedAt = new Date();
+      }
+      if (input.newStatus === "requested" && !record.retrievalRequestedAt) {
+        timestamps.retrievalRequestedAt = new Date();
+      }
+      if (input.newStatus === "ready" && !record.vehicleReadyAt) {
+        timestamps.vehicleReadyAt = new Date();
+      }
+      if (input.newStatus === "retrieved" && !record.retrievedAt) {
+        timestamps.retrievedAt = new Date();
+      }
+
+      const updated = await ctx.db.valetRecord.update({
+        where: { id: input.valetRecordId },
+        data: {
+          status: input.newStatus,
+          ...timestamps,
+          lastAdminActionAt: new Date(),
+          lastAdminActionBy: ctx.session.user.id,
+          lastAdminActionType: "status_override",
+          lastAdminActionReason: input.reason,
+        },
+      });
+
+      return updated;
+    }),
+
+  /**
+   * Admin override: Toggle VIP status
+   */
+  adminOverrideVip: adminProcedure
+    .input(
+      z.object({
+        valetRecordId: z.string(),
+        isVip: z.boolean(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const record = await ctx.db.valetRecord.findUnique({
+        where: { id: input.valetRecordId },
+      });
+
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Valet record not found",
+        });
+      }
+
+      const updated = await ctx.db.valetRecord.update({
+        where: { id: input.valetRecordId },
+        data: {
+          isVip: input.isVip,
+          retrievalPriority: input.isVip ? 100 : 0,
+          lastAdminActionAt: new Date(),
+          lastAdminActionBy: ctx.session.user.id,
+          lastAdminActionType: "vip_toggle",
+        },
+      });
+
+      return { isVip: updated.isVip };
+    }),
+
+  /**
+   * Admin: Update vehicle details
+   */
+  adminUpdateVehicleDetails: adminProcedure
+    .input(
+      z.object({
+        valetRecordId: z.string(),
+        vehicleMake: z.string().optional(),
+        vehicleModel: z.string().optional(),
+        vehicleColor: z.string().optional(),
+        vehiclePlate: z.string().optional(),
+        parkingSlot: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { valetRecordId, ...vehicleData } = input;
+
+      const record = await ctx.db.valetRecord.findUnique({
+        where: { id: valetRecordId },
+      });
+
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Valet record not found",
+        });
+      }
+
+      const updated = await ctx.db.valetRecord.update({
+        where: { id: valetRecordId },
+        data: {
+          ...vehicleData,
+          lastAdminActionAt: new Date(),
+          lastAdminActionBy: ctx.session.user.id,
+          lastAdminActionType: "details_update",
+        },
+      });
+
+      return updated;
+    }),
+
   // ============================================
   // Valet Employee Procedures
   // ============================================
