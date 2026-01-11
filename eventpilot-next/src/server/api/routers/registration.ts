@@ -137,6 +137,8 @@ export const registrationRouter = createTRPCRouter({
         sponsorCompanyName: z.string().optional(),
         // Invitation token for invite-only sessions
         inviteToken: z.string().optional(),
+        // Valet service
+        needsValet: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -309,6 +311,7 @@ export const registrationRouter = createTRPCRouter({
           userId: userSession.user.id,
           sessionId: input.sessionId,
           isApproved,
+          needsValet: session.valetEnabled ? input.needsValet : false,
         },
       });
 
@@ -433,6 +436,8 @@ export const registrationRouter = createTRPCRouter({
           )
           .optional()
           .default([]),
+        // Valet service
+        needsValet: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -665,6 +670,8 @@ export const registrationRouter = createTRPCRouter({
           sponsorshipTypes: input.wantsToSponsor ? input.sponsorshipTypes : [],
           sponsorshipOtherText: input.wantsToSponsor ? input.sponsorshipOtherText || null : null,
           sponsorType: input.wantsToSponsor ? input.sponsorType || null : null,
+          // Valet service
+          needsValet: session.valetEnabled ? input.needsValet : false,
         },
       });
 

@@ -960,3 +960,135 @@ export async function sendSponsorThankYouEmail(
     type: "sponsor_thank_you",
   });
 }
+
+// =============================================================================
+// VALET EMAIL FUNCTIONS
+// =============================================================================
+
+interface ValetParkedEmailParams {
+  to: string;
+  guestName: string;
+  eventName: string;
+  vehicleInfo: string;
+  parkingSlot: string;
+}
+
+/**
+ * Send email when vehicle is parked by valet
+ */
+export async function sendValetParkedEmail({
+  to,
+  guestName,
+  eventName,
+  vehicleInfo,
+  parkingSlot,
+}: ValetParkedEmailParams): Promise<boolean> {
+  const settings = await getEmailSettings();
+  const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+
+  const content = `
+    <h2 style="margin: 0 0 20px; color: #333;">تم ركن سيارتك</h2>
+    <p>مرحباً ${guestName}،</p>
+    <p>تم ركن سيارتك بنجاح من قِبَل فريق الفاليه.</p>
+    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+      <p style="margin: 5px 0;"><strong>السيارة:</strong> ${vehicleInfo || "غير محدد"}</p>
+      <p style="margin: 5px 0;"><strong>موقع الركن:</strong> ${parkingSlot}</p>
+    </div>
+    <p>عند رغبتك في استرجاع السيارة، يمكنك:</p>
+    <ul style="padding-right: 20px;">
+      <li>طلب الاسترجاع من صفحة تسجيلاتك في EventPilot</li>
+      <li>مسح رمز QR في منطقة الاستلام</li>
+    </ul>
+    <p>سيتم إخطارك عندما تكون سيارتك جاهزة للاستلام.</p>
+  `;
+
+  const html = createEmailTemplate({ content, settings });
+  const text = `مرحباً ${guestName}،\n\nتم ركن سيارتك بنجاح.\n\nالسيارة: ${vehicleInfo || "غير محدد"}\nموقع الركن: ${parkingSlot}\n\nعند رغبتك في استرجاع السيارة، قم بطلب الاسترجاع من التطبيق أو امسح رمز QR في منطقة الاستلام.\n\nفريق ${eventName}`;
+
+  return sendEmail({
+    to,
+    subject: `تم ركن سيارتك - ${eventName}`,
+    html,
+    text,
+    type: "valet_parked",
+  });
+}
+
+interface ValetReadyEmailParams {
+  to: string;
+  guestName: string;
+  eventName: string;
+  vehicleInfo: string;
+}
+
+/**
+ * Send email when vehicle is ready for pickup
+ */
+export async function sendValetReadyEmail({
+  to,
+  guestName,
+  eventName,
+  vehicleInfo,
+}: ValetReadyEmailParams): Promise<boolean> {
+  const settings = await getEmailSettings();
+
+  const content = `
+    <h2 style="margin: 0 0 20px; color: #333;">🚗 سيارتك جاهزة!</h2>
+    <p>مرحباً ${guestName}،</p>
+    <p>سيارتك جاهزة للاستلام!</p>
+    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+      <p style="margin: 5px 0;"><strong>السيارة:</strong> ${vehicleInfo || "غير محدد"}</p>
+      <p style="margin: 5px 0;"><strong>موقع الاستلام:</strong> منطقة الفاليه الرئيسية</p>
+    </div>
+    <p>يرجى التوجه إلى منطقة الاستلام في أقرب وقت ممكن.</p>
+  `;
+
+  const html = createEmailTemplate({ content, settings });
+  const text = `مرحباً ${guestName}،\n\nسيارتك جاهزة للاستلام!\n\nالسيارة: ${vehicleInfo || "غير محدد"}\nموقع الاستلام: منطقة الفاليه الرئيسية\n\nيرجى التوجه إلى منطقة الاستلام.\n\nفريق ${eventName}`;
+
+  return sendEmail({
+    to,
+    subject: `سيارتك جاهزة! - ${eventName}`,
+    html,
+    text,
+    type: "valet_ready",
+  });
+}
+
+interface ValetBroadcastEmailParams {
+  to: string;
+  guestName: string;
+  eventName: string;
+  message: string;
+}
+
+/**
+ * Send broadcast message to valet guests
+ */
+export async function sendValetBroadcastEmail({
+  to,
+  guestName,
+  eventName,
+  message,
+}: ValetBroadcastEmailParams): Promise<boolean> {
+  const settings = await getEmailSettings();
+
+  const content = `
+    <h2 style="margin: 0 0 20px; color: #333;">إشعار الفاليه</h2>
+    <p>مرحباً ${guestName}،</p>
+    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+      <p style="margin: 0; white-space: pre-wrap;">${message}</p>
+    </div>
+  `;
+
+  const html = createEmailTemplate({ content, settings });
+  const text = `مرحباً ${guestName}،\n\n${message}\n\nفريق ${eventName}`;
+
+  return sendEmail({
+    to,
+    subject: `تحديث الفاليه - ${eventName}`,
+    html,
+    text,
+    type: "valet_broadcast",
+  });
+}

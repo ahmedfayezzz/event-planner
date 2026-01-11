@@ -38,6 +38,7 @@ import { api } from "@/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CalendarDays,
+  Car,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -1601,6 +1602,78 @@ export function SessionForm({
                         />
                       )}
                     />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Valet Service Section */}
+              <AccordionItem
+                value="valet"
+                className="bg-white/70 backdrop-blur-xl border border-white/50 shadow-lg rounded-xl overflow-hidden"
+              >
+                <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-white/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Car className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="text-right">
+                      <h3 className="font-semibold text-base">خدمة الفاليه</h3>
+                      <p className="text-xs text-muted-foreground font-normal">
+                        إعدادات خدمة ركن السيارات
+                      </p>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
+                  <div className="space-y-4 pt-2">
+                    <Controller
+                      name="valetEnabled"
+                      control={control}
+                      render={({ field }) => (
+                        <ToggleCard
+                          id="valetEnabled-edit"
+                          label="تفعيل خدمة الفاليه"
+                          description="السماح للضيوف بطلب خدمة ركن السيارات"
+                          icon={Car}
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={isPending}
+                        />
+                      )}
+                    />
+
+                    {formValues.valetEnabled && (
+                      <div className="grid gap-4 md:grid-cols-2 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                        <div className="space-y-2">
+                          <Label htmlFor="valetLotCapacity">
+                            سعة موقف السيارات
+                            <HelpTooltip text="الحد الأقصى لعدد السيارات التي يمكن ركنها" />
+                          </Label>
+                          <Input
+                            id="valetLotCapacity"
+                            type="number"
+                            min="0"
+                            {...register("valetLotCapacity")}
+                            disabled={isPending}
+                          />
+                          <FieldError message={errors.valetLotCapacity?.message} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="valetRetrievalNotice">
+                            وقت إحضار السيارة (دقائق)
+                            <HelpTooltip text="المدة المتوقعة لإحضار السيارة بعد الطلب" />
+                          </Label>
+                          <Input
+                            id="valetRetrievalNotice"
+                            type="number"
+                            min="1"
+                            {...register("valetRetrievalNotice")}
+                            disabled={isPending}
+                          />
+                          <FieldError message={errors.valetRetrievalNotice?.message} />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </AccordionContent>
               </AccordionItem>

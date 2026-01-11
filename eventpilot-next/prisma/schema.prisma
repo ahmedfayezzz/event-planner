@@ -23,6 +23,14 @@ enum VisibilityStatus {
   archived
 }
 
+enum ValetStatus {
+  expected   // Guest indicated valet needed, not arrived yet
+  parked     // Vehicle is parked
+  requested  // Retrieval requested by guest
+  ready      // Vehicle at pickup area
+  retrieved  // Guest picked up vehicle
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String
@@ -141,6 +149,11 @@ model Session {
   // Banner image
   bannerUrl             String?
 
+  // Valet configuration
+  valetEnabled         Boolean @default(false)
+  valetLotCapacity     Int     @default(0)
+  valetRetrievalNotice Int     @default(5) // minutes
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -151,6 +164,7 @@ model Session {
   eventCaterings    EventCatering[]
   eventSponsorships EventSponsorship[]
   sessionGuests     SessionGuest[]
+  valetRecords      ValetRecord[]
 }
 
 model Registration {
@@ -212,10 +226,14 @@ model Registration {
   invitedByRegistration    Registration?  @relation("InvitedBy", fields: [invitedByRegistrationId], references: [id])
   invitedRegistrations     Registration[] @relation("InvitedBy")
 
+  // Valet parking
+  needsValet Boolean @default(false)
+
   // Relations
   user        User?       @relation(fields: [userId], references: [id])
   session     Session     @relation(fields: [sessionId], references: [id])
   attendance  Attendance?
+  valetRecord ValetRecord?
 
   @@unique([userId, sessionId])
 }
@@ -617,4 +635,65 @@ model Suggestion {
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+}
+
+// Valet Service Models
+
+model ValetEmployee {
+  id           String    @id @default(cuid())
+  name         String
+  username     String    @unique
+  passwordHash String
+  phone        String?
+  isActive     Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  valetRecords ValetRecord[] @relation("ParkedByEmployee")
+
+  @@index([username])
+  @@index([isActive])
+}
+
+model ValetRecord {
+  id             String      @id @default(cuid())
+  registrationId String      @unique
+  sessionId      String
+
+  // Denormalized guest info for quick access
+  guestName  String
+  guestPhone String?
+  isVip      Boolean @default(false)
+
+  // Vehicle details
+  vehicleMake  String?
+  vehicleModel String?
+  vehicleColor String?
+  vehiclePlate String?
+
+  // Parking info
+  parkingSlot String?
+  status      ValetStatus @default(expected)
+
+  // Timestamps
+  parkedAt             DateTime?
+  parkedByEmployeeId   String?
+  retrievalRequestedAt DateTime?
+  retrievalPriority    Int       @default(0) // Higher = more priority
+  vehicleReadyAt       DateTime?
+  retrievedAt          DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  registration     Registration   @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  session          Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  parkedByEmployee ValetEmployee? @relation("ParkedByEmployee", fields: [parkedByEmployeeId], references: [id])
+
+  @@index([sessionId])
+  @@index([status])
+  @@index([registrationId])
 }

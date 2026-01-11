@@ -14,7 +14,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, UtensilsCrossed } from "lucide-react";
+import { ArrowLeft, UtensilsCrossed, Car } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import "react-phone-number-input/style.css";
 import {
   SponsorshipSection,
@@ -37,6 +39,7 @@ export default function MemberRegisterPage({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [companions, setCompanions] = useState<Companion[]>([]);
+  const [needsValet, setNeedsValet] = useState(false);
   const [wantsToSponsor, setWantsToSponsor] = useState(false);
   const [sponsorshipTypes, setSponsorshipTypes] = useState<string[]>([]);
   const [sponsorshipOtherText, setSponsorshipOtherText] = useState("");
@@ -143,6 +146,7 @@ export default function MemberRegisterPage({
       await registerMutation.mutateAsync({
         sessionId,
         companions: validCompanions,
+        needsValet: session.valetEnabled ? needsValet : undefined,
         wantsToSponsor: isAlreadySponsor ? undefined : wantsToSponsor,
         sponsorshipTypes: isAlreadySponsor
           ? undefined
@@ -247,6 +251,38 @@ export default function MemberRegisterPage({
                       onChange={updateCompanion}
                       usePhoneInput
                     />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Valet Service Section - Only show if session has valet enabled */}
+              {session.valetEnabled && (
+                <Card className="bg-gradient-to-br from-white to-primary/3 backdrop-blur-xl border border-primary/10 shadow-lg rounded-xl md:rounded-2xl">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <span className="w-1.5 md:w-2 h-5 md:h-6 bg-accent rounded-full inline-block"></span>
+                      <Car className="w-5 h-5" />
+                      خدمة الفاليه
+                    </CardTitle>
+                    <CardDescription>
+                      تتوفر خدمة ركن السيارات في هذا الحدث
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox
+                        id="needsValet"
+                        checked={needsValet}
+                        onCheckedChange={(checked) => setNeedsValet(checked === true)}
+                        disabled={isSubmitting}
+                      />
+                      <Label
+                        htmlFor="needsValet"
+                        className="text-sm font-medium cursor-pointer"
+                      >
+                        أحتاج خدمة ركن السيارة (الفاليه)
+                      </Label>
+                    </div>
                   </CardContent>
                 </Card>
               )}
