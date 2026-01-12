@@ -2,9 +2,9 @@ import { SignJWT, jwtVerify } from "jose";
 
 // Valet JWT secret - should be set in environment
 const getValetSecret = () => {
-  const secret = process.env.VALET_JWT_SECRET ?? process.env.NEXTAUTH_SECRET;
+  const secret = process.env.AUTH_SECRET;
   if (!secret) {
-    throw new Error("VALET_JWT_SECRET or NEXTAUTH_SECRET must be set");
+    throw new Error("AUTH_SECRET must be set");
   }
   return new TextEncoder().encode(secret);
 };
