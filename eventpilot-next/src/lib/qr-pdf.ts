@@ -60,7 +60,7 @@ const FIXED_TEXTS = {
   sponsorsHeader: "الرعــاة",
   clickForLocation: "انقر للوصول",
   locationSublabel: "إلى الموقع",
-  agendaLink: "أجندة الحدث: (رابط)",
+  agendaLink: "أجندة الحدث: (انقر لمشاهدة الأجندة)",
 };
 
 // Layout configuration - relative spacing system
