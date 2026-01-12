@@ -49,6 +49,10 @@ export default function NewSessionPage() {
         slug: "",
         // Don't copy registration deadline
         registrationDeadline: "",
+        // Valet service - copy from source
+        valetEnabled: sourceSession.valetEnabled ?? false,
+        valetLotCapacity: String(sourceSession.valetLotCapacity ?? 0),
+        valetRetrievalNotice: String(sourceSession.valetRetrievalNotice ?? 5),
       }
     : undefined;
 
@@ -92,6 +96,10 @@ export default function NewSessionPage() {
         : undefined,
       // customConfirmationMessage field is commented out in form - removed from mutation
       locationUrl: formData.locationUrl || undefined,
+      // Valet service
+      valetEnabled: formData.valetEnabled,
+      valetLotCapacity: parseInt(formData.valetLotCapacity) || 0,
+      valetRetrievalNotice: parseInt(formData.valetRetrievalNotice) || 5,
     });
   };
 
