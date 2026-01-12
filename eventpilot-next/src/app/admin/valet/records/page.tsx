@@ -99,11 +99,12 @@ export default function ValetRecordsPage() {
   });
 
   // Fetch sessions with valet enabled
-  const { data: sessions, isLoading: sessionsLoading } = api.session.getActive.useQuery(undefined, {
-    refetchInterval: 30000,
-  });
+  const { data: sessionsData, isLoading: sessionsLoading } = api.session.listAdmin.useQuery(
+    { status: "open", limit: 50 },
+    { refetchInterval: 30000 }
+  );
 
-  const valetSessions = sessions?.filter((s) => s.valetEnabled) ?? [];
+  const valetSessions = sessionsData?.sessions?.filter((s) => s.valetEnabled) ?? [];
 
   // Fetch all valet records for the session
   const {
