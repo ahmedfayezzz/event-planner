@@ -1174,6 +1174,214 @@ async function main() {
   }
   console.log(`✅ Created ${eventSponsorships.length} event sponsorships`);
 
+  // ============== VALET EMPLOYEES ==============
+  const valetPassword = await bcrypt.hash("valet123", 10);
+
+  const valetEmployeesData = [
+    {
+      name: "محمد الفاليه",
+      username: "mohammed_valet",
+      phone: "+966550100001",
+    },
+    {
+      name: "أحمد الباركينج",
+      username: "ahmed_parking",
+      phone: "+966550100002",
+    },
+    {
+      name: "خالد السائق",
+      username: "khalid_driver",
+      phone: "+966550100003",
+    },
+  ];
+
+  const valetEmployees = [];
+  for (const empData of valetEmployeesData) {
+    const employee = await prisma.valetEmployee.upsert({
+      where: { username: empData.username },
+      update: {},
+      create: {
+        ...empData,
+        passwordHash: valetPassword,
+        isActive: true,
+      },
+    });
+    valetEmployees.push(employee);
+  }
+  console.log(`✅ Created ${valetEmployees.length} valet employees`);
+
+  // ============== ENABLE VALET ON SESSIONS ==============
+  // Enable valet on some upcoming and one completed session
+  const valetEnabledSessions = [];
+
+  // Enable on upcoming sessions (session 7, 8)
+  for (let i = 0; i < Math.min(2, upcomingSessions.length); i++) {
+    const session = await prisma.session.update({
+      where: { id: upcomingSessions[i].id },
+      data: {
+        valetEnabled: true,
+        valetLotCapacity: 30 + (i * 10), // 30, 40
+        valetRetrievalNotice: 5,
+      },
+    });
+    valetEnabledSessions.push(session);
+  }
+
+  // Enable on one completed session for history
+  if (completedSessions.length > 0) {
+    const session = await prisma.session.update({
+      where: { id: completedSessions[completedSessions.length - 1].id },
+      data: {
+        valetEnabled: true,
+        valetLotCapacity: 25,
+        valetRetrievalNotice: 5,
+      },
+    });
+    valetEnabledSessions.push(session);
+  }
+  console.log(`✅ Enabled valet on ${valetEnabledSessions.length} sessions`);
+
+  // ============== ASSIGN VALET EMPLOYEES TO SESSIONS ==============
+  let valetAssignments = 0;
+  for (const session of valetEnabledSessions) {
+    // Assign 2 employees to each valet-enabled session
+    for (let i = 0; i < Math.min(2, valetEmployees.length); i++) {
+      const employee = valetEmployees[i];
+
+      // Check if assignment already exists
+      const existingAssignment = await prisma.valetEmployeeSession.findUnique({
+        where: {
+          employeeId_sessionId: {
+            employeeId: employee.id,
+            sessionId: session.id,
+          },
+        },
+      });
+
+      if (!existingAssignment) {
+        await prisma.valetEmployeeSession.create({
+          data: {
+            employeeId: employee.id,
+            sessionId: session.id,
+            assignedBy: superAdmin.id,
+          },
+        });
+        valetAssignments++;
+      }
+    }
+  }
+  console.log(`✅ Created ${valetAssignments} valet employee assignments`);
+
+  // ============== VALET REGISTRATIONS & RECORDS ==============
+  // Update some registrations to need valet and create valet records
+  let valetRegistrations = 0;
+  let valetRecords = 0;
+
+  for (const session of valetEnabledSessions) {
+    // Get approved registrations for this session
+    const sessionRegistrations = await prisma.registration.findMany({
+      where: {
+        sessionId: session.id,
+        isApproved: true,
+        isRejected: false,
+        invitedByRegistrationId: null, // Only main registrations, not companions
+      },
+      include: {
+        user: true,
+      },
+      take: 8, // Up to 8 guests need valet per session
+    });
+
+    for (let i = 0; i < sessionRegistrations.length; i++) {
+      const reg = sessionRegistrations[i];
+
+      // Mark as needing valet
+      await prisma.registration.update({
+        where: { id: reg.id },
+        data: { needsValet: true },
+      });
+      valetRegistrations++;
+
+      // For completed sessions, create valet records with various statuses
+      if (session.status === "completed") {
+        const statuses = ["parked", "retrieved", "retrieved", "retrieved"] as const;
+        const status = statuses[i % statuses.length];
+
+        const carData = [
+          { make: "تويوتا", model: "كامري", color: "أبيض", plate: "أ ب ج 1234" },
+          { make: "لكزس", model: "ES", color: "أسود", plate: "س ع ن 5678" },
+          { make: "مرسيدس", model: "E-Class", color: "فضي", plate: "ر ص ط 9012" },
+          { make: "بي ام دبليو", model: "5 Series", color: "أزرق", plate: "ك ل م 3456" },
+          { make: "أودي", model: "A6", color: "رمادي", plate: "ف ق ه 7890" },
+          { make: "نيسان", model: "مكسيما", color: "بني", plate: "و ي ع 2345" },
+          { make: "هوندا", model: "أكورد", color: "أحمر", plate: "ش ث خ 6789" },
+          { make: "جينيسيس", model: "G80", color: "أخضر", plate: "ذ ض ظ 0123" },
+        ];
+        const car = carData[i % carData.length];
+
+        await prisma.valetRecord.create({
+          data: {
+            registrationId: reg.id,
+            sessionId: session.id,
+            guestName: reg.user?.name ?? reg.guestName ?? "ضيف",
+            guestPhone: reg.user?.phone ?? reg.guestPhone,
+            status,
+            vehicleMake: car.make,
+            vehicleModel: car.model,
+            vehicleColor: car.color,
+            vehiclePlate: car.plate,
+            parkingSlot: `A-${10 + i}`,
+            parkedAt: new Date(session.date.getTime() + 15 * 60 * 1000), // 15 min after session
+            parkedByEmployeeId: valetEmployees[i % valetEmployees.length].id,
+            retrievalRequestedAt: status !== "parked" ? new Date(session.date.getTime() + 2 * 60 * 60 * 1000) : null,
+            vehicleReadyAt: status === "retrieved" ? new Date(session.date.getTime() + 2.1 * 60 * 60 * 1000) : null,
+            retrievedAt: status === "retrieved" ? new Date(session.date.getTime() + 2.2 * 60 * 60 * 1000) : null,
+            isVip: i < 2, // First 2 are VIP
+            retrievalPriority: i < 2 ? 100 : 0,
+          },
+        });
+        valetRecords++;
+      }
+
+      // For upcoming sessions, create some expected/parked records
+      if (session.status === "open" && i < 4) {
+        const statuses = ["expected", "expected", "parked", "requested"] as const;
+        const status = statuses[i % statuses.length];
+
+        const carData = [
+          { make: "تويوتا", model: "لاندكروزر", color: "أبيض", plate: "ن هـ و 1111" },
+          { make: "شيفروليه", model: "تاهو", color: "أسود", plate: "ب ت ث 2222" },
+          { make: "جي ام سي", model: "يوكن", color: "رمادي", plate: "ج ح خ 3333" },
+          { make: "فورد", model: "إكسبلورر", color: "أزرق", plate: "د ذ ر 4444" },
+        ];
+        const car = carData[i];
+
+        await prisma.valetRecord.create({
+          data: {
+            registrationId: reg.id,
+            sessionId: session.id,
+            guestName: reg.user?.name ?? reg.guestName ?? "ضيف",
+            guestPhone: reg.user?.phone ?? reg.guestPhone,
+            status,
+            vehicleMake: status !== "expected" ? car.make : null,
+            vehicleModel: status !== "expected" ? car.model : null,
+            vehicleColor: status !== "expected" ? car.color : null,
+            vehiclePlate: status !== "expected" ? car.plate : null,
+            parkingSlot: status !== "expected" ? `B-${i + 1}` : null,
+            parkedAt: status !== "expected" ? new Date() : null,
+            parkedByEmployeeId: status !== "expected" ? valetEmployees[0].id : null,
+            retrievalRequestedAt: status === "requested" ? new Date() : null,
+            isVip: i === 0,
+            retrievalPriority: i === 0 ? 100 : 0,
+          },
+        });
+        valetRecords++;
+      }
+    }
+  }
+  console.log(`✅ Created ${valetRegistrations} valet registrations`);
+  console.log(`✅ Created ${valetRecords} valet records`);
+
   // ============== SUMMARY ==============
   console.log("\n" + "=".repeat(50));
   console.log("📊 Database Seeding Summary:");
@@ -1202,6 +1410,11 @@ async function main() {
   console.log(`📝 User notes: ${totalNotes}`);
   console.log(`🤝 Sponsors: ${sponsors.length}`);
   console.log(`🎪 Event sponsorships: ${eventSponsorships.length}`);
+  console.log(`🚗 Valet employees: ${valetEmployees.length}`);
+  console.log(`🅿️  Valet-enabled sessions: ${valetEnabledSessions.length}`);
+  console.log(`📋 Valet assignments: ${valetAssignments}`);
+  console.log(`🎫 Valet registrations: ${valetRegistrations}`);
+  console.log(`🚙 Valet records: ${valetRecords}`);
   console.log("=".repeat(50));
   console.log("\n📋 Login Credentials:");
   console.log("─".repeat(50));
@@ -1210,6 +1423,12 @@ async function main() {
     "Admin:        moderator@example.com / admin123 (limited: dashboard, sessions, checkin)"
   );
   console.log("Users:        [any user email] / password123");
+  console.log("─".repeat(50));
+  console.log("\n🚗 Valet Portal Login (/valet/login):");
+  console.log("─".repeat(50));
+  console.log("Valet 1:      mohammed_valet / valet123");
+  console.log("Valet 2:      ahmed_parking / valet123");
+  console.log("Valet 3:      khalid_driver / valet123");
   console.log("─".repeat(50));
   console.log("\n🎉 Seeding completed successfully!");
 }
