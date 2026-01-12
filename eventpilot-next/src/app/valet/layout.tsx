@@ -1,7 +1,7 @@
 "use client";
 
 import { Inter } from "next/font/google";
-import { TRPCReactProvider } from "@/components/providers/trpc-provider";
+import { TRPCProvider } from "@/components/providers/trpc-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -146,7 +146,7 @@ export default function ValetLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className={cn(inter.className, "min-h-screen bg-gray-50")}>
-        <TRPCReactProvider>
+        <TRPCProvider>
           {!isLoginPage && (
             <ValetHeader
               employee={employee}
@@ -168,7 +168,7 @@ export default function ValetLayout({
             )}
           </main>
           <Toaster position="top-center" richColors />
-        </TRPCReactProvider>
+        </TRPCProvider>
       </body>
     </html>
   );
