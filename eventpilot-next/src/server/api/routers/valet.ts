@@ -362,6 +362,52 @@ export const valetRouter = createTRPCRouter({
   }),
 
   /**
+   * Get session info for valet employee (verifies assignment)
+   */
+  getSessionForValet: valetProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      // Verify this employee is assigned to this session
+      const assignment = await ctx.db.valetEmployeeSession.findUnique({
+        where: {
+          employeeId_sessionId: {
+            employeeId: ctx.valetEmployee.id,
+            sessionId: input.sessionId,
+          },
+        },
+        include: {
+          session: {
+            select: {
+              id: true,
+              title: true,
+              date: true,
+              status: true,
+              valetEnabled: true,
+              valetLotCapacity: true,
+              valetRetrievalNotice: true,
+            },
+          },
+        },
+      });
+
+      if (!assignment) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "لم يتم العثور على الحدث أو لست مسجلاً له",
+        });
+      }
+
+      if (!assignment.session.valetEnabled) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "خدمة الفاليه غير مفعلة لهذا الحدث",
+        });
+      }
+
+      return assignment.session;
+    }),
+
+  /**
    * Update session valet configuration
    */
   updateSessionConfig: adminProcedure
@@ -735,7 +781,7 @@ export const valetRouter = createTRPCRouter({
   // ============================================
 
   /**
-   * Search guests by name for a session
+   * Search guests by name, phone, or email for a session
    */
   searchGuests: valetProcedure
     .input(
@@ -752,6 +798,7 @@ export const valetRouter = createTRPCRouter({
           isApproved: true,
           isRejected: false,
           OR: [
+            // Search by name (user or guest)
             {
               user: {
                 name: { contains: input.query, mode: "insensitive" },
@@ -759,6 +806,24 @@ export const valetRouter = createTRPCRouter({
             },
             {
               guestName: { contains: input.query, mode: "insensitive" },
+            },
+            // Search by phone (user or guest)
+            {
+              user: {
+                phone: { contains: input.query, mode: "insensitive" },
+              },
+            },
+            {
+              guestPhone: { contains: input.query, mode: "insensitive" },
+            },
+            // Search by email (user or guest)
+            {
+              user: {
+                email: { contains: input.query, mode: "insensitive" },
+              },
+            },
+            {
+              guestEmail: { contains: input.query, mode: "insensitive" },
             },
           ],
         },
@@ -768,17 +833,19 @@ export const valetRouter = createTRPCRouter({
               id: true,
               name: true,
               phone: true,
+              email: true,
             },
           },
           valetRecord: true,
         },
-        take: 10,
+        take: 15,
       });
 
       return registrations.map((reg) => ({
         registrationId: reg.id,
         name: reg.user?.name ?? reg.guestName ?? "Unknown",
         phone: reg.user?.phone ?? reg.guestPhone,
+        email: reg.user?.email ?? reg.guestEmail,
         valetStatus: reg.valetRecord?.status ?? null,
         isVip: reg.valetRecord?.isVip ?? false,
       }));
@@ -789,7 +856,7 @@ export const valetRouter = createTRPCRouter({
    */
   getGuestByQR: valetProcedure
     .input(z.object({ qrData: z.string() }))
-    .query(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       // QR data format: "checkin:{registrationId}" or just registrationId
       let registrationId = input.qrData;
       if (input.qrData.startsWith("checkin:")) {
