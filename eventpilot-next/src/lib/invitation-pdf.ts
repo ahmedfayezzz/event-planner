@@ -185,6 +185,19 @@ export function calculateFitFontSize(
 }
 
 /**
+ * Preserve bidirectional text order for mixed Arabic/English text.
+ * Wraps text with Unicode RLI (Right-to-Left Isolate) to ensure
+ * the visual order matches how the text was typed.
+ */
+export function preserveBidiOrder(text: string): string {
+  // U+2067: RLI (Right-to-Left Isolate) - establishes RTL context
+  // U+2069: PDI (Pop Directional Isolate) - ends the isolate
+  const RLI = "\u2067";
+  const PDI = "\u2069";
+  return `${RLI}${text}${PDI}`;
+}
+
+/**
  * Render Arabic text to a PNG buffer using canvas with word wrapping
  */
 export function renderArabicTextToImage(
@@ -205,6 +218,9 @@ export function renderArabicTextToImage(
     maxWidth = 800,
   } = options;
 
+  // Preserve bidirectional text order for mixed Arabic/English
+  const processedText = preserveBidiOrder(text);
+
   // Create a temporary canvas to measure text
   const measureCanvas = createCanvas(1, 1);
   const measureCtx = measureCanvas.getContext("2d");
@@ -212,7 +228,7 @@ export function renderArabicTextToImage(
   measureCtx.font = fontString;
 
   // Split text into words and wrap lines
-  const words = text.split(" ");
+  const words = processedText.split(" ");
   const lines: string[] = [];
   let currentLine = "";
 
