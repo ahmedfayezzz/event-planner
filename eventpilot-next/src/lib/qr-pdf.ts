@@ -60,6 +60,7 @@ const FIXED_TEXTS = {
   sponsorsHeader: "الرعــاة",
   clickForLocation: "انقر للوصول",
   locationSublabel: "إلى الموقع",
+  agendaLink: "عرض الأجندة",
 };
 
 // Layout configuration - relative spacing system
@@ -80,7 +81,8 @@ const LAYOUT = {
     afterGuestTitle: 15, // gap after "ضيف هذه الثلوثية"
     afterSessionGuests: 25, // gap after guest names
     afterSimpleGreeting: 18, // gap after "حياكم الله"
-    afterQrCode: -12, // gap after QR code
+    afterQrCode: 10, // gap after QR code
+    afterAgendaLink: 8, // gap after agenda link
     afterIcons: 22, // gap after info icons row
   },
 };
@@ -96,7 +98,11 @@ const FONT_SIZES = {
   sessionGuests: 24,
   iconLabel: 32,
   sponsorsHeader: 65,
+  agendaLink: 28,
 };
+
+// Fixed agenda URL
+const AGENDA_URL = "https://example.com/agenda.jpg"; // TODO: Replace with actual agenda image URL
 
 export interface BrandedQRPdfOptions {
   sessionTitle: string;
@@ -415,7 +421,67 @@ export async function generateBrandedQRPdf(
     currentY -= qrSize / 2 + spacing.afterQrCode;
 
     // ====================================
-    // 9. DRAW INFO ICONS ROW (no background)
+    // 9. DRAW AGENDA LINK (below QR code)
+    // ====================================
+    const agendaLinkImageData = renderArabicTextToImage(
+      FIXED_TEXTS.agendaLink,
+      {
+        fontFamily: "AbarBold",
+        fontSize: FONT_SIZES.agendaLink,
+        color: ACCENT_COLOR,
+      }
+    );
+    const agendaLinkImage = await pdfDoc.embedPng(agendaLinkImageData.buffer);
+    currentY -= agendaLinkImageData.height / 2;
+    const agendaLinkY = currentY - agendaLinkImageData.height / 2;
+    const agendaLinkX = (width - agendaLinkImageData.width) / 2;
+
+    page.drawImage(agendaLinkImage, {
+      x: agendaLinkX,
+      y: agendaLinkY,
+      width: agendaLinkImageData.width,
+      height: agendaLinkImageData.height,
+    });
+
+    // Add hyperlink to agenda
+    const agendaLinkWidth = agendaLinkImageData.width + 20;
+    const agendaLinkHeight = agendaLinkImageData.height + 10;
+    const agendaLinkRectX = agendaLinkX - 10;
+    const agendaLinkRectY = agendaLinkY - 5;
+
+    const agendaActionDict = pdfDoc.context.obj({
+      Type: "Action",
+      S: "URI",
+      URI: PDFString.of(AGENDA_URL),
+    });
+
+    const agendaLinkAnnotation = pdfDoc.context.obj({
+      Type: "Annot",
+      Subtype: "Link",
+      Rect: [
+        agendaLinkRectX,
+        agendaLinkRectY,
+        agendaLinkRectX + agendaLinkWidth,
+        agendaLinkRectY + agendaLinkHeight,
+      ],
+      Border: [0, 0, 0],
+      A: agendaActionDict,
+    });
+
+    const agendaExistingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+    if (agendaExistingAnnots) {
+      agendaExistingAnnots.push(agendaLinkAnnotation);
+    } else {
+      page.node.set(
+        PDFName.of("Annots"),
+        pdfDoc.context.obj([agendaLinkAnnotation])
+      );
+    }
+
+    currentY -= agendaLinkImageData.height / 2 + spacing.afterAgendaLink;
+
+    // ====================================
+    // 10. DRAW INFO ICONS ROW (no background)
     // ====================================
     const iconSize = 120;
     const iconFontSize = FONT_SIZES.iconLabel;
@@ -527,7 +593,7 @@ export async function generateBrandedQRPdf(
     currentY -= maxIconHeight + spacing.afterIcons;
 
     // ====================================
-    // 10. DRAW SPONSORS SECTION (with its own container)
+    // 11. DRAW SPONSORS SECTION (with its own container)
     // ====================================
     if (options.sponsors && options.sponsors.length > 0) {
       // Filter sponsors that have logos or names
