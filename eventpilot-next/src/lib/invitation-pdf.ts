@@ -41,7 +41,7 @@ export const ACCENT_COLOR = "#cca890"; // Golden accent for session title and gr
 // Fixed Arabic texts for PDF content
 const FIXED_TEXTS = {
   mainTitle: "دعوة خاصة",
-  subtitle: "ندعـوكم لحضور",
+  subtitle: "ندعـوكم لحضور ثلوثية الأعمال في شتوية لفت - بعنوان",
   description:
     "حيث يجتمع نخبة من رواد الأعمال في لقاء يحول الثلوثية إلى مساحة تبنى فيها العلاقات، وتنضج فيها الفرص",
   greeting: "حياكم الله في شتوية لَفت",

@@ -50,7 +50,7 @@ if (fsSync.existsSync(abarRegularPath)) {
 // Fixed Arabic texts for QR PDF content
 const FIXED_TEXTS = {
   mainTitle: "دعوة خاصة",
-  subtitle: "ندعـوكم لحضور",
+  subtitle: "ندعـوكم لحضور ثلوثية الأعمال في شتوية لفت - بعنوان",
   description:
     "حيث يجتمع نخبة من رواد الأعمال في لقاء يحول الثلوثية إلى مساحة تبنى فيها العلاقات، وتنضج فيها الفرص",
   greetingPrefix: "حياك الله",
