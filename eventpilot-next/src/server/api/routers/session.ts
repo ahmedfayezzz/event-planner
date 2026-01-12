@@ -872,6 +872,32 @@ export const sessionRouter = createTRPCRouter({
     }),
 
   /**
+   * Get active sessions (for admin valet and other admin features)
+   * Returns sessions that are not completed/archived
+   */
+  getActive: adminProcedure.query(async ({ ctx }) => {
+    const sessions = await ctx.db.session.findMany({
+      where: {
+        status: { not: "completed" },
+        visibilityStatus: { not: "archived" },
+      },
+      orderBy: { date: "desc" },
+      select: {
+        id: true,
+        title: true,
+        date: true,
+        status: true,
+        visibilityStatus: true,
+        valetEnabled: true,
+        valetLotCapacity: true,
+        location: true,
+      },
+    });
+
+    return sessions;
+  }),
+
+  /**
    * List all sessions for admin (includes all visibility statuses)
    */
   listAdmin: adminProcedure
