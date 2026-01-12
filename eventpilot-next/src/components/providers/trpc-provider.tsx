@@ -30,6 +30,17 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
         httpBatchLink({
           url: `${getBaseUrl()}/api/trpc`,
           transformer: superjson,
+          headers() {
+            const headers: Record<string, string> = {};
+            // Add valet token if available (for valet employee authentication)
+            if (typeof window !== "undefined") {
+              const valetToken = localStorage.getItem("valet-token");
+              if (valetToken) {
+                headers["x-valet-token"] = valetToken;
+              }
+            }
+            return headers;
+          },
         }),
       ],
     })
