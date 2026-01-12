@@ -60,7 +60,7 @@ const FIXED_TEXTS = {
   sponsorsHeader: "الرعــاة",
   clickForLocation: "انقر للوصول",
   locationSublabel: "إلى الموقع",
-  agendaLink: "عرض الأجندة",
+  agendaLink: "أجندة الحدث: (رابط)",
 };
 
 // Layout configuration - relative spacing system
@@ -94,15 +94,16 @@ const FONT_SIZES = {
   sessionTitle: 90,
   description: 34,
   greeting: 65,
-  simpleGreeting: 50,
+  simpleGreeting: 38,
   sessionGuests: 24,
   iconLabel: 32,
   sponsorsHeader: 65,
-  agendaLink: 28,
+  agendaLink: 36,
 };
 
 // Fixed agenda URL
-const AGENDA_URL = "https://example.com/agenda.jpg"; // TODO: Replace with actual agenda image URL
+const AGENDA_URL =
+  "https://drive.google.com/file/d/1fhsyjHCS1HS3NiBENapwvnHP_-DJaGcu/view?usp=drive_link"; // TODO: Replace with actual agenda image URL
 
 export interface BrandedQRPdfOptions {
   sessionTitle: string;
@@ -468,7 +469,10 @@ export async function generateBrandedQRPdf(
       A: agendaActionDict,
     });
 
-    const agendaExistingAnnots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+    const agendaExistingAnnots = page.node.lookup(
+      PDFName.of("Annots"),
+      PDFArray
+    );
     if (agendaExistingAnnots) {
       agendaExistingAnnots.push(agendaLinkAnnotation);
     } else {
