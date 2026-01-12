@@ -744,7 +744,7 @@ export const valetRouter = createTRPCRouter({
         query: z.string().min(1),
       })
     )
-    .query(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       const registrations = await ctx.db.registration.findMany({
         where: {
           sessionId: input.sessionId,
