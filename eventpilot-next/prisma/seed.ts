@@ -1311,7 +1311,7 @@ async function main() {
     },
   ];
 
-  const valetEmployees = [];
+  const valetEmployees: Awaited<ReturnType<typeof prisma.valetEmployee.upsert>>[] = [];
   for (const empData of valetEmployeesData) {
     const employee = await prisma.valetEmployee.upsert({
       where: { username: empData.username },
@@ -1328,7 +1328,7 @@ async function main() {
 
   // ============== ENABLE VALET ON SESSIONS ==============
   // Enable valet on some upcoming and one completed session
-  const valetEnabledSessions = [];
+  const valetEnabledSessions: Awaited<ReturnType<typeof prisma.session.update>>[] = [];
 
   // Enable on upcoming sessions (session 7, 8)
   for (let i = 0; i < Math.min(2, upcomingSessions.length); i++) {
