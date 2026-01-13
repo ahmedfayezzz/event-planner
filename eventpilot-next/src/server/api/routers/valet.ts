@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import {
   createTRPCRouter,
   publicProcedure,
@@ -1003,6 +1004,9 @@ export const valetRouter = createTRPCRouter({
       });
       const nextTicketNumber = (lastTicket?.ticketNumber ?? -1) + 1;
 
+      // Generate unique tracking token for public access
+      const trackingToken = crypto.randomUUID();
+
       let valetRecord;
 
       if (registration.valetRecord) {
@@ -1018,6 +1022,7 @@ export const valetRouter = createTRPCRouter({
           where: { id: registration.valetRecord.id },
           data: {
             ticketNumber: registration.valetRecord.ticketNumber ?? nextTicketNumber,
+            trackingToken: registration.valetRecord.trackingToken ?? trackingToken,
             vehicleMake: input.vehicleMake,
             vehicleModel: input.vehicleModel,
             vehicleColor: input.vehicleColor,
@@ -1037,6 +1042,7 @@ export const valetRouter = createTRPCRouter({
             guestName,
             guestPhone,
             ticketNumber: nextTicketNumber,
+            trackingToken,
             vehicleMake: input.vehicleMake,
             vehicleModel: input.vehicleModel,
             vehicleColor: input.vehicleColor,
@@ -1049,8 +1055,11 @@ export const valetRouter = createTRPCRouter({
         });
       }
 
-      // Send notification email
+      // Send notification email with tracking link
       if (guestEmail) {
+        const baseUrl = process.env.BASE_URL ?? "http://localhost:3000";
+        const trackingUrl = `${baseUrl}/valet/track/${valetRecord.trackingToken}`;
+
         try {
           await sendValetParkedEmail({
             to: guestEmail,
@@ -1058,6 +1067,8 @@ export const valetRouter = createTRPCRouter({
             eventName: registration.session.title,
             vehicleInfo: `${input.vehicleColor ?? ""} ${input.vehicleMake ?? ""} ${input.vehicleModel ?? ""}`.trim(),
             parkingSlot: input.parkingSlot ?? "N/A",
+            ticketNumber: valetRecord.ticketNumber ?? undefined,
+            trackingUrl,
           });
         } catch (error) {
           console.error("Failed to send valet parked email:", error);
@@ -1303,7 +1314,7 @@ export const valetRouter = createTRPCRouter({
     }),
 
   /**
-   * Guest requests car retrieval
+   * Guest requests car retrieval (by registration ID - legacy)
    */
   requestRetrieval: publicProcedure
     .input(z.object({ registrationId: z.string() }))
@@ -1351,6 +1362,155 @@ export const valetRouter = createTRPCRouter({
 
       return {
         status: updated.status,
+        message: "تم طلب استرجاع السيارة",
+      };
+    }),
+
+  /**
+   * Get valet status by tracking token (public)
+   */
+  getStatusByToken: publicProcedure
+    .input(z.object({ token: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const record = await ctx.db.valetRecord.findUnique({
+        where: { trackingToken: input.token },
+        include: {
+          session: {
+            select: {
+              id: true,
+              title: true,
+              date: true,
+              valetRetrievalNotice: true,
+            },
+          },
+        },
+      });
+
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "INVALID_TOKEN",
+        });
+      }
+
+      // Get queue position if in retrieval queue
+      let queuePosition: number | null = null;
+      let estimatedWaitMinutes: number | null = null;
+
+      if (record.status === "requested") {
+        // Count how many cars are ahead in the queue
+        const aheadInQueue = await ctx.db.valetRecord.count({
+          where: {
+            sessionId: record.sessionId,
+            status: "requested",
+            OR: [
+              // Higher priority
+              { retrievalPriority: { gt: record.retrievalPriority } },
+              // Same priority but earlier request
+              {
+                retrievalPriority: record.retrievalPriority,
+                retrievalRequestedAt: { lt: record.retrievalRequestedAt },
+              },
+            ],
+          },
+        });
+
+        queuePosition = aheadInQueue + 1;
+        // Estimate ~3-5 minutes per car (use retrieval notice as base)
+        estimatedWaitMinutes = (aheadInQueue + 1) * (record.session.valetRetrievalNotice || 5);
+      }
+
+      return {
+        status: record.status,
+        guestName: record.guestName,
+        ticketNumber: record.ticketNumber,
+        vehicleMake: record.vehicleMake,
+        vehicleModel: record.vehicleModel,
+        vehicleColor: record.vehicleColor,
+        vehiclePlate: record.vehiclePlate,
+        parkingSlot: record.parkingSlot,
+        isVip: record.isVip,
+        parkedAt: record.parkedAt,
+        retrievalRequestedAt: record.retrievalRequestedAt,
+        vehicleReadyAt: record.vehicleReadyAt,
+        retrievedAt: record.retrievedAt,
+        queuePosition,
+        estimatedWaitMinutes,
+        session: {
+          title: record.session.title,
+          date: record.session.date,
+        },
+      };
+    }),
+
+  /**
+   * Request retrieval by tracking token (public)
+   */
+  requestRetrievalByToken: publicProcedure
+    .input(z.object({ token: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const record = await ctx.db.valetRecord.findUnique({
+        where: { trackingToken: input.token },
+      });
+
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "INVALID_TOKEN",
+        });
+      }
+
+      if (record.status === "expected") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "NOT_PARKED",
+        });
+      }
+
+      if (record.status === "requested" || record.status === "ready") {
+        // Already in queue, get position
+        const aheadInQueue = await ctx.db.valetRecord.count({
+          where: {
+            sessionId: record.sessionId,
+            status: "requested",
+            OR: [
+              { retrievalPriority: { gt: record.retrievalPriority } },
+              {
+                retrievalPriority: record.retrievalPriority,
+                retrievalRequestedAt: { lt: record.retrievalRequestedAt },
+              },
+            ],
+          },
+        });
+
+        return {
+          status: record.status,
+          ticketNumber: record.ticketNumber,
+          queuePosition: aheadInQueue + 1,
+          message: "السيارة في طابور الاسترجاع",
+        };
+      }
+
+      if (record.status === "retrieved") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "ALREADY_RETRIEVED",
+        });
+      }
+
+      const updated = await ctx.db.valetRecord.update({
+        where: { id: record.id },
+        data: {
+          status: "requested",
+          retrievalRequestedAt: new Date(),
+          retrievalPriority: record.isVip ? 100 : 0,
+        },
+      });
+
+      return {
+        status: updated.status,
+        ticketNumber: updated.ticketNumber,
+        queuePosition: 1,
         message: "تم طلب استرجاع السيارة",
       };
     }),
