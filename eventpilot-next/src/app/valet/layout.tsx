@@ -96,7 +96,13 @@ export default function ValetLayout({
     // Redirect logic
     if (!loading) {
       const isLoginPage = pathname === "/valet/login";
+      const isPublicTrackingPage = pathname.startsWith("/valet/track/");
       const hasToken = localStorage.getItem("valet-token");
+
+      // Skip auth for public tracking pages
+      if (isPublicTrackingPage) {
+        return;
+      }
 
       if (!hasToken && !isLoginPage) {
         router.push("/valet/login");
@@ -135,7 +141,9 @@ export default function ValetLayout({
 
   const isLoginPage = pathname === "/valet/login";
   const isHomePage = pathname === "/valet";
-  const showHomeButton = !isLoginPage && !isHomePage;
+  const isPublicTrackingPage = pathname.startsWith("/valet/track/");
+  const showHomeButton = !isLoginPage && !isHomePage && !isPublicTrackingPage;
+  const showHeader = !isLoginPage && !isPublicTrackingPage;
 
   return (
     <html lang="ar" dir="rtl">
@@ -147,7 +155,7 @@ export default function ValetLayout({
       </head>
       <body className={cn(inter.className, "min-h-screen bg-gray-50")}>
         <TRPCProvider>
-          {!isLoginPage && (
+          {showHeader && (
             <ValetHeader
               employee={employee}
               onLogout={handleLogout}
@@ -155,7 +163,7 @@ export default function ValetLayout({
             />
           )}
           <main className={cn(
-            isLoginPage ? "" : "container mx-auto px-4 py-4",
+            (isLoginPage || isPublicTrackingPage) ? "" : "container mx-auto px-4 py-4",
             "min-h-[calc(100vh-56px)]"
           )}>
             {/* Pass handleLoginSuccess to login page */}

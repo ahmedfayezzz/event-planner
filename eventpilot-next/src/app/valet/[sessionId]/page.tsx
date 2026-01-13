@@ -21,11 +21,9 @@ import { toast } from "sonner";
 import {
   Car,
   Search,
-  QrCode,
   Loader2,
   User,
   Phone,
-  Mail,
   ParkingSquare,
   CheckCircle,
   Crown,
@@ -35,8 +33,10 @@ import {
   Camera,
   X,
   ChevronRight,
+  Ticket,
+  CarFront,
 } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 import Link from "next/link";
 
@@ -71,6 +71,7 @@ interface QueueItem {
   guestName: string;
   guestPhone: string | null;
   isVip: boolean;
+  ticketNumber: number | null;
   vehicleMake: string | null;
   vehicleModel: string | null;
   vehicleColor: string | null;
@@ -89,6 +90,8 @@ export default function ValetSessionPage() {
   const [activeTab, setActiveTab] = useState("checkin");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<GuestResult[]>([]);
+  const [collectionSearchQuery, setCollectionSearchQuery] = useState("");
+  const [collectionSearchResults, setCollectionSearchResults] = useState<GuestResult[]>([]);
   const [parkDialog, setParkDialog] = useState<ParkDialogData | null>(null);
   const [vehicleInfo, setVehicleInfo] = useState({
     make: "",
@@ -98,7 +101,9 @@ export default function ValetSessionPage() {
     slot: "",
   });
   const [showScanner, setShowScanner] = useState(false);
+  const [showCollectionScanner, setShowCollectionScanner] = useState(false);
   const [scannerError, setScannerError] = useState<string | null>(null);
+  const [scanMode, setScanMode] = useState<"checkin" | "collection">("checkin");
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -118,7 +123,7 @@ export default function ValetSessionPage() {
     { enabled: !!sessionId && activeTab === "queue", refetchInterval: 5000 }
   );
 
-  // Search guests
+  // Search guests for check-in
   const searchMutation = api.valet.searchGuests.useMutation({
     onSuccess: (data) => {
       setSearchResults(data);
@@ -131,16 +136,42 @@ export default function ValetSessionPage() {
     },
   });
 
-  // Get guest by QR
+  // Search guests for collection
+  const collectionSearchMutation = api.valet.searchGuests.useMutation({
+    onSuccess: (data) => {
+      setCollectionSearchResults(data);
+      if (data.length === 0) {
+        toast.info("لم يتم العثور على نتائج");
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || "خطأ في البحث");
+    },
+  });
+
+  // Get guest by QR for check-in
   const qrMutation = api.valet.getGuestByQR.useMutation({
     onSuccess: (data) => {
       stopScanner();
-      setParkDialog({
-        registrationId: data.registrationId,
-        sessionId: data.sessionId,
-        name: data.name,
-        phone: data.phone ?? null,
-      });
+      if (scanMode === "checkin") {
+        setParkDialog({
+          registrationId: data.registrationId,
+          sessionId: data.sessionId,
+          name: data.name,
+          phone: data.phone ?? null,
+        });
+      } else {
+        // Collection mode - request retrieval
+        if (data.valetRecord?.status === "parked") {
+          requestRetrievalMutation.mutate({ registrationId: data.registrationId });
+        } else if (data.valetRecord?.status === "requested" || data.valetRecord?.status === "ready") {
+          toast.info(`السيارة في طابور الاسترجاع - تذكرة #${data.valetRecord.ticketNumber ?? "N/A"}`);
+        } else if (data.valetRecord?.status === "retrieved") {
+          toast.error("تم استلام السيارة مسبقاً");
+        } else {
+          toast.error("السيارة لم يتم ركنها بعد");
+        }
+      }
     },
     onError: (error) => {
       toast.error(error.message || "رمز QR غير صالح");
@@ -149,8 +180,8 @@ export default function ValetSessionPage() {
 
   // Park vehicle mutation
   const parkMutation = api.valet.parkVehicle.useMutation({
-    onSuccess: () => {
-      toast.success("تم ركن السيارة بنجاح");
+    onSuccess: (data) => {
+      toast.success(`تم ركن السيارة بنجاح - تذكرة #${data.ticketNumber}`);
       setParkDialog(null);
       setVehicleInfo({ make: "", model: "", color: "", plate: "", slot: "" });
       setSearchResults([]);
@@ -164,6 +195,19 @@ export default function ValetSessionPage() {
       } else {
         toast.error(error.message || "فشل ركن السيارة");
       }
+    },
+  });
+
+  // Request retrieval mutation (for valet)
+  const requestRetrievalMutation = api.valet.valetRequestRetrieval.useMutation({
+    onSuccess: (data) => {
+      toast.success(`${data.message} - تذكرة #${data.ticketNumber ?? "N/A"}`);
+      setCollectionSearchResults([]);
+      setCollectionSearchQuery("");
+      refetchQueue();
+    },
+    onError: (error) => {
+      toast.error(error.message || "فشل طلب الاسترجاع");
     },
   });
 
@@ -190,9 +234,14 @@ export default function ValetSessionPage() {
   });
 
   // QR Scanner functions
-  const startScanner = async () => {
+  const startScanner = async (mode: "checkin" | "collection") => {
     setScannerError(null);
-    setShowScanner(true);
+    setScanMode(mode);
+    if (mode === "checkin") {
+      setShowScanner(true);
+    } else {
+      setShowCollectionScanner(true);
+    }
 
     // Check if we're in a secure context (HTTPS or localhost)
     if (!window.isSecureContext) {
@@ -216,7 +265,6 @@ export default function ValetSessionPage() {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
 
-        // Start scanning with BarcodeDetector if available
         if ("BarcodeDetector" in window) {
           const barcodeDetector = new (window as unknown as { BarcodeDetector: new (options: { formats: string[] }) => BarcodeDetector }).BarcodeDetector({ formats: ["qr_code"] });
           scanFrame(barcodeDetector);
@@ -265,7 +313,7 @@ export default function ValetSessionPage() {
   }
 
   const scanFrame = async (detector: BarcodeDetector) => {
-    if (!videoRef.current || !showScanner) return;
+    if (!videoRef.current || (!showScanner && !showCollectionScanner)) return;
 
     try {
       const barcodes = await detector.detect(videoRef.current);
@@ -274,11 +322,11 @@ export default function ValetSessionPage() {
         qrMutation.mutate({ qrData });
         return;
       }
-    } catch (error) {
+    } catch {
       // Continue scanning
     }
 
-    if (showScanner) {
+    if (showScanner || showCollectionScanner) {
       requestAnimationFrame(() => scanFrame(detector));
     }
   };
@@ -289,6 +337,7 @@ export default function ValetSessionPage() {
       streamRef.current = null;
     }
     setShowScanner(false);
+    setShowCollectionScanner(false);
     setScannerError(null);
   };
 
@@ -307,6 +356,14 @@ export default function ValetSessionPage() {
       return;
     }
     searchMutation.mutate({ sessionId, query: searchQuery.trim() });
+  };
+
+  const handleCollectionSearch = () => {
+    if (!collectionSearchQuery.trim()) {
+      toast.error("الرجاء إدخال كلمة للبحث");
+      return;
+    }
+    collectionSearchMutation.mutate({ sessionId, query: collectionSearchQuery.trim() });
   };
 
   const handlePark = () => {
@@ -379,6 +436,44 @@ export default function ValetSessionPage() {
     );
   }
 
+  // Scanner component (shared between checkin and collection)
+  const ScannerView = ({ mode }: { mode: "checkin" | "collection" }) => (
+    <div className="relative">
+      <video
+        ref={videoRef}
+        className="w-full aspect-square object-cover"
+        playsInline
+        muted
+      />
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="w-48 h-48 border-2 border-white rounded-lg shadow-lg" />
+      </div>
+      {scannerError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+          <div className="text-center text-white p-4">
+            <p className="mb-4">{scannerError}</p>
+            <Button variant="outline" onClick={stopScanner}>
+              إغلاق
+            </Button>
+          </div>
+        </div>
+      )}
+      <Button
+        variant="secondary"
+        size="icon"
+        className="absolute top-4 left-4"
+        onClick={stopScanner}
+      >
+        <X className="h-5 w-5" />
+      </Button>
+      {qrMutation.isPending && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-4 pb-8">
       {/* Session Header */}
@@ -397,14 +492,18 @@ export default function ValetSessionPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 h-12">
-          <TabsTrigger value="checkin" className="text-base">
-            <ParkingSquare className="h-4 w-4 ml-2" />
-            تسجيل السيارات
+        <TabsList className="grid w-full grid-cols-3 h-12">
+          <TabsTrigger value="checkin" className="text-sm">
+            <ParkingSquare className="h-4 w-4 ml-1" />
+            تسجيل
           </TabsTrigger>
-          <TabsTrigger value="queue" className="text-base relative">
-            <Clock className="h-4 w-4 ml-2" />
-            طابور الاسترجاع
+          <TabsTrigger value="collection" className="text-sm">
+            <CarFront className="h-4 w-4 ml-1" />
+            طلب استرجاع
+          </TabsTrigger>
+          <TabsTrigger value="queue" className="text-sm relative">
+            <Clock className="h-4 w-4 ml-1" />
+            الطابور
             {(requestedItems.length + readyItems.length) > 0 && (
               <span className="absolute -top-1 -left-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
                 {requestedItems.length + readyItems.length}
@@ -419,52 +518,19 @@ export default function ValetSessionPage() {
           <Card className="overflow-hidden">
             <CardContent className="p-0">
               {showScanner ? (
-                <div className="relative">
-                  <video
-                    ref={videoRef}
-                    className="w-full aspect-square object-cover"
-                    playsInline
-                    muted
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-48 h-48 border-2 border-white rounded-lg shadow-lg" />
-                  </div>
-                  {scannerError && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-                      <div className="text-center text-white p-4">
-                        <p className="mb-4">{scannerError}</p>
-                        <Button variant="outline" onClick={stopScanner}>
-                          إغلاق
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="absolute top-4 left-4"
-                    onClick={stopScanner}
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                  {qrMutation.isPending && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                      <Loader2 className="h-8 w-8 animate-spin text-white" />
-                    </div>
-                  )}
-                </div>
+                <ScannerView mode="checkin" />
               ) : (
                 <button
-                  onClick={startScanner}
-                  className="w-full p-8 flex flex-col items-center justify-center gap-4 hover:bg-muted/50 transition-colors"
+                  onClick={() => startScanner("checkin")}
+                  className="w-full p-6 flex flex-col items-center justify-center gap-3 hover:bg-muted/50 transition-colors"
                 >
-                  <div className="p-4 rounded-full bg-primary/10">
-                    <Camera className="h-10 w-10 text-primary" />
+                  <div className="p-3 rounded-full bg-primary/10">
+                    <Camera className="h-8 w-8 text-primary" />
                   </div>
                   <div className="text-center">
-                    <p className="font-semibold text-lg">مسح رمز QR</p>
+                    <p className="font-semibold">مسح رمز QR لركن السيارة</p>
                     <p className="text-sm text-muted-foreground">
-                      امسح رمز تسجيل الضيف لتسجيل السيارة
+                      امسح رمز تسجيل الضيف
                     </p>
                   </div>
                 </button>
@@ -483,7 +549,7 @@ export default function ValetSessionPage() {
             <CardContent className="space-y-4">
               <div className="flex gap-2">
                 <Input
-                  placeholder="ابحث بالاسم أو رقم الهاتف أو البريد..."
+                  placeholder="الاسم، الهاتف، أو البريد..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -504,7 +570,7 @@ export default function ValetSessionPage() {
                   {searchResults.map((guest) => (
                     <div
                       key={guest.registrationId}
-                      className="flex items-center justify-between p-4 rounded-lg border bg-white"
+                      className="flex items-center justify-between p-3 rounded-lg border bg-white"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="p-2 rounded-full bg-muted shrink-0">
@@ -518,9 +584,8 @@ export default function ValetSessionPage() {
                             )}
                           </div>
                           {guest.phone && (
-                            <p className="text-sm text-muted-foreground flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              <span dir="ltr">{guest.phone}</span>
+                            <p className="text-sm text-muted-foreground" dir="ltr">
+                              {guest.phone}
                             </p>
                           )}
                         </div>
@@ -539,8 +604,114 @@ export default function ValetSessionPage() {
                               })
                             }
                           >
-                            <ParkingSquare className="h-4 w-4 ml-1" />
                             ركن
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Collection Tab */}
+        <TabsContent value="collection" className="mt-4 space-y-4">
+          {/* QR Scanner for Collection */}
+          <Card className="overflow-hidden">
+            <CardContent className="p-0">
+              {showCollectionScanner ? (
+                <ScannerView mode="collection" />
+              ) : (
+                <button
+                  onClick={() => startScanner("collection")}
+                  className="w-full p-6 flex flex-col items-center justify-center gap-3 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="p-3 rounded-full bg-amber-100">
+                    <Camera className="h-8 w-8 text-amber-600" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-semibold">مسح رمز QR لطلب الاسترجاع</p>
+                    <p className="text-sm text-muted-foreground">
+                      امسح رمز الضيف لإضافة سيارته للطابور
+                    </p>
+                  </div>
+                </button>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Search for Collection */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Search className="h-4 w-4" />
+                البحث لطلب استرجاع
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="الاسم، الهاتف، أو البريد..."
+                  value={collectionSearchQuery}
+                  onChange={(e) => setCollectionSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleCollectionSearch()}
+                  className="h-12 text-base"
+                />
+                <Button onClick={handleCollectionSearch} disabled={collectionSearchMutation.isPending} size="lg">
+                  {collectionSearchMutation.isPending ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Search className="h-5 w-5" />
+                  )}
+                </Button>
+              </div>
+
+              {/* Collection Search Results */}
+              {collectionSearchResults.length > 0 && (
+                <div className="space-y-2">
+                  {collectionSearchResults.map((guest) => (
+                    <div
+                      key={guest.registrationId}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-white"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="p-2 rounded-full bg-muted shrink-0">
+                          <User className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium truncate">{guest.name}</p>
+                            {guest.isVip && (
+                              <Crown className="h-4 w-4 text-amber-500 shrink-0" />
+                            )}
+                          </div>
+                          {guest.phone && (
+                            <p className="text-sm text-muted-foreground" dir="ltr">
+                              {guest.phone}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {getStatusBadge(guest.valetStatus)}
+                        {guest.valetStatus === "parked" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                            onClick={() => requestRetrievalMutation.mutate({ registrationId: guest.registrationId })}
+                            disabled={requestRetrievalMutation.isPending}
+                          >
+                            {requestRetrievalMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <CarFront className="h-4 w-4 ml-1" />
+                                طلب
+                              </>
+                            )}
                           </Button>
                         )}
                       </div>
@@ -596,10 +767,13 @@ export default function ValetSessionPage() {
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between gap-4">
                             <div className="space-y-1 min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-muted-foreground">
-                                  #{index + 1}
-                                </span>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {item.ticketNumber !== null && (
+                                  <span className="inline-flex items-center gap-1 text-sm font-bold bg-primary text-white px-2 py-0.5 rounded">
+                                    <Ticket className="h-3 w-3" />
+                                    {item.ticketNumber}
+                                  </span>
+                                )}
                                 <p className="font-semibold truncate">{item.guestName}</p>
                                 {item.isVip && <Crown className="h-4 w-4 text-amber-500 shrink-0" />}
                               </div>
@@ -665,7 +839,13 @@ export default function ValetSessionPage() {
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between gap-4">
                             <div className="space-y-1 min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {item.ticketNumber !== null && (
+                                  <span className="inline-flex items-center gap-1 text-sm font-bold bg-green-600 text-white px-2 py-0.5 rounded">
+                                    <Ticket className="h-3 w-3" />
+                                    {item.ticketNumber}
+                                  </span>
+                                )}
                                 <p className="font-semibold truncate">{item.guestName}</p>
                                 {item.isVip && <Crown className="h-4 w-4 text-amber-500 shrink-0" />}
                               </div>
@@ -777,7 +957,7 @@ export default function ValetSessionPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="slot">موقع الركن</Label>
+              <Label htmlFor="slot">موقع الركن (اختياري)</Label>
               <Input
                 id="slot"
                 placeholder="مثال: A-15"

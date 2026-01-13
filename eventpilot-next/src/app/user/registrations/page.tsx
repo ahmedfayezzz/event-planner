@@ -10,13 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
-import { Mail, Phone, Building2, Briefcase, Instagram, Twitter, Edit, Calendar, Clock, MapPin, Users, CalendarCheck, ExternalLink } from "lucide-react";
+import { Mail, Phone, Building2, Briefcase, Instagram, Twitter, Edit, Calendar, Clock, MapPin, Users, CalendarCheck, ExternalLink, Car } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
 
 interface RegistrationItem {
   id: string;
   isApproved: boolean;
   registeredAt: Date;
+  needsValet?: boolean;
   session: {
     id: string;
     title: string;
@@ -24,8 +25,15 @@ interface RegistrationItem {
     location: string | null;
     locationUrl: string | null;
     sessionNumber: number;
+    valetEnabled?: boolean;
   };
   companions: { id: string; name: string }[];
+  valetRecord?: {
+    id: string;
+    status: string;
+    trackingToken: string | null;
+    ticketNumber: number | null;
+  } | null;
 }
 
 export default function UserRegistrationsPage() {
@@ -251,6 +259,7 @@ function RegistrationCard({
     id: string;
     isApproved: boolean;
     registeredAt: Date;
+    needsValet?: boolean;
     session: {
       id: string;
       title: string;
@@ -258,11 +267,19 @@ function RegistrationCard({
       location: string | null;
       locationUrl: string | null;
       sessionNumber: number;
+      valetEnabled?: boolean;
     };
     companions: { id: string; name: string }[];
+    valetRecord?: {
+      id: string;
+      status: string;
+      trackingToken: string | null;
+      ticketNumber: number | null;
+    } | null;
   };
   isPast?: boolean;
 }) {
+  const hasValetTracking = registration.valetRecord?.trackingToken;
   return (
     <Card className="border border-border/50 shadow-sm hover:shadow-md transition-all duration-200 group">
       <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
@@ -354,6 +371,14 @@ function RegistrationCard({
               <Link href={`/user/registrations/${registration.id}/edit`}>
                 <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1.5 sm:ml-2" />
                 تعديل التسجيل
+              </Link>
+            </Button>
+          )}
+          {hasValetTracking && (
+            <Button variant="outline" size="sm" asChild className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 w-full sm:w-auto text-xs sm:text-sm">
+              <Link href={`/valet/track/${registration.valetRecord?.trackingToken}`}>
+                <Car className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1.5 sm:ml-2" />
+                تتبع سيارتك
               </Link>
             </Button>
           )}

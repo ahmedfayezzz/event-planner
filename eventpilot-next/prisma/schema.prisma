@@ -694,8 +694,10 @@ model ValetRecord {
   vehiclePlate String?
 
   // Parking info
-  parkingSlot String?
-  status      ValetStatus @default(expected)
+  ticketNumber  Int?        // Auto-assigned sequential number per session (0, 1, 2, ...)
+  parkingSlot   String?
+  trackingToken String?     @unique // Public tracking link token for guest access
+  status        ValetStatus @default(expected)
 
   // Timestamps
   parkedAt             DateTime?
@@ -722,4 +724,5 @@ model ValetRecord {
   @@index([sessionId])
   @@index([status])
   @@index([registrationId])
+  @@index([sessionId, ticketNumber])
 }

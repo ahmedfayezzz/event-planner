@@ -971,6 +971,8 @@ interface ValetParkedEmailParams {
   eventName: string;
   vehicleInfo: string;
   parkingSlot: string;
+  ticketNumber?: number;
+  trackingUrl?: string;
 }
 
 /**
@@ -982,28 +984,45 @@ export async function sendValetParkedEmail({
   eventName,
   vehicleInfo,
   parkingSlot,
+  ticketNumber,
+  trackingUrl,
 }: ValetParkedEmailParams): Promise<boolean> {
   const settings = await getEmailSettings();
-  const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+
+  const ticketSection = ticketNumber !== undefined
+    ? `<p style="margin: 5px 0;"><strong>رقم التذكرة:</strong> ${ticketNumber}</p>`
+    : "";
+
+  const trackingSection = trackingUrl
+    ? `
+    <div style="margin-top: 20px; text-align: center;">
+      <a href="${trackingUrl}" style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+        تتبع سيارتك وطلب الاسترجاع
+      </a>
+    </div>
+    <p style="margin-top: 15px; text-align: center; font-size: 14px; color: #666;">
+      أو انسخ هذا الرابط: <a href="${trackingUrl}" style="color: #10b981;">${trackingUrl}</a>
+    </p>
+    `
+    : "";
 
   const content = `
     <h2 style="margin: 0 0 20px; color: #333;">تم ركن سيارتك</h2>
     <p>مرحباً ${guestName}،</p>
     <p>تم ركن سيارتك بنجاح من قِبَل فريق الفاليه.</p>
     <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+      ${ticketSection}
       <p style="margin: 5px 0;"><strong>السيارة:</strong> ${vehicleInfo || "غير محدد"}</p>
       <p style="margin: 5px 0;"><strong>موقع الركن:</strong> ${parkingSlot}</p>
     </div>
-    <p>عند رغبتك في استرجاع السيارة، يمكنك:</p>
-    <ul style="padding-right: 20px;">
-      <li>طلب الاسترجاع من صفحة تسجيلاتك في EventPilot</li>
-      <li>مسح رمز QR في منطقة الاستلام</li>
-    </ul>
-    <p>سيتم إخطارك عندما تكون سيارتك جاهزة للاستلام.</p>
+    ${trackingSection}
+    <p style="margin-top: 20px;">سيتم إخطارك عندما تكون سيارتك جاهزة للاستلام.</p>
   `;
 
   const html = createEmailTemplate({ content, settings });
-  const text = `مرحباً ${guestName}،\n\nتم ركن سيارتك بنجاح.\n\nالسيارة: ${vehicleInfo || "غير محدد"}\nموقع الركن: ${parkingSlot}\n\nعند رغبتك في استرجاع السيارة، قم بطلب الاسترجاع من التطبيق أو امسح رمز QR في منطقة الاستلام.\n\nفريق ${eventName}`;
+  const trackingText = trackingUrl ? `\n\nلتتبع سيارتك وطلب الاسترجاع: ${trackingUrl}` : "";
+  const ticketText = ticketNumber !== undefined ? `رقم التذكرة: ${ticketNumber}\n` : "";
+  const text = `مرحباً ${guestName}،\n\nتم ركن سيارتك بنجاح.\n\n${ticketText}السيارة: ${vehicleInfo || "غير محدد"}\nموقع الركن: ${parkingSlot}${trackingText}\n\nسيتم إخطارك عندما تكون سيارتك جاهزة للاستلام.\n\nفريق ${eventName}`;
 
   return sendEmail({
     to,

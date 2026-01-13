@@ -269,6 +269,14 @@ export const userRouter = createTRPCRouter({
               },
             },
             attendance: true,
+            valetRecord: {
+              select: {
+                id: true,
+                status: true,
+                trackingToken: true,
+                ticketNumber: true,
+              },
+            },
           },
           orderBy: { registeredAt: "desc" },
         },
