@@ -194,6 +194,18 @@ export default function ValetSessionPage() {
     setScannerError(null);
     setShowScanner(true);
 
+    // Check if we're in a secure context (HTTPS or localhost)
+    if (!window.isSecureContext) {
+      setScannerError("يجب استخدام HTTPS للوصول إلى الكاميرا. استخدم البحث بدلاً من ذلك.");
+      return;
+    }
+
+    // Check if mediaDevices API is available
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setScannerError("متصفحك لا يدعم الوصول إلى الكاميرا. استخدم البحث بدلاً من ذلك.");
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
@@ -214,7 +226,37 @@ export default function ValetSessionPage() {
       }
     } catch (error) {
       console.error("Camera error:", error);
-      setScannerError("لا يمكن الوصول للكاميرا. تأكد من منح الإذن.");
+      if (error instanceof Error) {
+        if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+          setScannerError("تم رفض إذن الكاميرا. يرجى السماح بالوصول إلى الكاميرا من إعدادات المتصفح.");
+        } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+          setScannerError("لم يتم العثور على كاميرا. تأكد من توصيل كاميرا بجهازك.");
+        } else if (error.name === "NotReadableError" || error.name === "TrackStartError") {
+          setScannerError("الكاميرا قيد الاستخدام من تطبيق آخر. أغلق التطبيقات الأخرى وحاول مرة أخرى.");
+        } else if (error.name === "OverconstrainedError") {
+          setScannerError("لا يمكن استخدام الكاميرا الخلفية. جاري المحاولة بالكاميرا المتاحة...");
+          // Try again without facingMode constraint
+          try {
+            const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            streamRef.current = fallbackStream;
+            if (videoRef.current) {
+              videoRef.current.srcObject = fallbackStream;
+              videoRef.current.play();
+              if ("BarcodeDetector" in window) {
+                const barcodeDetector = new (window as unknown as { BarcodeDetector: new (options: { formats: string[] }) => BarcodeDetector }).BarcodeDetector({ formats: ["qr_code"] });
+                setScannerError(null);
+                scanFrame(barcodeDetector);
+              }
+            }
+          } catch {
+            setScannerError("لا يمكن الوصول لأي كاميرا على جهازك.");
+          }
+        } else {
+          setScannerError(`خطأ في الكاميرا: ${error.message}`);
+        }
+      } else {
+        setScannerError("لا يمكن الوصول للكاميرا. تأكد من منح الإذن.");
+      }
     }
   };
 

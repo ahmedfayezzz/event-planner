@@ -2,7 +2,7 @@
 - duplicate companion issue
 - email log system
 - resend confirmation email
-
+- add tda as technical sponsor
 <!-- - when a user edits registration to add a companion, if user is already acceoted, companion shouldn't be accepted automatically
 - companion added in this case should be registered as a guest (already done)
 - companio email should only be sent to the user email, not companion email

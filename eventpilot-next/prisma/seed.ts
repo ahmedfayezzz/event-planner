@@ -5,6 +5,7 @@ import {
   EventCatering,
   Sponsor,
   EventSponsorship,
+  Guest,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -13,6 +14,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding database with production-like data...\n");
 
+  const now = new Date();
   const defaultPassword = await bcrypt.hash("password123", 10);
   const adminPassword = await bcrypt.hash("admin123", 10);
 
@@ -381,7 +383,12 @@ async function main() {
   ];
 
   const users: User[] = [];
-  for (const userData of usersData) {
+  for (let i = 0; i < usersData.length; i++) {
+    const userData = usersData[i];
+    // Create users with staggered creation dates in the past (30-120 days ago)
+    const daysAgo = 30 + Math.floor(Math.random() * 90);
+    const createdAt = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+
     const user = await prisma.user.upsert({
       where: { email: userData.email },
       update: {},
@@ -391,6 +398,8 @@ async function main() {
         role: "USER",
         isActive: true,
         isApproved: true,
+        createdAt,
+        updatedAt: createdAt,
       },
     });
     users.push(user);
@@ -398,8 +407,6 @@ async function main() {
   console.log(`✅ Created ${users.length} users`);
 
   // ============== SESSIONS ==============
-  const now = new Date();
-
   const sessionsData = [
     // Completed sessions (past)
     {
@@ -408,8 +415,6 @@ async function main() {
       description:
         "أول تجمع لمؤسسي ثلوثية الأعمال لوضع الأسس ومناقشة الرؤية والأهداف. جلسة تاريخية شهدت انطلاقة مجتمع رواد الأعمال.",
       date: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000), // 90 days ago
-      guestName: "المهندس عبدالعزيز الراجحي",
-      guestProfile: "رائد أعمال ومؤسس عدة شركات ناجحة في مجال التقنية",
       location: "فندق الفور سيزونز - الرياض",
       locationUrl: "https://maps.google.com/?q=Four+Seasons+Hotel+Riyadh",
       status: "completed",
@@ -422,8 +427,6 @@ async function main() {
       description:
         "مناقشة التحولات الرقمية وتأثيرها على ريادة الأعمال والاستثمار. تعرف على أحدث التوجهات في عالم التقنية.",
       date: new Date(now.getTime() - 75 * 24 * 60 * 60 * 1000), // 75 days ago
-      guestName: "المهندسة نورا الغامدي",
-      guestProfile: "رئيسة تنفيذية لشركة تقنية ناشئة حققت نمواً بنسبة 300%",
       location: "مركز الملك عبدالعزيز للحوار الوطني",
       locationUrl:
         "https://maps.google.com/?q=King+Abdulaziz+Center+for+National+Dialogue+Riyadh",
@@ -437,8 +440,6 @@ async function main() {
       description:
         "استراتيجيات التسويق الحديثة وكيفية بناء علاقات قوية مع العملاء في عالم رقمي متسارع.",
       date: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
-      guestName: "الأستاذ خالد العمري",
-      guestProfile: "خبير تسويق رقمي ومؤلف كتاب 'التسويق بالذكاء'",
       location: "قاعة الأمير سلطان - جامعة الملك سعود",
       status: "completed",
       maxParticipants: 45,
@@ -450,8 +451,6 @@ async function main() {
       description:
         "كيفية الحصول على التمويل وجذب المستثمرين للمشاريع الناشئة. نصائح عملية من خبراء الاستثمار.",
       date: new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000), // 45 days ago
-      guestName: "الدكتور أحمد المالكي",
-      guestProfile: "خبير في الاستثمار ومدير صندوق رؤية الأعمال",
       location: "مركز الرياض الدولي للمؤتمرات",
       status: "completed",
       maxParticipants: 55,
@@ -463,8 +462,6 @@ async function main() {
       description:
         "تطوير مهارات القيادة وإدارة الفرق في بيئة العمل المعاصرة. كيف تكون قائداً ملهماً.",
       date: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-      guestName: "الدكتورة ريم الشمري",
-      guestProfile: "استشارية قيادة ومدربة معتمدة دولياً",
       location: "فندق الريتز كارلتون - الرياض",
       status: "completed",
       maxParticipants: 50,
@@ -476,8 +473,6 @@ async function main() {
       description:
         "كيفية تطوير حلول مبتكرة تساهم في التنمية المستدامة ورؤية المملكة 2030.",
       date: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
-      guestName: "المهندس فهد الشهراني",
-      guestProfile: "مدير الابتكار في أرامكو السعودية",
       location: "واحة الملك سلمان للعلوم",
       status: "completed",
       maxParticipants: 60,
@@ -490,8 +485,6 @@ async function main() {
       description:
         "استكشاف تطبيقات الذكاء الاصطناعي وكيفية الاستفادة منها في تطوير الأعمال وزيادة الإنتاجية.",
       date: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-      guestName: "الدكتور سامي العتيبي",
-      guestProfile: "خبير في الذكاء الاصطناعي ومؤسس شركة AI Solutions",
       location: "فندق الفيصلية - الرياض",
       locationUrl: "https://maps.google.com/?q=Al+Faisaliah+Hotel+Riyadh",
       status: "open",
@@ -505,8 +498,6 @@ async function main() {
       description:
         "فرص التوسع في أسواق الخليج والشرق الأوسط من خلال التجارة الإلكترونية.",
       date: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
-      guestName: "الأستاذة منى الدوسري",
-      guestProfile: "مؤسسة منصة التسوق 'سوق الخليج'",
       location: "مركز الملك عبدالله المالي",
       locationUrl:
         "https://maps.google.com/?q=King+Abdullah+Financial+District+Riyadh",
@@ -520,8 +511,6 @@ async function main() {
       title: "بناء العلامة التجارية الشخصية",
       description: "كيف تبني علامتك التجارية الشخصية وتصبح مؤثراً في مجالك.",
       date: new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000), // 21 days from now
-      guestName: "الأستاذ ماجد القحطاني",
-      guestProfile: "خبير في العلامات التجارية ومستشار لكبرى الشركات",
       location: "فندق الحياة ريجنسي - الرياض",
       status: "open",
       maxParticipants: 40,
@@ -534,8 +523,6 @@ async function main() {
       description:
         "التوازن بين العمل والحياة الشخصية وكيفية التعامل مع ضغوط ريادة الأعمال.",
       date: new Date(now.getTime() + 28 * 24 * 60 * 60 * 1000), // 28 days from now
-      guestName: "الدكتورة هالة الحربي",
-      guestProfile: "أخصائية نفسية متخصصة في ضغوط العمل",
       location: "مركز التنمية الذاتية - الرياض",
       status: "open",
       maxParticipants: 35,
@@ -546,6 +533,10 @@ async function main() {
 
   const sessions: Session[] = [];
   for (const sessionData of sessionsData) {
+    // Session createdAt should be 7-14 days before the session date
+    const daysBeforeSession = 7 + Math.floor(Math.random() * 7);
+    const sessionCreatedAt = new Date(sessionData.date.getTime() - daysBeforeSession * 24 * 60 * 60 * 1000);
+
     const session = await prisma.session.upsert({
       where: { sessionNumber: sessionData.sessionNumber },
       update: {},
@@ -556,11 +547,136 @@ async function main() {
         embedEnabled: true,
         sendQrInEmail: true,
         showGuestProfile: true,
+        createdAt: sessionCreatedAt,
+        updatedAt: sessionCreatedAt,
       },
     });
     sessions.push(session);
   }
   console.log(`✅ Created ${sessions.length} sessions`);
+
+  // ============== GUESTS (Session Speakers) ==============
+  const guestsData = [
+    {
+      title: "المهندس",
+      name: "عبدالعزيز الراجحي",
+      jobTitle: "مؤسس ورئيس تنفيذي",
+      company: "شركة الراجحي للتقنية",
+      description: "رائد أعمال ومؤسس عدة شركات ناجحة في مجال التقنية",
+      isPublic: true,
+    },
+    {
+      title: "المهندسة",
+      name: "نورا الغامدي",
+      jobTitle: "رئيسة تنفيذية",
+      company: "شركة تقنية ناشئة",
+      description: "رئيسة تنفيذية لشركة تقنية ناشئة حققت نمواً بنسبة 300%",
+      isPublic: true,
+    },
+    {
+      title: "الأستاذ",
+      name: "خالد العمري",
+      jobTitle: "خبير تسويق رقمي",
+      company: null,
+      description: "خبير تسويق رقمي ومؤلف كتاب 'التسويق بالذكاء'",
+      isPublic: true,
+    },
+    {
+      title: "الدكتور",
+      name: "أحمد المالكي",
+      jobTitle: "مدير صندوق استثماري",
+      company: "صندوق رؤية الأعمال",
+      description: "خبير في الاستثمار ومدير صندوق رؤية الأعمال",
+      isPublic: true,
+    },
+    {
+      title: "الدكتورة",
+      name: "ريم الشمري",
+      jobTitle: "استشارية قيادة",
+      company: null,
+      description: "استشارية قيادة ومدربة معتمدة دولياً",
+      isPublic: true,
+    },
+    {
+      title: "المهندس",
+      name: "فهد الشهراني",
+      jobTitle: "مدير الابتكار",
+      company: "أرامكو السعودية",
+      description: "مدير الابتكار في أرامكو السعودية",
+      isPublic: true,
+    },
+    {
+      title: "الدكتور",
+      name: "سامي العتيبي",
+      jobTitle: "خبير ذكاء اصطناعي",
+      company: "AI Solutions",
+      description: "خبير في الذكاء الاصطناعي ومؤسس شركة AI Solutions",
+      isPublic: true,
+    },
+    {
+      title: "الأستاذة",
+      name: "منى الدوسري",
+      jobTitle: "مؤسسة",
+      company: "سوق الخليج",
+      description: "مؤسسة منصة التسوق 'سوق الخليج'",
+      isPublic: true,
+    },
+    {
+      title: "الأستاذ",
+      name: "ماجد القحطاني",
+      jobTitle: "خبير علامات تجارية",
+      company: null,
+      description: "خبير في العلامات التجارية ومستشار لكبرى الشركات",
+      isPublic: true,
+    },
+    {
+      title: "الدكتورة",
+      name: "هالة الحربي",
+      jobTitle: "أخصائية نفسية",
+      company: null,
+      description: "أخصائية نفسية متخصصة في ضغوط العمل",
+      isPublic: true,
+    },
+  ];
+
+  const guests: Guest[] = [];
+  for (const guestData of guestsData) {
+    const guest = await prisma.guest.upsert({
+      where: { id: `guest-${guestData.name.replace(/\s+/g, "-")}` },
+      update: {},
+      create: {
+        id: `guest-${guestData.name.replace(/\s+/g, "-")}`,
+        ...guestData,
+        isActive: true,
+      },
+    });
+    guests.push(guest);
+  }
+  console.log(`✅ Created ${guests.length} guests`);
+
+  // ============== LINK GUESTS TO SESSIONS ==============
+  // Each session gets one guest speaker
+  for (let i = 0; i < sessions.length; i++) {
+    const session = sessions[i];
+    const guest = guests[i];
+    if (guest) {
+      await prisma.sessionGuest.upsert({
+        where: {
+          sessionId_guestId: {
+            sessionId: session.id,
+            guestId: guest.id,
+          },
+        },
+        update: {},
+        create: {
+          sessionId: session.id,
+          guestId: guest.id,
+          displayOrder: 0,
+        },
+      });
+    }
+  }
+  console.log(`✅ Linked guests to sessions`);
 
   // ============== REGISTRATIONS & ATTENDANCE ==============
   const companionNames = [
@@ -1394,6 +1510,7 @@ async function main() {
       sessions.filter((s) => s.status === "completed").length
     } completed, ${sessions.filter((s) => s.status === "open").length} open)`
   );
+  console.log(`🎤 Guests (speakers): ${guests.length}`);
   console.log(
     `📝 Registrations: ${totalRegistrations} (${totalPendingRegistrations} pending approval)`
   );
