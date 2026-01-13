@@ -109,6 +109,11 @@ export default function ValetSessionPage() {
   const [showCollectionScanner, setShowCollectionScanner] = useState(false);
   const [scannerError, setScannerError] = useState<string | null>(null);
   const [scanMode, setScanMode] = useState<"checkin" | "collection">("checkin");
+  const [parkSuccessData, setParkSuccessData] = useState<{
+    ticketNumber: number;
+    guestName: string;
+    vehicleInfo: string;
+  } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -126,6 +131,12 @@ export default function ValetSessionPage() {
   } = api.valet.getRetrievalQueue.useQuery(
     { sessionId },
     { enabled: !!sessionId && !!token, refetchInterval: 10000 }
+  );
+
+  // Fetch valet stats
+  const { data: stats, refetch: refetchStats } = api.valet.getValetStats.useQuery(
+    { sessionId },
+    { enabled: !!sessionId && !!token, refetchInterval: 15000 }
   );
 
   // Search guests for check-in
@@ -186,11 +197,18 @@ export default function ValetSessionPage() {
   // Park vehicle mutation
   const parkMutation = api.valet.parkVehicle.useMutation({
     onSuccess: (data) => {
-      toast.success(`تم ركن السيارة بنجاح - تذكرة #${data.ticketNumber}`);
+      // Show success modal instead of toast
+      const vehicleDesc = [vehicleInfo.color, vehicleInfo.make, vehicleInfo.model].filter(Boolean).join(" ") || "غير محدد";
+      setParkSuccessData({
+        ticketNumber: data.ticketNumber ?? 0,
+        guestName: parkDialog?.name ?? "",
+        vehicleInfo: vehicleDesc,
+      });
       setParkDialog(null);
       setVehicleInfo({ make: "", model: "", color: "", plate: "", slot: "" });
       setSearchResults([]);
       setSearchQuery("");
+      refetchStats();
     },
     onError: (error) => {
       if (error.message === "CAPACITY_FULL") {
@@ -509,6 +527,28 @@ export default function ValetSessionPage() {
           <h1 className="text-xl font-bold truncate">{sessionInfo.title}</h1>
         </div>
       </div>
+
+      {/* Stats Bar */}
+      {stats && (
+        <div className="grid grid-cols-4 gap-2">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+            <p className="text-lg font-bold text-blue-700">{stats.currentlyParked}</p>
+            <p className="text-xs text-blue-600">مركون</p>
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-center">
+            <p className="text-lg font-bold text-amber-700">{stats.inQueue}</p>
+            <p className="text-xs text-amber-600">في الطابور</p>
+          </div>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center">
+            <p className="text-lg font-bold text-green-700">{stats.retrieved}</p>
+            <p className="text-xs text-green-600">تم استلام</p>
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 text-center">
+            <p className="text-lg font-bold text-gray-700">{stats.currentlyParked}/{stats.capacity}</p>
+            <p className="text-xs text-gray-600">السعة</p>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -1113,6 +1153,37 @@ export default function ValetSessionPage() {
               تأكيد الركن
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Park Success Modal */}
+      <Dialog open={!!parkSuccessData} onOpenChange={() => {}}>
+        <DialogContent className="max-w-sm mx-4" onPointerDownOutside={(e) => e.preventDefault()}>
+          <div className="flex flex-col items-center text-center py-4">
+            <div className="p-4 rounded-full bg-green-100 mb-4">
+              <CheckCircle className="h-12 w-12 text-green-600" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">تم ركن السيارة بنجاح</h2>
+
+            {/* Large Ticket Number */}
+            <div className="bg-primary text-white rounded-xl px-8 py-4 my-4">
+              <p className="text-sm opacity-80">رقم التذكرة</p>
+              <p className="text-5xl font-bold">{parkSuccessData?.ticketNumber}</p>
+            </div>
+
+            <div className="text-sm text-muted-foreground space-y-1 mb-4">
+              <p><span className="font-medium">الضيف:</span> {parkSuccessData?.guestName}</p>
+              <p><span className="font-medium">السيارة:</span> {parkSuccessData?.vehicleInfo}</p>
+            </div>
+
+            <Button
+              onClick={() => setParkSuccessData(null)}
+              className="w-full"
+              size="lg"
+            >
+              تم - إغلاق
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -804,9 +804,10 @@ export const valetRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Check if query is a ticket number
+      // Check if query is a ticket number (must be a small positive integer, not a phone number)
       const ticketNumber = parseInt(input.query, 10);
-      const isTicketSearch = !isNaN(ticketNumber) && ticketNumber > 0;
+      const isTicketSearch =
+        !isNaN(ticketNumber) && ticketNumber > 0 && ticketNumber <= 99999;
 
       // If searching by ticket number, find the valet record directly
       if (isTicketSearch) {
@@ -852,11 +853,55 @@ export const valetRouter = createTRPCRouter({
         }
       }
 
-      // Search by name, phone, or email
+      // Generate phone number variations for search
+      // Normalize the query - strip non-numeric characters except leading +
+      const normalizedPhone = input.query.replace(/[^\d+]/g, "");
+      const digitsOnly = normalizedPhone.replace(/\D/g, "");
+
+      // Generate phone variations (with/without country code)
+      const phoneVariations: string[] = [];
+      if (digitsOnly.length >= 7) {
+        // Add the raw query
+        phoneVariations.push(input.query);
+
+        // If starts with country code (966), also search without it
+        if (digitsOnly.startsWith("966")) {
+          const withoutCode = digitsOnly.slice(3);
+          phoneVariations.push(withoutCode);
+          phoneVariations.push("0" + withoutCode); // With leading 0
+          phoneVariations.push("+966" + withoutCode);
+          phoneVariations.push("966" + withoutCode);
+        }
+        // If starts with 0, also search with country code
+        else if (digitsOnly.startsWith("0")) {
+          const withoutZero = digitsOnly.slice(1);
+          phoneVariations.push(digitsOnly); // With leading 0
+          phoneVariations.push(withoutZero); // Without leading 0
+          phoneVariations.push("+966" + withoutZero);
+          phoneVariations.push("966" + withoutZero);
+        }
+        // Plain number - add all variations
+        else {
+          phoneVariations.push(digitsOnly);
+          phoneVariations.push("0" + digitsOnly);
+          phoneVariations.push("+966" + digitsOnly);
+          phoneVariations.push("966" + digitsOnly);
+        }
+      }
+
+      // Build phone search conditions
+      const phoneConditions =
+        phoneVariations.length > 0
+          ? phoneVariations.flatMap((phone) => [
+              { user: { phone: { contains: phone, mode: "insensitive" as const } } },
+              { guestPhone: { contains: phone, mode: "insensitive" as const } },
+            ])
+          : [];
+
+      // Search by name, phone, or email (all approved registrations, not just those who pre-selected valet)
       const registrations = await ctx.db.registration.findMany({
         where: {
           sessionId: input.sessionId,
-          needsValet: true,
           isApproved: true,
           isRejected: false,
           OR: [
