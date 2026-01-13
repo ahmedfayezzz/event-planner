@@ -535,6 +535,89 @@ export const valetRouter = createTRPCRouter({
     }),
 
   /**
+   * Get valet stats for today's valet-enabled sessions
+   */
+  getAllSessionsValetStats: adminProcedure.query(async ({ ctx }) => {
+    // Get today's date range
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+
+    // Get today's sessions with valet enabled
+    const sessions = await ctx.db.session.findMany({
+      where: {
+        valetEnabled: true,
+        date: {
+          gte: startOfDay,
+          lt: endOfDay,
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        date: true,
+        valetLotCapacity: true,
+      },
+      orderBy: { date: "desc" },
+    });
+
+    // Get stats for all sessions in one query
+    const allRecords = await ctx.db.valetRecord.groupBy({
+      by: ["sessionId", "status"],
+      where: {
+        sessionId: { in: sessions.map((s) => s.id) },
+      },
+      _count: true,
+    });
+
+    // Build stats map
+    const statsMap: Record<
+      string,
+      Record<string, number>
+    > = {};
+    for (const record of allRecords) {
+      if (!statsMap[record.sessionId]) {
+        statsMap[record.sessionId] = {
+          expected: 0,
+          parked: 0,
+          requested: 0,
+          fetching: 0,
+          ready: 0,
+          retrieved: 0,
+        };
+      }
+      statsMap[record.sessionId][record.status] = record._count;
+    }
+
+    // Return sessions with their stats
+    return sessions.map((session) => {
+      const stats = statsMap[session.id] ?? {
+        expected: 0,
+        parked: 0,
+        requested: 0,
+        fetching: 0,
+        ready: 0,
+        retrieved: 0,
+      };
+      return {
+        sessionId: session.id,
+        title: session.title,
+        date: session.date,
+        capacity: session.valetLotCapacity as number,
+        expected: stats.expected ?? 0,
+        parked: stats.parked ?? 0,
+        requested: stats.requested ?? 0,
+        fetching: stats.fetching ?? 0,
+        ready: stats.ready ?? 0,
+        retrieved: stats.retrieved ?? 0,
+        currentlyParked:
+          (stats.parked ?? 0) + (stats.requested ?? 0) + (stats.fetching ?? 0) + (stats.ready ?? 0),
+        inQueue: (stats.requested ?? 0) + (stats.fetching ?? 0) + (stats.ready ?? 0),
+      };
+    });
+  }),
+
+  /**
    * Get all guests with valet status for a session
    */
   getSessionValetGuests: adminProcedure

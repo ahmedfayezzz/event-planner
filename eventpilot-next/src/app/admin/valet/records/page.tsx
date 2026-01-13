@@ -67,7 +67,7 @@ import {
   Ticket,
 } from "lucide-react";
 
-type ValetStatus = "expected" | "parked" | "requested" | "ready" | "retrieved";
+type ValetStatus = "expected" | "parked" | "requested" | "fetching" | "ready" | "retrieved";
 
 export default function ValetRecordsPage() {
   const [selectedSessionId, setSelectedSessionId] = useState<string>("");
@@ -201,6 +201,8 @@ export default function ValetRecordsPage() {
         return <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">مركون</Badge>;
       case "requested":
         return <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200">طلب استرجاع</Badge>;
+      case "fetching":
+        return <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">جاري الإحضار</Badge>;
       case "ready":
         return <Badge variant="outline" className="bg-purple-50 text-purple-600 border-purple-200">جاهز</Badge>;
       case "retrieved":
@@ -218,6 +220,8 @@ export default function ValetRecordsPage() {
         return <ParkingSquare className="h-4 w-4 text-green-500" />;
       case "requested":
         return <Clock className="h-4 w-4 text-amber-500" />;
+      case "fetching":
+        return <CarFront className="h-4 w-4 text-orange-500" />;
       case "ready":
         return <CheckCircle className="h-4 w-4 text-purple-500" />;
       case "retrieved":
@@ -314,6 +318,7 @@ export default function ValetRecordsPage() {
                     <SelectItem value="expected">متوقع</SelectItem>
                     <SelectItem value="parked">مركون</SelectItem>
                     <SelectItem value="requested">طلب استرجاع</SelectItem>
+                    <SelectItem value="fetching">جاري الإحضار</SelectItem>
                     <SelectItem value="ready">جاهز</SelectItem>
                     <SelectItem value="retrieved">تم الاستلام</SelectItem>
                   </SelectContent>
@@ -512,6 +517,7 @@ export default function ValetRecordsPage() {
                   <SelectItem value="expected">متوقع</SelectItem>
                   <SelectItem value="parked">مركون</SelectItem>
                   <SelectItem value="requested">طلب استرجاع</SelectItem>
+                  <SelectItem value="fetching">جاري الإحضار</SelectItem>
                   <SelectItem value="ready">جاهز للاستلام</SelectItem>
                   <SelectItem value="retrieved">تم الاستلام</SelectItem>
                 </SelectContent>

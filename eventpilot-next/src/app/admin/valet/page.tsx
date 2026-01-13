@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { api } from "@/trpc/react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { formatArabicDate } from "@/lib/utils";
 import {
   Car,
   Loader2,
@@ -34,12 +36,25 @@ import {
   Send,
   RefreshCw,
   Crown,
+  Calendar,
+  ChevronLeft,
+  UserCog,
+  FileText,
 } from "lucide-react";
 
 export default function AdminValetDashboardPage() {
   const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [showBroadcastDialog, setShowBroadcastDialog] = useState(false);
+
+  // Fetch all sessions valet stats
+  const {
+    data: allSessionsStats,
+    isLoading: allStatsLoading,
+    refetch: refetchAllStats,
+  } = api.valet.getAllSessionsValetStats.useQuery(undefined, {
+    refetchInterval: 15000,
+  });
 
   // Fetch sessions with valet enabled
   const { data: sessionsData, isLoading: sessionsLoading } = api.session.listAdmin.useQuery(
@@ -110,6 +125,7 @@ export default function AdminValetDashboardPage() {
   };
 
   const handleRefresh = () => {
+    refetchAllStats();
     refetchStats();
     refetchGuests();
     refetchQueue();
@@ -127,6 +143,8 @@ export default function AdminValetDashboardPage() {
         return <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">مركون</Badge>;
       case "requested":
         return <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200">طلب استرجاع</Badge>;
+      case "fetching":
+        return <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">جاري الإحضار</Badge>;
       case "ready":
         return <Badge variant="outline" className="bg-purple-50 text-purple-600 border-purple-200">جاهز</Badge>;
       case "retrieved":
@@ -140,20 +158,144 @@ export default function AdminValetDashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">خدمة الفاليه</h1>
+          <p className="text-muted-foreground">إدارة ومتابعة خدمة ركن السيارات</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/valet/employees">
+            <Button variant="outline" size="sm">
+              <UserCog className="h-4 w-4 ml-1" />
+              الموظفين
+            </Button>
+          </Link>
+          <Link href="/admin/valet/records">
+            <Button variant="outline" size="sm">
+              <FileText className="h-4 w-4 ml-1" />
+              السجلات
+            </Button>
+          </Link>
+          <Button variant="outline" size="sm" onClick={handleRefresh}>
+            <RefreshCw className="h-4 w-4 ml-1" />
+            تحديث
+          </Button>
+        </div>
+      </div>
+
+      {/* Today's Events Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Car className="h-5 w-5" />
+            أحداث اليوم
+          </CardTitle>
+          <CardDescription>
+            إحصائيات الفاليه لأحداث اليوم
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {allStatsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : !allSessionsStats || allSessionsStats.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Car className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>لا توجد أحداث اليوم مفعلة فيها خدمة الفاليه</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {allSessionsStats.map((session) => (
+                <Card
+                  key={session.sessionId}
+                  className="cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => setSelectedSessionId(session.sessionId)}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-base line-clamp-1">
+                          {session.title}
+                        </CardTitle>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          {formatArabicDate(new Date(session.date))}
+                        </div>
+                      </div>
+                      <ChevronLeft className="h-4 w-4 text-muted-foreground shrink-0" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                      <div className="p-2 rounded-lg bg-blue-50">
+                        <p className="text-lg font-bold text-blue-700">
+                          {session.currentlyParked}
+                        </p>
+                        <p className="text-[10px] text-blue-600">مركون</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-amber-50">
+                        <p className="text-lg font-bold text-amber-700">
+                          {session.inQueue}
+                        </p>
+                        <p className="text-[10px] text-amber-600">الطابور</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-green-50">
+                        <p className="text-lg font-bold text-green-700">
+                          {session.retrieved}
+                        </p>
+                        <p className="text-[10px] text-green-600">استلام</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-gray-50">
+                        <p className="text-lg font-bold text-gray-700">
+                          {session.capacity}
+                        </p>
+                        <p className="text-[10px] text-gray-600">السعة</p>
+                      </div>
+                    </div>
+                    {/* Capacity Progress */}
+                    <div className="mt-3">
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>الإشغال</span>
+                        <span>
+                          {session.currentlyParked}/{session.capacity}
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            session.currentlyParked / session.capacity > 0.9
+                              ? "bg-red-500"
+                              : session.currentlyParked / session.capacity > 0.7
+                              ? "bg-amber-500"
+                              : "bg-primary"
+                          }`}
+                          style={{
+                            width: `${Math.min(
+                              (session.currentlyParked / session.capacity) * 100,
+                              100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Session Selector */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">اختر الحدث</CardTitle>
-              <CardDescription>اختر الحدث لعرض إحصائيات الفاليه</CardDescription>
+              <CardTitle className="text-lg">تفاصيل الحدث</CardTitle>
+              <CardDescription>اختر الحدث لعرض التفاصيل والإدارة</CardDescription>
             </div>
-            {selectedSessionId && (
-              <Button variant="outline" size="sm" onClick={handleRefresh}>
-                <RefreshCw className="h-4 w-4 ml-1" />
-                تحديث
-              </Button>
-            )}
           </div>
         </CardHeader>
         <CardContent>

@@ -1157,7 +1157,7 @@ export default function ValetSessionPage() {
       </Dialog>
 
       {/* Park Success Modal */}
-      <Dialog open={!!parkSuccessData} onOpenChange={() => {}}>
+      <Dialog open={!!parkSuccessData} onOpenChange={(open) => { if (!open) setParkSuccessData(null); }}>
         <DialogContent className="max-w-sm mx-4" onPointerDownOutside={(e) => e.preventDefault()}>
           <div className="flex flex-col items-center text-center py-4">
             <div className="p-4 rounded-full bg-green-100 mb-4">
