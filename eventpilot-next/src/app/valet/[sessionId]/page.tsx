@@ -39,16 +39,6 @@ import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 import Link from "next/link";
 
-function useValetToken() {
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    setToken(localStorage.getItem("valet-token"));
-  }, []);
-
-  return token;
-}
-
 interface GuestResult {
   registrationId: string;
   name: string;
@@ -90,7 +80,11 @@ interface QueueItem {
 export default function ValetSessionPage() {
   const params = useParams();
   const sessionId = params.sessionId as string;
-  const token = useValetToken();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [activeTab, setActiveTab] = useState("checkin");
   const [searchQuery, setSearchQuery] = useState("");
@@ -120,7 +114,7 @@ export default function ValetSessionPage() {
   // Fetch session info
   const { data: sessionInfo, isLoading: sessionLoading } = api.valet.getSessionForValet.useQuery(
     { sessionId },
-    { enabled: !!token && !!sessionId }
+    { enabled: mounted && !!sessionId }
   );
 
   // Fetch retrieval queue - always enabled so badge shows count
@@ -130,13 +124,13 @@ export default function ValetSessionPage() {
     refetch: refetchQueue,
   } = api.valet.getRetrievalQueue.useQuery(
     { sessionId },
-    { enabled: !!sessionId && !!token, refetchInterval: 10000 }
+    { enabled: mounted && !!sessionId, refetchInterval: 10000 }
   );
 
   // Fetch valet stats
   const { data: stats, refetch: refetchStats } = api.valet.getValetStats.useQuery(
     { sessionId },
-    { enabled: !!sessionId && !!token, refetchInterval: 15000 }
+    { enabled: mounted && !!sessionId, refetchInterval: 15000 }
   );
 
   // Search guests for check-in
@@ -278,7 +272,7 @@ export default function ValetSessionPage() {
     }
 
     // Check if we're in a secure context (HTTPS or localhost)
-    if (!window.isSecureContext) {
+    if (typeof window !== "undefined" && !window.isSecureContext) {
       setScannerError("يجب استخدام HTTPS للوصول إلى الكاميرا. استخدم البحث بدلاً من ذلك.");
       return;
     }
@@ -449,11 +443,7 @@ export default function ValetSessionPage() {
   const readyItems = queue?.filter((q) => q.status === "ready") ?? [];
   const totalQueueCount = requestedItems.length + fetchingItems.length + readyItems.length;
 
-  if (!token) {
-    return null;
-  }
-
-  if (sessionLoading) {
+  if (sessionLoading || !mounted) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -8,31 +8,23 @@ import {
   Car,
   Loader2,
   Calendar,
-  MapPin,
-  Users,
   ChevronLeft,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import Link from "next/link";
 
-function useValetToken() {
-  const [token, setToken] = useState<string | null>(null);
+export default function ValetHomePage() {
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setToken(localStorage.getItem("valet-token"));
+    setMounted(true);
   }, []);
-
-  return token;
-}
-
-export default function ValetHomePage() {
-  const token = useValetToken();
 
   const { data: assignedSessions, isLoading } = api.valet.getMyAssignedSessions.useQuery(
     undefined,
     {
-      enabled: !!token,
+      enabled: mounted,
       refetchInterval: 30000,
     }
   );
@@ -40,10 +32,6 @@ export default function ValetHomePage() {
   // Separate active and completed sessions
   const activeSessions = assignedSessions?.filter((s) => s.status !== "completed") ?? [];
   const completedSessions = assignedSessions?.filter((s) => s.status === "completed") ?? [];
-
-  if (!token) {
-    return null;
-  }
 
   return (
     <div className="space-y-6 pb-8">
