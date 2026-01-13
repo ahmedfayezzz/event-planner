@@ -15,6 +15,7 @@ import {
   sendValetReadyEmail,
   sendValetBroadcastEmail,
 } from "@/lib/email";
+import { parseQRData } from "@/lib/qr";
 
 // ============================================
 // Valet Employee Auth Procedures
@@ -1053,10 +1054,19 @@ export const valetRouter = createTRPCRouter({
   getGuestByQR: valetProcedure
     .input(z.object({ qrData: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      // QR data format: "checkin:{registrationId}" or just registrationId
-      let registrationId = input.qrData;
-      if (input.qrData.startsWith("checkin:")) {
+      // Parse QR data - supports JSON format from attendance QR codes
+      // Format: {"type":"attendance","registrationId":"...","sessionId":"..."}
+      const parsed = parseQRData(input.qrData);
+
+      let registrationId: string;
+      if (parsed && parsed.type === "attendance" && parsed.registrationId) {
+        registrationId = parsed.registrationId;
+      } else if (input.qrData.startsWith("checkin:")) {
+        // Legacy format: "checkin:{registrationId}"
         registrationId = input.qrData.replace("checkin:", "");
+      } else {
+        // Assume it's a raw registration ID
+        registrationId = input.qrData;
       }
 
       const registration = await ctx.db.registration.findUnique({
