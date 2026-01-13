@@ -753,6 +753,7 @@ export const adminRouter = createTRPCRouter({
             "settings",
             "suggestions",
             "emailCampaigns",
+            "valet",
           ])
         ),
       })
@@ -787,6 +788,7 @@ export const adminRouter = createTRPCRouter({
         "settings",
         "suggestions",
         "emailCampaigns",
+        "valet",
       ];
 
       const permissionData: Record<string, boolean> = {};
@@ -923,6 +925,7 @@ export const adminRouter = createTRPCRouter({
             "settings",
             "suggestions",
             "emailCampaigns",
+            "valet",
           ])
         ),
       })
@@ -969,6 +972,7 @@ export const adminRouter = createTRPCRouter({
         "settings",
         "suggestions",
         "emailCampaigns",
+        "valet",
       ];
 
       for (const perm of allPermissions) {
