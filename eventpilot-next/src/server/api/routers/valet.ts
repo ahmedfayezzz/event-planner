@@ -1103,13 +1103,6 @@ export const valetRouter = createTRPCRouter({
         });
       }
 
-      if (!registration.needsValet) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "هذا الضيف لم يطلب خدمة الفاليه",
-        });
-      }
-
       return {
         registrationId: registration.id,
         sessionId: registration.session.id,
