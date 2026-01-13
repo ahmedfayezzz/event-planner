@@ -58,6 +58,10 @@ export default function SessionEditPage({
           : "",
         customConfirmationMessage: session.customConfirmationMessage || "",
         locationUrl: session.locationUrl || "",
+        // Valet service
+        valetEnabled: session.valetEnabled ?? false,
+        valetLotCapacity: (session.valetLotCapacity ?? 0).toString(),
+        valetRetrievalNotice: (session.valetRetrievalNotice ?? 5).toString(),
       });
     }
   }, [session]);
@@ -104,6 +108,10 @@ export default function SessionEditPage({
         : null,
       // customConfirmationMessage field is commented out in form - removed from mutation
       locationUrl: formData.locationUrl || undefined,
+      // Valet service
+      valetEnabled: formData.valetEnabled,
+      valetLotCapacity: parseInt(formData.valetLotCapacity) || 0,
+      valetRetrievalNotice: parseInt(formData.valetRetrievalNotice) || 5,
     });
   };
 

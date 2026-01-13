@@ -3,6 +3,11 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 import { auth } from "../auth";
 import { db } from "../db";
+import {
+  extractValetToken,
+  verifyValetToken,
+  type ValetTokenPayload,
+} from "@/lib/valet-auth";
 
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   const session = await auth();
@@ -73,6 +78,49 @@ export const superAdminProcedure = t.procedure.use(({ ctx, next }) => {
   return next({
     ctx: {
       session: { ...ctx.session, user: ctx.session.user },
+    },
+  });
+});
+
+// Valet employee procedure - requires valid valet JWT token
+export const valetProcedure = t.procedure.use(async ({ ctx, next }) => {
+  const token = extractValetToken(ctx.headers);
+
+  if (!token) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Valet authentication required",
+    });
+  }
+
+  const valetEmployee = await verifyValetToken(token);
+
+  if (!valetEmployee) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Invalid or expired valet token",
+    });
+  }
+
+  // Verify employee still exists and is active
+  const employee = await ctx.db.valetEmployee.findUnique({
+    where: { id: valetEmployee.employeeId },
+  });
+
+  if (!employee || !employee.isActive) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Valet employee not found or inactive",
+    });
+  }
+
+  return next({
+    ctx: {
+      valetEmployee: {
+        id: employee.id,
+        name: employee.name,
+        username: employee.username,
+      } as ValetTokenPayload & { id: string },
     },
   });
 });

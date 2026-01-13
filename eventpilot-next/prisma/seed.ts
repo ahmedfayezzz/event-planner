@@ -5,6 +5,7 @@ import {
   EventCatering,
   Sponsor,
   EventSponsorship,
+  Guest,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -13,6 +14,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding database with production-like data...\n");
 
+  const now = new Date();
   const defaultPassword = await bcrypt.hash("password123", 10);
   const adminPassword = await bcrypt.hash("admin123", 10);
 
@@ -381,7 +383,12 @@ async function main() {
   ];
 
   const users: User[] = [];
-  for (const userData of usersData) {
+  for (let i = 0; i < usersData.length; i++) {
+    const userData = usersData[i];
+    // Create users with staggered creation dates in the past (30-120 days ago)
+    const daysAgo = 30 + Math.floor(Math.random() * 90);
+    const createdAt = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+
     const user = await prisma.user.upsert({
       where: { email: userData.email },
       update: {},
@@ -391,6 +398,8 @@ async function main() {
         role: "USER",
         isActive: true,
         isApproved: true,
+        createdAt,
+        updatedAt: createdAt,
       },
     });
     users.push(user);
@@ -398,8 +407,6 @@ async function main() {
   console.log(`✅ Created ${users.length} users`);
 
   // ============== SESSIONS ==============
-  const now = new Date();
-
   const sessionsData = [
     // Completed sessions (past)
     {
@@ -408,8 +415,6 @@ async function main() {
       description:
         "أول تجمع لمؤسسي ثلوثية الأعمال لوضع الأسس ومناقشة الرؤية والأهداف. جلسة تاريخية شهدت انطلاقة مجتمع رواد الأعمال.",
       date: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000), // 90 days ago
-      guestName: "المهندس عبدالعزيز الراجحي",
-      guestProfile: "رائد أعمال ومؤسس عدة شركات ناجحة في مجال التقنية",
       location: "فندق الفور سيزونز - الرياض",
       locationUrl: "https://maps.google.com/?q=Four+Seasons+Hotel+Riyadh",
       status: "completed",
@@ -422,8 +427,6 @@ async function main() {
       description:
         "مناقشة التحولات الرقمية وتأثيرها على ريادة الأعمال والاستثمار. تعرف على أحدث التوجهات في عالم التقنية.",
       date: new Date(now.getTime() - 75 * 24 * 60 * 60 * 1000), // 75 days ago
-      guestName: "المهندسة نورا الغامدي",
-      guestProfile: "رئيسة تنفيذية لشركة تقنية ناشئة حققت نمواً بنسبة 300%",
       location: "مركز الملك عبدالعزيز للحوار الوطني",
       locationUrl:
         "https://maps.google.com/?q=King+Abdulaziz+Center+for+National+Dialogue+Riyadh",
@@ -437,8 +440,6 @@ async function main() {
       description:
         "استراتيجيات التسويق الحديثة وكيفية بناء علاقات قوية مع العملاء في عالم رقمي متسارع.",
       date: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
-      guestName: "الأستاذ خالد العمري",
-      guestProfile: "خبير تسويق رقمي ومؤلف كتاب 'التسويق بالذكاء'",
       location: "قاعة الأمير سلطان - جامعة الملك سعود",
       status: "completed",
       maxParticipants: 45,
@@ -450,8 +451,6 @@ async function main() {
       description:
         "كيفية الحصول على التمويل وجذب المستثمرين للمشاريع الناشئة. نصائح عملية من خبراء الاستثمار.",
       date: new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000), // 45 days ago
-      guestName: "الدكتور أحمد المالكي",
-      guestProfile: "خبير في الاستثمار ومدير صندوق رؤية الأعمال",
       location: "مركز الرياض الدولي للمؤتمرات",
       status: "completed",
       maxParticipants: 55,
@@ -463,8 +462,6 @@ async function main() {
       description:
         "تطوير مهارات القيادة وإدارة الفرق في بيئة العمل المعاصرة. كيف تكون قائداً ملهماً.",
       date: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-      guestName: "الدكتورة ريم الشمري",
-      guestProfile: "استشارية قيادة ومدربة معتمدة دولياً",
       location: "فندق الريتز كارلتون - الرياض",
       status: "completed",
       maxParticipants: 50,
@@ -476,8 +473,6 @@ async function main() {
       description:
         "كيفية تطوير حلول مبتكرة تساهم في التنمية المستدامة ورؤية المملكة 2030.",
       date: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
-      guestName: "المهندس فهد الشهراني",
-      guestProfile: "مدير الابتكار في أرامكو السعودية",
       location: "واحة الملك سلمان للعلوم",
       status: "completed",
       maxParticipants: 60,
@@ -490,8 +485,6 @@ async function main() {
       description:
         "استكشاف تطبيقات الذكاء الاصطناعي وكيفية الاستفادة منها في تطوير الأعمال وزيادة الإنتاجية.",
       date: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-      guestName: "الدكتور سامي العتيبي",
-      guestProfile: "خبير في الذكاء الاصطناعي ومؤسس شركة AI Solutions",
       location: "فندق الفيصلية - الرياض",
       locationUrl: "https://maps.google.com/?q=Al+Faisaliah+Hotel+Riyadh",
       status: "open",
@@ -505,8 +498,6 @@ async function main() {
       description:
         "فرص التوسع في أسواق الخليج والشرق الأوسط من خلال التجارة الإلكترونية.",
       date: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
-      guestName: "الأستاذة منى الدوسري",
-      guestProfile: "مؤسسة منصة التسوق 'سوق الخليج'",
       location: "مركز الملك عبدالله المالي",
       locationUrl:
         "https://maps.google.com/?q=King+Abdullah+Financial+District+Riyadh",
@@ -520,8 +511,6 @@ async function main() {
       title: "بناء العلامة التجارية الشخصية",
       description: "كيف تبني علامتك التجارية الشخصية وتصبح مؤثراً في مجالك.",
       date: new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000), // 21 days from now
-      guestName: "الأستاذ ماجد القحطاني",
-      guestProfile: "خبير في العلامات التجارية ومستشار لكبرى الشركات",
       location: "فندق الحياة ريجنسي - الرياض",
       status: "open",
       maxParticipants: 40,
@@ -534,8 +523,6 @@ async function main() {
       description:
         "التوازن بين العمل والحياة الشخصية وكيفية التعامل مع ضغوط ريادة الأعمال.",
       date: new Date(now.getTime() + 28 * 24 * 60 * 60 * 1000), // 28 days from now
-      guestName: "الدكتورة هالة الحربي",
-      guestProfile: "أخصائية نفسية متخصصة في ضغوط العمل",
       location: "مركز التنمية الذاتية - الرياض",
       status: "open",
       maxParticipants: 35,
@@ -546,6 +533,10 @@ async function main() {
 
   const sessions: Session[] = [];
   for (const sessionData of sessionsData) {
+    // Session createdAt should be 7-14 days before the session date
+    const daysBeforeSession = 7 + Math.floor(Math.random() * 7);
+    const sessionCreatedAt = new Date(sessionData.date.getTime() - daysBeforeSession * 24 * 60 * 60 * 1000);
+
     const session = await prisma.session.upsert({
       where: { sessionNumber: sessionData.sessionNumber },
       update: {},
@@ -556,11 +547,136 @@ async function main() {
         embedEnabled: true,
         sendQrInEmail: true,
         showGuestProfile: true,
+        createdAt: sessionCreatedAt,
+        updatedAt: sessionCreatedAt,
       },
     });
     sessions.push(session);
   }
   console.log(`✅ Created ${sessions.length} sessions`);
+
+  // ============== GUESTS (Session Speakers) ==============
+  const guestsData = [
+    {
+      title: "المهندس",
+      name: "عبدالعزيز الراجحي",
+      jobTitle: "مؤسس ورئيس تنفيذي",
+      company: "شركة الراجحي للتقنية",
+      description: "رائد أعمال ومؤسس عدة شركات ناجحة في مجال التقنية",
+      isPublic: true,
+    },
+    {
+      title: "المهندسة",
+      name: "نورا الغامدي",
+      jobTitle: "رئيسة تنفيذية",
+      company: "شركة تقنية ناشئة",
+      description: "رئيسة تنفيذية لشركة تقنية ناشئة حققت نمواً بنسبة 300%",
+      isPublic: true,
+    },
+    {
+      title: "الأستاذ",
+      name: "خالد العمري",
+      jobTitle: "خبير تسويق رقمي",
+      company: null,
+      description: "خبير تسويق رقمي ومؤلف كتاب 'التسويق بالذكاء'",
+      isPublic: true,
+    },
+    {
+      title: "الدكتور",
+      name: "أحمد المالكي",
+      jobTitle: "مدير صندوق استثماري",
+      company: "صندوق رؤية الأعمال",
+      description: "خبير في الاستثمار ومدير صندوق رؤية الأعمال",
+      isPublic: true,
+    },
+    {
+      title: "الدكتورة",
+      name: "ريم الشمري",
+      jobTitle: "استشارية قيادة",
+      company: null,
+      description: "استشارية قيادة ومدربة معتمدة دولياً",
+      isPublic: true,
+    },
+    {
+      title: "المهندس",
+      name: "فهد الشهراني",
+      jobTitle: "مدير الابتكار",
+      company: "أرامكو السعودية",
+      description: "مدير الابتكار في أرامكو السعودية",
+      isPublic: true,
+    },
+    {
+      title: "الدكتور",
+      name: "سامي العتيبي",
+      jobTitle: "خبير ذكاء اصطناعي",
+      company: "AI Solutions",
+      description: "خبير في الذكاء الاصطناعي ومؤسس شركة AI Solutions",
+      isPublic: true,
+    },
+    {
+      title: "الأستاذة",
+      name: "منى الدوسري",
+      jobTitle: "مؤسسة",
+      company: "سوق الخليج",
+      description: "مؤسسة منصة التسوق 'سوق الخليج'",
+      isPublic: true,
+    },
+    {
+      title: "الأستاذ",
+      name: "ماجد القحطاني",
+      jobTitle: "خبير علامات تجارية",
+      company: null,
+      description: "خبير في العلامات التجارية ومستشار لكبرى الشركات",
+      isPublic: true,
+    },
+    {
+      title: "الدكتورة",
+      name: "هالة الحربي",
+      jobTitle: "أخصائية نفسية",
+      company: null,
+      description: "أخصائية نفسية متخصصة في ضغوط العمل",
+      isPublic: true,
+    },
+  ];
+
+  const guests: Guest[] = [];
+  for (const guestData of guestsData) {
+    const guest = await prisma.guest.upsert({
+      where: { id: `guest-${guestData.name.replace(/\s+/g, "-")}` },
+      update: {},
+      create: {
+        id: `guest-${guestData.name.replace(/\s+/g, "-")}`,
+        ...guestData,
+        isActive: true,
+      },
+    });
+    guests.push(guest);
+  }
+  console.log(`✅ Created ${guests.length} guests`);
+
+  // ============== LINK GUESTS TO SESSIONS ==============
+  // Each session gets one guest speaker
+  for (let i = 0; i < sessions.length; i++) {
+    const session = sessions[i];
+    const guest = guests[i];
+    if (guest) {
+      await prisma.sessionGuest.upsert({
+        where: {
+          sessionId_guestId: {
+            sessionId: session.id,
+            guestId: guest.id,
+          },
+        },
+        update: {},
+        create: {
+          sessionId: session.id,
+          guestId: guest.id,
+          displayOrder: 0,
+        },
+      });
+    }
+  }
+  console.log(`✅ Linked guests to sessions`);
 
   // ============== REGISTRATIONS & ATTENDANCE ==============
   const companionNames = [
@@ -1174,6 +1290,214 @@ async function main() {
   }
   console.log(`✅ Created ${eventSponsorships.length} event sponsorships`);
 
+  // ============== VALET EMPLOYEES ==============
+  const valetPassword = await bcrypt.hash("valet123", 10);
+
+  const valetEmployeesData = [
+    {
+      name: "محمد الفاليه",
+      username: "mohammed_valet",
+      phone: "+966550100001",
+    },
+    {
+      name: "أحمد الباركينج",
+      username: "ahmed_parking",
+      phone: "+966550100002",
+    },
+    {
+      name: "خالد السائق",
+      username: "khalid_driver",
+      phone: "+966550100003",
+    },
+  ];
+
+  const valetEmployees = [];
+  for (const empData of valetEmployeesData) {
+    const employee = await prisma.valetEmployee.upsert({
+      where: { username: empData.username },
+      update: {},
+      create: {
+        ...empData,
+        passwordHash: valetPassword,
+        isActive: true,
+      },
+    });
+    valetEmployees.push(employee);
+  }
+  console.log(`✅ Created ${valetEmployees.length} valet employees`);
+
+  // ============== ENABLE VALET ON SESSIONS ==============
+  // Enable valet on some upcoming and one completed session
+  const valetEnabledSessions = [];
+
+  // Enable on upcoming sessions (session 7, 8)
+  for (let i = 0; i < Math.min(2, upcomingSessions.length); i++) {
+    const session = await prisma.session.update({
+      where: { id: upcomingSessions[i].id },
+      data: {
+        valetEnabled: true,
+        valetLotCapacity: 30 + (i * 10), // 30, 40
+        valetRetrievalNotice: 5,
+      },
+    });
+    valetEnabledSessions.push(session);
+  }
+
+  // Enable on one completed session for history
+  if (completedSessions.length > 0) {
+    const session = await prisma.session.update({
+      where: { id: completedSessions[completedSessions.length - 1].id },
+      data: {
+        valetEnabled: true,
+        valetLotCapacity: 25,
+        valetRetrievalNotice: 5,
+      },
+    });
+    valetEnabledSessions.push(session);
+  }
+  console.log(`✅ Enabled valet on ${valetEnabledSessions.length} sessions`);
+
+  // ============== ASSIGN VALET EMPLOYEES TO SESSIONS ==============
+  let valetAssignments = 0;
+  for (const session of valetEnabledSessions) {
+    // Assign 2 employees to each valet-enabled session
+    for (let i = 0; i < Math.min(2, valetEmployees.length); i++) {
+      const employee = valetEmployees[i];
+
+      // Check if assignment already exists
+      const existingAssignment = await prisma.valetEmployeeSession.findUnique({
+        where: {
+          employeeId_sessionId: {
+            employeeId: employee.id,
+            sessionId: session.id,
+          },
+        },
+      });
+
+      if (!existingAssignment) {
+        await prisma.valetEmployeeSession.create({
+          data: {
+            employeeId: employee.id,
+            sessionId: session.id,
+            assignedBy: superAdmin.id,
+          },
+        });
+        valetAssignments++;
+      }
+    }
+  }
+  console.log(`✅ Created ${valetAssignments} valet employee assignments`);
+
+  // ============== VALET REGISTRATIONS & RECORDS ==============
+  // Update some registrations to need valet and create valet records
+  let valetRegistrations = 0;
+  let valetRecords = 0;
+
+  for (const session of valetEnabledSessions) {
+    // Get approved registrations for this session
+    const sessionRegistrations = await prisma.registration.findMany({
+      where: {
+        sessionId: session.id,
+        isApproved: true,
+        isRejected: false,
+        invitedByRegistrationId: null, // Only main registrations, not companions
+      },
+      include: {
+        user: true,
+      },
+      take: 8, // Up to 8 guests need valet per session
+    });
+
+    for (let i = 0; i < sessionRegistrations.length; i++) {
+      const reg = sessionRegistrations[i];
+
+      // Mark as needing valet
+      await prisma.registration.update({
+        where: { id: reg.id },
+        data: { needsValet: true },
+      });
+      valetRegistrations++;
+
+      // For completed sessions, create valet records with various statuses
+      if (session.status === "completed") {
+        const statuses = ["parked", "retrieved", "retrieved", "retrieved"] as const;
+        const status = statuses[i % statuses.length];
+
+        const carData = [
+          { make: "تويوتا", model: "كامري", color: "أبيض", plate: "أ ب ج 1234" },
+          { make: "لكزس", model: "ES", color: "أسود", plate: "س ع ن 5678" },
+          { make: "مرسيدس", model: "E-Class", color: "فضي", plate: "ر ص ط 9012" },
+          { make: "بي ام دبليو", model: "5 Series", color: "أزرق", plate: "ك ل م 3456" },
+          { make: "أودي", model: "A6", color: "رمادي", plate: "ف ق ه 7890" },
+          { make: "نيسان", model: "مكسيما", color: "بني", plate: "و ي ع 2345" },
+          { make: "هوندا", model: "أكورد", color: "أحمر", plate: "ش ث خ 6789" },
+          { make: "جينيسيس", model: "G80", color: "أخضر", plate: "ذ ض ظ 0123" },
+        ];
+        const car = carData[i % carData.length];
+
+        await prisma.valetRecord.create({
+          data: {
+            registrationId: reg.id,
+            sessionId: session.id,
+            guestName: reg.user?.name ?? reg.guestName ?? "ضيف",
+            guestPhone: reg.user?.phone ?? reg.guestPhone,
+            status,
+            vehicleMake: car.make,
+            vehicleModel: car.model,
+            vehicleColor: car.color,
+            vehiclePlate: car.plate,
+            parkingSlot: `A-${10 + i}`,
+            parkedAt: new Date(session.date.getTime() + 15 * 60 * 1000), // 15 min after session
+            parkedByEmployeeId: valetEmployees[i % valetEmployees.length].id,
+            retrievalRequestedAt: status !== "parked" ? new Date(session.date.getTime() + 2 * 60 * 60 * 1000) : null,
+            vehicleReadyAt: status === "retrieved" ? new Date(session.date.getTime() + 2.1 * 60 * 60 * 1000) : null,
+            retrievedAt: status === "retrieved" ? new Date(session.date.getTime() + 2.2 * 60 * 60 * 1000) : null,
+            isVip: i < 2, // First 2 are VIP
+            retrievalPriority: i < 2 ? 100 : 0,
+          },
+        });
+        valetRecords++;
+      }
+
+      // For upcoming sessions, create some expected/parked records
+      if (session.status === "open" && i < 4) {
+        const statuses = ["expected", "expected", "parked", "requested"] as const;
+        const status = statuses[i % statuses.length];
+
+        const carData = [
+          { make: "تويوتا", model: "لاندكروزر", color: "أبيض", plate: "ن هـ و 1111" },
+          { make: "شيفروليه", model: "تاهو", color: "أسود", plate: "ب ت ث 2222" },
+          { make: "جي ام سي", model: "يوكن", color: "رمادي", plate: "ج ح خ 3333" },
+          { make: "فورد", model: "إكسبلورر", color: "أزرق", plate: "د ذ ر 4444" },
+        ];
+        const car = carData[i];
+
+        await prisma.valetRecord.create({
+          data: {
+            registrationId: reg.id,
+            sessionId: session.id,
+            guestName: reg.user?.name ?? reg.guestName ?? "ضيف",
+            guestPhone: reg.user?.phone ?? reg.guestPhone,
+            status,
+            vehicleMake: status !== "expected" ? car.make : null,
+            vehicleModel: status !== "expected" ? car.model : null,
+            vehicleColor: status !== "expected" ? car.color : null,
+            vehiclePlate: status !== "expected" ? car.plate : null,
+            parkingSlot: status !== "expected" ? `B-${i + 1}` : null,
+            parkedAt: status !== "expected" ? new Date() : null,
+            parkedByEmployeeId: status !== "expected" ? valetEmployees[0].id : null,
+            retrievalRequestedAt: status === "requested" ? new Date() : null,
+            isVip: i === 0,
+            retrievalPriority: i === 0 ? 100 : 0,
+          },
+        });
+        valetRecords++;
+      }
+    }
+  }
+  console.log(`✅ Created ${valetRegistrations} valet registrations`);
+  console.log(`✅ Created ${valetRecords} valet records`);
+
   // ============== SUMMARY ==============
   console.log("\n" + "=".repeat(50));
   console.log("📊 Database Seeding Summary:");
@@ -1186,6 +1510,7 @@ async function main() {
       sessions.filter((s) => s.status === "completed").length
     } completed, ${sessions.filter((s) => s.status === "open").length} open)`
   );
+  console.log(`🎤 Guests (speakers): ${guests.length}`);
   console.log(
     `📝 Registrations: ${totalRegistrations} (${totalPendingRegistrations} pending approval)`
   );
@@ -1202,6 +1527,11 @@ async function main() {
   console.log(`📝 User notes: ${totalNotes}`);
   console.log(`🤝 Sponsors: ${sponsors.length}`);
   console.log(`🎪 Event sponsorships: ${eventSponsorships.length}`);
+  console.log(`🚗 Valet employees: ${valetEmployees.length}`);
+  console.log(`🅿️  Valet-enabled sessions: ${valetEnabledSessions.length}`);
+  console.log(`📋 Valet assignments: ${valetAssignments}`);
+  console.log(`🎫 Valet registrations: ${valetRegistrations}`);
+  console.log(`🚙 Valet records: ${valetRecords}`);
   console.log("=".repeat(50));
   console.log("\n📋 Login Credentials:");
   console.log("─".repeat(50));
@@ -1210,6 +1540,12 @@ async function main() {
     "Admin:        moderator@example.com / admin123 (limited: dashboard, sessions, checkin)"
   );
   console.log("Users:        [any user email] / password123");
+  console.log("─".repeat(50));
+  console.log("\n🚗 Valet Portal Login (/valet/login):");
+  console.log("─".repeat(50));
+  console.log("Valet 1:      mohammed_valet / valet123");
+  console.log("Valet 2:      ahmed_parking / valet123");
+  console.log("Valet 3:      khalid_driver / valet123");
   console.log("─".repeat(50));
   console.log("\n🎉 Seeding completed successfully!");
 }

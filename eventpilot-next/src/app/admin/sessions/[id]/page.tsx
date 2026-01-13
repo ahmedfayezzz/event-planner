@@ -51,6 +51,7 @@ import {
   Link2,
 } from "lucide-react";
 import { getSponsorshipTypeLabel, getSponsorTypeLabel } from "@/lib/constants";
+import { ValetEmployeeAssignment } from "@/components/admin/valet-employee-assignment";
 
 export default function SessionDetailPage({
   params,
@@ -549,6 +550,12 @@ export default function SessionDetailPage({
           </CardContent>
         </Card>
       )}
+
+      {/* Valet Employee Assignment */}
+      <ValetEmployeeAssignment
+        sessionId={id}
+        valetEnabled={session.valetEnabled}
+      />
 
       {/* Recent Registrations */}
       <Card>

@@ -46,6 +46,7 @@ import {
   ShieldCheck,
   MessageSquare,
   Mail,
+  Car,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/admin/breadcrumbs";
 import {
@@ -110,6 +111,12 @@ const allSidebarLinks: SidebarLink[] = [
     label: "تسجيل الحضور",
     icon: QrCode,
     permission: "checkin",
+  },
+  {
+    href: "/admin/valet",
+    label: "خدمة الفاليه",
+    icon: Car,
+    permission: "valet",
   },
   {
     href: "/admin/settings",

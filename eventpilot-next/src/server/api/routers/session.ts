@@ -523,6 +523,10 @@ export const sessionRouter = createTRPCRouter({
         showRegistrationPurpose: z.boolean().default(true),
         showCateringInterest: z.boolean().default(true),
         locationUrl: z.string().optional(),
+        // Valet configuration
+        valetEnabled: z.boolean().default(false),
+        valetLotCapacity: z.number().int().min(0).default(0),
+        valetRetrievalNotice: z.number().int().min(1).default(5),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -602,6 +606,10 @@ export const sessionRouter = createTRPCRouter({
         showRegistrationPurpose: z.boolean().optional(),
         showCateringInterest: z.boolean().optional(),
         locationUrl: z.string().optional(),
+        // Valet configuration
+        valetEnabled: z.boolean().optional(),
+        valetLotCapacity: z.number().int().min(0).optional(),
+        valetRetrievalNotice: z.number().int().min(1).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

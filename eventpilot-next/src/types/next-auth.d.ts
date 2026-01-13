@@ -17,6 +17,7 @@ declare module "next-auth" {
       canAccessSettings: boolean;
       canAccessSuggestions: boolean;
       canAccessEmailCampaigns: boolean;
+      canAccessValet: boolean;
     } & DefaultSession["user"];
   }
 
@@ -32,6 +33,7 @@ declare module "next-auth" {
     canAccessSettings: boolean;
     canAccessSuggestions: boolean;
     canAccessEmailCampaigns: boolean;
+    canAccessValet: boolean;
   }
 }
 
@@ -49,6 +51,7 @@ declare module "next-auth/jwt" {
     canAccessSettings: boolean;
     canAccessSuggestions: boolean;
     canAccessEmailCampaigns: boolean;
+    canAccessValet: boolean;
   }
 }
 
@@ -66,5 +69,6 @@ declare module "@auth/core/adapters" {
     canAccessSettings: boolean;
     canAccessSuggestions: boolean;
     canAccessEmailCampaigns: boolean;
+    canAccessValet: boolean;
   }
 }

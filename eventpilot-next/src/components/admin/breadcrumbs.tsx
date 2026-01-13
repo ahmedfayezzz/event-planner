@@ -26,6 +26,9 @@ const pathLabels: Record<string, string> = {
   admins: "المديرين",
   suggestions: "الاقتراحات",
   "manual-registration": "تسجيل يدوي",
+  valet: "خدمة الفاليه",
+  employees: "الموظفين",
+  records: "السجلات",
 };
 
 export function Breadcrumbs() {

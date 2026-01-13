@@ -31,6 +31,16 @@ export const sessionFormSchema = z.object({
   registrationDeadline: z.string().optional(),
   customConfirmationMessage: z.string().optional(),
   locationUrl: z.string().optional(),
+  // Valet service
+  valetEnabled: z.boolean(),
+  valetLotCapacity: z.string().refine(
+    (v) => !v || parseInt(v) >= 0,
+    "يجب أن يكون رقم صحيح"
+  ),
+  valetRetrievalNotice: z.string().refine(
+    (v) => !v || parseInt(v) >= 1,
+    "يجب أن يكون رقم صحيح موجب"
+  ),
 });
 
 export type SessionFormData = z.infer<typeof sessionFormSchema>;
@@ -60,4 +70,8 @@ export const defaultSessionFormData: SessionFormData = {
   registrationDeadline: "",
   customConfirmationMessage: "",
   locationUrl: "",
+  // Valet service
+  valetEnabled: false,
+  valetLotCapacity: "0",
+  valetRetrievalNotice: "5",
 };
