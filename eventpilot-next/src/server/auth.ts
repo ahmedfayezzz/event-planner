@@ -52,6 +52,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           canAccessSettings: user.canAccessSettings,
           canAccessSuggestions: user.canAccessSuggestions,
           canAccessEmailCampaigns: user.canAccessEmailCampaigns,
+          canAccessValet: user.canAccessValet,
         };
       },
     }),

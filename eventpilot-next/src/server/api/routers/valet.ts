@@ -1769,10 +1769,14 @@ export const valetRouter = createTRPCRouter({
             status: "requested",
             OR: [
               { retrievalPriority: { gt: record.retrievalPriority } },
-              {
-                retrievalPriority: record.retrievalPriority,
-                retrievalRequestedAt: { lt: record.retrievalRequestedAt },
-              },
+              ...(record.retrievalRequestedAt
+                ? [
+                    {
+                      retrievalPriority: record.retrievalPriority,
+                      retrievalRequestedAt: { lt: record.retrievalRequestedAt },
+                    },
+                  ]
+                : []),
             ],
           },
         });
