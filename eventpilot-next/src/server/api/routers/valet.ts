@@ -1696,10 +1696,14 @@ export const valetRouter = createTRPCRouter({
               // Higher priority
               { retrievalPriority: { gt: record.retrievalPriority } },
               // Same priority but earlier request
-              {
-                retrievalPriority: record.retrievalPriority,
-                retrievalRequestedAt: { lt: record.retrievalRequestedAt },
-              },
+              ...(record.retrievalRequestedAt
+                ? [
+                    {
+                      retrievalPriority: record.retrievalPriority,
+                      retrievalRequestedAt: { lt: record.retrievalRequestedAt },
+                    },
+                  ]
+                : []),
             ],
           },
         });
