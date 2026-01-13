@@ -631,12 +631,13 @@ export const valetRouter = createTRPCRouter({
   getSessionValetGuests: adminProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ ctx, input }) => {
+      // Get all registrations that have valet records (have used valet service)
       const registrations = await ctx.db.registration.findMany({
         where: {
           sessionId: input.sessionId,
-          needsValet: true,
           isApproved: true,
           isRejected: false,
+          valetRecord: { isNot: null },
         },
         include: {
           user: {
@@ -662,7 +663,7 @@ export const valetRouter = createTRPCRouter({
     }),
 
   /**
-   * Send broadcast message to all valet guests
+   * Send broadcast message to all guests who have used valet service
    */
   sendBroadcast: adminProcedure
     .input(
@@ -684,12 +685,13 @@ export const valetRouter = createTRPCRouter({
         });
       }
 
+      // Get all registrations that have valet records
       const registrations = await ctx.db.registration.findMany({
         where: {
           sessionId: input.sessionId,
-          needsValet: true,
           isApproved: true,
           isRejected: false,
+          valetRecord: { isNot: null },
         },
         include: {
           user: {
