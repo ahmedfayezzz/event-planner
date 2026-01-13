@@ -782,7 +782,7 @@ export const valetRouter = createTRPCRouter({
   // ============================================
 
   /**
-   * Search guests by name, phone, or email for a session
+   * Search guests by name, phone, email, or ticket number for a session
    */
   searchGuests: valetProcedure
     .input(
@@ -792,6 +792,53 @@ export const valetRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Check if query is a ticket number
+      const ticketNumber = parseInt(input.query, 10);
+      const isTicketSearch = !isNaN(ticketNumber) && ticketNumber > 0;
+
+      // If searching by ticket number, find the valet record directly
+      if (isTicketSearch) {
+        const valetRecord = await ctx.db.valetRecord.findFirst({
+          where: {
+            sessionId: input.sessionId,
+            ticketNumber: ticketNumber,
+          },
+          include: {
+            registration: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    phone: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (valetRecord) {
+          const reg = valetRecord.registration;
+          return [{
+            registrationId: reg.id,
+            name: reg.user?.name ?? reg.guestName ?? "Unknown",
+            phone: reg.user?.phone ?? reg.guestPhone,
+            email: reg.user?.email ?? reg.guestEmail,
+            valetStatus: valetRecord.status,
+            isVip: valetRecord.isVip,
+            ticketNumber: valetRecord.ticketNumber,
+            vehicleMake: valetRecord.vehicleMake,
+            vehicleModel: valetRecord.vehicleModel,
+            vehicleColor: valetRecord.vehicleColor,
+            vehiclePlate: valetRecord.vehiclePlate,
+            parkingSlot: valetRecord.parkingSlot,
+          }];
+        }
+      }
+
+      // Search by name, phone, or email
       const registrations = await ctx.db.registration.findMany({
         where: {
           sessionId: input.sessionId,
@@ -849,6 +896,12 @@ export const valetRouter = createTRPCRouter({
         email: reg.user?.email ?? reg.guestEmail,
         valetStatus: reg.valetRecord?.status ?? null,
         isVip: reg.valetRecord?.isVip ?? false,
+        ticketNumber: reg.valetRecord?.ticketNumber ?? null,
+        vehicleMake: reg.valetRecord?.vehicleMake ?? null,
+        vehicleModel: reg.valetRecord?.vehicleModel ?? null,
+        vehicleColor: reg.valetRecord?.vehicleColor ?? null,
+        vehiclePlate: reg.valetRecord?.vehiclePlate ?? null,
+        parkingSlot: reg.valetRecord?.parkingSlot ?? null,
       }));
     }),
 
@@ -993,7 +1046,7 @@ export const valetRouter = createTRPCRouter({
       const guestPhone = registration.user?.phone ?? registration.guestPhone;
       const guestEmail = registration.user?.email ?? registration.guestEmail;
 
-      // Get next ticket number for this session
+      // Get next ticket number for this session (starts from 1)
       const lastTicket = await ctx.db.valetRecord.findFirst({
         where: {
           sessionId: registration.session.id,
@@ -1002,7 +1055,7 @@ export const valetRouter = createTRPCRouter({
         orderBy: { ticketNumber: "desc" },
         select: { ticketNumber: true },
       });
-      const nextTicketNumber = (lastTicket?.ticketNumber ?? -1) + 1;
+      const nextTicketNumber = (lastTicket?.ticketNumber ?? 0) + 1;
 
       // Generate unique tracking token for public access
       const trackingToken = crypto.randomUUID();

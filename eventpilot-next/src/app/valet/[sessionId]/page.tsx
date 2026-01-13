@@ -23,7 +23,6 @@ import {
   Search,
   Loader2,
   User,
-  Phone,
   ParkingSquare,
   CheckCircle,
   Crown,
@@ -57,6 +56,12 @@ interface GuestResult {
   email?: string | null;
   valetStatus: string | null;
   isVip: boolean;
+  ticketNumber: number | null;
+  vehicleMake: string | null;
+  vehicleModel: string | null;
+  vehicleColor: string | null;
+  vehiclePlate: string | null;
+  parkingSlot: string | null;
 }
 
 interface ParkDialogData {
@@ -436,8 +441,8 @@ export default function ValetSessionPage() {
     );
   }
 
-  // Scanner component (shared between checkin and collection)
-  const ScannerView = ({ mode }: { mode: "checkin" | "collection" }) => (
+  // Helper to render scanner view
+  const renderScannerView = () => (
     <div className="relative">
       <video
         ref={videoRef}
@@ -518,7 +523,7 @@ export default function ValetSessionPage() {
           <Card className="overflow-hidden">
             <CardContent className="p-0">
               {showScanner ? (
-                <ScannerView mode="checkin" />
+                renderScannerView()
               ) : (
                 <button
                   onClick={() => startScanner("checkin")}
@@ -549,7 +554,7 @@ export default function ValetSessionPage() {
             <CardContent className="space-y-4">
               <div className="flex gap-2">
                 <Input
-                  placeholder="الاسم، الهاتف، أو البريد..."
+                  placeholder="الاسم، الهاتف، رقم التذكرة..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -622,7 +627,7 @@ export default function ValetSessionPage() {
           <Card className="overflow-hidden">
             <CardContent className="p-0">
               {showCollectionScanner ? (
-                <ScannerView mode="collection" />
+                renderScannerView()
               ) : (
                 <button
                   onClick={() => startScanner("collection")}
@@ -653,7 +658,7 @@ export default function ValetSessionPage() {
             <CardContent className="space-y-4">
               <div className="flex gap-2">
                 <Input
-                  placeholder="الاسم، الهاتف، أو البريد..."
+                  placeholder="الاسم، الهاتف، رقم التذكرة..."
                   value={collectionSearchQuery}
                   onChange={(e) => setCollectionSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleCollectionSearch()}
@@ -670,53 +675,95 @@ export default function ValetSessionPage() {
 
               {/* Collection Search Results */}
               {collectionSearchResults.length > 0 && (
-                <div className="space-y-2">
-                  {collectionSearchResults.map((guest) => (
-                    <div
-                      key={guest.registrationId}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-white"
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="p-2 rounded-full bg-muted shrink-0">
-                          <User className="h-4 w-4" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium truncate">{guest.name}</p>
-                            {guest.isVip && (
-                              <Crown className="h-4 w-4 text-amber-500 shrink-0" />
-                            )}
+                <div className="space-y-3">
+                  {collectionSearchResults.map((guest) => {
+                    const vehicleDesc = [guest.vehicleColor, guest.vehicleMake, guest.vehicleModel].filter(Boolean).join(" ");
+                    return (
+                      <Card
+                        key={guest.registrationId}
+                        className={guest.isVip ? "border-amber-200 bg-amber-50/50" : ""}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-2 min-w-0 flex-1">
+                              {/* Header: Ticket + Name + VIP */}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {guest.ticketNumber !== null && (
+                                  <span className="inline-flex items-center gap-1 text-sm font-bold bg-primary text-white px-2 py-0.5 rounded">
+                                    <Ticket className="h-3 w-3" />
+                                    {guest.ticketNumber}
+                                  </span>
+                                )}
+                                <p className="font-semibold truncate">{guest.name}</p>
+                                {guest.isVip && <Crown className="h-4 w-4 text-amber-500 shrink-0" />}
+                                {getStatusBadge(guest.valetStatus)}
+                              </div>
+
+                              {/* Vehicle Info */}
+                              {vehicleDesc && (
+                                <p className="text-sm text-muted-foreground">
+                                  {vehicleDesc}
+                                </p>
+                              )}
+
+                              {/* Details Row */}
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                {guest.vehiclePlate && (
+                                  <span className="font-mono bg-muted px-2 py-0.5 rounded" dir="ltr">
+                                    {guest.vehiclePlate}
+                                  </span>
+                                )}
+                                {guest.parkingSlot && (
+                                  <span className="text-muted-foreground">
+                                    موقع: {guest.parkingSlot}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Contact Info */}
+                              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                                {guest.phone && (
+                                  <span dir="ltr">{guest.phone}</span>
+                                )}
+                                {guest.email && (
+                                  <span dir="ltr">{guest.email}</span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Action Button */}
+                            <div className="shrink-0">
+                              {guest.valetStatus === "parked" && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => requestRetrievalMutation.mutate({ registrationId: guest.registrationId })}
+                                  disabled={requestRetrievalMutation.isPending}
+                                >
+                                  {requestRetrievalMutation.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <CarFront className="h-4 w-4 ml-1" />
+                                      طلب استرجاع
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                              {(guest.valetStatus === "requested" || guest.valetStatus === "ready") && (
+                                <span className="text-xs text-muted-foreground">في الطابور</span>
+                              )}
+                              {guest.valetStatus === "retrieved" && (
+                                <span className="text-xs text-muted-foreground">تم الاستلام</span>
+                              )}
+                              {(!guest.valetStatus || guest.valetStatus === "expected") && (
+                                <span className="text-xs text-muted-foreground">لم تُركن بعد</span>
+                              )}
+                            </div>
                           </div>
-                          {guest.phone && (
-                            <p className="text-sm text-muted-foreground" dir="ltr">
-                              {guest.phone}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {getStatusBadge(guest.valetStatus)}
-                        {guest.valetStatus === "parked" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-amber-600 border-amber-200 hover:bg-amber-50"
-                            onClick={() => requestRetrievalMutation.mutate({ registrationId: guest.registrationId })}
-                            disabled={requestRetrievalMutation.isPending}
-                          >
-                            {requestRetrievalMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <>
-                                <CarFront className="h-4 w-4 ml-1" />
-                                طلب
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
