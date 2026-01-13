@@ -1022,10 +1022,23 @@ export default function ValetSessionPage() {
           <DialogHeader>
             <DialogTitle>ركن سيارة</DialogTitle>
             <DialogDescription>
-              أدخل بيانات السيارة للضيف: {parkDialog?.name}
+              أدخل بيانات السيارة للضيف
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* Guest Info */}
+            <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold">{parkDialog?.name}</span>
+              </div>
+              {parkDialog?.phone && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span dir="ltr">{parkDialog.phone}</span>
+                </div>
+              )}
+            </div>
+
             <div className="grid gap-4 grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="make">الشركة المصنعة</Label>
