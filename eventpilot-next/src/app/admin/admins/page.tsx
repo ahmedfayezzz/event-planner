@@ -73,6 +73,7 @@ const ALL_PERMISSIONS: PermissionKey[] = [
   "settings",
   "suggestions",
   "emailCampaigns",
+  "valet",
 ];
 
 interface AdminUser {
@@ -92,6 +93,7 @@ interface AdminUser {
   canAccessSettings: boolean;
   canAccessSuggestions: boolean;
   canAccessEmailCampaigns: boolean;
+  canAccessValet: boolean;
 }
 
 export default function AdminsPage() {
@@ -222,6 +224,7 @@ export default function AdminsPage() {
     if (admin.canAccessSettings) currentPermissions.push("settings");
     if (admin.canAccessSuggestions) currentPermissions.push("suggestions");
     if (admin.canAccessEmailCampaigns) currentPermissions.push("emailCampaigns");
+    if (admin.canAccessValet) currentPermissions.push("valet");
     setSelectedPermissions(currentPermissions);
     setPermissionDialogOpen(true);
   };
@@ -253,6 +256,7 @@ export default function AdminsPage() {
     if (admin.canAccessSettings) count++;
     if (admin.canAccessSuggestions) count++;
     if (admin.canAccessEmailCampaigns) count++;
+    if (admin.canAccessValet) count++;
     return count;
   };
 

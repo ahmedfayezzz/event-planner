@@ -120,6 +120,9 @@ const ALL_PERMISSIONS: PermissionKey[] = [
   "analytics",
   "checkin",
   "settings",
+  "suggestions",
+  "emailCampaigns",
+  "valet",
 ];
 
 export default function AdminUsersPage() {

@@ -897,6 +897,7 @@ export const adminRouter = createTRPCRouter({
         canAccessSettings: true,
         canAccessSuggestions: true,
         canAccessEmailCampaigns: true,
+        canAccessValet: true,
         createdAt: true,
       },
       orderBy: [{ role: "desc" }, { createdAt: "asc" }],
