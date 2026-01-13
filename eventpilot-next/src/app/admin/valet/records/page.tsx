@@ -63,6 +63,8 @@ import {
   AlertCircle,
   RefreshCw,
   Pencil,
+  CarFront,
+  Ticket,
 } from "lucide-react";
 
 type ValetStatus = "expected" | "parked" | "requested" | "ready" | "retrieved";
@@ -148,6 +150,17 @@ export default function ValetRecordsPage() {
     },
     onError: (error) => {
       toast.error(error.message || "فشل تحديث البيانات");
+    },
+  });
+
+  // Admin request retrieval mutation
+  const requestRetrievalMutation = api.valet.adminRequestRetrieval.useMutation({
+    onSuccess: (data) => {
+      toast.success(`${data.message} - تذكرة #${data.ticketNumber ?? "N/A"}`);
+      refetchRecords();
+    },
+    onError: (error) => {
+      toast.error(error.message || "فشل طلب الاسترجاع");
     },
   });
 
@@ -324,6 +337,7 @@ export default function ValetRecordsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-16">تذكرة</TableHead>
                     <TableHead>الضيف</TableHead>
                     <TableHead>السيارة</TableHead>
                     <TableHead className="hidden md:table-cell">موقع الركن</TableHead>
@@ -335,6 +349,16 @@ export default function ValetRecordsPage() {
                 <TableBody>
                   {filteredRecords.map((record) => (
                     <TableRow key={record.id}>
+                      <TableCell>
+                        {record.ticketNumber !== null ? (
+                          <span className="inline-flex items-center gap-1 text-sm font-bold bg-primary text-white px-2 py-0.5 rounded">
+                            <Ticket className="h-3 w-3" />
+                            {record.ticketNumber}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{record.guestName}</p>
@@ -382,6 +406,18 @@ export default function ValetRecordsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            {record.status === "parked" && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => requestRetrievalMutation.mutate({ registrationId: record.registrationId })}
+                                  disabled={requestRetrievalMutation.isPending}
+                                >
+                                  <CarFront className="me-2 h-4 w-4" />
+                                  طلب استرجاع
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
                             <DropdownMenuItem
                               onClick={() => {
                                 setOverrideAction({

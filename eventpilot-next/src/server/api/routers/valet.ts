@@ -992,6 +992,17 @@ export const valetRouter = createTRPCRouter({
       const guestPhone = registration.user?.phone ?? registration.guestPhone;
       const guestEmail = registration.user?.email ?? registration.guestEmail;
 
+      // Get next ticket number for this session
+      const lastTicket = await ctx.db.valetRecord.findFirst({
+        where: {
+          sessionId: registration.session.id,
+          ticketNumber: { not: null },
+        },
+        orderBy: { ticketNumber: "desc" },
+        select: { ticketNumber: true },
+      });
+      const nextTicketNumber = (lastTicket?.ticketNumber ?? -1) + 1;
+
       let valetRecord;
 
       if (registration.valetRecord) {
@@ -1006,6 +1017,7 @@ export const valetRouter = createTRPCRouter({
         valetRecord = await ctx.db.valetRecord.update({
           where: { id: registration.valetRecord.id },
           data: {
+            ticketNumber: registration.valetRecord.ticketNumber ?? nextTicketNumber,
             vehicleMake: input.vehicleMake,
             vehicleModel: input.vehicleModel,
             vehicleColor: input.vehicleColor,
@@ -1024,6 +1036,7 @@ export const valetRouter = createTRPCRouter({
             sessionId: registration.session.id,
             guestName,
             guestPhone,
+            ticketNumber: nextTicketNumber,
             vehicleMake: input.vehicleMake,
             vehicleModel: input.vehicleModel,
             vehicleColor: input.vehicleColor,
@@ -1171,6 +1184,123 @@ export const valetRouter = createTRPCRouter({
   // ============================================
   // Guest/Public Procedures
   // ============================================
+
+  /**
+   * Valet requests car retrieval on behalf of guest (when guest comes to station)
+   */
+  valetRequestRetrieval: valetProcedure
+    .input(z.object({ registrationId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const record = await ctx.db.valetRecord.findUnique({
+        where: { registrationId: input.registrationId },
+        include: {
+          session: { select: { id: true } },
+        },
+      });
+
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "سجل الفاليه غير موجود",
+        });
+      }
+
+      if (record.status === "expected") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "السيارة لم يتم ركنها بعد",
+        });
+      }
+
+      if (record.status === "requested" || record.status === "ready") {
+        // Already in queue - just return success
+        return {
+          status: record.status,
+          ticketNumber: record.ticketNumber,
+          message: "السيارة في طابور الاسترجاع",
+        };
+      }
+
+      if (record.status === "retrieved") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "تم استلام السيارة مسبقاً",
+        });
+      }
+
+      const updated = await ctx.db.valetRecord.update({
+        where: { id: record.id },
+        data: {
+          status: "requested",
+          retrievalRequestedAt: new Date(),
+          retrievalPriority: record.isVip ? 100 : 0,
+        },
+      });
+
+      return {
+        status: updated.status,
+        ticketNumber: updated.ticketNumber,
+        message: "تم طلب استرجاع السيارة",
+      };
+    }),
+
+  /**
+   * Admin requests car retrieval on behalf of guest
+   */
+  adminRequestRetrieval: adminProcedure
+    .input(z.object({ registrationId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const record = await ctx.db.valetRecord.findUnique({
+        where: { registrationId: input.registrationId },
+      });
+
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "سجل الفاليه غير موجود",
+        });
+      }
+
+      if (record.status === "expected") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "السيارة لم يتم ركنها بعد",
+        });
+      }
+
+      if (record.status === "requested" || record.status === "ready") {
+        return {
+          status: record.status,
+          ticketNumber: record.ticketNumber,
+          message: "السيارة في طابور الاسترجاع",
+        };
+      }
+
+      if (record.status === "retrieved") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "تم استلام السيارة مسبقاً",
+        });
+      }
+
+      const updated = await ctx.db.valetRecord.update({
+        where: { id: record.id },
+        data: {
+          status: "requested",
+          retrievalRequestedAt: new Date(),
+          retrievalPriority: record.isVip ? 100 : 0,
+          lastAdminActionAt: new Date(),
+          lastAdminActionBy: ctx.session.user.id,
+          lastAdminActionType: "retrieval_request",
+        },
+      });
+
+      return {
+        status: updated.status,
+        ticketNumber: updated.ticketNumber,
+        message: "تم طلب استرجاع السيارة",
+      };
+    }),
 
   /**
    * Guest requests car retrieval
