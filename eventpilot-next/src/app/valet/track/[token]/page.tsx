@@ -276,12 +276,6 @@ export default function ValetTrackingPage({
                 <span className="font-medium">{valetStatus.parkingSlot}</span>
               </div>
             )}
-            {valetStatus.isVip && (
-              <div className="flex justify-between items-center py-2">
-                <span className="text-muted-foreground">الأولوية</span>
-                <Badge className="bg-amber-100 text-amber-700">VIP</Badge>
-              </div>
-            )}
           </CardContent>
         </Card>
 

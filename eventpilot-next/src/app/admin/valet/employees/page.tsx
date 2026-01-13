@@ -51,6 +51,7 @@ import {
   UserCheck,
   Loader2,
   Pencil,
+  KeyRound,
 } from "lucide-react";
 
 interface ValetEmployee {
@@ -80,6 +81,10 @@ export default function ValetEmployeesPage() {
     employeeName: string;
   } | null>(null);
 
+  // Reset password dialog state
+  const [resetPasswordEmployee, setResetPasswordEmployee] = useState<ValetEmployee | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+
   // Fetch valet employees
   const { data: employees, isLoading, refetch } = api.valet.listEmployees.useQuery();
 
@@ -104,6 +109,17 @@ export default function ValetEmployeesPage() {
     },
     onError: (error) => {
       toast.error(error.message || "حدث خطأ");
+    },
+  });
+
+  const resetPasswordMutation = api.valet.updateEmployee.useMutation({
+    onSuccess: () => {
+      toast.success("تم تغيير كلمة المرور بنجاح");
+      setResetPasswordEmployee(null);
+      setNewPassword("");
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ في تغيير كلمة المرور");
     },
   });
 
@@ -191,6 +207,18 @@ export default function ValetEmployeesPage() {
       }
     }
     setConfirmAction(null);
+  };
+
+  const handleResetPassword = () => {
+    if (!resetPasswordEmployee) return;
+    if (!newPassword || newPassword.length < 6) {
+      toast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+      return;
+    }
+    resetPasswordMutation.mutate({
+      id: resetPasswordEmployee.id,
+      password: newPassword,
+    });
   };
 
   const activeCount = employees?.filter((e) => e.isActive).length ?? 0;
@@ -314,6 +342,10 @@ export default function ValetEmployeesPage() {
                           <DropdownMenuItem onClick={() => handleOpenEdit(employee)}>
                             <Pencil className="me-2 h-4 w-4" />
                             تعديل
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setResetPasswordEmployee(employee)}>
+                            <KeyRound className="me-2 h-4 w-4" />
+                            إعادة تعيين كلمة المرور
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -497,6 +529,60 @@ export default function ValetEmployeesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog
+        open={!!resetPasswordEmployee}
+        onOpenChange={(open) => {
+          if (!open) {
+            setResetPasswordEmployee(null);
+            setNewPassword("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إعادة تعيين كلمة المرور</DialogTitle>
+            <DialogDescription>
+              تعيين كلمة مرور جديدة للموظف: {resetPasswordEmployee?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">كلمة المرور الجديدة</Label>
+              <Input
+                id="new-password"
+                type="password"
+                placeholder="6 أحرف على الأقل"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                dir="ltr"
+                className="text-left"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setResetPasswordEmployee(null);
+                setNewPassword("");
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleResetPassword}
+              disabled={resetPasswordMutation.isPending}
+            >
+              {resetPasswordMutation.isPending && (
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
+              )}
+              تغيير كلمة المرور
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
