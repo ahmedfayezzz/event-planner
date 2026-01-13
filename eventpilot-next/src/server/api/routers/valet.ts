@@ -512,7 +512,7 @@ export const valetRouter = createTRPCRouter({
         _count: true,
       });
 
-      const stats: Record<string, number> = {
+      const stats = {
         expected: 0,
         parked: 0,
         requested: 0,
@@ -522,11 +522,18 @@ export const valetRouter = createTRPCRouter({
       };
 
       for (const record of records) {
-        stats[record.status] = record._count;
+        if (record.status in stats) {
+          stats[record.status as keyof typeof stats] = record._count;
+        }
       }
 
       return {
-        ...stats,
+        expected: stats.expected,
+        parked: stats.parked,
+        requested: stats.requested,
+        fetching: stats.fetching,
+        ready: stats.ready,
+        retrieved: stats.retrieved,
         capacity: session.valetLotCapacity,
         currentlyParked:
           stats.parked + stats.requested + stats.fetching + stats.ready,
@@ -1314,7 +1321,7 @@ export const valetRouter = createTRPCRouter({
         _count: true,
       });
 
-      const stats: Record<string, number> = {
+      const stats = {
         expected: 0,
         parked: 0,
         requested: 0,
@@ -1324,11 +1331,18 @@ export const valetRouter = createTRPCRouter({
       };
 
       for (const record of records) {
-        stats[record.status] = record._count;
+        if (record.status in stats) {
+          stats[record.status as keyof typeof stats] = record._count;
+        }
       }
 
       return {
-        ...stats,
+        expected: stats.expected,
+        parked: stats.parked,
+        requested: stats.requested,
+        fetching: stats.fetching,
+        ready: stats.ready,
+        retrieved: stats.retrieved,
         capacity: session.valetLotCapacity,
         currentlyParked:
           stats.parked + stats.requested + stats.fetching + stats.ready,

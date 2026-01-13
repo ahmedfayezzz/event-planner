@@ -649,6 +649,7 @@ export const adminRouter = createTRPCRouter({
               "settings",
               "suggestions",
               "emailCampaigns",
+              "valet",
             ])
           )
           .optional(),

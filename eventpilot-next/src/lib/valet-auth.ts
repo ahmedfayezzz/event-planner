@@ -13,6 +13,7 @@ export interface ValetTokenPayload {
   employeeId: string;
   username: string;
   name: string;
+  [key: string]: unknown;
 }
 
 /**
