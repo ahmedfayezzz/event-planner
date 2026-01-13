@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -34,10 +34,23 @@ import {
   ChevronRight,
   Ticket,
   CarFront,
+  XCircle,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+// Dynamically import QR scanner to avoid SSR issues
+const Scanner = dynamic(
+  () => import("@yudiel/react-qr-scanner").then((mod) => mod.Scanner),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-80 bg-muted animate-pulse rounded-lg" />
+    ),
+  }
+);
 
 interface GuestResult {
   registrationId: string;
@@ -101,15 +114,17 @@ export default function ValetSessionPage() {
   });
   const [showScanner, setShowScanner] = useState(false);
   const [showCollectionScanner, setShowCollectionScanner] = useState(false);
-  const [scannerError, setScannerError] = useState<string | null>(null);
   const [scanMode, setScanMode] = useState<"checkin" | "collection">("checkin");
+  const [lastScanned, setLastScanned] = useState<string | null>(null);
+  const [scanResult, setScanResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
   const [parkSuccessData, setParkSuccessData] = useState<{
     ticketNumber: number;
     guestName: string;
     vehicleInfo: string;
   } | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
 
   // Fetch session info
   const { data: sessionInfo, isLoading: sessionLoading } = api.valet.getSessionForValet.useQuery(
@@ -162,7 +177,11 @@ export default function ValetSessionPage() {
   // Get guest by QR for check-in
   const qrMutation = api.valet.getGuestByQR.useMutation({
     onSuccess: (data) => {
-      stopScanner();
+      setScanResult({ success: true, message: data.name });
+      setTimeout(() => {
+        closeScanner();
+        setScanResult(null);
+      }, 1500);
       if (scanMode === "checkin") {
         setParkDialog({
           registrationId: data.registrationId,
@@ -184,7 +203,8 @@ export default function ValetSessionPage() {
       }
     },
     onError: (error) => {
-      toast.error(error.message || "رمز QR غير صالح");
+      setScanResult({ success: false, message: error.message || "رمز QR غير صالح" });
+      setTimeout(() => setScanResult(null), 3000);
     },
   });
 
@@ -262,121 +282,41 @@ export default function ValetSessionPage() {
   });
 
   // QR Scanner functions
-  const startScanner = async (mode: "checkin" | "collection") => {
-    setScannerError(null);
+  const openScanner = (mode: "checkin" | "collection") => {
     setScanMode(mode);
+    setLastScanned(null);
+    setScanResult(null);
     if (mode === "checkin") {
       setShowScanner(true);
     } else {
       setShowCollectionScanner(true);
     }
-
-    // Check if we're in a secure context (HTTPS or localhost)
-    if (typeof window !== "undefined" && !window.isSecureContext) {
-      setScannerError("يجب استخدام HTTPS للوصول إلى الكاميرا. استخدم البحث بدلاً من ذلك.");
-      return;
-    }
-
-    // Check if mediaDevices API is available
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setScannerError("متصفحك لا يدعم الوصول إلى الكاميرا. استخدم البحث بدلاً من ذلك.");
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
-      streamRef.current = stream;
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-
-        if ("BarcodeDetector" in window) {
-          const barcodeDetector = new (window as unknown as { BarcodeDetector: new (options: { formats: string[] }) => BarcodeDetector }).BarcodeDetector({ formats: ["qr_code"] });
-          scanFrame(barcodeDetector);
-        } else {
-          setScannerError("متصفحك لا يدعم مسح رموز QR. استخدم البحث بدلاً من ذلك.");
-        }
-      }
-    } catch (error) {
-      console.error("Camera error:", error);
-      if (error instanceof Error) {
-        if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
-          setScannerError("تم رفض إذن الكاميرا. يرجى السماح بالوصول إلى الكاميرا من إعدادات المتصفح.");
-        } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
-          setScannerError("لم يتم العثور على كاميرا. تأكد من توصيل كاميرا بجهازك.");
-        } else if (error.name === "NotReadableError" || error.name === "TrackStartError") {
-          setScannerError("الكاميرا قيد الاستخدام من تطبيق آخر. أغلق التطبيقات الأخرى وحاول مرة أخرى.");
-        } else if (error.name === "OverconstrainedError") {
-          setScannerError("لا يمكن استخدام الكاميرا الخلفية. جاري المحاولة بالكاميرا المتاحة...");
-          // Try again without facingMode constraint
-          try {
-            const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
-            streamRef.current = fallbackStream;
-            if (videoRef.current) {
-              videoRef.current.srcObject = fallbackStream;
-              videoRef.current.play();
-              if ("BarcodeDetector" in window) {
-                const barcodeDetector = new (window as unknown as { BarcodeDetector: new (options: { formats: string[] }) => BarcodeDetector }).BarcodeDetector({ formats: ["qr_code"] });
-                setScannerError(null);
-                scanFrame(barcodeDetector);
-              }
-            }
-          } catch {
-            setScannerError("لا يمكن الوصول لأي كاميرا على جهازك.");
-          }
-        } else {
-          setScannerError(`خطأ في الكاميرا: ${error.message}`);
-        }
-      } else {
-        setScannerError("لا يمكن الوصول للكاميرا. تأكد من منح الإذن.");
-      }
-    }
   };
 
-  interface BarcodeDetector {
-    detect: (source: HTMLVideoElement) => Promise<Array<{ rawValue: string }>>;
-  }
-
-  const scanFrame = async (detector: BarcodeDetector) => {
-    if (!videoRef.current || (!showScanner && !showCollectionScanner)) return;
-
-    try {
-      const barcodes = await detector.detect(videoRef.current);
-      if (barcodes.length > 0) {
-        const qrData = barcodes[0].rawValue;
-        qrMutation.mutate({ qrData });
-        return;
-      }
-    } catch {
-      // Continue scanning
-    }
-
-    if (showScanner || showCollectionScanner) {
-      requestAnimationFrame(() => scanFrame(detector));
-    }
-  };
-
-  const stopScanner = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
+  const closeScanner = () => {
     setShowScanner(false);
     setShowCollectionScanner(false);
-    setScannerError(null);
+    setScanResult(null);
   };
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
+  const handleScan = useCallback(
+    (result: { rawValue: string }[]) => {
+      if (result.length > 0) {
+        const qrData = result[0].rawValue;
+
+        // Prevent duplicate scans
+        if (qrData === lastScanned) return;
+        setLastScanned(qrData);
+
+        // Reset after 3 seconds to allow rescan
+        setTimeout(() => setLastScanned(null), 3000);
+
+        qrMutation.mutate({ qrData });
       }
-    };
-  }, []);
+    },
+    [lastScanned, qrMutation]
+  );
+
 
   const handleSearch = () => {
     if (!searchQuery.trim()) {
@@ -467,38 +407,61 @@ export default function ValetSessionPage() {
   // Helper to render scanner view
   const renderScannerView = () => (
     <div className="relative">
-      <video
-        ref={videoRef}
-        className="w-full aspect-square object-cover"
-        playsInline
-        muted
-      />
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-48 h-48 border-2 border-white rounded-lg shadow-lg" />
+      <div className="overflow-hidden rounded-lg">
+        <Scanner
+          onScan={handleScan}
+          allowMultiple={true}
+          scanDelay={500}
+          styles={{
+            container: { height: 320 },
+            video: { objectFit: "cover" },
+          }}
+        />
       </div>
-      {scannerError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-          <div className="text-center text-white p-4">
-            <p className="mb-4">{scannerError}</p>
-            <Button variant="outline" onClick={stopScanner}>
-              إغلاق
-            </Button>
-          </div>
+
+      {/* Scan Result Overlay */}
+      {scanResult && (
+        <div
+          className={`absolute inset-0 flex flex-col items-center justify-center rounded-lg ${
+            scanResult.success
+              ? "bg-green-500/95"
+              : "bg-red-500/95"
+          }`}
+        >
+          {scanResult.success ? (
+            <>
+              <CheckCircle className="h-16 w-16 text-white mb-4 animate-in zoom-in duration-300" />
+              <p className="text-xl font-bold text-white">تم المسح بنجاح</p>
+              <p className="text-lg text-white/90 mt-2">{scanResult.message}</p>
+            </>
+          ) : (
+            <>
+              <XCircle className="h-16 w-16 text-white mb-4 animate-in zoom-in duration-300" />
+              <p className="text-xl font-bold text-white">خطأ</p>
+              <p className="text-lg text-white/90 mt-2 text-center px-4">
+                {scanResult.message}
+              </p>
+            </>
+          )}
         </div>
       )}
+
+      {/* Loading Overlay */}
+      {qrMutation.isPending && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
+        </div>
+      )}
+
+      {/* Close Button */}
       <Button
         variant="secondary"
         size="icon"
         className="absolute top-4 left-4"
-        onClick={stopScanner}
+        onClick={closeScanner}
       >
         <X className="h-5 w-5" />
       </Button>
-      {qrMutation.isPending && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <Loader2 className="h-8 w-8 animate-spin text-white" />
-        </div>
-      )}
     </div>
   );
 
@@ -571,7 +534,7 @@ export default function ValetSessionPage() {
                 renderScannerView()
               ) : (
                 <button
-                  onClick={() => startScanner("checkin")}
+                  onClick={() => openScanner("checkin")}
                   className="w-full p-6 flex flex-col items-center justify-center gap-3 hover:bg-muted/50 transition-colors"
                 >
                   <div className="p-3 rounded-full bg-primary/10">
@@ -675,7 +638,7 @@ export default function ValetSessionPage() {
                 renderScannerView()
               ) : (
                 <button
-                  onClick={() => startScanner("collection")}
+                  onClick={() => openScanner("collection")}
                   className="w-full p-6 flex flex-col items-center justify-center gap-3 hover:bg-muted/50 transition-colors"
                 >
                   <div className="p-3 rounded-full bg-amber-100">
