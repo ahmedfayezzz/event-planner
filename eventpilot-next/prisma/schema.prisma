@@ -27,6 +27,7 @@ enum ValetStatus {
   expected   // Guest indicated valet needed, not arrived yet
   parked     // Vehicle is parked
   requested  // Retrieval requested by guest
+  fetching   // Valet is fetching the car
   ready      // Vehicle at pickup area
   retrieved  // Guest picked up vehicle
 }
@@ -704,6 +705,7 @@ model ValetRecord {
   parkedByEmployeeId   String?
   retrievalRequestedAt DateTime?
   retrievalPriority    Int       @default(0) // Higher = more priority
+  fetchingStartedAt    DateTime? // When valet started fetching the car
   vehicleReadyAt       DateTime?
   retrievedAt          DateTime?
 

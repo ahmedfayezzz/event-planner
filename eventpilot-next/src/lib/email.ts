@@ -988,6 +988,7 @@ export async function sendValetParkedEmail({
   trackingUrl,
 }: ValetParkedEmailParams): Promise<boolean> {
   const settings = await getEmailSettings();
+  const siteName = settings.siteName ?? "ثلوثية الأعمال";
 
   const ticketSection = ticketNumber !== undefined
     ? `<p style="margin: 5px 0;"><strong>رقم التذكرة:</strong> ${ticketNumber}</p>`
@@ -1022,7 +1023,7 @@ export async function sendValetParkedEmail({
   const html = createEmailTemplate({ content, settings });
   const trackingText = trackingUrl ? `\n\nلتتبع سيارتك وطلب الاسترجاع: ${trackingUrl}` : "";
   const ticketText = ticketNumber !== undefined ? `رقم التذكرة: ${ticketNumber}\n` : "";
-  const text = `مرحباً ${guestName}،\n\nتم ركن سيارتك بنجاح.\n\n${ticketText}السيارة: ${vehicleInfo || "غير محدد"}\nموقع الركن: ${parkingSlot}${trackingText}\n\nسيتم إخطارك عندما تكون سيارتك جاهزة للاستلام.\n\nفريق ${eventName}`;
+  const text = `مرحباً ${guestName}،\n\nتم ركن سيارتك بنجاح.\n\n${ticketText}السيارة: ${vehicleInfo || "غير محدد"}\nموقع الركن: ${parkingSlot}${trackingText}\n\nسيتم إخطارك عندما تكون سيارتك جاهزة للاستلام.\n\nفريق ${siteName}`;
 
   return sendEmail({
     to,
@@ -1050,6 +1051,7 @@ export async function sendValetReadyEmail({
   vehicleInfo,
 }: ValetReadyEmailParams): Promise<boolean> {
   const settings = await getEmailSettings();
+  const siteName = settings.siteName ?? "ثلوثية الأعمال";
 
   const content = `
     <h2 style="margin: 0 0 20px; color: #333;">🚗 سيارتك جاهزة!</h2>
@@ -1063,7 +1065,7 @@ export async function sendValetReadyEmail({
   `;
 
   const html = createEmailTemplate({ content, settings });
-  const text = `مرحباً ${guestName}،\n\nسيارتك جاهزة للاستلام!\n\nالسيارة: ${vehicleInfo || "غير محدد"}\nموقع الاستلام: منطقة الفاليه الرئيسية\n\nيرجى التوجه إلى منطقة الاستلام.\n\nفريق ${eventName}`;
+  const text = `مرحباً ${guestName}،\n\nسيارتك جاهزة للاستلام!\n\nالسيارة: ${vehicleInfo || "غير محدد"}\nموقع الاستلام: منطقة الفاليه الرئيسية\n\nيرجى التوجه إلى منطقة الاستلام.\n\nفريق ${siteName}`;
 
   return sendEmail({
     to,
@@ -1091,6 +1093,7 @@ export async function sendValetBroadcastEmail({
   message,
 }: ValetBroadcastEmailParams): Promise<boolean> {
   const settings = await getEmailSettings();
+  const siteName = settings.siteName ?? "ثلوثية الأعمال";
 
   const content = `
     <h2 style="margin: 0 0 20px; color: #333;">إشعار الفاليه</h2>
@@ -1101,7 +1104,7 @@ export async function sendValetBroadcastEmail({
   `;
 
   const html = createEmailTemplate({ content, settings });
-  const text = `مرحباً ${guestName}،\n\n${message}\n\nفريق ${eventName}`;
+  const text = `مرحباً ${guestName}،\n\n${message}\n\nفريق ${siteName}`;
 
   return sendEmail({
     to,

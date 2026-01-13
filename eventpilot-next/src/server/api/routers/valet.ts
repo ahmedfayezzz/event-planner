@@ -512,10 +512,11 @@ export const valetRouter = createTRPCRouter({
         _count: true,
       });
 
-      const stats = {
+      const stats: Record<string, number> = {
         expected: 0,
         parked: 0,
         requested: 0,
+        fetching: 0,
         ready: 0,
         retrieved: 0,
       };
@@ -527,8 +528,9 @@ export const valetRouter = createTRPCRouter({
       return {
         ...stats,
         capacity: session.valetLotCapacity,
-        currentlyParked: stats.parked + stats.requested + stats.ready,
-        inQueue: stats.requested + stats.ready,
+        currentlyParked:
+          stats.parked + stats.requested + stats.fetching + stats.ready,
+        inQueue: stats.requested + stats.fetching + stats.ready,
       };
     }),
 
@@ -654,7 +656,14 @@ export const valetRouter = createTRPCRouter({
     .input(
       z.object({
         valetRecordId: z.string(),
-        newStatus: z.enum(["expected", "parked", "requested", "ready", "retrieved"]),
+        newStatus: z.enum([
+          "expected",
+          "parked",
+          "requested",
+          "fetching",
+          "ready",
+          "retrieved",
+        ]),
         reason: z.string().optional(),
       })
     )
@@ -677,6 +686,9 @@ export const valetRouter = createTRPCRouter({
       }
       if (input.newStatus === "requested" && !record.retrievalRequestedAt) {
         timestamps.retrievalRequestedAt = new Date();
+      }
+      if (input.newStatus === "fetching" && !record.fetchingStartedAt) {
+        timestamps.fetchingStartedAt = new Date();
       }
       if (input.newStatus === "ready" && !record.vehicleReadyAt) {
         timestamps.vehicleReadyAt = new Date();
@@ -821,20 +833,22 @@ export const valetRouter = createTRPCRouter({
 
         if (valetRecord) {
           const reg = valetRecord.registration;
-          return [{
-            registrationId: reg.id,
-            name: reg.user?.name ?? reg.guestName ?? "Unknown",
-            phone: reg.user?.phone ?? reg.guestPhone,
-            email: reg.user?.email ?? reg.guestEmail,
-            valetStatus: valetRecord.status,
-            isVip: valetRecord.isVip,
-            ticketNumber: valetRecord.ticketNumber,
-            vehicleMake: valetRecord.vehicleMake,
-            vehicleModel: valetRecord.vehicleModel,
-            vehicleColor: valetRecord.vehicleColor,
-            vehiclePlate: valetRecord.vehiclePlate,
-            parkingSlot: valetRecord.parkingSlot,
-          }];
+          return [
+            {
+              registrationId: reg.id,
+              name: reg.user?.name ?? reg.guestName ?? "Unknown",
+              phone: reg.user?.phone ?? reg.guestPhone,
+              email: reg.user?.email ?? reg.guestEmail,
+              valetStatus: valetRecord.status,
+              isVip: valetRecord.isVip,
+              ticketNumber: valetRecord.ticketNumber,
+              vehicleMake: valetRecord.vehicleMake,
+              vehicleModel: valetRecord.vehicleModel,
+              vehicleColor: valetRecord.vehicleColor,
+              vehiclePlate: valetRecord.vehiclePlate,
+              parkingSlot: valetRecord.parkingSlot,
+            },
+          ];
         }
       }
 
@@ -855,15 +869,8 @@ export const valetRouter = createTRPCRouter({
             {
               guestName: { contains: input.query, mode: "insensitive" },
             },
-            // Search by phone (user or guest)
-            {
-              user: {
-                phone: { contains: input.query, mode: "insensitive" },
-              },
-            },
-            {
-              guestPhone: { contains: input.query, mode: "insensitive" },
-            },
+            // Search by phone with all variations
+            ...phoneConditions,
             // Search by email (user or guest)
             {
               user: {
@@ -1074,8 +1081,10 @@ export const valetRouter = createTRPCRouter({
         valetRecord = await ctx.db.valetRecord.update({
           where: { id: registration.valetRecord.id },
           data: {
-            ticketNumber: registration.valetRecord.ticketNumber ?? nextTicketNumber,
-            trackingToken: registration.valetRecord.trackingToken ?? trackingToken,
+            ticketNumber:
+              registration.valetRecord.ticketNumber ?? nextTicketNumber,
+            trackingToken:
+              registration.valetRecord.trackingToken ?? trackingToken,
             vehicleMake: input.vehicleMake,
             vehicleModel: input.vehicleModel,
             vehicleColor: input.vehicleColor,
@@ -1118,7 +1127,9 @@ export const valetRouter = createTRPCRouter({
             to: guestEmail,
             guestName,
             eventName: registration.session.title,
-            vehicleInfo: `${input.vehicleColor ?? ""} ${input.vehicleMake ?? ""} ${input.vehicleModel ?? ""}`.trim(),
+            vehicleInfo: `${input.vehicleColor ?? ""} ${
+              input.vehicleMake ?? ""
+            } ${input.vehicleModel ?? ""}`.trim(),
             parkingSlot: input.parkingSlot ?? "N/A",
             ticketNumber: valetRecord.ticketNumber ?? undefined,
             trackingUrl,
@@ -1140,7 +1151,7 @@ export const valetRouter = createTRPCRouter({
       const queue = await ctx.db.valetRecord.findMany({
         where: {
           sessionId: input.sessionId,
-          status: { in: ["requested", "ready"] },
+          status: { in: ["requested", "fetching", "ready"] },
         },
         orderBy: [
           { retrievalPriority: "desc" },
@@ -1149,6 +1160,87 @@ export const valetRouter = createTRPCRouter({
       });
 
       return queue;
+    }),
+
+  /**
+   * Get valet stats for a session (for valet employees)
+   */
+  getValetStats: valetProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const session = await ctx.db.session.findUnique({
+        where: { id: input.sessionId },
+        select: { valetLotCapacity: true },
+      });
+
+      if (!session) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Session not found",
+        });
+      }
+
+      const records = await ctx.db.valetRecord.groupBy({
+        by: ["status"],
+        where: { sessionId: input.sessionId },
+        _count: true,
+      });
+
+      const stats: Record<string, number> = {
+        expected: 0,
+        parked: 0,
+        requested: 0,
+        fetching: 0,
+        ready: 0,
+        retrieved: 0,
+      };
+
+      for (const record of records) {
+        stats[record.status] = record._count;
+      }
+
+      return {
+        ...stats,
+        capacity: session.valetLotCapacity,
+        currentlyParked:
+          stats.parked + stats.requested + stats.fetching + stats.ready,
+        inQueue: stats.requested + stats.fetching + stats.ready,
+      };
+    }),
+
+  /**
+   * Mark vehicle as being fetched (valet is getting the car)
+   */
+  markVehicleFetching: valetProcedure
+    .input(z.object({ valetRecordId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const record = await ctx.db.valetRecord.findUnique({
+        where: { id: input.valetRecordId },
+      });
+
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Valet record not found",
+        });
+      }
+
+      if (record.status !== "requested") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Vehicle is not in requested status",
+        });
+      }
+
+      const updated = await ctx.db.valetRecord.update({
+        where: { id: input.valetRecordId },
+        data: {
+          status: "fetching",
+          fetchingStartedAt: new Date(),
+        },
+      });
+
+      return updated;
     }),
 
   /**
@@ -1176,10 +1268,10 @@ export const valetRouter = createTRPCRouter({
         });
       }
 
-      if (record.status !== "requested") {
+      if (record.status !== "requested" && record.status !== "fetching") {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Vehicle is not in requested status",
+          message: "Vehicle is not in requested or fetching status",
         });
       }
 
@@ -1200,7 +1292,9 @@ export const valetRouter = createTRPCRouter({
             to: email,
             guestName: record.guestName,
             eventName: record.registration.session.title,
-            vehicleInfo: `${record.vehicleColor ?? ""} ${record.vehicleMake ?? ""} ${record.vehicleModel ?? ""}`.trim(),
+            vehicleInfo: `${record.vehicleColor ?? ""} ${
+              record.vehicleMake ?? ""
+            } ${record.vehicleModel ?? ""}`.trim(),
           });
         } catch (error) {
           console.error("Failed to send valet ready email:", error);
@@ -1470,7 +1564,8 @@ export const valetRouter = createTRPCRouter({
 
         queuePosition = aheadInQueue + 1;
         // Estimate ~3-5 minutes per car (use retrieval notice as base)
-        estimatedWaitMinutes = (aheadInQueue + 1) * (record.session.valetRetrievalNotice || 5);
+        estimatedWaitMinutes =
+          (aheadInQueue + 1) * (record.session.valetRetrievalNotice || 5);
       }
 
       return {

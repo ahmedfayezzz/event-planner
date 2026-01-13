@@ -44,6 +44,12 @@ const statusConfig: Record<
     bgColor: "bg-yellow-100",
     icon: <Timer className="h-5 w-5" />,
   },
+  fetching: {
+    label: "جاري إحضار السيارة",
+    color: "text-orange-600",
+    bgColor: "bg-orange-100",
+    icon: <Car className="h-5 w-5 animate-pulse" />,
+  },
   ready: {
     label: "جاهزة للاستلام",
     color: "text-green-600",
@@ -129,7 +135,8 @@ export default function ValetTrackingPage({
 
   const status = statusConfig[valetStatus.status] ?? statusConfig.expected;
   const canRequestRetrieval = valetStatus.status === "parked";
-  const isInQueue = valetStatus.status === "requested" || valetStatus.status === "ready";
+  const isInQueue = valetStatus.status === "requested" || valetStatus.status === "fetching" || valetStatus.status === "ready";
+  const isFetching = valetStatus.status === "fetching";
   const isCompleted = valetStatus.status === "retrieved";
 
   return (
@@ -188,6 +195,19 @@ export default function ValetTrackingPage({
                       </p>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* Fetching notification */}
+              {isFetching && (
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 w-full">
+                  <div className="flex items-center justify-center gap-2 text-orange-700">
+                    <Car className="h-5 w-5 animate-pulse" />
+                    <span className="font-medium">جاري إحضار سيارتك...</span>
+                  </div>
+                  <p className="text-sm text-orange-600 mt-2 text-center">
+                    الفاليه في طريقه لإحضار سيارتك الآن
+                  </p>
                 </div>
               )}
 
