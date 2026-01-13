@@ -34,19 +34,20 @@ function ValetHeader({
   employee,
   onLogout,
   showHomeButton,
+  mounted,
 }: {
   employee: ValetEmployee | null;
   onLogout: () => void;
   showHomeButton: boolean;
+  mounted: boolean;
 }) {
-  if (!employee) return null;
-
+  // Always render the same structure, just hide content when not ready
   return (
     <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur-md safe-area-inset">
       <div className="container mx-auto px-4">
         <div className="flex h-14 items-center justify-between">
           <div className="flex items-center gap-2">
-            {showHomeButton && (
+            {mounted && showHomeButton && (
               <Link href="/valet">
                 <Button variant="ghost" size="icon" className="h-9 w-9">
                   <Home className="h-5 w-5" />
@@ -61,14 +62,16 @@ function ValetHeader({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground hidden xs:block">
-              {employee.name}
-            </span>
-            <Button variant="ghost" size="icon" onClick={onLogout} className="h-9 w-9">
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
+          {mounted && employee && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground hidden xs:block">
+                {employee.name}
+              </span>
+              <Button variant="ghost" size="icon" onClick={onLogout} className="h-9 w-9">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </header>
@@ -146,20 +149,8 @@ export function ValetAuthProvider({ children }: { children: React.ReactNode }) {
   const showHomeButton = !isLoginPage && !isHomePage && !isPublicTrackingPage;
   const showHeader = !isLoginPage && !isPublicTrackingPage;
 
-  // Show loading state only after mount to avoid hydration mismatch
-  // Before mount, render children directly (server render)
-  if (!mounted) {
-    return (
-      <>
-        <main className="container mx-auto px-4 py-4 min-h-[calc(100vh-56px)]">
-          <div className="min-h-screen flex items-center justify-center">
-            <Car className="h-8 w-8 animate-pulse text-muted-foreground" />
-          </div>
-        </main>
-      </>
-    );
-  }
-
+  // IMPORTANT: Always render the same structure to avoid hydration mismatch
+  // Only the content inside changes based on mounted state
   return (
     <ValetAuthContext.Provider
       value={{
@@ -169,19 +160,22 @@ export function ValetAuthProvider({ children }: { children: React.ReactNode }) {
         logout: handleLogout,
       }}
     >
-      {showHeader && (
-        <ValetHeader
-          employee={employee}
-          onLogout={handleLogout}
-          showHomeButton={showHomeButton}
-        />
-      )}
-      <main className={cn(
-        (isLoginPage || isPublicTrackingPage) ? "" : "container mx-auto px-4 py-4",
-        "min-h-[calc(100vh-56px)]"
-      )}>
-        {children}
-      </main>
+      <div className="min-h-screen bg-gray-50">
+        {showHeader && (
+          <ValetHeader
+            employee={employee}
+            onLogout={handleLogout}
+            showHomeButton={showHomeButton}
+            mounted={mounted}
+          />
+        )}
+        <main className={cn(
+          (isLoginPage || isPublicTrackingPage) ? "" : "container mx-auto px-4 py-4",
+          "min-h-[calc(100vh-56px)]"
+        )}>
+          {children}
+        </main>
+      </div>
     </ValetAuthContext.Provider>
   );
 }
