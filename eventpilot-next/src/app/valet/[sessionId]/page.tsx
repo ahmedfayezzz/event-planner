@@ -113,14 +113,14 @@ export default function ValetSessionPage() {
     { enabled: !!token && !!sessionId }
   );
 
-  // Fetch retrieval queue
+  // Fetch retrieval queue - always enabled so badge shows count
   const {
     data: queue,
     isLoading: queueLoading,
     refetch: refetchQueue,
   } = api.valet.getRetrievalQueue.useQuery(
     { sessionId },
-    { enabled: !!sessionId && activeTab === "queue", refetchInterval: 5000 }
+    { enabled: !!sessionId && !!token, refetchInterval: 10000 }
   );
 
   // Search guests for check-in
@@ -208,6 +208,17 @@ export default function ValetSessionPage() {
     },
     onError: (error) => {
       toast.error(error.message || "فشل طلب الاسترجاع");
+    },
+  });
+
+  // Mark as fetching mutation
+  const markFetchingMutation = api.valet.markVehicleFetching.useMutation({
+    onSuccess: () => {
+      toast.success("جاري إحضار السيارة");
+      refetchQueue();
+    },
+    onError: (error) => {
+      toast.error(error.message || "فشل تحديث الحالة");
     },
   });
 
@@ -347,6 +358,8 @@ export default function ValetSessionPage() {
         return <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">مركون</Badge>;
       case "requested":
         return <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200">طلب استرجاع</Badge>;
+      case "fetching":
+        return <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">جاري الإحضار</Badge>;
       case "ready":
         return <Badge variant="outline" className="bg-purple-50 text-purple-600 border-purple-200">جاهز</Badge>;
       case "retrieved":
@@ -367,7 +380,9 @@ export default function ValetSessionPage() {
   };
 
   const requestedItems = queue?.filter((q) => q.status === "requested") ?? [];
+  const fetchingItems = queue?.filter((q) => q.status === "fetching") ?? [];
   const readyItems = queue?.filter((q) => q.status === "ready") ?? [];
+  const totalQueueCount = requestedItems.length + fetchingItems.length + readyItems.length;
 
   if (!token) {
     return null;
@@ -462,9 +477,9 @@ export default function ValetSessionPage() {
           <TabsTrigger value="queue" className="text-sm relative">
             <Clock className="h-4 w-4 ml-1" />
             الطابور
-            {(requestedItems.length + readyItems.length) > 0 && (
+            {totalQueueCount > 0 && (
               <span className="absolute -top-1 -left-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                {requestedItems.length + readyItems.length}
+                {totalQueueCount}
               </span>
             )}
           </TabsTrigger>
@@ -694,7 +709,7 @@ export default function ValetSessionPage() {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : requestedItems.length === 0 && readyItems.length === 0 ? (
+          ) : totalQueueCount === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                 <Clock className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
@@ -717,7 +732,7 @@ export default function ValetSessionPage() {
                     <Badge variant="secondary">{requestedItems.length}</Badge>
                   </div>
                   <div className="space-y-2">
-                    {requestedItems.map((item, index) => (
+                    {requestedItems.map((item) => (
                       <Card
                         key={item.id}
                         className={item.isVip ? "border-amber-200 bg-amber-50/50" : ""}
@@ -757,9 +772,77 @@ export default function ValetSessionPage() {
                             </div>
                             <Button
                               size="sm"
+                              onClick={() => markFetchingMutation.mutate({ valetRecordId: item.id })}
+                              disabled={markFetchingMutation.isPending}
+                              className="shrink-0"
+                            >
+                              {markFetchingMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  إحضار
+                                  <ArrowRight className="h-4 w-4 mr-1" />
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Fetching Section */}
+              {fetchingItems.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Car className="h-4 w-4 text-orange-500 animate-pulse" />
+                      جاري الإحضار
+                    </h3>
+                    <Badge variant="secondary">{fetchingItems.length}</Badge>
+                  </div>
+                  <div className="space-y-2">
+                    {fetchingItems.map((item) => (
+                      <Card
+                        key={item.id}
+                        className={item.isVip ? "border-amber-200 bg-amber-50/50" : "bg-orange-50/50 border-orange-200"}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {item.ticketNumber !== null && (
+                                  <span className="inline-flex items-center gap-1 text-sm font-bold bg-orange-500 text-white px-2 py-0.5 rounded">
+                                    <Ticket className="h-3 w-3" />
+                                    {item.ticketNumber}
+                                  </span>
+                                )}
+                                <p className="font-semibold truncate">{item.guestName}</p>
+                                {item.isVip && <Crown className="h-4 w-4 text-amber-500 shrink-0" />}
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {getVehicleDescription(item)}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                {item.vehiclePlate && (
+                                  <span className="font-mono bg-white px-2 py-0.5 rounded border" dir="ltr">
+                                    {item.vehiclePlate}
+                                  </span>
+                                )}
+                                {item.parkingSlot && (
+                                  <span className="text-muted-foreground">
+                                    موقع: {item.parkingSlot}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
                               onClick={() => markReadyMutation.mutate({ valetRecordId: item.id })}
                               disabled={markReadyMutation.isPending}
-                              className="shrink-0"
+                              className="shrink-0 bg-green-600 hover:bg-green-700"
                             >
                               {markReadyMutation.isPending ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />

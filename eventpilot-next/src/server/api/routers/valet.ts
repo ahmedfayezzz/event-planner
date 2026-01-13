@@ -512,10 +512,11 @@ export const valetRouter = createTRPCRouter({
         _count: true,
       });
 
-      const stats = {
+      const stats: Record<string, number> = {
         expected: 0,
         parked: 0,
         requested: 0,
+        fetching: 0,
         ready: 0,
         retrieved: 0,
       };
@@ -527,8 +528,8 @@ export const valetRouter = createTRPCRouter({
       return {
         ...stats,
         capacity: session.valetLotCapacity,
-        currentlyParked: stats.parked + stats.requested + stats.ready,
-        inQueue: stats.requested + stats.ready,
+        currentlyParked: stats.parked + stats.requested + stats.fetching + stats.ready,
+        inQueue: stats.requested + stats.fetching + stats.ready,
       };
     }),
 
@@ -654,7 +655,7 @@ export const valetRouter = createTRPCRouter({
     .input(
       z.object({
         valetRecordId: z.string(),
-        newStatus: z.enum(["expected", "parked", "requested", "ready", "retrieved"]),
+        newStatus: z.enum(["expected", "parked", "requested", "fetching", "ready", "retrieved"]),
         reason: z.string().optional(),
       })
     )
@@ -677,6 +678,9 @@ export const valetRouter = createTRPCRouter({
       }
       if (input.newStatus === "requested" && !record.retrievalRequestedAt) {
         timestamps.retrievalRequestedAt = new Date();
+      }
+      if (input.newStatus === "fetching" && !record.fetchingStartedAt) {
+        timestamps.fetchingStartedAt = new Date();
       }
       if (input.newStatus === "ready" && !record.vehicleReadyAt) {
         timestamps.vehicleReadyAt = new Date();
@@ -792,6 +796,57 @@ export const valetRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Normalize phone number for search (support with/without country code)
+      const normalizePhone = (phone: string): string[] => {
+        // Remove all non-digit characters except +
+        const cleaned = phone.replace(/[^\d+]/g, "");
+        const digitsOnly = cleaned.replace(/\D/g, "");
+
+        const variations: string[] = [phone]; // Original query
+
+        // If it looks like a phone number (mostly digits)
+        if (digitsOnly.length >= 7) {
+          // Add the digits-only version
+          variations.push(digitsOnly);
+
+          // Handle Saudi country code variations
+          // +966, 966, 00966
+          if (digitsOnly.startsWith("966")) {
+            // Has country code - add version without it
+            const withoutCode = digitsOnly.slice(3);
+            variations.push(withoutCode);
+            variations.push("0" + withoutCode); // Local format with leading 0
+            variations.push("+966" + withoutCode);
+          } else if (digitsOnly.startsWith("00966")) {
+            const withoutCode = digitsOnly.slice(5);
+            variations.push(withoutCode);
+            variations.push("0" + withoutCode);
+            variations.push("+966" + withoutCode);
+          } else if (digitsOnly.startsWith("0")) {
+            // Local format - add version with country code
+            const withoutLeadingZero = digitsOnly.slice(1);
+            variations.push(withoutLeadingZero);
+            variations.push("966" + withoutLeadingZero);
+            variations.push("+966" + withoutLeadingZero);
+          } else {
+            // Might be without leading zero - add variations
+            variations.push("0" + digitsOnly);
+            variations.push("966" + digitsOnly);
+            variations.push("+966" + digitsOnly);
+          }
+        }
+
+        return [...new Set(variations)]; // Remove duplicates
+      };
+
+      const phoneVariations = normalizePhone(input.query);
+
+      // Build phone search conditions for all variations
+      const phoneConditions = phoneVariations.flatMap((variation) => [
+        { user: { phone: { contains: variation, mode: "insensitive" as const } } },
+        { guestPhone: { contains: variation, mode: "insensitive" as const } },
+      ]);
+
       const registrations = await ctx.db.registration.findMany({
         where: {
           sessionId: input.sessionId,
@@ -808,15 +863,8 @@ export const valetRouter = createTRPCRouter({
             {
               guestName: { contains: input.query, mode: "insensitive" },
             },
-            // Search by phone (user or guest)
-            {
-              user: {
-                phone: { contains: input.query, mode: "insensitive" },
-              },
-            },
-            {
-              guestPhone: { contains: input.query, mode: "insensitive" },
-            },
+            // Search by phone with all variations
+            ...phoneConditions,
             // Search by email (user or guest)
             {
               user: {
@@ -1087,7 +1135,7 @@ export const valetRouter = createTRPCRouter({
       const queue = await ctx.db.valetRecord.findMany({
         where: {
           sessionId: input.sessionId,
-          status: { in: ["requested", "ready"] },
+          status: { in: ["requested", "fetching", "ready"] },
         },
         orderBy: [
           { retrievalPriority: "desc" },
@@ -1096,6 +1144,41 @@ export const valetRouter = createTRPCRouter({
       });
 
       return queue;
+    }),
+
+  /**
+   * Mark vehicle as being fetched (valet is getting the car)
+   */
+  markVehicleFetching: valetProcedure
+    .input(z.object({ valetRecordId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const record = await ctx.db.valetRecord.findUnique({
+        where: { id: input.valetRecordId },
+      });
+
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Valet record not found",
+        });
+      }
+
+      if (record.status !== "requested") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Vehicle is not in requested status",
+        });
+      }
+
+      const updated = await ctx.db.valetRecord.update({
+        where: { id: input.valetRecordId },
+        data: {
+          status: "fetching",
+          fetchingStartedAt: new Date(),
+        },
+      });
+
+      return updated;
     }),
 
   /**
@@ -1123,10 +1206,10 @@ export const valetRouter = createTRPCRouter({
         });
       }
 
-      if (record.status !== "requested") {
+      if (record.status !== "requested" && record.status !== "fetching") {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Vehicle is not in requested status",
+          message: "Vehicle is not in requested or fetching status",
         });
       }
 
