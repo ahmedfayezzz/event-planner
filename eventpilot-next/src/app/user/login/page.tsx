@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 
 function LoginForm() {
   const router = useRouter();
@@ -168,6 +169,27 @@ export default function LoginPage() {
         <Suspense fallback={<LoginFormSkeleton />}>
           <LoginForm />
         </Suspense>
+
+        {/* Powered by TDA */}
+        <div className="flex justify-center mt-8">
+          <a
+            href="https://tda.sa"
+            target="_blank"
+            rel="noopener noreferrer"
+            dir="ltr"
+            className="inline-flex items-center gap-3 text-muted-foreground/60 hover:text-muted-foreground transition-colors group"
+          >
+            <span className="text-sm">Powered by</span>
+            <Image
+              src="/tda/tda-logo-purple.png"
+              alt="TDA"
+              width={70}
+              height={28}
+              className="h-6 w-auto opacity-60 group-hover:opacity-100 transition-opacity"
+            />
+            <span className="text-sm">الراعي التقني</span>
+          </a>
+        </div>
       </div>
     </div>
   );

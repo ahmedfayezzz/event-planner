@@ -186,10 +186,27 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-white/60">
+        <div className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-white/60 space-y-4">
+          <a
+            href="https://tda.sa"
+            target="_blank"
+            rel="noopener noreferrer"
+            dir="ltr"
+            className="inline-flex items-center justify-center gap-3 text-white/60 hover:text-white transition-colors group"
+          >
+            <span className="text-sm">Powered by</span>
+            <Image
+              src="/tda/tda-logo-white.png"
+              alt="TDA"
+              width={80}
+              height={32}
+              className="h-7 w-auto opacity-70 group-hover:opacity-100 transition-opacity"
+            />
+            <span className="text-sm">الراعي التقني</span>
+          </a>
           <p>
-            © {new Date().getFullYear()} {settings?.siteName ?? "ثلوثية الأعمال"}
-            . جميع الحقوق محفوظة لـ{" "}
+            © {new Date().getFullYear()}{" "}
+            {settings?.siteName ?? "ثلوثية الأعمال"}. جميع الحقوق محفوظة لـ{" "}
             <a
               href="https://tda.sa"
               target="_blank"

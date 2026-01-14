@@ -4,9 +4,14 @@ import React, { useState, useMemo } from "react";
 import { api } from "@/trpc/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ChevronRight,
   ChevronLeft,
@@ -16,55 +21,65 @@ import {
   XCircle,
   Loader2,
 } from "lucide-react";
-import { formatArabicDate } from "@/lib/utils";
-import { WeeklyGrid } from "./weekly-grid";
-import { MonthlyTimeline } from "./monthly-timeline";
+import { MonthlyCalendar } from "./monthly-calendar";
 import { SponsorshipChart } from "./sponsorship-chart";
 
-// Helper to get week start/end dates
-function getWeekBounds(weekOffset: number) {
-  const now = new Date();
-  const dayOfWeek = now.getDay();
-  // Start of current week (Sunday)
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - dayOfWeek + weekOffset * 7);
-  startOfWeek.setHours(0, 0, 0, 0);
+const ARABIC_MONTHS: Record<number, string> = {
+  0: "يناير",
+  1: "فبراير",
+  2: "مارس",
+  3: "أبريل",
+  4: "مايو",
+  5: "يونيو",
+  6: "يوليو",
+  7: "أغسطس",
+  8: "سبتمبر",
+  9: "أكتوبر",
+  10: "نوفمبر",
+  11: "ديسمبر",
+};
 
-  // End of week (Saturday)
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-  endOfWeek.setHours(23, 59, 59, 999);
-
-  return { startOfWeek, endOfWeek };
-}
-
-// Helper to get month bounds
-function getMonthBounds(monthOffset: number) {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+// Helper to get month bounds for a specific year and month
+function getMonthBounds(year: number, month: number) {
+  const startOfMonth = new Date(year, month, 1);
   startOfMonth.setHours(0, 0, 0, 0);
 
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset + 2, 0);
+  const endOfMonth = new Date(year, month + 1, 0);
   endOfMonth.setHours(23, 59, 59, 999);
 
   return { startOfMonth, endOfMonth };
 }
 
-export function CalendarTab() {
-  const [view, setView] = useState<"week" | "month">("week");
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [monthOffset, setMonthOffset] = useState(0);
+// Generate month options for the dropdown (current year ± 1 year)
+function generateMonthOptions() {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const options: { value: string; label: string }[] = [];
 
-  // Calculate date range based on view
-  const dateRange = useMemo(() => {
-    if (view === "week") {
-      const { startOfWeek, endOfWeek } = getWeekBounds(weekOffset);
-      return { startDate: startOfWeek, endDate: endOfWeek };
-    } else {
-      const { startOfMonth, endOfMonth } = getMonthBounds(monthOffset);
-      return { startDate: startOfMonth, endDate: endOfMonth };
+  for (let year = currentYear - 1; year <= currentYear + 1; year++) {
+    for (let month = 0; month < 12; month++) {
+      options.push({
+        value: `${year}-${month}`,
+        label: `${ARABIC_MONTHS[month]} ${year}`,
+      });
     }
-  }, [view, weekOffset, monthOffset]);
+  }
+
+  return options;
+}
+
+export function CalendarTab() {
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+
+  const monthOptions = useMemo(() => generateMonthOptions(), []);
+
+  // Calculate date range for the selected month
+  const dateRange = useMemo(() => {
+    const { startOfMonth, endOfMonth } = getMonthBounds(selectedYear, selectedMonth);
+    return { startDate: startOfMonth, endDate: endOfMonth };
+  }, [selectedYear, selectedMonth]);
 
   // Fetch calendar data
   const { data: calendarData, isLoading } = api.sponsor.getSponsorshipCalendar.useQuery(dateRange);
@@ -72,28 +87,34 @@ export function CalendarTab() {
   // Fetch chart data
   const { data: chartData } = api.sponsor.getSponsorshipStats.useQuery({ sessionCount: 12 });
 
-  const handlePrevious = () => {
-    if (view === "week") {
-      setWeekOffset((prev) => prev - 1);
+  const handlePrevMonth = () => {
+    if (selectedMonth === 0) {
+      setSelectedYear(selectedYear - 1);
+      setSelectedMonth(11);
     } else {
-      setMonthOffset((prev) => prev - 1);
+      setSelectedMonth(selectedMonth - 1);
     }
   };
 
-  const handleNext = () => {
-    if (view === "week") {
-      setWeekOffset((prev) => prev + 1);
+  const handleNextMonth = () => {
+    if (selectedMonth === 11) {
+      setSelectedYear(selectedYear + 1);
+      setSelectedMonth(0);
     } else {
-      setMonthOffset((prev) => prev + 1);
+      setSelectedMonth(selectedMonth + 1);
     }
   };
 
   const handleToday = () => {
-    if (view === "week") {
-      setWeekOffset(0);
-    } else {
-      setMonthOffset(0);
-    }
+    const now = new Date();
+    setSelectedYear(now.getFullYear());
+    setSelectedMonth(now.getMonth());
+  };
+
+  const handleMonthSelect = (value: string) => {
+    const [year, month] = value.split("-").map(Number);
+    setSelectedYear(year);
+    setSelectedMonth(month);
   };
 
   const stats = calendarData?.stats;
@@ -165,28 +186,38 @@ export function CalendarTab() {
         </Card>
       </div>
 
-      {/* View Toggle and Navigation */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs value={view} onValueChange={(v) => setView(v as "week" | "month")}>
-          <TabsList>
-            <TabsTrigger value="week">أسبوعي</TabsTrigger>
-            <TabsTrigger value="month">شهري</TabsTrigger>
-          </TabsList>
-        </Tabs>
-
+      {/* Month Navigation */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-center">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrevious}>
+          <Button variant="outline" size="sm" onClick={handleNextMonth}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <Select
+            value={`${selectedYear}-${selectedMonth}`}
+            onValueChange={handleMonthSelect}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue>
+                {ARABIC_MONTHS[selectedMonth]} {selectedYear}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {monthOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button variant="outline" size="sm" onClick={handlePrevMonth}>
             <ChevronRight className="h-4 w-4" />
           </Button>
+
           <Button variant="outline" size="sm" onClick={handleToday}>
             اليوم
           </Button>
-          <Button variant="outline" size="sm" onClick={handleNext}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="text-sm text-muted-foreground min-w-[200px] text-center">
-            {formatArabicDate(dateRange.startDate)} - {formatArabicDate(dateRange.endDate)}
-          </div>
         </div>
       </div>
 
@@ -197,10 +228,12 @@ export function CalendarTab() {
             <div className="p-8 flex items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : view === "week" ? (
-            <WeeklyGrid sessions={calendarData?.sessions ?? []} />
           ) : (
-            <MonthlyTimeline sessions={calendarData?.sessions ?? []} />
+            <MonthlyCalendar
+              year={selectedYear}
+              month={selectedMonth}
+              sessions={calendarData?.sessions ?? []}
+            />
           )}
         </CardContent>
       </Card>

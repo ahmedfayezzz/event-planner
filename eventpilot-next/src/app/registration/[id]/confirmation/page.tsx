@@ -1,15 +1,16 @@
 "use client";
 
-import { use } from "react";
-import Link from "next/link";
-import { api } from "@/trpc/react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatArabicDate, formatArabicTime } from "@/lib/utils";
+import { api } from "@/trpc/react";
 import { ExternalLink } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { use } from "react";
 
 interface CompanionItem {
   id: string;
@@ -18,10 +19,18 @@ interface CompanionItem {
   email?: string | null;
 }
 
-export default function RegistrationConfirmationPage({ params }: { params: Promise<{ id: string }> }) {
+export default function RegistrationConfirmationPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
 
-  const { data: registration, isLoading, error } = api.registration.getConfirmation.useQuery({
+  const {
+    data: registration,
+    isLoading,
+    error,
+  } = api.registration.getConfirmation.useQuery({
     registrationId: id,
   });
 
@@ -96,7 +105,9 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
                 <p className="font-medium">{registration.name}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">البريد الإلكتروني</p>
+                <p className="text-sm text-muted-foreground">
+                  البريد الإلكتروني
+                </p>
                 <p className="font-medium">{registration.email}</p>
               </div>
             </div>
@@ -133,11 +144,15 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <p className="text-sm text-muted-foreground">التاريخ</p>
-                <p className="font-medium">{formatArabicDate(new Date(registration.session.date))}</p>
+                <p className="font-medium">
+                  {formatArabicDate(new Date(registration.session.date))}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">الوقت</p>
-                <p className="font-medium">{formatArabicTime(new Date(registration.session.date))}</p>
+                <p className="font-medium">
+                  {formatArabicTime(new Date(registration.session.date))}
+                </p>
               </div>
             </div>
             {registration.session.location && (
@@ -156,7 +171,9 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   ) : (
-                    <p className="font-medium">{registration.session.location}</p>
+                    <p className="font-medium">
+                      {registration.session.location}
+                    </p>
                   )}
                 </div>
               </>
@@ -168,7 +185,9 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
         {registration.companions && registration.companions.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">المرافقين ({registration.companions.length})</CardTitle>
+              <CardTitle className="text-lg">
+                المرافقين ({registration.companions.length})
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
@@ -180,11 +199,15 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
                     <div>
                       <p className="font-medium">{companion.name}</p>
                       {companion.company && (
-                        <p className="text-sm text-muted-foreground">{companion.company}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {companion.company}
+                        </p>
                       )}
                     </div>
                     {companion.email && (
-                      <span className="text-xs text-muted-foreground">{companion.email}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {companion.email}
+                      </span>
                     )}
                   </li>
                 ))}
@@ -196,7 +219,9 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
         {/* Actions */}
         <div className="flex flex-col gap-3">
           <Button asChild>
-            <Link href={`/session/${registration.session.id}`}>عرض تفاصيل الحدث</Link>
+            <Link href={`/session/${registration.session.id}`}>
+              عرض تفاصيل الحدث
+            </Link>
           </Button>
           {registration.hasAccount ? (
             <Button variant="outline" asChild>
@@ -216,8 +241,30 @@ export default function RegistrationConfirmationPage({ params }: { params: Promi
         <div className="text-center text-sm text-muted-foreground">
           <p>احفظ التاريخ في تقويمك!</p>
           <p className="mt-1">
-            {formatArabicDate(new Date(registration.session.date))} - {formatArabicTime(new Date(registration.session.date))}
+            {formatArabicDate(new Date(registration.session.date))} -{" "}
+            {formatArabicTime(new Date(registration.session.date))}
           </p>
+        </div>
+
+        {/* Powered by TDA */}
+        <div className="flex justify-center pt-8">
+          <a
+            href="https://tda.sa"
+            target="_blank"
+            rel="noopener noreferrer"
+            dir="ltr"
+            className="inline-flex items-center gap-3 text-muted-foreground/60 hover:text-muted-foreground transition-colors group"
+          >
+            <span className="text-sm">Powered by</span>
+            <Image
+              src="/tda/tda-logo-purple.png"
+              alt="TDA"
+              width={70}
+              height={28}
+              className="h-6 w-auto opacity-60 group-hover:opacity-100 transition-opacity"
+            />
+            <span className="text-sm">الراعي التقني</span>
+          </a>
         </div>
       </div>
     </div>
