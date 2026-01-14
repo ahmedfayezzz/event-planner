@@ -820,6 +820,13 @@ export const registrationRouter = createTRPCRouter({
               },
             },
           },
+          // Include attendance data
+          attendance: {
+            select: {
+              attended: true,
+              checkInTime: true,
+            },
+          },
           // Include admin tracking info
           approvedBy: {
             select: { id: true, name: true },
@@ -847,6 +854,9 @@ export const registrationRouter = createTRPCRouter({
         isInvited: !!r.invitedByRegistrationId,
         invitedByName: r.invitedByRegistration?.user?.name || r.invitedByRegistration?.guestName,
         companionCount: r.invitedRegistrations.length,
+        // Attendance data
+        checkedIn: r.attendance?.attended || false,
+        checkInTime: r.attendance?.checkInTime || null,
         // Admin tracking info (only for SUPER_ADMIN)
         ...(isSuperAdmin && {
           approvedByName: r.approvedBy?.name,

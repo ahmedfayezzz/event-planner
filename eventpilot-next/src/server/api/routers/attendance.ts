@@ -184,6 +184,13 @@ export const attendanceRouter = createTRPCRouter({
               name: true,
               email: true,
               phone: true,
+              labels: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                },
+              },
             },
           },
           attendance: true,
@@ -219,6 +226,7 @@ export const attendanceRouter = createTRPCRouter({
           checkInTime: r.attendance?.checkInTime || null,
           qrVerified: r.attendance?.qrVerified || false,
           companionCount: r.invitedRegistrations.length,
+          labels: r.user?.labels || [],
         };
       });
 

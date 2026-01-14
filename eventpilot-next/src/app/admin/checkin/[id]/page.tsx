@@ -5,11 +5,12 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { api } from "@/trpc/react";
 import { useExpandableRows } from "@/hooks/use-expandable-rows";
-import { cn, formatArabicTime } from "@/lib/utils";
+import { cn, formatArabicTime, formatArabicDateTime } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
@@ -38,6 +39,13 @@ import {
 import { toast } from "sonner";
 import { formatArabicDate } from "@/lib/utils";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowRight,
   QrCode,
   Check,
@@ -52,6 +60,9 @@ import {
   Clock,
   ChevronUp,
   ChevronDown,
+  Tag,
+  Phone,
+  Download,
 } from "lucide-react";
 
 // Attendee type for the attendance list
@@ -68,7 +79,12 @@ interface AttendeeItem {
   checkInTime: Date | null;
   qrVerified: boolean;
   companionCount: number;
+  labels?: Array<{ id: string; name: string; color: string }>;
 }
+
+type TypeFilterType = "all" | "direct" | "invited";
+type AttendanceFilterType = "all" | "checkedin" | "absent";
+type LabelFilterType = "all" | string;
 
 // Dynamically import QR scanner to avoid SSR issues
 const Scanner = dynamic(
@@ -88,6 +104,9 @@ export default function CheckInPage({
 }) {
   const { id } = use(params);
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<TypeFilterType>("all");
+  const [attendanceFilter, setAttendanceFilter] = useState<AttendanceFilterType>("all");
+  const [labelFilter, setLabelFilter] = useState<LabelFilterType>("all");
   const debouncedSearch = useDebounce(search, 300);
   const { isExpanded, toggleRow } = useExpandableRows();
 
@@ -115,6 +134,7 @@ export default function CheckInPage({
     { sessionId: id },
     { refetchInterval: 10000 }
   );
+  const { data: allLabels } = api.label.getAll.useQuery();
 
   const markQRMutation = api.attendance.markAttendanceQR.useMutation({
     onSuccess: (data) => {
@@ -174,20 +194,45 @@ export default function CheckInPage({
     [lastScanned, markQRMutation]
   );
 
-  // Filter attendees by debounced search (client-side)
+  // Filter attendees by debounced search, type, attendance, and label (client-side)
   const filteredAttendees: AttendeeItem[] = useMemo(() => {
-    const list = attendance?.attendanceList || [];
-    if (!debouncedSearch.trim()) return list;
+    let list = attendance?.attendanceList || [];
 
-    const searchLower = debouncedSearch.toLowerCase();
-    return list.filter(
-      (a: AttendeeItem) =>
-        a.name?.toLowerCase().includes(searchLower) ||
-        a.email?.toLowerCase().includes(searchLower) ||
-        a.phone?.includes(debouncedSearch) ||
-        a.invitedByName?.toLowerCase().includes(searchLower)
-    );
-  }, [attendance?.attendanceList, debouncedSearch]);
+    // Filter by type
+    if (typeFilter === "direct") {
+      list = list.filter((a: AttendeeItem) => !a.isInvited);
+    } else if (typeFilter === "invited") {
+      list = list.filter((a: AttendeeItem) => a.isInvited);
+    }
+
+    // Filter by attendance status
+    if (attendanceFilter === "checkedin") {
+      list = list.filter((a: AttendeeItem) => a.attended);
+    } else if (attendanceFilter === "absent") {
+      list = list.filter((a: AttendeeItem) => !a.attended);
+    }
+
+    // Filter by label
+    if (labelFilter !== "all") {
+      list = list.filter((a: AttendeeItem) =>
+        a.labels?.some((label) => label.id === labelFilter)
+      );
+    }
+
+    // Filter by search
+    if (debouncedSearch.trim()) {
+      const searchLower = debouncedSearch.toLowerCase();
+      list = list.filter(
+        (a: AttendeeItem) =>
+          a.name?.toLowerCase().includes(searchLower) ||
+          a.email?.toLowerCase().includes(searchLower) ||
+          a.phone?.includes(debouncedSearch) ||
+          a.invitedByName?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return list;
+  }, [attendance?.attendanceList, debouncedSearch, typeFilter, attendanceFilter, labelFilter]);
 
   // Filter absent attendees for manual check-in dialog
   const absentAttendees: AttendeeItem[] = useMemo(() => {
@@ -245,6 +290,49 @@ export default function CheckInPage({
     return formatArabicTime(new Date(date));
   };
 
+  // Export to CSV
+  const handleExportCsv = () => {
+    if (!attendance) return;
+
+    const headers = [
+      "الاسم",
+      "البريد",
+      "الهاتف",
+      "النوع",
+      "حالة الحضور",
+      "وقت الحضور",
+      "التصنيفات",
+    ];
+
+    const rows = filteredAttendees.map((a) => [
+      a.name || "",
+      a.email || "",
+      a.phone || "",
+      a.isInvited ? "مرافق" : "مباشر",
+      a.attended ? "حاضر" : "غائب",
+      a.checkInTime ? formatArabicDateTime(new Date(a.checkInTime)) : "-",
+      a.labels?.map((l) => l.name).join("، ") || "",
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(",")),
+    ].join("\r\n");
+
+    // Use Uint8Array with BOM for proper UTF-8 encoding
+    const BOM = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const encoder = new TextEncoder();
+    const csvData = encoder.encode(csvContent);
+    const blob = new Blob([BOM, csvData], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `attendance-${attendance.session.title || id}.csv`;
+    link.click();
+    toast.success("تم تصدير البيانات");
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -292,6 +380,10 @@ export default function CheckInPage({
             </p>
           </div>
         </div>
+        <Button variant="outline" onClick={handleExportCsv}>
+          <Download className="me-2 h-4 w-4" />
+          تصدير CSV
+        </Button>
       </div>
 
       {/* Stats */}
@@ -372,15 +464,70 @@ export default function CheckInPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Search */}
-          <div className="relative max-w-md">
-            <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="بحث بالاسم، البريد، أو الهاتف..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pe-10"
-            />
+          {/* Attendance Status Tabs */}
+          <Tabs
+            value={attendanceFilter}
+            onValueChange={(v) => setAttendanceFilter(v as AttendanceFilterType)}
+            className="w-fit"
+          >
+            <TabsList>
+              <TabsTrigger value="all">الكل ({attendance?.stats.total || 0})</TabsTrigger>
+              <TabsTrigger value="checkedin">حاضر ({attendance?.stats.attended || 0})</TabsTrigger>
+              <TabsTrigger value="absent">غائب ({attendance?.stats.pending || 0})</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Filters */}
+          <div className="flex flex-col md:flex-row gap-3">
+            <Select
+              value={typeFilter}
+              onValueChange={(v) => setTypeFilter(v as TypeFilterType)}
+            >
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="نوع التسجيل" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الأنواع</SelectItem>
+                <SelectItem value="direct">مباشر ({attendance?.stats.totalDirect || 0})</SelectItem>
+                <SelectItem value="invited">مرافقين ({attendance?.stats.totalInvited || 0})</SelectItem>
+              </SelectContent>
+            </Select>
+            {allLabels && allLabels.length > 0 && (
+              <Select
+                value={labelFilter}
+                onValueChange={(v) => setLabelFilter(v as LabelFilterType)}
+              >
+                <SelectTrigger className="w-44">
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    <SelectValue placeholder="التصنيف" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل التصنيفات</SelectItem>
+                  {allLabels.map((label) => (
+                    <SelectItem key={label.id} value={label.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: label.color }}
+                        />
+                        {label.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="بحث بالاسم، البريد، أو الهاتف..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pe-10"
+              />
+            </div>
           </div>
 
           {/* List */}
@@ -394,6 +541,8 @@ export default function CheckInPage({
                 <TableHeader>
                   <TableRow>
                     <TableHead>الاسم</TableHead>
+                    <TableHead className="hidden md:table-cell">الهاتف</TableHead>
+                    <TableHead className="hidden lg:table-cell">التصنيفات</TableHead>
                     <TableHead>الحالة</TableHead>
                     <TableHead className="hidden md:table-cell">وقت الحضور</TableHead>
                     <TableHead className="hidden md:table-cell w-24">إجراء</TableHead>
@@ -429,6 +578,42 @@ export default function CheckInPage({
                                 </p>
                               )}
                             </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {attendee.phone ? (
+                              <span className="text-sm" dir="ltr">
+                                {attendee.phone}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {attendee.labels && attendee.labels.length > 0 ? (
+                              <div className="flex flex-wrap gap-0.5">
+                                {attendee.labels.slice(0, 2).map((label) => (
+                                  <Badge
+                                    key={label.id}
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 py-0"
+                                    style={{
+                                      backgroundColor: label.color + "20",
+                                      color: label.color,
+                                      borderColor: label.color + "40",
+                                    }}
+                                  >
+                                    {label.name}
+                                  </Badge>
+                                ))}
+                                {attendee.labels.length > 2 && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                    +{attendee.labels.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">-</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -507,6 +692,33 @@ export default function CheckInPage({
                                       <div>
                                         <span className="text-muted-foreground">البريد:</span>
                                         <span className="mr-1 truncate" dir="ltr">{attendee.email}</span>
+                                      </div>
+                                    )}
+                                    {attendee.phone && (
+                                      <div className="flex items-center gap-1">
+                                        <Phone className="h-3 w-3 text-muted-foreground" />
+                                        <span className="text-muted-foreground">الهاتف:</span>
+                                        <span className="mr-1" dir="ltr">{attendee.phone}</span>
+                                      </div>
+                                    )}
+                                    {attendee.labels && attendee.labels.length > 0 && (
+                                      <div className="flex items-center gap-1 flex-wrap">
+                                        <Tag className="h-3 w-3 text-muted-foreground shrink-0" />
+                                        <span className="text-muted-foreground">التصنيفات:</span>
+                                        {attendee.labels.map((label) => (
+                                          <Badge
+                                            key={label.id}
+                                            variant="outline"
+                                            className="text-[10px] px-1.5 py-0"
+                                            style={{
+                                              backgroundColor: label.color + "20",
+                                              color: label.color,
+                                              borderColor: label.color + "40",
+                                            }}
+                                          >
+                                            {label.name}
+                                          </Badge>
+                                        ))}
                                       </div>
                                     )}
                                     {attendee.isInvited && attendee.invitedByName && (

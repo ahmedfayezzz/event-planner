@@ -92,6 +92,9 @@ interface RegistrationItem {
   invitedByName?: string | null;
   companionCount?: number;
   isManual?: boolean;
+  // Attendance data
+  checkedIn?: boolean;
+  checkInTime?: Date | null;
   // Admin tracking (super admin only)
   approvedByName?: string | null;
   approvedAt?: Date | null;
@@ -103,6 +106,7 @@ interface RegistrationItem {
 
 type FilterType = "all" | "direct" | "invited";
 type StatusFilterType = "all" | "coming" | "notcoming" | "pending" | "rejected";
+type AttendanceFilterType = "all" | "checkedin" | "absent";
 type TagFilterType = "all" | string;
 
 export default function SessionAttendeesPage({
@@ -114,6 +118,7 @@ export default function SessionAttendeesPage({
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
+  const [attendanceFilter, setAttendanceFilter] = useState<AttendanceFilterType>("all");
   const [tagFilter, setTagFilter] = useState<TagFilterType>("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { isExpanded, toggleRow } = useExpandableRows();
@@ -290,6 +295,13 @@ export default function SessionAttendeesPage({
       );
     }
 
+    // Filter by attendance
+    if (attendanceFilter === "checkedin") {
+      filtered = filtered.filter((reg: RegistrationItem) => reg.checkedIn);
+    } else if (attendanceFilter === "absent") {
+      filtered = filtered.filter((reg: RegistrationItem) => !reg.checkedIn && reg.isApproved && !reg.isNotComing);
+    }
+
     // Filter by search (with Arabic normalization)
     if (debouncedSearch.trim()) {
       const normalizedSearch = normalizeArabic(debouncedSearch);
@@ -303,12 +315,12 @@ export default function SessionAttendeesPage({
     }
 
     return filtered;
-  }, [registrations, debouncedSearch, filter, statusFilter, tagFilter]);
+  }, [registrations, debouncedSearch, filter, statusFilter, attendanceFilter, tagFilter]);
 
   // Calculate stats
   const stats = useMemo(() => {
     if (!registrations)
-      return { total: 0, expectedAttendees: 0, direct: 0, invited: 0, coming: 0, notComing: 0, pending: 0, rejected: 0 };
+      return { total: 0, expectedAttendees: 0, direct: 0, invited: 0, coming: 0, notComing: 0, pending: 0, rejected: 0, checkedIn: 0, absent: 0 };
 
     const direct = registrations.filter(
       (r: RegistrationItem) => !r.isInvited
@@ -320,6 +332,8 @@ export default function SessionAttendeesPage({
     const notComing = registrations.filter((r: RegistrationItem) => r.isNotComing).length;
     const pending = registrations.filter((r: RegistrationItem) => !r.isApproved && !r.isRejected).length;
     const rejected = registrations.filter((r: RegistrationItem) => r.isRejected).length;
+    const checkedIn = registrations.filter((r: RegistrationItem) => r.checkedIn).length;
+    const absent = registrations.filter((r: RegistrationItem) => !r.checkedIn && r.isApproved && !r.isNotComing).length;
 
     return {
       total: registrations.length,
@@ -331,6 +345,8 @@ export default function SessionAttendeesPage({
       notComing,
       pending,
       rejected,
+      checkedIn,
+      absent,
     };
   }, [registrations]);
 
@@ -429,10 +445,14 @@ ${qrPageUrl}
 
     const csvContent = [
       headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
-    ].join("\n");
+      ...rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(",")),
+    ].join("\r\n");
 
-    const blob = new Blob(["\uFEFF" + csvContent], {
+    // Use Uint8Array with BOM for proper UTF-8 encoding
+    const BOM = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const encoder = new TextEncoder();
+    const csvData = encoder.encode(csvContent);
+    const blob = new Blob([BOM, csvData], {
       type: "text/csv;charset=utf-8;",
     });
     const link = document.createElement("a");
@@ -628,6 +648,19 @@ ${qrPageUrl}
             <SelectItem value="all">كل الأنواع</SelectItem>
             <SelectItem value="direct">مباشر ({stats.direct})</SelectItem>
             <SelectItem value="invited">مرافقين ({stats.invited})</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          value={attendanceFilter}
+          onValueChange={(v) => setAttendanceFilter(v as AttendanceFilterType)}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="حالة الحضور" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الحضور</SelectItem>
+            <SelectItem value="checkedin">حضر ({stats.checkedIn})</SelectItem>
+            <SelectItem value="absent">لم يحضر ({stats.absent})</SelectItem>
           </SelectContent>
         </Select>
         {allLabels && allLabels.length > 0 && (
