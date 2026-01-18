@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/server/auth";
 import { db } from "@/server/db";
 import { generateAgendaPdf } from "@/lib/agenda-pdf";
 
@@ -8,15 +7,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Check authentication
-    const session = await auth();
-    if (
-      !session?.user ||
-      (session.user.role !== "ADMIN" && session.user.role !== "SUPER_ADMIN")
-    ) {
-      return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
-    }
-
     const { id } = await params;
 
     // Get session details with guests
