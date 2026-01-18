@@ -25,6 +25,8 @@ import {
   ACCENT_COLOR,
   TITLE_COLOR,
 } from "./invitation-pdf";
+// Import agenda PDF generation
+import { generateAgendaPdf } from "./agenda-pdf";
 
 // Register Abar fonts using @napi-rs/canvas GlobalFonts
 const abarBoldPath = path.join(
@@ -62,7 +64,7 @@ const FIXED_TEXTS = {
   sponsorsHeader: "الرعــاة",
   clickForLocation: "انقر للوصول",
   locationSublabel: "إلى الموقع",
-  agendaLink: "أجندة الحدث: (انقر لمشاهدة الأجندة)",
+  agendaLink: "لمشاهدة الأجندة انتقل للصفحة التالية",
   // Fixed session title (two lines)
   sessionTitleLine1: "هل الاتصال يصنع المدن؟",
   sessionTitleLine2:
@@ -104,12 +106,8 @@ const FONT_SIZES = {
   sessionGuests: 24,
   iconLabel: 32,
   sponsorsHeader: 65,
-  agendaLink: 36,
+  agendaLink: 32,
 };
-
-// Fixed agenda URL
-const AGENDA_URL =
-  "https://drive.google.com/file/d/1fhsyjHCS1HS3NiBENapwvnHP_-DJaGcu/view?usp=drive_link"; // TODO: Replace with actual agenda image URL
 
 export interface BrandedQRPdfOptions {
   sessionTitle: string;
@@ -584,7 +582,7 @@ export async function generateBrandedQRPdf(
     currentY -= qrSize / 2 + spacing.afterQrCode;
 
     // ====================================
-    // 9. DRAW AGENDA LINK (below QR code)
+    // 9. DRAW AGENDA TEXT (below QR code)
     // ====================================
     const agendaLinkImageData = renderArabicTextToImage(
       FIXED_TEXTS.agendaLink,
@@ -605,44 +603,6 @@ export async function generateBrandedQRPdf(
       width: agendaLinkImageData.width,
       height: agendaLinkImageData.height,
     });
-
-    // Add hyperlink to agenda
-    const agendaLinkWidth = agendaLinkImageData.width + 20;
-    const agendaLinkHeight = agendaLinkImageData.height + 10;
-    const agendaLinkRectX = agendaLinkX - 10;
-    const agendaLinkRectY = agendaLinkY - 5;
-
-    const agendaActionDict = pdfDoc.context.obj({
-      Type: "Action",
-      S: "URI",
-      URI: PDFString.of(AGENDA_URL),
-    });
-
-    const agendaLinkAnnotation = pdfDoc.context.obj({
-      Type: "Annot",
-      Subtype: "Link",
-      Rect: [
-        agendaLinkRectX,
-        agendaLinkRectY,
-        agendaLinkRectX + agendaLinkWidth,
-        agendaLinkRectY + agendaLinkHeight,
-      ],
-      Border: [0, 0, 0],
-      A: agendaActionDict,
-    });
-
-    const agendaExistingAnnots = page.node.lookup(
-      PDFName.of("Annots"),
-      PDFArray,
-    );
-    if (agendaExistingAnnots) {
-      agendaExistingAnnots.push(agendaLinkAnnotation);
-    } else {
-      page.node.set(
-        PDFName.of("Annots"),
-        pdfDoc.context.obj([agendaLinkAnnotation]),
-      );
-    }
 
     currentY -= agendaLinkImageData.height / 2 + spacing.afterAgendaLink;
 
@@ -1217,6 +1177,35 @@ export async function generateBrandedQRPdf(
             }
           }
         }
+      }
+    }
+
+    // ====================================
+    // ADD AGENDA AS SECOND PAGE
+    // ====================================
+    // Generate agenda PDF
+    const guestName = options.sessionGuests?.[0]?.name;
+    const guestJobTitle = options.sessionGuests?.[0]
+      ? [
+          options.sessionGuests[0].jobTitle,
+          options.sessionGuests[0].company,
+        ]
+          .filter(Boolean)
+          .join(" - ")
+      : undefined;
+
+    const agendaPdfBuffer = await generateAgendaPdf({
+      sessionTitle: options.sessionTitle,
+      guestName,
+      guestJobTitle,
+    });
+
+    if (agendaPdfBuffer) {
+      // Load the agenda PDF and copy its first page
+      const agendaPdfDoc = await PDFDocument.load(agendaPdfBuffer);
+      const [agendaPage] = await pdfDoc.copyPages(agendaPdfDoc, [0]);
+      if (agendaPage) {
+        pdfDoc.addPage(agendaPage);
       }
     }
 
