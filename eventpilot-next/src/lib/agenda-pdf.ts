@@ -38,7 +38,7 @@ if (fsSync.existsSync(abarRegularPath)) {
 const FIXED_TEXTS = {
   header: "شتوية لفت",
   subtitle: "ثلوثية الأعمال",
-  agendaTitle: "•♦• أجندة ثلوثية الأعمال •♦•",
+  agendaTitle: "••• أجندة ثلوثية الأعمال •••",
   guestPrefix: "ضيف الثلوثية /",
   periodHeader: "الفــــترة",
   timeHeader: "الوقــــت",
