@@ -25,6 +25,8 @@ import {
   ACCENT_COLOR,
   TITLE_COLOR,
 } from "./invitation-pdf";
+// Import agenda PDF generation
+import { generateAgendaPdf } from "./agenda-pdf";
 
 // Register Abar fonts using @napi-rs/canvas GlobalFonts
 const abarBoldPath = path.join(
@@ -104,14 +106,11 @@ const FONT_SIZES = {
   sessionGuests: 24,
   iconLabel: 32,
   sponsorsHeader: 65,
-  agendaLink: 36,
+  agendaLink: 32,
 };
 
-// Fixed agenda URL
-const AGENDA_URL =
-  "https://drive.google.com/file/d/1fhsyjHCS1HS3NiBENapwvnHP_-DJaGcu/view?usp=drive_link"; // TODO: Replace with actual agenda image URL
-
 export interface BrandedQRPdfOptions {
+  sessionId: string;
   sessionTitle: string;
   sessionDate: Date;
   attendeeName?: string;
@@ -606,7 +605,10 @@ export async function generateBrandedQRPdf(
       height: agendaLinkImageData.height,
     });
 
-    // Add hyperlink to agenda
+    // Add hyperlink to agenda PDF
+    const agendaUrl =
+      process.env.BASE_URL || "http://localhost:3000";
+    const agendaLinkUrl = `${agendaUrl}/api/sessions/${options.sessionId}/agenda-pdf`;
     const agendaLinkWidth = agendaLinkImageData.width + 20;
     const agendaLinkHeight = agendaLinkImageData.height + 10;
     const agendaLinkRectX = agendaLinkX - 10;
@@ -615,7 +617,7 @@ export async function generateBrandedQRPdf(
     const agendaActionDict = pdfDoc.context.obj({
       Type: "Action",
       S: "URI",
-      URI: PDFString.of(AGENDA_URL),
+      URI: PDFString.of(agendaLinkUrl),
     });
 
     const agendaLinkAnnotation = pdfDoc.context.obj({

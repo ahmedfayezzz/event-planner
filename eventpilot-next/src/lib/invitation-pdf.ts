@@ -92,6 +92,7 @@ const FONT_SIZES = {
 };
 
 export interface InvitationPdfOptions {
+  sessionId: string;
   sessionTitle: string;
   sessionDate: Date;
   location?: string;
