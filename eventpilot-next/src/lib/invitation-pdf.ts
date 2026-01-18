@@ -599,7 +599,7 @@ export async function generateInvitationPdf(
       {
         fontFamily: "AbarBold",
         fontSize: line2FontSize,
-        color: TITLE_COLOR,
+        color: ACCENT_COLOR,
         maxWidth: sessionTitleMaxWidth,
       },
     );
