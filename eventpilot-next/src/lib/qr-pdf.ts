@@ -260,7 +260,7 @@ export async function generateBrandedQRPdf(
       {
         fontFamily: "AbarBold",
         fontSize: line1FontSize,
-        color: ACCENT_COLOR,
+        color: "#e3c56f",
         maxWidth: sessionTitleMaxWidth,
       },
     );
@@ -287,7 +287,7 @@ export async function generateBrandedQRPdf(
       {
         fontFamily: "AbarBold",
         fontSize: line2FontSize,
-        color: ACCENT_COLOR,
+        color: "#e3c56f",
         maxWidth: sessionTitleMaxWidth,
       },
     );
