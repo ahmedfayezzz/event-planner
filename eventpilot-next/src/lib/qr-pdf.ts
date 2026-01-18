@@ -64,7 +64,7 @@ const FIXED_TEXTS = {
   sponsorsHeader: "الرعــاة",
   clickForLocation: "انقر للوصول",
   locationSublabel: "إلى الموقع",
-  agendaLink: "لمشاهدة الأجندة انتقل للصفحة التالية",
+  agendaLink: "أجندة الحدث: (انقر لمشاهدة الأجندة)",
   // Fixed session title (two lines)
   sessionTitleLine1: "هل الاتصال يصنع المدن؟",
   sessionTitleLine2:
