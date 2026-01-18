@@ -220,7 +220,11 @@ export async function generateAgendaPdf(
         maxWidth: panelWidth - panelPadding * 2,
       });
 
-      let guestJobTitleImageData = null;
+      let guestJobTitleImageData: {
+        buffer: Buffer;
+        width: number;
+        height: number;
+      } | null = null;
       if (options.guestJobTitle) {
         guestJobTitleImageData = renderArabicTextToImage(
           options.guestJobTitle,
