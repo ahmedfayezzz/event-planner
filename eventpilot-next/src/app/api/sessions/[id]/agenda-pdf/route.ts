@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
-import { generateInvitationPdf } from "@/lib/invitation-pdf";
+import { generateAgendaPdf } from "@/lib/agenda-pdf";
 
 export async function GET(
   request: NextRequest,
@@ -25,11 +25,9 @@ export async function GET(
       select: {
         id: true,
         title: true,
-        date: true,
-        location: true,
-        locationUrl: true,
         sessionGuests: {
           orderBy: { displayOrder: "asc" },
+          take: 1, // Only get the first guest
           include: {
             guest: {
               select: {
@@ -37,7 +35,6 @@ export async function GET(
                 title: true,
                 jobTitle: true,
                 company: true,
-                imageUrl: true,
               },
             },
           },
@@ -49,49 +46,24 @@ export async function GET(
       return NextResponse.json({ error: "الحدث غير موجود" }, { status: 404 });
     }
 
-    // Get sponsors for this session
-    const sponsorships = await db.eventSponsorship.findMany({
-      where: { sessionId: id },
-      include: {
-        sponsor: {
-          select: {
-            name: true,
-            logoUrl: true,
-            type: true,
-            socialMediaLinks: true,
-          },
-        },
-      },
-    });
+    // Extract first guest info if exists
+    const firstGuest = eventSession.sessionGuests[0];
+    const guestName = firstGuest
+      ? [firstGuest.guest.title, firstGuest.guest.name]
+          .filter(Boolean)
+          .join(" ")
+      : undefined;
+    const guestJobTitle = firstGuest
+      ? [firstGuest.guest.jobTitle, firstGuest.guest.company]
+          .filter(Boolean)
+          .join(" - ")
+      : undefined;
 
-    // Extract sponsor info
-    const sponsors = sponsorships
-      .filter((s) => s.sponsor && !s.isSelfSponsored)
-      .map((s) => ({
-        name: s.sponsor!.name,
-        logoUrl: s.sponsor!.logoUrl,
-        type: s.sponsor!.type,
-        socialMediaLinks: s.sponsor!.socialMediaLinks as Record<string, string> | null,
-      }));
-
-    // Extract session guests info
-    const sessionGuests = eventSession.sessionGuests.map((sg) => ({
-      name: sg.guest.name,
-      title: sg.guest.title,
-      jobTitle: sg.guest.jobTitle,
-      company: sg.guest.company,
-      imageUrl: sg.guest.imageUrl,
-    }));
-
-    // Generate the PDF
-    const pdfBuffer = await generateInvitationPdf({
-      sessionId: eventSession.id,
+    // Generate the agenda PDF
+    const pdfBuffer = await generateAgendaPdf({
       sessionTitle: eventSession.title,
-      sessionDate: new Date(eventSession.date),
-      location: eventSession.location || undefined,
-      locationUrl: eventSession.locationUrl || undefined,
-      sponsors,
-      sessionGuests,
+      guestName,
+      guestJobTitle,
     });
 
     if (!pdfBuffer) {
@@ -104,11 +76,10 @@ export async function GET(
 
     // Return PDF
     // Use ASCII-only filename for Content-Disposition header (HTTP headers must be ASCII)
-    // Arabic characters would cause ByteString conversion errors
-    const safeFilename = `invitation-${eventSession.id}.pdf`;
+    const safeFilename = `agenda-${eventSession.id}.pdf`;
     // Use RFC 5987 encoding for filename* to support Unicode
     const encodedFilename = encodeURIComponent(
-      `دعوة-${eventSession.title}.pdf`
+      `أجندة-${eventSession.title}.pdf`
     );
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
@@ -121,7 +92,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Error generating invitation PDF:", error);
+    console.error("Error generating agenda PDF:", error);
     return NextResponse.json(
       { error: "حدث خطأ أثناء إنشاء ملف PDF" },
       { status: 500 }

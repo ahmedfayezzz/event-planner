@@ -10,8 +10,6 @@ import {
   extractKeyFromUrl,
   needsPresignedReadUrl,
 } from "./s3";
-// Import agenda PDF generation
-import { generateAgendaPdf } from "./agenda-pdf";
 
 // Register Abar fonts using @napi-rs/canvas GlobalFonts
 const abarBoldPath = path.join(
@@ -94,6 +92,7 @@ const FONT_SIZES = {
 };
 
 export interface InvitationPdfOptions {
+  sessionId: string;
   sessionTitle: string;
   sessionDate: Date;
   location?: string;
@@ -1455,35 +1454,6 @@ export async function generateInvitationPdf(
             }
           }
         }
-      }
-    }
-
-    // ====================================
-    // ADD AGENDA AS SECOND PAGE
-    // ====================================
-    // Generate agenda PDF
-    const guestName = options.sessionGuests?.[0]?.name;
-    const guestJobTitle = options.sessionGuests?.[0]
-      ? [
-          options.sessionGuests[0].jobTitle,
-          options.sessionGuests[0].company,
-        ]
-          .filter(Boolean)
-          .join(" - ")
-      : undefined;
-
-    const agendaPdfBuffer = await generateAgendaPdf({
-      sessionTitle: options.sessionTitle,
-      guestName,
-      guestJobTitle,
-    });
-
-    if (agendaPdfBuffer) {
-      // Load the agenda PDF and copy its first page
-      const agendaPdfDoc = await PDFDocument.load(agendaPdfBuffer);
-      const [agendaPage] = await pdfDoc.copyPages(agendaPdfDoc, [0]);
-      if (agendaPage) {
-        pdfDoc.addPage(agendaPage);
       }
     }
 
