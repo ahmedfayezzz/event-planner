@@ -30,13 +30,13 @@ const abarBoldPath = path.join(
   process.cwd(),
   "public",
   "fonts",
-  "AbarHigh-Bold.ttf"
+  "AbarHigh-Bold.ttf",
 );
 const abarRegularPath = path.join(
   process.cwd(),
   "public",
   "fonts",
-  "AbarLow-Regular.ttf"
+  "AbarLow-Regular.ttf",
 );
 
 // Register Abar fonts
@@ -50,9 +50,10 @@ if (fsSync.existsSync(abarRegularPath)) {
 // Fixed Arabic texts for QR PDF content
 const FIXED_TEXTS = {
   mainTitle: "دعوة خاصة",
-  subtitle: "ندعـوكم لحضور ثلوثية الأعمال في شتوية لفت - بعنوان",
-  description:
-    "حيث يجتمع نخبة من رواد الأعمال في لقاء يحول الثلوثية إلى مساحة تبنى فيها العلاقات، وتنضج فيها الفرص",
+  subtitle: "ندعـوكم لحضور ثلوثية الأعمال في شتوية لفت بعنوان",
+  // description:
+  //   "حيث يجتمع نخبة من رواد الأعمال في لقاء يحول الثلوثية إلى مساحة تبنى فيها العلاقات، وتنضج فيها الفرص",
+  description: "", // Hidden for now
   greetingPrefix: "حياك الله",
   simpleGreeting: "حياكم الله",
   menOnlyLabel: "للرجال",
@@ -61,19 +62,23 @@ const FIXED_TEXTS = {
   clickForLocation: "انقر للوصول",
   locationSublabel: "إلى الموقع",
   agendaLink: "أجندة الحدث: (انقر لمشاهدة الأجندة)",
+  // Fixed session title (two lines)
+  sessionTitleLine1: "هل الاتصال يصنع المدن؟",
+  sessionTitleLine2:
+    "مركاز البلد الأمين أنموذجًا رائدًا في المبادرات الاتصالية الحكومية",
 };
 
 // Layout configuration - relative spacing system
 // All sections flow from top to bottom with consistent gaps between them
 const LAYOUT = {
   // Anchor points (percentage from bottom of page)
-  topStart: 0.85, // Where first element (mainTitle) starts
+  topStart: 0.88, // Where first element (mainTitle) starts
   bottomMargin: 0.01, // Bottom margin for sponsors
 
   // Spacing between sections (in points)
   // Each value is the gap between the bottom of one section and top of next
   spacing: {
-    afterMainTitle: 20, // gap after "دعوة خاصة"
+    afterMainTitle: 15, // gap after "دعوة خاصة"
     afterGreeting: 12, // gap after attendee name
     afterSubtitle: 12, // gap after "ندعوكم لحضور"
     afterSessionTitle: 22, // gap after session title
@@ -82,7 +87,7 @@ const LAYOUT = {
     afterSessionGuests: 25, // gap after guest names
     afterSimpleGreeting: 18, // gap after "حياكم الله"
     afterQrCode: 10, // gap after QR code
-    afterAgendaLink: 8, // gap after agenda link
+    afterAgendaLink: 2, // gap after agenda link
     afterIcons: 22, // gap after info icons row
   },
 };
@@ -92,7 +97,7 @@ const FONT_SIZES = {
   mainTitle: 50,
   subtitle: 35,
   sessionTitle: 90,
-  description: 34,
+  description: 28,
   greeting: 65,
   simpleGreeting: 38,
   sessionGuests: 24,
@@ -148,7 +153,7 @@ async function loadTemplate(): Promise<Buffer> {
  */
 export async function generateBrandedQRPdf(
   qrData: string,
-  options: BrandedQRPdfOptions
+  options: BrandedQRPdfOptions,
 ): Promise<Buffer | null> {
   try {
     // 1. Generate base QR code as PNG
@@ -241,55 +246,118 @@ export async function generateBrandedQRPdf(
     currentY -= subtitleImageData.height / 2 + spacing.afterSubtitle;
 
     // ====================================
-    // 4. DRAW SESSION TITLE (from DB) - ACCENT COLOR
+    // 4. DRAW SESSION TITLE - ACCENT COLOR
     // ====================================
     const sessionTitleMaxWidth = width * 0.75;
-    const sessionTitleFontSize = calculateFitFontSize(
-      options.sessionTitle,
+
+    // ====================================
+    // TEMPORARY: Fixed two-line title (comment out to restore dynamic title)
+    // ====================================
+    // Line 1: Question (smaller font)
+    const line1FontSize = 50;
+    const line1ImageData = renderArabicTextToImage(
+      FIXED_TEXTS.sessionTitleLine1,
+      {
+        fontFamily: "AbarBold",
+        fontSize: line1FontSize,
+        color: ACCENT_COLOR,
+        maxWidth: sessionTitleMaxWidth,
+      },
+    );
+    const line1Image = await pdfDoc.embedPng(line1ImageData.buffer);
+    currentY -= line1ImageData.height / 2;
+    page.drawImage(line1Image, {
+      x: (width - line1ImageData.width) / 2,
+      y: currentY - line1ImageData.height / 2,
+      width: line1ImageData.width,
+      height: line1ImageData.height,
+    });
+    currentY -= line1ImageData.height / 2 + 10; // Small gap between lines
+
+    // Line 2: Headline (larger font, auto-sized to fit)
+    const line2FontSize = calculateFitFontSize(
+      FIXED_TEXTS.sessionTitleLine2,
       "AbarBold",
       FONT_SIZES.sessionTitle,
       35,
-      sessionTitleMaxWidth
+      sessionTitleMaxWidth,
     );
-    const sessionTitleImageData = renderArabicTextToImage(
-      options.sessionTitle,
+    const line2ImageData = renderArabicTextToImage(
+      FIXED_TEXTS.sessionTitleLine2,
       {
         fontFamily: "AbarBold",
-        fontSize: sessionTitleFontSize,
+        fontSize: line2FontSize,
         color: ACCENT_COLOR,
         maxWidth: sessionTitleMaxWidth,
-      }
+      },
     );
-    const sessionTitleImage = await pdfDoc.embedPng(
-      sessionTitleImageData.buffer
-    );
-    currentY -= sessionTitleImageData.height / 2;
-    page.drawImage(sessionTitleImage, {
-      x: (width - sessionTitleImageData.width) / 2,
-      y: currentY - sessionTitleImageData.height / 2,
-      width: sessionTitleImageData.width,
-      height: sessionTitleImageData.height,
+    const line2Image = await pdfDoc.embedPng(line2ImageData.buffer);
+    currentY -= line2ImageData.height / 2;
+    page.drawImage(line2Image, {
+      x: (width - line2ImageData.width) / 2,
+      y: currentY - line2ImageData.height / 2,
+      width: line2ImageData.width,
+      height: line2ImageData.height,
     });
-    currentY -= sessionTitleImageData.height / 2 + spacing.afterSessionTitle;
+    currentY -= line2ImageData.height / 2 + spacing.afterSessionTitle;
+    // ====================================
+    // END TEMPORARY FIXED TITLE
+    // ====================================
 
     // ====================================
-    // 5. DRAW DESCRIPTION (fixed text)
+    // DYNAMIC SESSION TITLE (from DB) - uncomment to restore
     // ====================================
-    const descImageData = renderArabicTextToImage(FIXED_TEXTS.description, {
-      fontFamily: "AbarBold",
-      fontSize: FONT_SIZES.description,
-      color: WHITE_COLOR,
-      maxWidth: width * 0.7,
-    });
-    const descImage = await pdfDoc.embedPng(descImageData.buffer);
-    currentY -= descImageData.height / 2;
-    page.drawImage(descImage, {
-      x: (width - descImageData.width) / 2,
-      y: currentY - descImageData.height / 2,
-      width: descImageData.width,
-      height: descImageData.height,
-    });
-    currentY -= descImageData.height / 2 + spacing.afterDescription;
+    // const sessionTitleFontSize = calculateFitFontSize(
+    //   options.sessionTitle,
+    //   "AbarBold",
+    //   FONT_SIZES.sessionTitle,
+    //   35,
+    //   sessionTitleMaxWidth
+    // );
+    // const sessionTitleImageData = renderArabicTextToImage(
+    //   options.sessionTitle,
+    //   {
+    //     fontFamily: "AbarBold",
+    //     fontSize: sessionTitleFontSize,
+    //     color: ACCENT_COLOR,
+    //     maxWidth: sessionTitleMaxWidth,
+    //   }
+    // );
+    // const sessionTitleImage = await pdfDoc.embedPng(
+    //   sessionTitleImageData.buffer
+    // );
+    // currentY -= sessionTitleImageData.height / 2;
+    // page.drawImage(sessionTitleImage, {
+    //   x: (width - sessionTitleImageData.width) / 2,
+    //   y: currentY - sessionTitleImageData.height / 2,
+    //   width: sessionTitleImageData.width,
+    //   height: sessionTitleImageData.height,
+    // });
+    // currentY -= sessionTitleImageData.height / 2 + spacing.afterSessionTitle;
+    // ====================================
+    // END DYNAMIC SESSION TITLE
+    // ====================================
+
+    // ====================================
+    // 5. DRAW DESCRIPTION (fixed text) - only if description exists
+    // ====================================
+    if (FIXED_TEXTS.description) {
+      const descImageData = renderArabicTextToImage(FIXED_TEXTS.description, {
+        fontFamily: "AbarBold",
+        fontSize: FONT_SIZES.description,
+        color: WHITE_COLOR,
+        maxWidth: width * 0.7,
+      });
+      const descImage = await pdfDoc.embedPng(descImageData.buffer);
+      currentY -= descImageData.height / 2;
+      page.drawImage(descImage, {
+        x: (width - descImageData.width) / 2,
+        y: currentY - descImageData.height / 2,
+        width: descImageData.width,
+        height: descImageData.height,
+      });
+      currentY -= descImageData.height / 2 + spacing.afterDescription;
+    }
 
     // ====================================
     // 6. DRAW SESSION GUESTS (VIP/speakers) - Grid layout
@@ -315,69 +383,162 @@ export async function generateBrandedQRPdf(
       });
       currentY -= guestTitleImageData.height / 2 + spacing.afterGuestTitle;
 
-      // Draw guests in a horizontal layout (RTL)
+      // Draw guests in a centered split layout (RTL)
+      // Page split: 60% text on left, 40% image on right
+      // Gap between them is at the split point
       const guestCount = Math.min(options.sessionGuests.length, 5);
-      const guestAreaWidth = width * 0.85;
-      const guestCellWidth = guestAreaWidth / guestCount;
-      const guestStartX = (width - guestAreaWidth) / 2;
+      const textLineGap = 8; // Gap between name and job title
+      const guestImageSize = 200; // Square image size (bigger)
+      const guestVerticalGap = 30; // Gap between multiple guests
+      const centerGap = 40; // Gap between text and image
 
-      // Calculate max guest content height for consistent spacing
-      let maxGuestHeight = 0;
+      // Define content area with page margins
+      const pageMargin = width * 0.12; // 12% margin on each side
+      const contentWidth = width - pageMargin * 2;
+      const contentStartX = pageMargin;
+
+      // 60/40 split within content area (text gets 60%, image gets 40%)
+      const textSectionWidth = contentStartX + contentWidth * 0.68;
+      const textMaxWidth = contentWidth * 0.6 - 20; // Text area width with small padding
 
       for (let i = 0; i < guestCount; i++) {
         const guest = options.sessionGuests[i];
         if (!guest) continue;
 
-        // RTL: start from right
-        const colFromRight = guestCount - 1 - i;
-        const cellCenterX = guestStartX + (colFromRight + 0.5) * guestCellWidth;
-
-        // Draw guest name
+        // Prepare guest name text first to measure
         const guestName = guest.title
           ? `${guest.title} ${guest.name}`
           : guest.name;
+
         const nameImageData = renderArabicTextToImage(guestName, {
           fontFamily: "AbarBold",
           fontSize: nameFontSize,
           color: TEXT_COLOR,
-          maxWidth: guestCellWidth - 20,
-        });
-        const nameImage = await pdfDoc.embedPng(nameImageData.buffer);
-
-        let guestContentHeight = nameImageData.height;
-
-        page.drawImage(nameImage, {
-          x: cellCenterX - nameImageData.width / 2,
-          y: currentY - nameImageData.height,
-          width: nameImageData.width,
-          height: nameImageData.height,
+          maxWidth: textMaxWidth,
+          textAlign: "right",
         });
 
-        // Draw job title below name
+        // Prepare job title if exists
+        let jobImageData: {
+          buffer: Buffer;
+          width: number;
+          height: number;
+        } | null = null;
         if (guest.jobTitle || guest.company) {
           const jobText = [guest.jobTitle, guest.company]
             .filter(Boolean)
             .join(" - ");
-          const jobImageData = renderArabicTextToImage(jobText, {
+          jobImageData = renderArabicTextToImage(jobText, {
             fontFamily: "AbarBold",
             fontSize: jobTitleFontSize,
             color: WHITE_COLOR,
-            maxWidth: guestCellWidth - 20,
+            maxWidth: textMaxWidth,
+            textAlign: "right",
           });
+        }
+
+        // Calculate total text block height
+        const textBlockHeight =
+          nameImageData.height +
+          (jobImageData ? textLineGap + jobImageData.height : 0);
+
+        // Content height is the taller of image or text block
+        const contentHeight = Math.max(guestImageSize, textBlockHeight);
+
+        // Try to load guest image
+        let guestImageBuffer: Buffer | null = null;
+        if (guest.imageUrl) {
+          try {
+            let imageUrl = guest.imageUrl;
+
+            // Handle S3 presigned URLs
+            if (needsPresignedReadUrl()) {
+              const key = extractKeyFromUrl(imageUrl);
+              if (key) {
+                imageUrl = await generatePresignedReadUrl(key);
+              } else if (!imageUrl.startsWith("http")) {
+                imageUrl = await generatePresignedReadUrl(imageUrl);
+              }
+            } else if (imageUrl.startsWith("/")) {
+              const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+              imageUrl = `${baseUrl}${imageUrl}`;
+            }
+
+            const imageResponse = await fetch(imageUrl);
+            if (imageResponse.ok) {
+              guestImageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+            }
+          } catch (imgError) {
+            console.error(
+              `Failed to load guest image: ${guest.imageUrl}`,
+              imgError,
+            );
+          }
+        }
+
+        // Draw image in right section (40%), preserving aspect ratio
+        if (guestImageBuffer) {
+          // Embed image (try PNG first, fall back to JPG)
+          let guestImage;
+          try {
+            guestImage = await pdfDoc.embedPng(guestImageBuffer);
+          } catch {
+            guestImage = await pdfDoc.embedJpg(guestImageBuffer);
+          }
+
+          // Calculate dimensions preserving aspect ratio
+          const aspectRatio = guestImage.width / guestImage.height;
+          let drawWidth = guestImageSize;
+          let drawHeight = guestImageSize;
+          if (aspectRatio > 1) {
+            // Wider than tall
+            drawHeight = guestImageSize / aspectRatio;
+          } else {
+            // Taller than wide
+            drawWidth = guestImageSize * aspectRatio;
+          }
+
+          const imageX = textSectionWidth + centerGap / 2; // Start just right of text section
+          const imageY = currentY - contentHeight / 2 - drawHeight / 2;
+          page.drawImage(guestImage, {
+            x: imageX,
+            y: imageY,
+            width: drawWidth,
+            height: drawHeight,
+          });
+        }
+
+        // Draw text block in left section (60%), right-aligned near the split
+        const textBlockY = currentY - contentHeight / 2 + textBlockHeight / 2;
+
+        // Draw name - right edge at split point minus gap
+        const nameImage = await pdfDoc.embedPng(nameImageData.buffer);
+        const nameX = textSectionWidth - centerGap / 2 - nameImageData.width;
+        const nameY = textBlockY - nameImageData.height;
+        page.drawImage(nameImage, {
+          x: nameX,
+          y: nameY,
+          width: nameImageData.width,
+          height: nameImageData.height,
+        });
+
+        // Draw job title below name - right-aligned with name (same right edge)
+        if (jobImageData) {
           const jobImage = await pdfDoc.embedPng(jobImageData.buffer);
+          const jobX = textSectionWidth - centerGap / 2 - jobImageData.width;
+          const jobY = nameY - textLineGap - jobImageData.height;
           page.drawImage(jobImage, {
-            x: cellCenterX - jobImageData.width / 2,
-            y: currentY - nameImageData.height - 5 - jobImageData.height,
+            x: jobX,
+            y: jobY,
             width: jobImageData.width,
             height: jobImageData.height,
           });
-          guestContentHeight += 5 + jobImageData.height;
         }
 
-        maxGuestHeight = Math.max(maxGuestHeight, guestContentHeight);
+        currentY -=
+          contentHeight +
+          (i < guestCount - 1 ? guestVerticalGap : spacing.afterSessionGuests);
       }
-
-      currentY -= maxGuestHeight + spacing.afterSessionGuests;
     }
 
     // ====================================
@@ -389,10 +550,10 @@ export async function generateBrandedQRPdf(
         fontFamily: "AbarBold",
         fontSize: FONT_SIZES.simpleGreeting,
         color: ACCENT_COLOR,
-      }
+      },
     );
     const simpleGreetingImage = await pdfDoc.embedPng(
-      simpleGreetingImageData.buffer
+      simpleGreetingImageData.buffer,
     );
     currentY -= simpleGreetingImageData.height / 2;
     page.drawImage(simpleGreetingImage, {
@@ -430,7 +591,7 @@ export async function generateBrandedQRPdf(
         fontFamily: "AbarBold",
         fontSize: FONT_SIZES.agendaLink,
         color: ACCENT_COLOR,
-      }
+      },
     );
     const agendaLinkImage = await pdfDoc.embedPng(agendaLinkImageData.buffer);
     currentY -= agendaLinkImageData.height / 2;
@@ -471,14 +632,14 @@ export async function generateBrandedQRPdf(
 
     const agendaExistingAnnots = page.node.lookup(
       PDFName.of("Annots"),
-      PDFArray
+      PDFArray,
     );
     if (agendaExistingAnnots) {
       agendaExistingAnnots.push(agendaLinkAnnotation);
     } else {
       page.node.set(
         PDFName.of("Annots"),
-        pdfDoc.context.obj([agendaLinkAnnotation])
+        pdfDoc.context.obj([agendaLinkAnnotation]),
       );
     }
 
@@ -507,25 +668,25 @@ export async function generateBrandedQRPdf(
       locationIcon,
       FIXED_TEXTS.clickForLocation,
       FIXED_TEXTS.locationSublabel,
-      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
+      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR },
     );
     const calendarIconData = await renderIconWithLabel(
       calendarIcon,
       dateText,
       dayNameText,
-      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
+      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR },
     );
     const peopleIconData = await renderIconWithLabel(
       peopleIcon,
       FIXED_TEXTS.menOnlyLabel,
       FIXED_TEXTS.menOnlySublabel,
-      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
+      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR },
     );
 
     const maxIconHeight = Math.max(
       locationIconData.height,
       calendarIconData.height,
-      peopleIconData.height
+      peopleIconData.height,
     );
 
     // Position icons row using currentY
@@ -568,7 +729,7 @@ export async function generateBrandedQRPdf(
       } else {
         page.node.set(
           PDFName.of("Annots"),
-          pdfDoc.context.obj([linkAnnotation])
+          pdfDoc.context.obj([linkAnnotation]),
         );
       }
     }
@@ -684,7 +845,7 @@ export async function generateBrandedQRPdf(
           bgWidth * scale,
           bgHeight * scale,
           bgWidth * scale - r,
-          bgHeight * scale
+          bgHeight * scale,
         );
         bgCtx.lineTo(r, bgHeight * scale);
         bgCtx.quadraticCurveTo(0, bgHeight * scale, 0, bgHeight * scale - r);
@@ -719,14 +880,14 @@ export async function generateBrandedQRPdf(
         const ribbonScale = 2;
         const ribbonCanvas = createCanvas(
           totalWidth * ribbonScale,
-          ribbonHeight * ribbonScale
+          ribbonHeight * ribbonScale,
         );
         const ribbonCtx = ribbonCanvas.getContext("2d");
         ribbonCtx.clearRect(
           0,
           0,
           totalWidth * ribbonScale,
-          ribbonHeight * ribbonScale
+          ribbonHeight * ribbonScale,
         );
 
         const fillColor = "#cba890";
@@ -851,7 +1012,7 @@ export async function generateBrandedQRPdf(
               const logoResponse = await fetch(logoUrl);
               if (logoResponse.ok) {
                 const logoBuffer = Buffer.from(
-                  await logoResponse.arrayBuffer()
+                  await logoResponse.arrayBuffer(),
                 );
                 const contentType =
                   logoResponse.headers.get("content-type") || "";
@@ -884,9 +1045,8 @@ export async function generateBrandedQRPdf(
                 }
 
                 // Convert logo to cream color for dark background
-                const coloredPngBuffer = await convertImageToTextColor(
-                  pngBuffer
-                );
+                const coloredPngBuffer =
+                  await convertImageToTextColor(pngBuffer);
                 const logoImage = await pdfDoc.embedPng(coloredPngBuffer);
 
                 const aspectRatio = logoImage.width / logoImage.height;
@@ -927,14 +1087,14 @@ export async function generateBrandedQRPdf(
 
                   const existingAnnots = page.node.lookup(
                     PDFName.of("Annots"),
-                    PDFArray
+                    PDFArray,
                   );
                   if (existingAnnots) {
                     existingAnnots.push(linkAnnotation);
                   } else {
                     page.node.set(
                       PDFName.of("Annots"),
-                      pdfDoc.context.obj([linkAnnotation])
+                      pdfDoc.context.obj([linkAnnotation]),
                     );
                   }
                 }
@@ -944,7 +1104,7 @@ export async function generateBrandedQRPdf(
             } catch (logoError) {
               console.error(
                 `Failed to load sponsor logo: ${sponsor.logoUrl}`,
-                logoError
+                logoError,
               );
               // Fall back to text
               const nameImageData = renderArabicTextToImage(sponsor.name, {
@@ -988,14 +1148,14 @@ export async function generateBrandedQRPdf(
 
                 const existingAnnots = page.node.lookup(
                   PDFName.of("Annots"),
-                  PDFArray
+                  PDFArray,
                 );
                 if (existingAnnots) {
                   existingAnnots.push(linkAnnotation);
                 } else {
                   page.node.set(
                     PDFName.of("Annots"),
-                    pdfDoc.context.obj([linkAnnotation])
+                    pdfDoc.context.obj([linkAnnotation]),
                   );
                 }
               }
@@ -1043,14 +1203,14 @@ export async function generateBrandedQRPdf(
 
               const existingAnnots = page.node.lookup(
                 PDFName.of("Annots"),
-                PDFArray
+                PDFArray,
               );
               if (existingAnnots) {
                 existingAnnots.push(linkAnnotation);
               } else {
                 page.node.set(
                   PDFName.of("Annots"),
-                  pdfDoc.context.obj([linkAnnotation])
+                  pdfDoc.context.obj([linkAnnotation]),
                 );
               }
             }
@@ -1073,7 +1233,7 @@ export async function generateBrandedQRPdf(
  */
 export async function generateBrandedQRPdfDataUrl(
   qrData: string,
-  options: BrandedQRPdfOptions
+  options: BrandedQRPdfOptions,
 ): Promise<string | null> {
   const buffer = await generateBrandedQRPdf(qrData, options);
   if (!buffer) return null;

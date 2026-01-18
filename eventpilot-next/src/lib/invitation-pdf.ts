@@ -16,13 +16,13 @@ const abarBoldPath = path.join(
   process.cwd(),
   "public",
   "fonts",
-  "AbarHigh-Bold.ttf"
+  "AbarHigh-Bold.ttf",
 );
 const abarRegularPath = path.join(
   process.cwd(),
   "public",
   "fonts",
-  "AbarLow-Regular.ttf"
+  "AbarLow-Regular.ttf",
 );
 
 // Register Abar fonts
@@ -41,28 +41,33 @@ export const ACCENT_COLOR = "#cca890"; // Golden accent for session title and gr
 // Fixed Arabic texts for PDF content
 const FIXED_TEXTS = {
   mainTitle: "دعوة خاصة",
-  subtitle: "ندعـوكم لحضور ثلوثية الأعمال في شتوية لفت - بعنوان",
-  description:
-    "حيث يجتمع نخبة من رواد الأعمال في لقاء يحول الثلوثية إلى مساحة تبنى فيها العلاقات، وتنضج فيها الفرص",
+  subtitle: "ندعـوكم لحضور ثلوثية الأعمال في شتوية لفت بعنوان",
+  // description:
+  //   "حيث يجتمع نخبة من رواد الأعمال في لقاء يحول الثلوثية إلى مساحة تبنى فيها العلاقات، وتنضج فيها الفرص",
+  description: "", // Hidden for now
   greeting: "حياكم الله في شتوية لَفت",
   menOnlyLabel: "للرجال",
   menOnlySublabel: "فقط",
   sponsorsHeader: "الرعــاة",
   clickForLocation: "انقر للوصول",
   locationSublabel: "إلى الموقع",
+  // Fixed session title (two lines)
+  sessionTitleLine1: "هل الاتصال يصنع المدن؟",
+  sessionTitleLine2:
+    "مركاز البلد الأمين أنموذجًا رائدًا في المبادرات الاتصالية الحكومية",
 };
 
 // Layout configuration - relative spacing system
 // All sections flow from top to bottom with consistent gaps between them
 const LAYOUT = {
   // Anchor points (percentage from bottom of page)
-  topStart: 0.85, // Where first element (mainTitle) starts
+  topStart: 0.88, // Where first element (mainTitle) starts
   bottomMargin: 0.02, // Bottom margin for sponsors
 
   // Spacing between sections (in points)
   // Each value is the gap between the bottom of one section and top of next
   spacing: {
-    afterMainTitle: 20, // gap after "دعوة خاصة"
+    afterMainTitle: 15, // gap after "دعوة خاصة"
     afterSubtitle: 18, // gap after "ندعوكم لحضور"
     afterSessionTitle: 22, // gap after session title
     afterDescription: 28, // gap after description paragraph
@@ -78,7 +83,7 @@ const FONT_SIZES = {
   mainTitle: 50,
   subtitle: 35,
   sessionTitle: 90,
-  description: 34,
+  description: 28,
   greeting: 50,
   sessionGuests: 24,
   iconLabel: 32,
@@ -110,7 +115,7 @@ export interface InvitationPdfOptions {
  * Get the primary sponsor link (website first, then social media)
  */
 export function getSponsorLink(
-  socialMediaLinks: Record<string, string> | null | undefined
+  socialMediaLinks: Record<string, string> | null | undefined,
 ): string | null {
   if (!socialMediaLinks) return null;
 
@@ -129,35 +134,44 @@ export function getSponsorLink(
 // Cache for template
 let templateBuffer: Buffer | null = null;
 
-// Circular cropping - commented out for now
-// async function cropImageToCircle(
-//   imageBuffer: Buffer,
-//   targetSize: number
-// ): Promise<Buffer> {
-//   const img = await loadImage(imageBuffer);
-//   const canvas = createCanvas(targetSize, targetSize);
-//   const ctx = canvas.getContext("2d");
-//   ctx.clearRect(0, 0, targetSize, targetSize);
-//   ctx.beginPath();
-//   ctx.arc(targetSize / 2, targetSize / 2, targetSize / 2, 0, Math.PI * 2);
-//   ctx.closePath();
-//   ctx.clip();
-//   const aspectRatio = img.width / img.height;
-//   let drawWidth: number, drawHeight: number, drawX: number, drawY: number;
-//   if (aspectRatio > 1) {
-//     drawHeight = targetSize;
-//     drawWidth = targetSize * aspectRatio;
-//     drawX = -(drawWidth - targetSize) / 2;
-//     drawY = 0;
-//   } else {
-//     drawWidth = targetSize;
-//     drawHeight = targetSize / aspectRatio;
-//     drawX = 0;
-//     drawY = -(drawHeight - targetSize) / 2;
-//   }
-//   ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
-//   return canvas.toBuffer("image/png");
-// }
+/**
+ * Crop image to a circle with specified size
+ */
+export async function cropImageToCircle(
+  imageBuffer: Buffer,
+  targetSize: number,
+): Promise<Buffer> {
+  const img = await loadImage(imageBuffer);
+  const scale = 2; // Higher resolution
+  const canvas = createCanvas(targetSize * scale, targetSize * scale);
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, targetSize * scale, targetSize * scale);
+  ctx.beginPath();
+  ctx.arc(
+    (targetSize * scale) / 2,
+    (targetSize * scale) / 2,
+    (targetSize * scale) / 2,
+    0,
+    Math.PI * 2,
+  );
+  ctx.closePath();
+  ctx.clip();
+  const aspectRatio = img.width / img.height;
+  let drawWidth: number, drawHeight: number, drawX: number, drawY: number;
+  if (aspectRatio > 1) {
+    drawHeight = targetSize * scale;
+    drawWidth = targetSize * scale * aspectRatio;
+    drawX = -(drawWidth - targetSize * scale) / 2;
+    drawY = 0;
+  } else {
+    drawWidth = targetSize * scale;
+    drawHeight = (targetSize * scale) / aspectRatio;
+    drawX = 0;
+    drawY = -(drawHeight - targetSize * scale) / 2;
+  }
+  ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+  return canvas.toBuffer("image/png");
+}
 
 /**
  * Calculate the font size needed to fit text within maxWidth on a single line
@@ -167,7 +181,7 @@ export function calculateFitFontSize(
   fontFamily: string,
   maxFontSize: number,
   minFontSize: number,
-  maxWidth: number
+  maxWidth: number,
 ): number {
   const measureCanvas = createCanvas(1, 1);
   const measureCtx = measureCanvas.getContext("2d");
@@ -208,7 +222,8 @@ export function renderArabicTextToImage(
     color?: string;
     padding?: number;
     maxWidth?: number;
-  } = {}
+    textAlign?: "center" | "right" | "left";
+  } = {},
 ): { buffer: Buffer; width: number; height: number } {
   const {
     fontFamily = "AbarBold",
@@ -216,6 +231,7 @@ export function renderArabicTextToImage(
     color = TEXT_COLOR,
     padding = 10,
     maxWidth = 800,
+    textAlign = "center",
   } = options;
 
   // Preserve bidirectional text order for mixed Arabic/English
@@ -267,13 +283,23 @@ export function renderArabicTextToImage(
   // Set text properties
   ctx.font = fontString;
   ctx.fillStyle = color;
-  ctx.textAlign = "center";
+  ctx.textAlign = textAlign;
   ctx.textBaseline = "middle";
 
-  // Draw each line centered
+  // Calculate x position based on alignment
+  let textX: number;
+  if (textAlign === "right") {
+    textX = canvasWidth - padding;
+  } else if (textAlign === "left") {
+    textX = padding;
+  } else {
+    textX = canvasWidth / 2;
+  }
+
+  // Draw each line
   for (let i = 0; i < lines.length; i++) {
     const y = padding + lineHeight * (i + 0.5);
-    ctx.fillText(lines[i], canvasWidth / 2, y);
+    ctx.fillText(lines[i], textX, y);
   }
 
   return {
@@ -288,7 +314,7 @@ export function renderArabicTextToImage(
  * Used for sponsor logos on dark backgrounds
  */
 export async function convertImageToTextColor(
-  imageBuffer: Buffer
+  imageBuffer: Buffer,
 ): Promise<Buffer> {
   const img = await loadImage(imageBuffer);
   const canvas = createCanvas(img.width, img.height);
@@ -344,7 +370,7 @@ export async function loadIcon(iconName: string): Promise<Buffer> {
     process.cwd(),
     "public",
     "icons",
-    `${iconName}.png`
+    `${iconName}.png`,
   );
   return fs.readFile(iconPath);
 }
@@ -360,7 +386,7 @@ export async function renderIconWithLabel(
     iconSize?: number;
     fontSize?: number;
     color?: string;
-  } = {}
+  } = {},
 ): Promise<{ buffer: Buffer; width: number; height: number }> {
   const { iconSize = 40, fontSize = 18, color = WHITE_COLOR } = options;
 
@@ -394,7 +420,7 @@ export async function renderIconWithLabel(
       labelGap +
       fontSize +
       (sublabel ? sublabelGap + fontSize - 4 : 0) +
-      padding * 2
+      padding * 2,
   );
 
   // Create canvas at scaled size for high resolution
@@ -424,7 +450,7 @@ export async function renderIconWithLabel(
     ctx.fillText(
       sublabel,
       canvasWidth / 2,
-      padding + iconSize + labelGap + fontSize + sublabelGap
+      padding + iconSize + labelGap + fontSize + sublabelGap,
     );
   }
 
@@ -466,7 +492,7 @@ export function formatDateForInvitation(date: Date): string {
  * Generate invitation PDF with customized date, location link, and sponsors
  */
 export async function generateInvitationPdf(
-  options: InvitationPdfOptions
+  options: InvitationPdfOptions,
 ): Promise<Buffer | null> {
   try {
     // Load template PDF
@@ -531,55 +557,118 @@ export async function generateInvitationPdf(
     currentY -= subtitleImageData.height / 2 + spacing.afterSubtitle;
 
     // ====================================
-    // 3. DRAW SESSION TITLE (from DB) - ACCENT COLOR
+    // 3. DRAW SESSION TITLE - ACCENT COLOR
     // ====================================
     const sessionTitleMaxWidth = width * 0.75;
-    const sessionTitleFontSize = calculateFitFontSize(
-      options.sessionTitle,
+
+    // ====================================
+    // TEMPORARY: Fixed two-line title (comment out to restore dynamic title)
+    // ====================================
+    // Line 1: Question (smaller font)
+    const line1FontSize = 50;
+    const line1ImageData = renderArabicTextToImage(
+      FIXED_TEXTS.sessionTitleLine1,
+      {
+        fontFamily: "AbarBold",
+        fontSize: line1FontSize,
+        color: ACCENT_COLOR,
+        maxWidth: sessionTitleMaxWidth,
+      },
+    );
+    const line1Image = await pdfDoc.embedPng(line1ImageData.buffer);
+    currentY -= line1ImageData.height / 2;
+    page.drawImage(line1Image, {
+      x: (width - line1ImageData.width) / 2,
+      y: currentY - line1ImageData.height / 2,
+      width: line1ImageData.width,
+      height: line1ImageData.height,
+    });
+    currentY -= line1ImageData.height / 2 + 10; // Small gap between lines
+
+    // Line 2: Headline (larger font, auto-sized to fit)
+    const line2FontSize = calculateFitFontSize(
+      FIXED_TEXTS.sessionTitleLine2,
       "AbarBold",
       FONT_SIZES.sessionTitle,
       35,
-      sessionTitleMaxWidth
+      sessionTitleMaxWidth,
     );
-    const sessionTitleImageData = renderArabicTextToImage(
-      options.sessionTitle,
+    const line2ImageData = renderArabicTextToImage(
+      FIXED_TEXTS.sessionTitleLine2,
       {
         fontFamily: "AbarBold",
-        fontSize: sessionTitleFontSize,
+        fontSize: line2FontSize,
         color: ACCENT_COLOR,
         maxWidth: sessionTitleMaxWidth,
-      }
+      },
     );
-    const sessionTitleImage = await pdfDoc.embedPng(
-      sessionTitleImageData.buffer
-    );
-    currentY -= sessionTitleImageData.height / 2;
-    page.drawImage(sessionTitleImage, {
-      x: (width - sessionTitleImageData.width) / 2,
-      y: currentY - sessionTitleImageData.height / 2,
-      width: sessionTitleImageData.width,
-      height: sessionTitleImageData.height,
+    const line2Image = await pdfDoc.embedPng(line2ImageData.buffer);
+    currentY -= line2ImageData.height / 2;
+    page.drawImage(line2Image, {
+      x: (width - line2ImageData.width) / 2,
+      y: currentY - line2ImageData.height / 2,
+      width: line2ImageData.width,
+      height: line2ImageData.height,
     });
-    currentY -= sessionTitleImageData.height / 2 + spacing.afterSessionTitle;
+    currentY -= line2ImageData.height / 2 + spacing.afterSessionTitle;
+    // ====================================
+    // END TEMPORARY FIXED TITLE
+    // ====================================
 
     // ====================================
-    // 4. DRAW DESCRIPTION (fixed text)
+    // DYNAMIC SESSION TITLE (from DB) - uncomment to restore
     // ====================================
-    const descImageData = renderArabicTextToImage(FIXED_TEXTS.description, {
-      fontFamily: "AbarBold",
-      fontSize: FONT_SIZES.description,
-      color: WHITE_COLOR,
-      maxWidth: width * 0.7,
-    });
-    const descImage = await pdfDoc.embedPng(descImageData.buffer);
-    currentY -= descImageData.height / 2;
-    page.drawImage(descImage, {
-      x: (width - descImageData.width) / 2,
-      y: currentY - descImageData.height / 2,
-      width: descImageData.width,
-      height: descImageData.height,
-    });
-    currentY -= descImageData.height / 2 + spacing.afterDescription;
+    // const sessionTitleFontSize = calculateFitFontSize(
+    //   options.sessionTitle,
+    //   "AbarBold",
+    //   FONT_SIZES.sessionTitle,
+    //   35,
+    //   sessionTitleMaxWidth
+    // );
+    // const sessionTitleImageData = renderArabicTextToImage(
+    //   options.sessionTitle,
+    //   {
+    //     fontFamily: "AbarBold",
+    //     fontSize: sessionTitleFontSize,
+    //     color: ACCENT_COLOR,
+    //     maxWidth: sessionTitleMaxWidth,
+    //   }
+    // );
+    // const sessionTitleImage = await pdfDoc.embedPng(
+    //   sessionTitleImageData.buffer
+    // );
+    // currentY -= sessionTitleImageData.height / 2;
+    // page.drawImage(sessionTitleImage, {
+    //   x: (width - sessionTitleImageData.width) / 2,
+    //   y: currentY - sessionTitleImageData.height / 2,
+    //   width: sessionTitleImageData.width,
+    //   height: sessionTitleImageData.height,
+    // });
+    // currentY -= sessionTitleImageData.height / 2 + spacing.afterSessionTitle;
+    // ====================================
+    // END DYNAMIC SESSION TITLE
+    // ====================================
+
+    // ====================================
+    // 4. DRAW DESCRIPTION (fixed text) - only if description exists
+    // ====================================
+    if (FIXED_TEXTS.description) {
+      const descImageData = renderArabicTextToImage(FIXED_TEXTS.description, {
+        fontFamily: "AbarBold",
+        fontSize: FONT_SIZES.description,
+        color: WHITE_COLOR,
+        maxWidth: width * 0.7,
+      });
+      const descImage = await pdfDoc.embedPng(descImageData.buffer);
+      currentY -= descImageData.height / 2;
+      page.drawImage(descImage, {
+        x: (width - descImageData.width) / 2,
+        y: currentY - descImageData.height / 2,
+        width: descImageData.width,
+        height: descImageData.height,
+      });
+      currentY -= descImageData.height / 2 + spacing.afterDescription;
+    }
 
     // ====================================
     // 5. DRAW GREETING ("حياكم الله") - ACCENT COLOR
@@ -623,69 +712,162 @@ export async function generateInvitationPdf(
       });
       currentY -= guestTitleImageData.height / 2 + spacing.afterGuestTitle;
 
-      // Draw guests in a horizontal layout (RTL)
+      // Draw guests in a centered split layout (RTL)
+      // Page split: 68% text on left, 32% image on right
+      // Gap between them is at the split point
       const guestCount = Math.min(options.sessionGuests.length, 5);
-      const guestAreaWidth = width * 0.85;
-      const guestCellWidth = guestAreaWidth / guestCount;
-      const guestStartX = (width - guestAreaWidth) / 2;
+      const textLineGap = 8; // Gap between name and job title
+      const guestImageSize = 200; // Image max size (bigger)
+      const guestVerticalGap = 30; // Gap between multiple guests
+      const centerGap = 40; // Gap between text and image
 
-      // Calculate max guest content height for consistent spacing
-      let maxGuestHeight = 0;
+      // Define content area with page margins
+      const pageMargin = width * 0.12; // 12% margin on each side
+      const contentWidth = width - pageMargin * 2;
+      const contentStartX = pageMargin;
+
+      // 68/32 split within content area (text gets 68%, image gets 32%)
+      const textSectionWidth = contentStartX + contentWidth * 0.68;
+      const textMaxWidth = contentWidth * 0.6 - 20; // Text area width with small padding
 
       for (let i = 0; i < guestCount; i++) {
         const guest = options.sessionGuests[i];
         if (!guest) continue;
 
-        // RTL: start from right
-        const colFromRight = guestCount - 1 - i;
-        const cellCenterX = guestStartX + (colFromRight + 0.5) * guestCellWidth;
-
-        // Draw guest name
+        // Prepare guest name text first to measure
         const guestName = guest.title
           ? `${guest.title} ${guest.name}`
           : guest.name;
+
         const nameImageData = renderArabicTextToImage(guestName, {
           fontFamily: "AbarBold",
           fontSize: nameFontSize,
           color: TEXT_COLOR,
-          maxWidth: guestCellWidth - 20,
-        });
-        const nameImage = await pdfDoc.embedPng(nameImageData.buffer);
-
-        let guestContentHeight = nameImageData.height;
-
-        page.drawImage(nameImage, {
-          x: cellCenterX - nameImageData.width / 2,
-          y: currentY - nameImageData.height,
-          width: nameImageData.width,
-          height: nameImageData.height,
+          maxWidth: textMaxWidth,
+          textAlign: "right",
         });
 
-        // Draw job title below name
+        // Prepare job title if exists
+        let jobImageData: {
+          buffer: Buffer;
+          width: number;
+          height: number;
+        } | null = null;
         if (guest.jobTitle || guest.company) {
           const jobText = [guest.jobTitle, guest.company]
             .filter(Boolean)
             .join(" - ");
-          const jobImageData = renderArabicTextToImage(jobText, {
+          jobImageData = renderArabicTextToImage(jobText, {
             fontFamily: "AbarBold",
             fontSize: jobTitleFontSize,
             color: WHITE_COLOR,
-            maxWidth: guestCellWidth - 20,
+            maxWidth: textMaxWidth,
+            textAlign: "right",
           });
+        }
+
+        // Calculate total text block height
+        const textBlockHeight =
+          nameImageData.height +
+          (jobImageData ? textLineGap + jobImageData.height : 0);
+
+        // Content height is the taller of image or text block
+        const contentHeight = Math.max(guestImageSize, textBlockHeight);
+
+        // Try to load guest image
+        let guestImageBuffer: Buffer | null = null;
+        if (guest.imageUrl) {
+          try {
+            let imageUrl = guest.imageUrl;
+
+            // Handle S3 presigned URLs
+            if (needsPresignedReadUrl()) {
+              const key = extractKeyFromUrl(imageUrl);
+              if (key) {
+                imageUrl = await generatePresignedReadUrl(key);
+              } else if (!imageUrl.startsWith("http")) {
+                imageUrl = await generatePresignedReadUrl(imageUrl);
+              }
+            } else if (imageUrl.startsWith("/")) {
+              const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+              imageUrl = `${baseUrl}${imageUrl}`;
+            }
+
+            const imageResponse = await fetch(imageUrl);
+            if (imageResponse.ok) {
+              guestImageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+            }
+          } catch (imgError) {
+            console.error(
+              `Failed to load guest image: ${guest.imageUrl}`,
+              imgError,
+            );
+          }
+        }
+
+        // Draw image in right section (40%), preserving aspect ratio
+        if (guestImageBuffer) {
+          // Embed image (try PNG first, fall back to JPG)
+          let guestImage;
+          try {
+            guestImage = await pdfDoc.embedPng(guestImageBuffer);
+          } catch {
+            guestImage = await pdfDoc.embedJpg(guestImageBuffer);
+          }
+
+          // Calculate dimensions preserving aspect ratio
+          const aspectRatio = guestImage.width / guestImage.height;
+          let drawWidth = guestImageSize;
+          let drawHeight = guestImageSize;
+          if (aspectRatio > 1) {
+            // Wider than tall
+            drawHeight = guestImageSize / aspectRatio;
+          } else {
+            // Taller than wide
+            drawWidth = guestImageSize * aspectRatio;
+          }
+
+          const imageX = textSectionWidth + centerGap / 2; // Start just right of text section
+          const imageY = currentY - contentHeight / 2 - drawHeight / 2;
+          page.drawImage(guestImage, {
+            x: imageX,
+            y: imageY,
+            width: drawWidth,
+            height: drawHeight,
+          });
+        }
+
+        // Draw text block in left section (60%), right-aligned near the split
+        const textBlockY = currentY - contentHeight / 2 + textBlockHeight / 2;
+
+        // Draw name - right edge at split point minus gap
+        const nameImage = await pdfDoc.embedPng(nameImageData.buffer);
+        const nameX = textSectionWidth - centerGap / 2 - nameImageData.width;
+        const nameY = textBlockY - nameImageData.height;
+        page.drawImage(nameImage, {
+          x: nameX,
+          y: nameY,
+          width: nameImageData.width,
+          height: nameImageData.height,
+        });
+
+        // Draw job title below name - right-aligned with name (same right edge)
+        if (jobImageData) {
           const jobImage = await pdfDoc.embedPng(jobImageData.buffer);
+          const jobX = textSectionWidth - centerGap / 2 - jobImageData.width;
+          const jobY = nameY - textLineGap - jobImageData.height;
           page.drawImage(jobImage, {
-            x: cellCenterX - jobImageData.width / 2,
-            y: currentY - nameImageData.height - 5 - jobImageData.height,
+            x: jobX,
+            y: jobY,
             width: jobImageData.width,
             height: jobImageData.height,
           });
-          guestContentHeight += 5 + jobImageData.height;
         }
 
-        maxGuestHeight = Math.max(maxGuestHeight, guestContentHeight);
+        currentY -=
+          contentHeight +
+          (i < guestCount - 1 ? guestVerticalGap : spacing.afterSessionGuests);
       }
-
-      currentY -= maxGuestHeight + spacing.afterSessionGuests;
     }
 
     // ====================================
@@ -711,25 +893,25 @@ export async function generateInvitationPdf(
       locationIcon,
       FIXED_TEXTS.clickForLocation,
       FIXED_TEXTS.locationSublabel,
-      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
+      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR },
     );
     const calendarIconData = await renderIconWithLabel(
       calendarIcon,
       dateText,
       dayNameText,
-      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
+      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR },
     );
     const peopleIconData = await renderIconWithLabel(
       peopleIcon,
       FIXED_TEXTS.menOnlyLabel,
       FIXED_TEXTS.menOnlySublabel,
-      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR }
+      { iconSize, fontSize: iconFontSize, color: WHITE_COLOR },
     );
 
     const maxIconHeight = Math.max(
       locationIconData.height,
       calendarIconData.height,
-      peopleIconData.height
+      peopleIconData.height,
     );
 
     // Position icons row using currentY
@@ -772,7 +954,7 @@ export async function generateInvitationPdf(
       } else {
         page.node.set(
           PDFName.of("Annots"),
-          pdfDoc.context.obj([linkAnnotation])
+          pdfDoc.context.obj([linkAnnotation]),
         );
       }
     }
@@ -890,7 +1072,7 @@ export async function generateInvitationPdf(
           bgWidth * scale,
           bgHeight * scale,
           bgWidth * scale - r,
-          bgHeight * scale
+          bgHeight * scale,
         );
         bgCtx.lineTo(r, bgHeight * scale);
         bgCtx.quadraticCurveTo(0, bgHeight * scale, 0, bgHeight * scale - r);
@@ -925,14 +1107,14 @@ export async function generateInvitationPdf(
         const ribbonScale = 2;
         const ribbonCanvas = createCanvas(
           totalWidth * ribbonScale,
-          ribbonHeight * ribbonScale
+          ribbonHeight * ribbonScale,
         );
         const ribbonCtx = ribbonCanvas.getContext("2d");
         ribbonCtx.clearRect(
           0,
           0,
           totalWidth * ribbonScale,
-          ribbonHeight * ribbonScale
+          ribbonHeight * ribbonScale,
         );
 
         const fillColor = "#cba890";
@@ -1045,7 +1227,7 @@ export async function generateInvitationPdf(
                   // It's already a key, not a URL
                   logoUrl = await generatePresignedReadUrl(logoUrl);
                   console.log(
-                    `Generated presigned URL for direct key: ${sponsor.logoUrl}`
+                    `Generated presigned URL for direct key: ${sponsor.logoUrl}`,
                   );
                 }
               } else if (logoUrl.startsWith("/")) {
@@ -1057,7 +1239,7 @@ export async function generateInvitationPdf(
               const logoResponse = await fetch(logoUrl);
               if (logoResponse.ok) {
                 const logoBuffer = Buffer.from(
-                  await logoResponse.arrayBuffer()
+                  await logoResponse.arrayBuffer(),
                 );
                 const contentType =
                   logoResponse.headers.get("content-type") || "";
@@ -1094,9 +1276,8 @@ export async function generateInvitationPdf(
                 }
 
                 // Convert logo to TEXT_COLOR for dark background
-                const coloredPngBuffer = await convertImageToTextColor(
-                  pngBuffer
-                );
+                const coloredPngBuffer =
+                  await convertImageToTextColor(pngBuffer);
 
                 // Embed the colored logo
                 const logoImage = await pdfDoc.embedPng(coloredPngBuffer);
@@ -1140,14 +1321,14 @@ export async function generateInvitationPdf(
 
                   const existingAnnots = page.node.lookup(
                     PDFName.of("Annots"),
-                    PDFArray
+                    PDFArray,
                   );
                   if (existingAnnots) {
                     existingAnnots.push(linkAnnotation);
                   } else {
                     page.node.set(
                       PDFName.of("Annots"),
-                      pdfDoc.context.obj([linkAnnotation])
+                      pdfDoc.context.obj([linkAnnotation]),
                     );
                   }
                 }
@@ -1157,7 +1338,7 @@ export async function generateInvitationPdf(
             } catch (logoError) {
               console.error(
                 `Failed to load sponsor logo: ${sponsor.logoUrl}`,
-                logoError
+                logoError,
               );
               // Fall back to text
               const nameImageData = renderArabicTextToImage(sponsor.name, {
@@ -1202,14 +1383,14 @@ export async function generateInvitationPdf(
 
                 const existingAnnots = page.node.lookup(
                   PDFName.of("Annots"),
-                  PDFArray
+                  PDFArray,
                 );
                 if (existingAnnots) {
                   existingAnnots.push(linkAnnotation);
                 } else {
                   page.node.set(
                     PDFName.of("Annots"),
-                    pdfDoc.context.obj([linkAnnotation])
+                    pdfDoc.context.obj([linkAnnotation]),
                   );
                 }
               }
@@ -1258,14 +1439,14 @@ export async function generateInvitationPdf(
 
               const existingAnnots = page.node.lookup(
                 PDFName.of("Annots"),
-                PDFArray
+                PDFArray,
               );
               if (existingAnnots) {
                 existingAnnots.push(linkAnnotation);
               } else {
                 page.node.set(
                   PDFName.of("Annots"),
-                  pdfDoc.context.obj([linkAnnotation])
+                  pdfDoc.context.obj([linkAnnotation]),
                 );
               }
             }
@@ -1287,7 +1468,7 @@ export async function generateInvitationPdf(
  * Generate invitation PDF as base64 data URL
  */
 export async function generateInvitationPdfDataUrl(
-  options: InvitationPdfOptions
+  options: InvitationPdfOptions,
 ): Promise<string | null> {
   const buffer = await generateInvitationPdf(options);
   if (!buffer) return null;
