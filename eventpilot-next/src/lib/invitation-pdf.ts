@@ -37,6 +37,7 @@ if (fsSync.existsSync(abarRegularPath)) {
 export const TEXT_COLOR = "#E8DFC9"; // Cream color for main text
 export const WHITE_COLOR = "#FFFFFF"; // Pure white when needed
 export const ACCENT_COLOR = "#cca890"; // Golden accent for session title and greeting
+export const TITLE_COLOR = "#e3c56f"; // Highlight color for session title
 
 // Fixed Arabic texts for PDF content
 const FIXED_TEXTS = {
@@ -571,7 +572,7 @@ export async function generateInvitationPdf(
       {
         fontFamily: "AbarBold",
         fontSize: line1FontSize,
-        color: "#e3c56f",
+        color: TITLE_COLOR,
         maxWidth: sessionTitleMaxWidth,
       },
     );
@@ -598,7 +599,7 @@ export async function generateInvitationPdf(
       {
         fontFamily: "AbarBold",
         fontSize: line2FontSize,
-        color: "#e3c56f",
+        color: TITLE_COLOR,
         maxWidth: sessionTitleMaxWidth,
       },
     );
