@@ -896,6 +896,7 @@ export async function sendQrOnlyEmail(
       }));
 
     const pdfBuffer = await generateBrandedQRPdf(qrData, {
+      sessionId: session.id,
       sessionTitle: session.title,
       sessionDate: session.date,
       attendeeName: name,
