@@ -23,6 +23,7 @@ import {
   TEXT_COLOR,
   WHITE_COLOR,
   ACCENT_COLOR,
+  TITLE_COLOR,
 } from "./invitation-pdf";
 
 // Register Abar fonts using @napi-rs/canvas GlobalFonts
@@ -260,7 +261,7 @@ export async function generateBrandedQRPdf(
       {
         fontFamily: "AbarBold",
         fontSize: line1FontSize,
-        color: ACCENT_COLOR,
+        color: TITLE_COLOR,
         maxWidth: sessionTitleMaxWidth,
       },
     );
