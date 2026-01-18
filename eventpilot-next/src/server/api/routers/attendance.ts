@@ -398,6 +398,7 @@ export const attendanceRouter = createTRPCRouter({
 
       // Generate branded QR as PDF
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
+        sessionId: registration.sessionId,
         sessionTitle: registration.session.title,
         sessionDate: registration.session.date,
         attendeeName,
@@ -570,6 +571,7 @@ export const attendanceRouter = createTRPCRouter({
 
       // Generate branded QR as PDF
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
+        sessionId: registration.sessionId,
         sessionTitle: registration.session.title,
         sessionDate: registration.session.date,
         attendeeName,

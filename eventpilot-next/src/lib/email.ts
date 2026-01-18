@@ -521,6 +521,7 @@ export async function sendConfirmedEmail(
         }));
 
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
+        sessionId: session.id,
         sessionTitle: session.title,
         sessionDate: session.date,
         attendeeName: name,
@@ -600,6 +601,7 @@ export async function sendCompanionEmail(
         }));
 
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
+        sessionId: session.id,
         sessionTitle: session.title,
         sessionDate: session.date,
         attendeeName: companionName,
@@ -788,6 +790,7 @@ export async function sendInvitationEmail(
   if (attachPdf) {
     try {
       const pdfBuffer = await generateInvitationPdf({
+        sessionId: session.id,
         sessionTitle: session.title,
         sessionDate: session.date,
         location: session.location ?? undefined,
