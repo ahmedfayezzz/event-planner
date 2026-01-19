@@ -520,6 +520,30 @@ export async function sendConfirmedEmail(
           type: es.sponsorshipType,
         }));
 
+      // Fetch session guests
+      const sessionGuestsData = await db.sessionGuest.findMany({
+        where: { sessionId: session.id },
+        orderBy: { displayOrder: "asc" },
+        include: {
+          guest: {
+            select: {
+              name: true,
+              title: true,
+              jobTitle: true,
+              company: true,
+              imageUrl: true,
+            },
+          },
+        },
+      });
+      const sessionGuests = sessionGuestsData.map((sg) => ({
+        name: sg.guest.name,
+        title: sg.guest.title,
+        jobTitle: sg.guest.jobTitle,
+        company: sg.guest.company,
+        imageUrl: sg.guest.imageUrl,
+      }));
+
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionId: session.id,
         sessionTitle: session.title,
@@ -527,6 +551,7 @@ export async function sendConfirmedEmail(
         attendeeName: name,
         locationUrl: session.locationUrl ?? undefined,
         sponsors,
+        sessionGuests,
       });
       if (pdfBuffer) {
         const pdfBase64 = pdfBuffer.toString("base64");
@@ -600,6 +625,30 @@ export async function sendCompanionEmail(
           type: es.sponsorshipType,
         }));
 
+      // Fetch session guests
+      const sessionGuestsData = await db.sessionGuest.findMany({
+        where: { sessionId: session.id },
+        orderBy: { displayOrder: "asc" },
+        include: {
+          guest: {
+            select: {
+              name: true,
+              title: true,
+              jobTitle: true,
+              company: true,
+              imageUrl: true,
+            },
+          },
+        },
+      });
+      const sessionGuests = sessionGuestsData.map((sg) => ({
+        name: sg.guest.name,
+        title: sg.guest.title,
+        jobTitle: sg.guest.jobTitle,
+        company: sg.guest.company,
+        imageUrl: sg.guest.imageUrl,
+      }));
+
       const pdfBuffer = await generateBrandedQRPdf(qrData, {
         sessionId: session.id,
         sessionTitle: session.title,
@@ -607,6 +656,7 @@ export async function sendCompanionEmail(
         attendeeName: companionName,
         locationUrl: session.locationUrl ?? undefined,
         sponsors,
+        sessionGuests,
       });
       if (pdfBuffer) {
         const pdfBase64 = pdfBuffer.toString("base64");
@@ -895,6 +945,30 @@ export async function sendQrOnlyEmail(
         type: es.sponsorshipType,
       }));
 
+    // Fetch session guests
+    const sessionGuestsData = await db.sessionGuest.findMany({
+      where: { sessionId: session.id },
+      orderBy: { displayOrder: "asc" },
+      include: {
+        guest: {
+          select: {
+            name: true,
+            title: true,
+            jobTitle: true,
+            company: true,
+            imageUrl: true,
+          },
+        },
+      },
+    });
+    const sessionGuests = sessionGuestsData.map((sg) => ({
+      name: sg.guest.name,
+      title: sg.guest.title,
+      jobTitle: sg.guest.jobTitle,
+      company: sg.guest.company,
+      imageUrl: sg.guest.imageUrl,
+    }));
+
     const pdfBuffer = await generateBrandedQRPdf(qrData, {
       sessionId: session.id,
       sessionTitle: session.title,
@@ -902,6 +976,7 @@ export async function sendQrOnlyEmail(
       attendeeName: name,
       locationUrl: session.locationUrl ?? undefined,
       sponsors,
+      sessionGuests,
     });
     if (pdfBuffer) {
       const pdfBase64 = pdfBuffer.toString("base64");
