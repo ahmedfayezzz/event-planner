@@ -120,7 +120,7 @@ async function logCallEvent(
       data: {
         voiceCallId,
         eventType,
-        eventData: eventData ?? {},
+        eventData: eventData ? JSON.parse(JSON.stringify(eventData)) : undefined,
       },
     });
     console.log(`[VoiceCall] ${voiceCallId}: ${eventType}`);
