@@ -110,6 +110,7 @@ model User {
   emailTemplates EmailTemplate[] @relation("TemplateCreator")
   emailCampaignsCreated  EmailCampaign[]          @relation("CampaignCreator")
   emailCampaignsReceived EmailCampaignRecipient[] @relation("RecipientUser")
+  triggeredVoiceCallBatches VoiceCallBatch[] @relation("TriggeredVoiceCallBatches")
 }
 
 model Session {
@@ -168,6 +169,8 @@ model Session {
   sessionGuests     SessionGuest[]
   valetRecords      ValetRecord[]
   valetEmployees    ValetEmployeeSession[]
+  voiceCalls        VoiceCall[]
+  voiceCallBatches  VoiceCallBatch[]
 }
 
 model Registration {
@@ -237,6 +240,7 @@ model Registration {
   session     Session     @relation(fields: [sessionId], references: [id])
   attendance  Attendance?
   valetRecord ValetRecord?
+  voiceCalls  VoiceCall[]
 
   @@unique([userId, sessionId])
 }
@@ -727,4 +731,87 @@ model ValetRecord {
   @@index([status])
   @@index([registrationId])
   @@index([sessionId, ticketNumber])
+}
+
+// Voice Call Models for AgentsA Integration
+
+model VoiceCall {
+  id                   String    @id @default(cuid())
+  registrationId       String
+  sessionId            String
+  batchId              String?
+
+  phoneNumber          String
+  recipientName        String?
+  agentsaCallId        Int?      // From webhook: call.id
+
+  status               String    @default("pending") // pending, initiated, completed, failed
+  confirmationResponse String?   // confirmed, declined, no_response
+
+  recordingUrl         String?
+  conversationHistory  Json?     // result.history array from webhook
+
+  retryCount           Int       @default(0)
+  maxRetries           Int       @default(3)
+  lastError            String?
+
+  createdAt            DateTime  @default(now())
+  initiatedAt          DateTime?
+  completedAt          DateTime?
+
+  // Relations
+  registration Registration     @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  session      Session          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  batch        VoiceCallBatch?  @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  logs         VoiceCallLog[]
+
+  @@index([registrationId])
+  @@index([sessionId])
+  @@index([batchId])
+  @@index([status])
+}
+
+model VoiceCallBatch {
+  id                   String    @id @default(cuid())
+  sessionId            String
+  name                 String    // Unique batch identifier for AgentsA
+
+  status               String    @default("pending") // pending, dispatching, in_progress, completed, failed
+  totalCalls           Int       @default(0)
+  completedCalls       Int       @default(0)
+  confirmedCount       Int       @default(0)
+  declinedCount        Int       @default(0)
+  noResponseCount      Int       @default(0)
+
+  triggeredByAdminId   String?
+
+  createdAt            DateTime  @default(now())
+  dispatchedAt         DateTime?
+  completedAt          DateTime?
+
+  // Relations
+  session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  triggeredBy User?        @relation("TriggeredVoiceCallBatches", fields: [triggeredByAdminId], references: [id], onDelete: SetNull)
+  calls       VoiceCall[]
+
+  @@index([sessionId])
+  @@index([triggeredByAdminId])
+  @@index([status])
+}
+
+model VoiceCallLog {
+  id          String    @id @default(cuid())
+  voiceCallId String
+
+  eventType   String    // dispatch, webhook_received, completed, error, retry
+  eventData   Json?     // Full webhook payload or error details
+
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  voiceCall   VoiceCall @relation(fields: [voiceCallId], references: [id], onDelete: Cascade)
+
+  @@index([voiceCallId])
+  @@index([eventType])
+  @@index([createdAt])
 }

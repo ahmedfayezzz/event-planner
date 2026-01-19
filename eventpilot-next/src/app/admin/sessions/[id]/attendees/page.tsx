@@ -560,6 +560,12 @@ ${qrPageUrl}
             <Download className="me-2 h-4 w-4" />
             تصدير CSV
           </Button>
+          <Button variant="outline" asChild>
+            <Link href={`/admin/sessions/${id}/voice-calls`}>
+              <Phone className="me-2 h-4 w-4" />
+              مكالمات التأكيد
+            </Link>
+          </Button>
         </div>
       </div>
 
