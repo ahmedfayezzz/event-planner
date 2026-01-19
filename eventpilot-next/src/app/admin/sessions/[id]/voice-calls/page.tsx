@@ -54,6 +54,9 @@ import {
   PlayCircle,
   Search,
   Tag,
+  MessageSquare,
+  Bot,
+  User,
 } from "lucide-react";
 
 // Status badge component
@@ -135,7 +138,12 @@ export default function VoiceCallsPage({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBatchDialog, setShowBatchDialog] = useState(false);
   const [showLogsDialog, setShowLogsDialog] = useState(false);
+  const [showConversationDialog, setShowConversationDialog] = useState(false);
   const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<{
+    recipientName: string;
+    history: Array<{ role: string; content: string; timeAdded?: string }>;
+  } | null>(null);
 
   // Batch dialog filters
   const [batchSearch, setBatchSearch] = useState("");
@@ -238,6 +246,18 @@ export default function VoiceCallsPage({
   const handleViewLogs = (callId: string) => {
     setSelectedCallId(callId);
     setShowLogsDialog(true);
+  };
+
+  const handleViewConversation = (
+    recipientName: string,
+    history: Array<{ role: string; content: string; timeAdded?: string }> | null
+  ) => {
+    if (!history || history.length === 0) {
+      toast.error("لا يوجد سجل محادثة لهذه المكالمة");
+      return;
+    }
+    setSelectedConversation({ recipientName, history });
+    setShowConversationDialog(true);
   };
 
   const toggleSelect = (regId: string) => {
@@ -502,6 +522,21 @@ export default function VoiceCallsPage({
                         >
                           <History className="h-4 w-4" />
                         </Button>
+                        {call.conversationHistory && call.conversationHistory.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              handleViewConversation(
+                                call.recipientName || "المشارك",
+                                call.conversationHistory
+                              )
+                            }
+                            title="عرض المحادثة"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        )}
                         {call.recordingUrl && (
                           <Button
                             variant="ghost"
@@ -756,6 +791,61 @@ export default function VoiceCallsPage({
               </ScrollArea>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Conversation History Dialog */}
+      <Dialog open={showConversationDialog} onOpenChange={setShowConversationDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              محادثة المكالمة - {selectedConversation?.recipientName}
+            </DialogTitle>
+            <DialogDescription>
+              سجل المحادثة بين النظام والمشارك
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] px-1">
+            <div className="space-y-3 py-4">
+              {selectedConversation?.history.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex gap-3 ${
+                    message.role === "assistant" ? "flex-row" : "flex-row-reverse"
+                  }`}
+                >
+                  <div
+                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                      message.role === "assistant"
+                        ? "bg-primary/10 text-primary"
+                        : "bg-green-500/10 text-green-600"
+                    }`}
+                  >
+                    {message.role === "assistant" ? (
+                      <Bot className="h-4 w-4" />
+                    ) : (
+                      <User className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div
+                    className={`flex-1 rounded-lg p-3 ${
+                      message.role === "assistant"
+                        ? "bg-muted text-foreground"
+                        : "bg-green-500/10 text-foreground"
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    {message.timeAdded && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {message.timeAdded}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>

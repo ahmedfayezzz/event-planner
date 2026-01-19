@@ -35,6 +35,11 @@ export const voiceCallRouter = createTRPCRouter({
         status: call.status,
         confirmationResponse: call.confirmationResponse,
         recordingUrl: call.recordingUrl,
+        conversationHistory: call.conversationHistory as Array<{
+          role: string;
+          content: string;
+          timeAdded?: string;
+        }> | null,
         retryCount: call.retryCount,
         maxRetries: call.maxRetries,
         lastError: call.lastError,
