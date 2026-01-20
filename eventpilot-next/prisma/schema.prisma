@@ -747,7 +747,7 @@ model VoiceCall {
   dispatchMetadata     Json?     // Full API response metadata from dispatch
 
   status               String    @default("pending") // pending, initiated, completed, failed
-  confirmationResponse String?   // confirmed, declined, no_response
+  confirmationResponse String?   // confirmed, declined, no_response, follow_up
 
   recordingUrl         String?
   conversationHistory  Json?     // result.history array from webhook
@@ -784,7 +784,8 @@ model VoiceCallBatch {
   completedCalls       Int       @default(0)
   confirmedCount       Int       @default(0)
   declinedCount        Int       @default(0)
-  noResponseCount      Int       @default(0)
+  noResponseCount      Int       @default(0)  // Didn't pick up
+  followUpCount        Int       @default(0)  // Picked up but no clear answer
 
   triggeredByAdminId   String?
 
