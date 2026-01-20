@@ -24,7 +24,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { formatArabicDate } from "@/lib/utils";
+import { formatArabicDate, getWhatsAppUrl } from "@/lib/utils";
 import {
   Car,
   Loader2,
@@ -40,6 +40,7 @@ import {
   ChevronLeft,
   UserCog,
   FileText,
+  MessageCircle,
 } from "lucide-react";
 
 export default function AdminValetDashboardPage() {
@@ -130,6 +131,40 @@ export default function AdminValetDashboardPage() {
     refetchGuests();
     refetchQueue();
     toast.success("تم تحديث البيانات");
+  };
+
+  const handleSendWhatsApp = (guest: {
+    name: string;
+    phone?: string | null;
+    valetRecord?: { trackingToken?: string | null } | null;
+  }) => {
+    if (!guest.phone) {
+      toast.error("لا يوجد رقم هاتف");
+      return;
+    }
+
+    if (!guest.valetRecord?.trackingToken) {
+      toast.error("لا يوجد رابط تتبع");
+      return;
+    }
+
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const trackingUrl = `${baseUrl}/valet/track/${guest.valetRecord.trackingToken}`;
+
+    const message = `السلام عليكم
+${guest.name}،
+
+يمكنك متابعة حالة سيارتك في خدمة الفاليه من خلال الرابط التالي:
+${trackingUrl}
+
+من خلال هذا الرابط يمكنك:
+- متابعة حالة السيارة
+- طلب استرجاع السيارة
+
+${selectedSession?.title ?? ""}`;
+
+    const url = getWhatsAppUrl(guest.phone, message);
+    window.open(url, "_blank");
   };
 
   const getStatusBadge = (status: string | null) => {
@@ -538,6 +573,16 @@ export default function AdminValetDashboardPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {getStatusBadge(guest.valetRecord?.status ?? null)}
+                        {guest.phone && guest.valetRecord?.trackingToken && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSendWhatsApp(guest)}
+                            title="إرسال رابط التتبع عبر واتساب"
+                          >
+                            <MessageCircle className="h-4 w-4 text-green-600" />
+                          </Button>
+                        )}
                         {guest.valetRecord && (
                           <Button
                             variant="ghost"
