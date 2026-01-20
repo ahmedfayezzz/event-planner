@@ -744,6 +744,7 @@ model VoiceCall {
   phoneNumber          String
   recipientName        String?
   agentsaCallId        Int?      // From webhook: call.id
+  dispatchMetadata     Json?     // Full API response metadata from dispatch
 
   status               String    @default("pending") // pending, initiated, completed, failed
   confirmationResponse String?   // confirmed, declined, no_response
@@ -775,6 +776,8 @@ model VoiceCallBatch {
   id                   String    @id @default(cuid())
   sessionId            String
   name                 String    // Unique batch identifier for AgentsA
+
+  dispatchMetadata     Json?     // Full API response metadata from batch dispatch
 
   status               String    @default("pending") // pending, dispatching, in_progress, completed, failed
   totalCalls           Int       @default(0)

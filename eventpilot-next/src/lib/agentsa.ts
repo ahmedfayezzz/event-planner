@@ -281,13 +281,14 @@ export async function dispatchSingleCall(
     );
 
     if (response.ok) {
-      const responseData = (await response.json()) as Record<string, unknown>;
+      const responseData = await response.json() as Record<string, unknown>;
 
       await db.voiceCall.update({
         where: { id: voiceCall.id },
         data: {
           status: "initiated",
           initiatedAt: new Date(),
+          dispatchMetadata: JSON.parse(JSON.stringify(responseData)),
         },
       });
 
@@ -439,11 +440,14 @@ export async function dispatchBatchCalls(
     );
 
     if (response.ok) {
+      const responseData = await response.json() as Record<string, unknown>;
+
       await db.voiceCallBatch.update({
         where: { id: batch.id },
         data: {
           status: "dispatching",
           dispatchedAt: new Date(),
+          dispatchMetadata: JSON.parse(JSON.stringify(responseData)),
         },
       });
 
