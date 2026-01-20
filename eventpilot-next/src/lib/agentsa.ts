@@ -131,10 +131,10 @@ async function logCallEvent(
 
 function mapIsJoiningToResponse(
   isJoining: boolean | undefined | null
-): string | null {
+): string {
   if (isJoining === true) return "confirmed";
   if (isJoining === false) return "declined";
-  return null; // no_response will be set later if needed
+  return "follow_up"; // Registrant didn't provide clear answer, needs follow-up
 }
 
 async function updateBatchStats(batchId: string): Promise<void> {
@@ -154,6 +154,9 @@ async function updateBatchStats(batchId: string): Promise<void> {
     const noResponseCount = calls.filter(
       (c) => c.confirmationResponse === "no_response"
     ).length;
+    const followUpCount = calls.filter(
+      (c) => c.confirmationResponse === "follow_up"
+    ).length;
 
     const batch = await db.voiceCallBatch.findUnique({
       where: { id: batchId },
@@ -169,6 +172,7 @@ async function updateBatchStats(batchId: string): Promise<void> {
         confirmedCount,
         declinedCount,
         noResponseCount,
+        followUpCount,
         status: isCompleted ? "completed" : "in_progress",
         completedAt: isCompleted ? new Date() : undefined,
       },

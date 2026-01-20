@@ -121,6 +121,13 @@ function ResponseBadge({ response }: { response: string | null }) {
           لم يرد
         </Badge>
       );
+    case "follow_up":
+      return (
+        <Badge variant="outline" className="gap-1 bg-orange-500/10 text-orange-600 border-orange-200">
+          <Clock className="h-3 w-3" />
+          متابعة
+        </Badge>
+      );
     default:
       return <Badge variant="outline">{response}</Badge>;
   }
