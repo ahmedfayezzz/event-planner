@@ -1,9 +1,21 @@
 import {
   RekognitionClient,
   CompareFacesCommand,
+  CreateCollectionCommand,
+  DeleteCollectionCommand,
+  IndexFacesCommand,
+  SearchFacesByImageCommand,
+  SearchFacesCommand,
+  ListFacesCommand,
+  DeleteFacesCommand,
   InvalidParameterException,
   ImageTooLargeException,
   InvalidImageFormatException,
+  ResourceAlreadyExistsException,
+  ResourceNotFoundException,
+  type FaceRecord,
+  type FaceMatch,
+  type BoundingBox,
 } from "@aws-sdk/client-rekognition";
 
 // Max image size for Rekognition (5MB)
@@ -126,4 +138,336 @@ export async function compareFaces(
     // Re-throw unknown errors
     throw error;
   }
+}
+
+// ============================================
+// Collections API for Gallery Feature
+// ============================================
+
+/**
+ * Create a new Rekognition collection for a gallery
+ */
+export async function createCollection(collectionId: string): Promise<void> {
+  const client = getRekognitionClient();
+
+  try {
+    const command = new CreateCollectionCommand({
+      CollectionId: collectionId,
+    });
+    await client.send(command);
+    console.log(`Created Rekognition collection: ${collectionId}`);
+  } catch (error) {
+    if (error instanceof ResourceAlreadyExistsException) {
+      console.log(`Collection already exists: ${collectionId}`);
+      return;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Delete a Rekognition collection
+ */
+export async function deleteCollection(collectionId: string): Promise<void> {
+  const client = getRekognitionClient();
+
+  try {
+    const command = new DeleteCollectionCommand({
+      CollectionId: collectionId,
+    });
+    await client.send(command);
+    console.log(`Deleted Rekognition collection: ${collectionId}`);
+  } catch (error) {
+    if (error instanceof ResourceNotFoundException) {
+      console.log(`Collection not found: ${collectionId}`);
+      return;
+    }
+    throw error;
+  }
+}
+
+export interface IndexedFace {
+  faceId: string;
+  boundingBox: {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  };
+  confidence: number;
+  brightness?: number;
+  sharpness?: number;
+}
+
+/**
+ * Index faces in an image using S3 object reference
+ * Returns array of detected faces with their IDs
+ */
+export async function indexFaces(
+  collectionId: string,
+  s3Bucket: string,
+  s3Key: string,
+  externalImageId: string
+): Promise<IndexedFace[]> {
+  const client = getRekognitionClient();
+
+  const command = new IndexFacesCommand({
+    CollectionId: collectionId,
+    Image: {
+      S3Object: {
+        Bucket: s3Bucket,
+        Name: s3Key,
+      },
+    },
+    ExternalImageId: externalImageId,
+    DetectionAttributes: ["DEFAULT"],
+    MaxFaces: 100, // Max faces to detect per image
+    QualityFilter: "AUTO", // Filter low quality faces
+  });
+
+  const response = await client.send(command);
+
+  const faces: IndexedFace[] = [];
+
+  if (response.FaceRecords) {
+    for (const record of response.FaceRecords) {
+      if (record.Face?.FaceId && record.Face.BoundingBox) {
+        const box = record.Face.BoundingBox;
+        faces.push({
+          faceId: record.Face.FaceId,
+          boundingBox: {
+            top: box.Top ?? 0,
+            left: box.Left ?? 0,
+            width: box.Width ?? 0,
+            height: box.Height ?? 0,
+          },
+          confidence: record.Face.Confidence ?? 0,
+          brightness: record.FaceDetail?.Quality?.Brightness,
+          sharpness: record.FaceDetail?.Quality?.Sharpness,
+        });
+      }
+    }
+  }
+
+  console.log(`Indexed ${faces.length} faces from ${s3Key}`);
+  return faces;
+}
+
+export interface FaceSearchMatch {
+  faceId: string;
+  similarity: number;
+  externalImageId?: string;
+}
+
+/**
+ * Search for matching faces in a collection using S3 image
+ */
+export async function searchFacesByImage(
+  collectionId: string,
+  s3Bucket: string,
+  s3Key: string,
+  maxFaces = 10,
+  faceMatchThreshold = 80
+): Promise<FaceSearchMatch[]> {
+  const client = getRekognitionClient();
+
+  const command = new SearchFacesByImageCommand({
+    CollectionId: collectionId,
+    Image: {
+      S3Object: {
+        Bucket: s3Bucket,
+        Name: s3Key,
+      },
+    },
+    MaxFaces: maxFaces,
+    FaceMatchThreshold: faceMatchThreshold,
+  });
+
+  try {
+    const response = await client.send(command);
+
+    const matches: FaceSearchMatch[] = [];
+
+    if (response.FaceMatches) {
+      for (const match of response.FaceMatches) {
+        if (match.Face?.FaceId) {
+          matches.push({
+            faceId: match.Face.FaceId,
+            similarity: match.Similarity ?? 0,
+            externalImageId: match.Face.ExternalImageId,
+          });
+        }
+      }
+    }
+
+    return matches;
+  } catch (error) {
+    if (error instanceof InvalidParameterException) {
+      // No face detected in the image
+      return [];
+    }
+    throw error;
+  }
+}
+
+/**
+ * Search for matching faces using image bytes (for user avatar matching)
+ */
+export async function searchFacesByImageBytes(
+  collectionId: string,
+  imageBytes: Buffer,
+  maxFaces = 10,
+  faceMatchThreshold = 80
+): Promise<FaceSearchMatch[]> {
+  const client = getRekognitionClient();
+
+  const command = new SearchFacesByImageCommand({
+    CollectionId: collectionId,
+    Image: {
+      Bytes: new Uint8Array(imageBytes),
+    },
+    MaxFaces: maxFaces,
+    FaceMatchThreshold: faceMatchThreshold,
+  });
+
+  try {
+    const response = await client.send(command);
+
+    const matches: FaceSearchMatch[] = [];
+
+    if (response.FaceMatches) {
+      for (const match of response.FaceMatches) {
+        if (match.Face?.FaceId) {
+          matches.push({
+            faceId: match.Face.FaceId,
+            similarity: match.Similarity ?? 0,
+            externalImageId: match.Face.ExternalImageId,
+          });
+        }
+      }
+    }
+
+    return matches;
+  } catch (error) {
+    if (error instanceof InvalidParameterException) {
+      // No face detected in the image
+      return [];
+    }
+    throw error;
+  }
+}
+
+/**
+ * Search for similar faces in a collection using a face ID
+ * This is used for clustering - find all faces similar to a reference face
+ */
+export async function searchFacesByFaceId(
+  collectionId: string,
+  faceId: string,
+  maxFaces = 100,
+  faceMatchThreshold = 85
+): Promise<FaceSearchMatch[]> {
+  const client = getRekognitionClient();
+
+  const command = new SearchFacesCommand({
+    CollectionId: collectionId,
+    FaceId: faceId,
+    MaxFaces: maxFaces,
+    FaceMatchThreshold: faceMatchThreshold,
+  });
+
+  try {
+    const response = await client.send(command);
+
+    const matches: FaceSearchMatch[] = [];
+
+    if (response.FaceMatches) {
+      for (const match of response.FaceMatches) {
+        if (match.Face?.FaceId) {
+          matches.push({
+            faceId: match.Face.FaceId,
+            similarity: match.Similarity ?? 0,
+            externalImageId: match.Face.ExternalImageId,
+          });
+        }
+      }
+    }
+
+    return matches;
+  } catch (error) {
+    if (error instanceof InvalidParameterException) {
+      // Face ID not found
+      return [];
+    }
+    throw error;
+  }
+}
+
+export interface CollectionFace {
+  faceId: string;
+  externalImageId?: string;
+}
+
+/**
+ * List all faces in a collection
+ */
+export async function listFaces(
+  collectionId: string,
+  maxResults = 1000
+): Promise<CollectionFace[]> {
+  const client = getRekognitionClient();
+  const faces: CollectionFace[] = [];
+  let nextToken: string | undefined;
+
+  do {
+    const command = new ListFacesCommand({
+      CollectionId: collectionId,
+      MaxResults: Math.min(maxResults - faces.length, 1000),
+      NextToken: nextToken,
+    });
+
+    const response = await client.send(command);
+
+    if (response.Faces) {
+      for (const face of response.Faces) {
+        if (face.FaceId) {
+          faces.push({
+            faceId: face.FaceId,
+            externalImageId: face.ExternalImageId,
+          });
+        }
+      }
+    }
+
+    nextToken = response.NextToken;
+  } while (nextToken && faces.length < maxResults);
+
+  return faces;
+}
+
+/**
+ * Delete faces from a collection
+ */
+export async function deleteFaces(
+  collectionId: string,
+  faceIds: string[]
+): Promise<void> {
+  if (faceIds.length === 0) return;
+
+  const client = getRekognitionClient();
+
+  // Rekognition allows max 4096 faces per request
+  const batchSize = 4096;
+  for (let i = 0; i < faceIds.length; i += batchSize) {
+    const batch = faceIds.slice(i, i + batchSize);
+
+    const command = new DeleteFacesCommand({
+      CollectionId: collectionId,
+      FaceIds: batch,
+    });
+
+    await client.send(command);
+  }
+
+  console.log(`Deleted ${faceIds.length} faces from collection ${collectionId}`);
 }
