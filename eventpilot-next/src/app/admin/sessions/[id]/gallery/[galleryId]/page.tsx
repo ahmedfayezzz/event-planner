@@ -9,6 +9,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatArabicDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { useDropzone } from "react-dropzone";
@@ -28,6 +38,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  FolderOpen,
 } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
@@ -58,6 +69,17 @@ const imageStatusIcons: Record<string, React.ReactNode> = {
   skipped: <Eye className="h-4 w-4 text-gray-400" />,
 };
 
+// Format bytes to human readable format
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 B";
+
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+
 export default function GalleryDetailPage({
   params,
 }: {
@@ -67,6 +89,13 @@ export default function GalleryDetailPage({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [driveUrl, setDriveUrl] = useState("");
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewData, setPreviewData] = useState<{
+    files: Array<{ id: string; name: string; size: number; mimeType: string }>;
+    totalFiles: number;
+    totalSize: number;
+  } | null>(null);
 
   const utils = api.useUtils();
 
@@ -140,6 +169,44 @@ export default function GalleryDetailPage({
     },
   });
 
+  const previewDriveFolderMutation = api.gallery.previewGoogleDriveFolder.useQuery(
+    { driveUrl },
+    {
+      enabled: false,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+    }
+  );
+
+  const importFromDriveMutation = api.gallery.importFromGoogleDrive.useMutation({
+    onSuccess: async (data) => {
+      toast.success(data.message);
+      setDriveUrl("");
+      setShowPreviewModal(false);
+      setPreviewData(null);
+      await utils.gallery.getById.invalidate({ galleryId });
+    },
+    onError: (error) => {
+      toast.error(error.message || "فشل الاستيراد من Google Drive");
+    },
+  });
+
+  const handlePreviewDrive = async () => {
+    try {
+      const data = await previewDriveFolderMutation.refetch();
+      if (data.data) {
+        setPreviewData(data.data);
+        setShowPreviewModal(true);
+      }
+    } catch (error) {
+      toast.error("فشل عرض محتويات المجلد");
+    }
+  };
+
+  const handleConfirmImport = () => {
+    importFromDriveMutation.mutate({ galleryId, driveUrl });
+  };
+
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
       if (acceptedFiles.length === 0) return;
@@ -149,6 +216,7 @@ export default function GalleryDetailPage({
 
       let successCount = 0;
       let failCount = 0;
+      let duplicateCount = 0;
 
       for (let i = 0; i < acceptedFiles.length; i++) {
         const file = acceptedFiles[i]!;
@@ -185,9 +253,14 @@ export default function GalleryDetailPage({
           });
 
           successCount++;
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Failed to upload ${file.name}:`, error);
-          failCount++;
+          // Check if it's a duplicate error
+          if (error?.data?.code === "CONFLICT" || error?.message?.includes("already exists")) {
+            duplicateCount++;
+          } else {
+            failCount++;
+          }
         }
       }
 
@@ -196,6 +269,9 @@ export default function GalleryDetailPage({
       if (successCount > 0) {
         toast.success(`تم رفع ${successCount} صورة بنجاح`);
         await utils.gallery.getById.invalidate({ galleryId });
+      }
+      if (duplicateCount > 0) {
+        toast.info(`تم تخطي ${duplicateCount} صورة مكررة`);
       }
       if (failCount > 0) {
         toast.error(`فشل رفع ${failCount} صورة`);
@@ -451,6 +527,36 @@ export default function GalleryDetailPage({
               )}
             </div>
 
+            {/* Google Drive Import */}
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-sm font-medium mb-2">أو استيراد من Google Drive</p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="رابط مجلد Google Drive العام"
+                  value={driveUrl}
+                  onChange={(e) => setDriveUrl(e.target.value)}
+                  dir="ltr"
+                  className="flex-1"
+                  disabled={previewDriveFolderMutation.isFetching}
+                />
+                <Button
+                  onClick={handlePreviewDrive}
+                  disabled={!driveUrl || previewDriveFolderMutation.isFetching}
+                  variant="outline"
+                >
+                  {previewDriveFolderMutation.isFetching ? (
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Eye className="ml-2 h-4 w-4" />
+                  )}
+                  معاينة
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                الصق رابط مجلد Google Drive العام الذي يحتوي على الصور
+              </p>
+            </div>
+
             {/* Start Processing Button */}
             {canStartProcessing && hasImages && (
               <div className="mt-4 flex justify-end gap-2">
@@ -622,6 +728,92 @@ export default function GalleryDetailPage({
           )}
         </div>
       )}
+
+      {/* Google Drive Preview Modal */}
+      <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>معاينة صور Google Drive</DialogTitle>
+            <DialogDescription>
+              مراجعة الصور قبل الاستيراد
+            </DialogDescription>
+          </DialogHeader>
+
+          {previewData && (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                <div>
+                  <p className="text-sm text-muted-foreground">إجمالي الصور</p>
+                  <p className="text-2xl font-bold">{previewData.totalFiles}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">الحجم الإجمالي</p>
+                  <p className="text-2xl font-bold">
+                    {formatFileSize(previewData.totalSize)}
+                  </p>
+                </div>
+              </div>
+
+              {/* File List */}
+              <div>
+                <p className="text-sm font-medium mb-2">الملفات ({previewData.files.length})</p>
+                <ScrollArea className="h-[300px] rounded-md border p-4">
+                  <div className="space-y-2">
+                    {previewData.files.map((file, index) => (
+                      <div
+                        key={file.id}
+                        className="flex items-center justify-between p-2 rounded hover:bg-muted/50"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-xs text-muted-foreground">
+                            {index + 1}.
+                          </span>
+                          <span className="text-sm truncate" title={file.name}>
+                            {file.name}
+                          </span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {formatFileSize(file.size)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowPreviewModal(false);
+                setPreviewData(null);
+              }}
+              disabled={importFromDriveMutation.isPending}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleConfirmImport}
+              disabled={importFromDriveMutation.isPending}
+            >
+              {importFromDriveMutation.isPending ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  جاري الاستيراد...
+                </>
+              ) : (
+                <>
+                  <FolderOpen className="ml-2 h-4 w-4" />
+                  تأكيد الاستيراد
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

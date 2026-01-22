@@ -29,6 +29,8 @@ const pathLabels: Record<string, string> = {
   valet: "خدمة الفاليه",
   employees: "الموظفين",
   records: "السجلات",
+  gallery: "معرض الصور",
+  faces: "الوجوه",
 };
 
 export function Breadcrumbs() {

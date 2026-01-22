@@ -13,6 +13,12 @@ import {
   cleanupGallery,
 } from "@/lib/gallery-processing";
 import { deleteCollection } from "@/lib/rekognition";
+import {
+  isGoogleDriveConfigured,
+  extractFolderId,
+  listFolderImages,
+  transferToS3,
+} from "@/lib/gallery-google";
 
 export const galleryRouter = createTRPCRouter({
   /**
@@ -22,6 +28,7 @@ export const galleryRouter = createTRPCRouter({
     return {
       configured: isGalleryS3Configured(),
       bucket: GALLERY_S3_BUCKET || null,
+      googleDriveConfigured: isGoogleDriveConfigured(),
     };
   }),
 
@@ -243,6 +250,21 @@ export const galleryRouter = createTRPCRouter({
         });
       }
 
+      // Check if image with same filename already exists
+      const existingImage = await ctx.db.galleryImage.findFirst({
+        where: {
+          galleryId: input.galleryId,
+          filename: input.filename,
+        },
+      });
+
+      if (existingImage) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Image with filename "${input.filename}" already exists in this gallery`,
+        });
+      }
+
       // Create image record
       const image = await ctx.db.galleryImage.create({
         data: {
@@ -266,6 +288,205 @@ export const galleryRouter = createTRPCRouter({
       });
 
       return image;
+    }),
+
+  /**
+   * Preview images in a Google Drive folder before importing
+   */
+  previewGoogleDriveFolder: adminProcedure
+    .input(
+      z.object({
+        driveUrl: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      if (!isGoogleDriveConfigured()) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Google Drive API is not configured",
+        });
+      }
+
+      const folderId = extractFolderId(input.driveUrl);
+      if (!folderId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid Google Drive folder URL. Please use a public folder link.",
+        });
+      }
+
+      // List files
+      let files;
+      try {
+        files = await listFolderImages(folderId);
+      } catch (error) {
+        console.error("Failed to list Google Drive folder:", error);
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Could not access the Google Drive folder. Make sure it's publicly shared.",
+        });
+      }
+
+      if (files.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No images found in the Google Drive folder",
+        });
+      }
+
+      // Calculate total size
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+
+      return {
+        folderId,
+        files: files.map((file) => ({
+          id: file.id,
+          name: file.name,
+          size: file.size,
+          mimeType: file.mimeType,
+        })),
+        totalFiles: files.length,
+        totalSize,
+      };
+    }),
+
+  /**
+   * Import images from a public Google Drive folder
+   */
+  importFromGoogleDrive: adminProcedure
+    .input(
+      z.object({
+        galleryId: z.string(),
+        driveUrl: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!isGoogleDriveConfigured()) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Google Drive API is not configured",
+        });
+      }
+
+      const gallery = await ctx.db.photoGallery.findUnique({
+        where: { id: input.galleryId },
+      });
+
+      if (!gallery) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Gallery not found",
+        });
+      }
+
+      const folderId = extractFolderId(input.driveUrl);
+      if (!folderId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid Google Drive folder URL. Please use a public folder link.",
+        });
+      }
+
+      // List files first
+      let files;
+      try {
+        files = await listFolderImages(folderId);
+      } catch (error) {
+        console.error("Failed to list Google Drive folder:", error);
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Could not access the Google Drive folder. Make sure it's publicly shared.",
+        });
+      }
+
+      if (files.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No images found in the Google Drive folder",
+        });
+      }
+
+      // Update gallery status
+      await ctx.db.photoGallery.update({
+        where: { id: input.galleryId },
+        data: { status: "uploading" },
+      });
+
+      // Get existing filenames to check for duplicates
+      const existingImages = await ctx.db.galleryImage.findMany({
+        where: { galleryId: input.galleryId },
+        select: { filename: true },
+      });
+      const existingFilenames = new Set(existingImages.map((img) => img.filename));
+
+      // Filter out duplicates
+      const filesToImport = files.filter((file) => !existingFilenames.has(file.name));
+      const skippedCount = files.length - filesToImport.length;
+
+      if (skippedCount > 0) {
+        console.log(`Skipping ${skippedCount} duplicate files`);
+      }
+
+      // Import files in background to avoid timeout
+      const importFiles = async () => {
+        let imported = 0;
+        let failed = 0;
+
+        for (const file of filesToImport) {
+          try {
+            const { s3Key, imageUrl, fileSize } = await transferToS3(
+              file.id,
+              file.name,
+              file.mimeType,
+              input.galleryId
+            );
+
+            await ctx.db.galleryImage.create({
+              data: {
+                galleryId: input.galleryId,
+                s3Key,
+                s3Bucket: GALLERY_S3_BUCKET,
+                imageUrl,
+                filename: file.name,
+                fileSize,
+                contentType: file.mimeType,
+              },
+            });
+
+            await ctx.db.photoGallery.update({
+              where: { id: input.galleryId },
+              data: { totalImages: { increment: 1 } },
+            });
+
+            imported++;
+
+            // Rate limit: ~2 requests/second to be safe with Google API
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          } catch (error) {
+            console.error(`Failed to import ${file.name}:`, error);
+            failed++;
+          }
+        }
+
+        console.log(`Google Drive import complete: ${imported} imported, ${failed} failed, ${skippedCount} skipped (duplicates)`);
+      };
+
+      // Run import in background
+      importFiles().catch((error) => {
+        console.error("Google Drive import failed:", error);
+      });
+
+      const message = skippedCount > 0
+        ? `بدء استيراد ${filesToImport.length} صورة (تم تخطي ${skippedCount} صورة مكررة)`
+        : `بدء استيراد ${filesToImport.length} صورة من Google Drive`;
+
+      return {
+        success: true,
+        message,
+        totalFiles: files.length,
+        filesToImport: filesToImport.length,
+        skippedDuplicates: skippedCount,
+      };
     }),
 
   /**
