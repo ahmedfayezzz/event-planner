@@ -19,6 +19,15 @@ import {
   listFolderImages,
   transferToS3,
 } from "@/lib/gallery-google";
+import {
+  startImportProgress,
+  updateImportProgress,
+  completeImportProgress,
+  failImportProgress,
+  getImportProgress,
+  cancelImportProgress,
+  isImportCancelled,
+} from "@/lib/import-progress";
 
 export const galleryRouter = createTRPCRouter({
   /**
@@ -427,12 +436,21 @@ export const galleryRouter = createTRPCRouter({
         console.log(`Skipping ${skippedCount} duplicate files`);
       }
 
+      // Start progress tracking
+      startImportProgress(input.galleryId, filesToImport.length);
+
       // Import files in background to avoid timeout
       const importFiles = async () => {
         let imported = 0;
         let failed = 0;
 
         for (const file of filesToImport) {
+          // Check if import was cancelled
+          if (isImportCancelled(input.galleryId)) {
+            console.log(`Google Drive import cancelled for gallery ${input.galleryId}`);
+            break;
+          }
+
           try {
             const { s3Key, imageUrl, fileSize } = await transferToS3(
               file.id,
@@ -459,16 +477,24 @@ export const galleryRouter = createTRPCRouter({
             });
 
             imported++;
+            updateImportProgress(input.galleryId, { imported });
 
             // Rate limit: ~2 requests/second to be safe with Google API
             await new Promise((resolve) => setTimeout(resolve, 500));
           } catch (error) {
             console.error(`Failed to import ${file.name}:`, error);
             failed++;
+            updateImportProgress(input.galleryId, { failed });
           }
         }
 
-        console.log(`Google Drive import complete: ${imported} imported, ${failed} failed, ${skippedCount} skipped (duplicates)`);
+        // Complete or mark as cancelled
+        if (isImportCancelled(input.galleryId)) {
+          console.log(`Google Drive import cancelled: ${imported} imported, ${failed} failed, ${skippedCount} skipped (duplicates)`);
+        } else {
+          completeImportProgress(input.galleryId);
+          console.log(`Google Drive import complete: ${imported} imported, ${failed} failed, ${skippedCount} skipped (duplicates)`);
+        }
       };
 
       // Run import in background
@@ -487,6 +513,26 @@ export const galleryRouter = createTRPCRouter({
         filesToImport: filesToImport.length,
         skippedDuplicates: skippedCount,
       };
+    }),
+
+  /**
+   * Get import progress for a gallery
+   */
+  getImportProgress: adminProcedure
+    .input(z.object({ galleryId: z.string() }))
+    .query(({ input }) => {
+      const progress = getImportProgress(input.galleryId);
+      return progress;
+    }),
+
+  /**
+   * Cancel ongoing import for a gallery
+   */
+  cancelImport: adminProcedure
+    .input(z.object({ galleryId: z.string() }))
+    .mutation(({ input }) => {
+      cancelImportProgress(input.galleryId);
+      return { success: true, message: "Import cancelled" };
     }),
 
   /**

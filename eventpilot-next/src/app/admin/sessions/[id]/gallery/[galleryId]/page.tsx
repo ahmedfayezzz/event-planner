@@ -96,8 +96,24 @@ export default function GalleryDetailPage({
     totalFiles: number;
     totalSize: number;
   } | null>(null);
+  const [uploadAbortController, setUploadAbortController] = useState<AbortController | null>(null);
 
   const utils = api.useUtils();
+
+  // Poll for import progress
+  const { data: importProgress } = api.gallery.getImportProgress.useQuery(
+    { galleryId },
+    {
+      refetchInterval: (query) => {
+        const progress = query.state.data;
+        // Refetch gallery when import completes
+        if (progress && progress.status !== "importing") {
+          void utils.gallery.getById.invalidate({ galleryId });
+        }
+        return progress?.status === "importing" ? 1000 : false;
+      },
+    }
+  );
 
   // Check if gallery is in a processing state (helper function for refetch)
   const isProcessingStatus = (status?: string) =>
@@ -185,9 +201,18 @@ export default function GalleryDetailPage({
       setShowPreviewModal(false);
       setPreviewData(null);
       await utils.gallery.getById.invalidate({ galleryId });
+      await utils.gallery.getImportProgress.invalidate({ galleryId });
     },
     onError: (error) => {
       toast.error(error.message || "فشل الاستيراد من Google Drive");
+    },
+  });
+
+  const cancelImportMutation = api.gallery.cancelImport.useMutation({
+    onSuccess: async () => {
+      toast.info("تم إلغاء الاستيراد");
+      await utils.gallery.getImportProgress.invalidate({ galleryId });
+      await utils.gallery.getById.invalidate({ galleryId });
     },
   });
 
@@ -211,6 +236,10 @@ export default function GalleryDetailPage({
     async (acceptedFiles: File[]) => {
       if (acceptedFiles.length === 0) return;
 
+      // Create abort controller for this upload session
+      const abortController = new AbortController();
+      setUploadAbortController(abortController);
+
       setUploading(true);
       setUploadProgress({ current: 0, total: acceptedFiles.length });
 
@@ -219,6 +248,11 @@ export default function GalleryDetailPage({
       let duplicateCount = 0;
 
       for (let i = 0; i < acceptedFiles.length; i++) {
+        // Check if upload was cancelled
+        if (abortController.signal.aborted) {
+          break;
+        }
+
         const file = acceptedFiles[i]!;
         setUploadProgress({ current: i + 1, total: acceptedFiles.length });
 
@@ -237,6 +271,7 @@ export default function GalleryDetailPage({
             headers: {
               "Content-Type": file.type,
             },
+            signal: abortController.signal,
           });
 
           if (!uploadResponse.ok) {
@@ -254,6 +289,10 @@ export default function GalleryDetailPage({
 
           successCount++;
         } catch (error: any) {
+          // Don't count aborted uploads as failures
+          if (error.name === "AbortError") {
+            break;
+          }
           console.error(`Failed to upload ${file.name}:`, error);
           // Check if it's a duplicate error
           if (error?.data?.code === "CONFLICT" || error?.message?.includes("already exists")) {
@@ -265,20 +304,35 @@ export default function GalleryDetailPage({
       }
 
       setUploading(false);
+      setUploadAbortController(null);
 
-      if (successCount > 0) {
-        toast.success(`تم رفع ${successCount} صورة بنجاح`);
-        await utils.gallery.getById.invalidate({ galleryId });
-      }
-      if (duplicateCount > 0) {
-        toast.info(`تم تخطي ${duplicateCount} صورة مكررة`);
-      }
-      if (failCount > 0) {
-        toast.error(`فشل رفع ${failCount} صورة`);
+      if (abortController.signal.aborted) {
+        toast.info("تم إلغاء الرفع");
+      } else {
+        if (successCount > 0) {
+          toast.success(`تم رفع ${successCount} صورة بنجاح`);
+          await utils.gallery.getById.invalidate({ galleryId });
+        }
+        if (duplicateCount > 0) {
+          toast.info(`تم تخطي ${duplicateCount} صورة مكررة`);
+        }
+        if (failCount > 0) {
+          toast.error(`فشل رفع ${failCount} صورة`);
+        }
       }
     },
     [galleryId, generateUploadUrlMutation, confirmUploadMutation, utils]
   );
+
+  const handleCancelUpload = () => {
+    if (uploadAbortController) {
+      uploadAbortController.abort();
+    }
+  };
+
+  const handleCancelImport = () => {
+    cancelImportMutation.mutate({ galleryId });
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -287,7 +341,7 @@ export default function GalleryDetailPage({
       "image/png": [".png"],
       "image/webp": [".webp"],
     },
-    disabled: uploading,
+    disabled: uploading || importProgress?.status === "importing",
   });
 
   if (isLoading) {
@@ -497,7 +551,7 @@ export default function GalleryDetailPage({
               className={`
                 border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
                 ${isDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"}
-                ${uploading ? "opacity-50 cursor-not-allowed" : ""}
+                ${uploading || importProgress?.status === "importing" ? "opacity-50 cursor-not-allowed" : ""}
               `}
             >
               <input {...getInputProps()} />
@@ -511,6 +565,42 @@ export default function GalleryDetailPage({
                     </p>
                   </div>
                   <Progress value={(uploadProgress.current / uploadProgress.total) * 100} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCancelUpload();
+                    }}
+                  >
+                    <X className="ml-2 h-4 w-4" />
+                    إلغاء الرفع
+                  </Button>
+                </div>
+              ) : importProgress?.status === "importing" ? (
+                <div className="space-y-4">
+                  <Loader2 className="mx-auto h-12 w-12 text-primary animate-spin" />
+                  <div>
+                    <p className="font-medium">جاري الاستيراد من Google Drive...</p>
+                    <p className="text-sm text-muted-foreground">
+                      {importProgress.imported} / {importProgress.total}
+                      {importProgress.failed > 0 && ` (${importProgress.failed} فشل)`}
+                      {importProgress.skipped > 0 && ` (${importProgress.skipped} مكرر)`}
+                    </p>
+                  </div>
+                  <Progress value={(importProgress.imported / importProgress.total) * 100} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCancelImport();
+                    }}
+                    disabled={cancelImportMutation.isPending}
+                  >
+                    <X className="ml-2 h-4 w-4" />
+                    إلغاء الاستيراد
+                  </Button>
                 </div>
               ) : (
                 <>
@@ -537,11 +627,11 @@ export default function GalleryDetailPage({
                   onChange={(e) => setDriveUrl(e.target.value)}
                   dir="ltr"
                   className="flex-1"
-                  disabled={previewDriveFolderMutation.isFetching}
+                  disabled={previewDriveFolderMutation.isFetching || importProgress?.status === "importing"}
                 />
                 <Button
                   onClick={handlePreviewDrive}
-                  disabled={!driveUrl || previewDriveFolderMutation.isFetching}
+                  disabled={!driveUrl || previewDriveFolderMutation.isFetching || importProgress?.status === "importing"}
                   variant="outline"
                 >
                   {previewDriveFolderMutation.isFetching ? (
