@@ -74,8 +74,10 @@ export default function FaceClustersPage({
   const [manualPhone, setManualPhone] = useState("");
   const [manualEmail, setManualEmail] = useState("");
 
+  const utils = api.useUtils();
+
   const { data: gallery } = api.gallery.getById.useQuery({ galleryId });
-  const { data: clusters, isLoading, refetch } = api.gallery.getClusters.useQuery({
+  const { data: clusters, isLoading } = api.gallery.getClusters.useQuery({
     galleryId,
     filter: "all",
   });
@@ -83,10 +85,11 @@ export default function FaceClustersPage({
   const { data: shareStatus } = api.gallery.getShareStatus.useQuery({ galleryId });
 
   const assignToUserMutation = api.gallery.assignClusterToUser.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("تم تعيين الشخص بنجاح");
       closeDialog();
-      refetch();
+      await utils.gallery.getClusters.invalidate({ galleryId });
+      await utils.gallery.getShareStatus.invalidate({ galleryId });
     },
     onError: (error) => {
       toast.error(error.message || "فشل التعيين");
@@ -94,10 +97,11 @@ export default function FaceClustersPage({
   });
 
   const assignManuallyMutation = api.gallery.assignClusterManually.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("تم تعيين الشخص بنجاح");
       closeDialog();
-      refetch();
+      await utils.gallery.getClusters.invalidate({ galleryId });
+      await utils.gallery.getShareStatus.invalidate({ galleryId });
     },
     onError: (error) => {
       toast.error(error.message || "فشل التعيين");
@@ -105,12 +109,13 @@ export default function FaceClustersPage({
   });
 
   const shareClusterMutation = api.gallery.shareCluster.useMutation({
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       if (variables.via === "whatsapp" && data.whatsappUrl) {
         window.open(data.whatsappUrl, "_blank");
       }
       toast.success("تمت المشاركة بنجاح");
-      refetch();
+      await utils.gallery.getClusters.invalidate({ galleryId });
+      await utils.gallery.getShareStatus.invalidate({ galleryId });
     },
     onError: (error) => {
       toast.error(error.message || "فشلت المشاركة");

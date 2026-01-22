@@ -19,6 +19,9 @@ import {
   ChevronLeft,
   ZoomIn,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+const isDev = process.env.NODE_ENV === "development";
 
 export default function PublicPhotosPage({
   params,
@@ -179,6 +182,21 @@ export default function PublicPhotosPage({
                     className="object-cover transition-transform group-hover:scale-105"
                     sizes="(max-width: 768px) 50vw, 33vw"
                   />
+                  {/* Dev only: show match similarity */}
+                  {isDev && image.matchSimilarity !== null && image.matchSimilarity !== undefined && (
+                    <Badge
+                      variant="outline"
+                      className={`absolute top-2 left-2 text-xs font-mono ${
+                        image.matchSimilarity >= 95
+                          ? "bg-green-500/90 text-white border-green-600"
+                          : image.matchSimilarity >= 90
+                          ? "bg-yellow-500/90 text-white border-yellow-600"
+                          : "bg-red-500/90 text-white border-red-600"
+                      }`}
+                    >
+                      {image.matchSimilarity.toFixed(1)}%
+                    </Badge>
+                  )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
                       <Button
@@ -286,6 +304,21 @@ export default function PublicPhotosPage({
             <span className="text-white/70 text-sm">
               {selectedImage + 1} / {data.images.length}
             </span>
+            {/* Dev only: show match similarity in lightbox */}
+            {isDev && data.images[selectedImage]?.matchSimilarity !== null && data.images[selectedImage]?.matchSimilarity !== undefined && (
+              <Badge
+                variant="outline"
+                className={`text-xs font-mono ${
+                  data.images[selectedImage]!.matchSimilarity! >= 95
+                    ? "bg-green-500/90 text-white border-green-600"
+                    : data.images[selectedImage]!.matchSimilarity! >= 90
+                    ? "bg-yellow-500/90 text-white border-yellow-600"
+                    : "bg-red-500/90 text-white border-red-600"
+                }`}
+              >
+                {data.images[selectedImage]!.matchSimilarity!.toFixed(1)}%
+              </Badge>
+            )}
             <Button
               variant="secondary"
               size="sm"

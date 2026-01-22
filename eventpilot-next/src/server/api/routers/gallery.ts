@@ -12,6 +12,7 @@ import {
   runGalleryProcessingPipeline,
   cleanupGallery,
 } from "@/lib/gallery-processing";
+import { deleteCollection } from "@/lib/rekognition";
 
 export const galleryRouter = createTRPCRouter({
   /**
@@ -297,6 +298,86 @@ export const galleryRouter = createTRPCRouter({
       });
 
       return { success: true, message: "Processing started" };
+    }),
+
+  /**
+   * Reprocess a gallery (dev only) - clears existing data and reruns pipeline
+   */
+  reprocess: adminProcedure
+    .input(z.object({ galleryId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Only allow in development
+      if (process.env.NODE_ENV !== "development") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Reprocessing is only available in development mode",
+        });
+      }
+
+      const gallery = await ctx.db.photoGallery.findUnique({
+        where: { id: input.galleryId },
+      });
+
+      if (!gallery) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Gallery not found",
+        });
+      }
+
+      // Delete existing Rekognition collection
+      if (gallery.rekognitionCollectionId) {
+        try {
+          await deleteCollection(gallery.rekognitionCollectionId);
+        } catch (error) {
+          console.error("Failed to delete Rekognition collection:", error);
+        }
+      }
+
+      // Delete all face clusters for this gallery
+      await ctx.db.faceCluster.deleteMany({
+        where: { galleryId: input.galleryId },
+      });
+
+      // Delete all detected faces for images in this gallery
+      await ctx.db.detectedFace.deleteMany({
+        where: {
+          image: { galleryId: input.galleryId },
+        },
+      });
+
+      // Reset all images to pending status
+      await ctx.db.galleryImage.updateMany({
+        where: { galleryId: input.galleryId },
+        data: {
+          status: "pending",
+          faceCount: 0,
+          processedAt: null,
+          errorMessage: null,
+        },
+      });
+
+      // Reset gallery processing state
+      await ctx.db.photoGallery.update({
+        where: { id: input.galleryId },
+        data: {
+          status: "pending",
+          rekognitionCollectionId: null,
+          processedImages: 0,
+          totalFaces: 0,
+          totalClusters: 0,
+          lastError: null,
+          processingStartedAt: null,
+          processingCompletedAt: null,
+        },
+      });
+
+      // Start reprocessing in background
+      runGalleryProcessingPipeline(input.galleryId).catch((error) => {
+        console.error("Gallery reprocessing pipeline failed:", error);
+      });
+
+      return { success: true, message: "Reprocessing started" };
     }),
 
   /**
@@ -702,7 +783,8 @@ export const galleryRouter = createTRPCRouter({
             },
           },
           faces: {
-            include: {
+            select: {
+              clusterSimilarity: true,
               image: {
                 select: {
                   id: true,
@@ -747,11 +829,14 @@ export const galleryRouter = createTRPCRouter({
         });
       }
 
-      // Get unique images from the faces
-      const imageMap = new Map<string, { id: string; imageUrl: string; filename: string }>();
+      // Get unique images from the faces, with their match similarity
+      const imageMap = new Map<string, { id: string; imageUrl: string; filename: string; matchSimilarity: number | null }>();
       for (const face of cluster.faces) {
         if (face.image && !imageMap.has(face.image.id)) {
-          imageMap.set(face.image.id, face.image);
+          imageMap.set(face.image.id, {
+            ...face.image,
+            matchSimilarity: face.clusterSimilarity,
+          });
         }
       }
 
@@ -761,6 +846,7 @@ export const galleryRouter = createTRPCRouter({
         sessionDate: cluster.gallery.session?.date,
         images: Array.from(imageMap.values()),
         totalImages: imageMap.size,
+        matchConfidence: cluster.matchConfidence,
       };
     }),
 });

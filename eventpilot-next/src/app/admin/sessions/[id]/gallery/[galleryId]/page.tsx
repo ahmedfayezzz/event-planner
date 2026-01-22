@@ -68,7 +68,9 @@ export default function GalleryDetailPage({
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const { data: gallery, isLoading, refetch } = api.gallery.getById.useQuery({
+  const utils = api.useUtils();
+
+  const { data: gallery, isLoading } = api.gallery.getById.useQuery({
     galleryId,
   });
 
@@ -99,7 +101,7 @@ export default function GalleryDetailPage({
     };
   }, [lightboxIndex, imageCount]);
 
-  const { data: processingStatus, refetch: refetchStatus } = api.gallery.getProcessingStatus.useQuery(
+  const { data: processingStatus } = api.gallery.getProcessingStatus.useQuery(
     { galleryId },
     {
       refetchInterval: gallery?.status === "processing" || gallery?.status === "clustering" || gallery?.status === "matching"
@@ -111,13 +113,24 @@ export default function GalleryDetailPage({
   const generateUploadUrlMutation = api.gallery.generateUploadUrl.useMutation();
   const confirmUploadMutation = api.gallery.confirmUpload.useMutation();
   const startProcessingMutation = api.gallery.startProcessing.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("بدأت المعالجة");
-      refetch();
-      refetchStatus();
+      await utils.gallery.getById.invalidate({ galleryId });
+      await utils.gallery.getProcessingStatus.invalidate({ galleryId });
     },
     onError: (error) => {
       toast.error(error.message || "فشل بدء المعالجة");
+    },
+  });
+
+  const reprocessMutation = api.gallery.reprocess.useMutation({
+    onSuccess: async () => {
+      toast.success("بدأت إعادة المعالجة");
+      await utils.gallery.getById.invalidate({ galleryId });
+      await utils.gallery.getProcessingStatus.invalidate({ galleryId });
+    },
+    onError: (error) => {
+      toast.error(error.message || "فشل إعادة المعالجة");
     },
   });
 
@@ -176,13 +189,13 @@ export default function GalleryDetailPage({
 
       if (successCount > 0) {
         toast.success(`تم رفع ${successCount} صورة بنجاح`);
-        refetch();
+        await utils.gallery.getById.invalidate({ galleryId });
       }
       if (failCount > 0) {
         toast.error(`فشل رفع ${failCount} صورة`);
       }
     },
-    [galleryId, generateUploadUrlMutation, confirmUploadMutation, refetch]
+    [galleryId, generateUploadUrlMutation, confirmUploadMutation, utils]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -246,6 +259,20 @@ export default function GalleryDetailPage({
           <Badge variant="outline" className={statusColors[gallery.status]}>
             {statusLabels[gallery.status]}
           </Badge>
+          {process.env.NODE_ENV === "development" && gallery.status === "ready" && (
+            <Button
+              variant="outline"
+              onClick={() => reprocessMutation.mutate({ galleryId })}
+              disabled={reprocessMutation.isPending}
+            >
+              {reprocessMutation.isPending ? (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCcw className="ml-2 h-4 w-4" />
+              )}
+              إعادة المعالجة
+            </Button>
+          )}
           {gallery.status === "ready" && (
             <Button asChild>
               <Link href={`/admin/sessions/${sessionId}/gallery/${galleryId}/faces`}>
@@ -420,7 +447,21 @@ export default function GalleryDetailPage({
 
             {/* Start Processing Button */}
             {canStartProcessing && hasImages && (
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex justify-end gap-2">
+                {process.env.NODE_ENV === "development" && gallery.status !== "pending" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => reprocessMutation.mutate({ galleryId })}
+                    disabled={reprocessMutation.isPending}
+                  >
+                    {reprocessMutation.isPending ? (
+                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCcw className="ml-2 h-4 w-4" />
+                    )}
+                    إعادة المعالجة
+                  </Button>
+                )}
                 <Button
                   onClick={() => startProcessingMutation.mutate({ galleryId })}
                   disabled={startProcessingMutation.isPending}
