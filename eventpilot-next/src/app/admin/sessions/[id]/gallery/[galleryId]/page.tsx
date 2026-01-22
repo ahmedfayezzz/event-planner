@@ -70,9 +70,17 @@ export default function GalleryDetailPage({
 
   const utils = api.useUtils();
 
-  const { data: gallery, isLoading } = api.gallery.getById.useQuery({
-    galleryId,
-  });
+  // Check if gallery is in a processing state (helper function for refetch)
+  const isProcessingStatus = (status?: string) =>
+    status === "processing" || status === "clustering" || status === "matching";
+
+  const { data: gallery, isLoading } = api.gallery.getById.useQuery(
+    { galleryId },
+    {
+      // Auto-refetch while processing to update UI when done
+      refetchInterval: (query) => isProcessingStatus(query.state.data?.status) ? 2000 : false,
+    }
+  );
 
   const imageCount = gallery?.images.length ?? 0;
 
@@ -104,9 +112,7 @@ export default function GalleryDetailPage({
   const { data: processingStatus } = api.gallery.getProcessingStatus.useQuery(
     { galleryId },
     {
-      refetchInterval: gallery?.status === "processing" || gallery?.status === "clustering" || gallery?.status === "matching"
-        ? 2000
-        : false,
+      refetchInterval: isProcessingStatus(gallery?.status) ? 2000 : false,
     }
   );
 

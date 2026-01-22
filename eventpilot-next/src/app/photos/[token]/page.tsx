@@ -18,6 +18,7 @@ import {
   ChevronRight,
   ChevronLeft,
   ZoomIn,
+  Sparkles,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -163,6 +164,12 @@ export default function PublicPhotosPage({
                 <Images className="h-4 w-4" />
                 <span>{data.totalImages} صورة</span>
               </div>
+            </div>
+
+            {/* AI Selection Info */}
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-4 py-3 mt-4">
+              <Sparkles className="h-4 w-4 text-primary/70" />
+              <span>تم اختيار هذه الصور تلقائياً بناءً على التعرف على وجهك</span>
             </div>
           </div>
 

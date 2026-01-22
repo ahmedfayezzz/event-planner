@@ -757,6 +757,11 @@ model DetectedFace {
   brightness          Float?
   sharpness           Float?
 
+  // Face pose (for selecting best thumbnail)
+  poseYaw             Float?        // Left/right rotation (-180 to 180, 0 = facing camera)
+  posePitch           Float?        // Up/down rotation (-180 to 180, 0 = level)
+  poseRoll            Float?        // Head tilt (-180 to 180, 0 = upright)
+
   // Cropped face thumbnail for UI
   faceThumbnailUrl    String?
   faceThumbnailS3Key  String?

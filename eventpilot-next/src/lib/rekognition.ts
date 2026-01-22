@@ -197,6 +197,12 @@ export interface IndexedFace {
   confidence: number;
   brightness?: number;
   sharpness?: number;
+  // Pose data for selecting best thumbnail
+  pose?: {
+    yaw: number;   // Left/right rotation (-180 to 180, 0 = facing camera)
+    pitch: number; // Up/down rotation (-180 to 180, 0 = level)
+    roll: number;  // Head tilt (-180 to 180, 0 = upright)
+  };
 }
 
 /**
@@ -220,7 +226,7 @@ export async function indexFaces(
       },
     },
     ExternalImageId: externalImageId,
-    DetectionAttributes: ["DEFAULT"],
+    DetectionAttributes: ["ALL"], // Get all attributes including pose for best thumbnail selection
     MaxFaces: 100, // Max faces to detect per image
     QualityFilter: "AUTO", // Filter low quality faces
   });
@@ -233,6 +239,7 @@ export async function indexFaces(
     for (const record of response.FaceRecords) {
       if (record.Face?.FaceId && record.Face.BoundingBox) {
         const box = record.Face.BoundingBox;
+        const pose = record.FaceDetail?.Pose;
         faces.push({
           faceId: record.Face.FaceId,
           boundingBox: {
@@ -244,6 +251,11 @@ export async function indexFaces(
           confidence: record.Face.Confidence ?? 0,
           brightness: record.FaceDetail?.Quality?.Brightness,
           sharpness: record.FaceDetail?.Quality?.Sharpness,
+          pose: pose ? {
+            yaw: pose.Yaw ?? 0,
+            pitch: pose.Pitch ?? 0,
+            roll: pose.Roll ?? 0,
+          } : undefined,
         });
       }
     }

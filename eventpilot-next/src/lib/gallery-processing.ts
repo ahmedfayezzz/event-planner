@@ -24,6 +24,68 @@ export function generateCollectionId(galleryId: string): string {
 }
 
 /**
+ * Calculate a quality score for a face to select the best thumbnail
+ * Higher score = better for thumbnail (facing camera, sharp, clear)
+ *
+ * Scoring factors:
+ * - Yaw close to 0 (facing camera) - max 40 points
+ * - Pitch close to 0 (level gaze) - max 20 points
+ * - Roll close to 0 (upright head) - max 10 points
+ * - High sharpness - max 20 points
+ * - High confidence - max 10 points
+ */
+function calculateFaceQualityScore(face: {
+  poseYaw: number | null;
+  posePitch: number | null;
+  poseRoll: number | null;
+  sharpness: number | null;
+  confidence: number;
+}): number {
+  let score = 0;
+
+  // Yaw score (0 = facing camera, penalize side profiles)
+  // Scale: 0° = 40 points, 45° = 20 points, 90° = 0 points
+  if (face.poseYaw !== null) {
+    const yawPenalty = Math.min(Math.abs(face.poseYaw) / 90, 1);
+    score += 40 * (1 - yawPenalty);
+  } else {
+    score += 20; // Default if no data
+  }
+
+  // Pitch score (0 = level gaze)
+  // Scale: 0° = 20 points, 45° = 10 points, 90° = 0 points
+  if (face.posePitch !== null) {
+    const pitchPenalty = Math.min(Math.abs(face.posePitch) / 90, 1);
+    score += 20 * (1 - pitchPenalty);
+  } else {
+    score += 10;
+  }
+
+  // Roll score (0 = upright head)
+  // Scale: 0° = 10 points, 45° = 5 points, 90° = 0 points
+  if (face.poseRoll !== null) {
+    const rollPenalty = Math.min(Math.abs(face.poseRoll) / 90, 1);
+    score += 10 * (1 - rollPenalty);
+  } else {
+    score += 5;
+  }
+
+  // Sharpness score (0-100 from Rekognition)
+  // Scale to 0-20 points
+  if (face.sharpness !== null) {
+    score += (face.sharpness / 100) * 20;
+  } else {
+    score += 10;
+  }
+
+  // Confidence score (0-100 from Rekognition)
+  // Scale to 0-10 points
+  score += (face.confidence / 100) * 10;
+
+  return score;
+}
+
+/**
  * Generate a face thumbnail by cropping from the original image
  */
 async function generateFaceThumbnail(
@@ -160,6 +222,9 @@ export async function processGalleryImage(
           confidence: face.confidence,
           brightness: face.brightness,
           sharpness: face.sharpness,
+          poseYaw: face.pose?.yaw,
+          posePitch: face.pose?.pitch,
+          poseRoll: face.pose?.roll,
         },
       });
 
@@ -328,16 +393,16 @@ export async function clusterGalleryFaces(galleryId: string): Promise<number> {
         gallery.rekognitionCollectionId,
         face.rekognitionFaceId,
         100, // max faces to return
-        90   // 90% similarity threshold
+        97   // 97% similarity threshold
       );
     } catch (error) {
       console.error(`Error searching for similar faces:`, error);
     }
 
-    // Collect all faces in this cluster with their similarity scores
+    // Collect all faces in this cluster with their similarity scores and full face data
     // The seed face has 100% similarity (to itself)
-    const clusterFaces: { id: string; similarity: number }[] = [
-      { id: face.id, similarity: 100 }
+    const clusterFacesData: { face: typeof face; similarity: number }[] = [
+      { face, similarity: 100 }
     ];
     processedRekognitionFaceIds.add(face.rekognitionFaceId);
 
@@ -347,8 +412,31 @@ export async function clusterGalleryFaces(galleryId: string): Promise<number> {
 
       const matchedFace = faceMap.get(match.faceId);
       if (matchedFace) {
-        clusterFaces.push({ id: matchedFace.id, similarity: match.similarity });
+        clusterFacesData.push({ face: matchedFace, similarity: match.similarity });
         processedRekognitionFaceIds.add(match.faceId);
+      }
+    }
+
+    // Find the best face for the representative thumbnail
+    // Score based on: facing camera (low yaw), level gaze (low pitch), sharp, confident
+    let bestFace = clusterFacesData[0]!.face;
+    let bestScore = -1;
+
+    for (const { face: f } of clusterFacesData) {
+      // Only consider faces with thumbnails
+      if (!f.faceThumbnailUrl) continue;
+
+      const score = calculateFaceQualityScore({
+        poseYaw: f.poseYaw,
+        posePitch: f.posePitch,
+        poseRoll: f.poseRoll,
+        sharpness: f.sharpness,
+        confidence: f.confidence,
+      });
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestFace = f;
       }
     }
 
@@ -358,23 +446,23 @@ export async function clusterGalleryFaces(galleryId: string): Promise<number> {
       data: {
         galleryId,
         autoLabel: `شخص ${clusterCount}`, // "Person X" in Arabic
-        faceCount: clusterFaces.length,
-        representativeFaceUrl: face.faceThumbnailUrl || face.image.imageUrl,
+        faceCount: clusterFacesData.length,
+        representativeFaceUrl: bestFace.faceThumbnailUrl || bestFace.image.imageUrl,
       },
     });
 
     // Assign all faces to this cluster with their similarity scores
-    for (const clusterFace of clusterFaces) {
+    for (const { face: f, similarity } of clusterFacesData) {
       await db.detectedFace.update({
-        where: { id: clusterFace.id },
+        where: { id: f.id },
         data: {
           clusterId: cluster.id,
-          clusterSimilarity: clusterFace.similarity,
+          clusterSimilarity: similarity,
         },
       });
     }
 
-    console.log(`Created cluster ${clusterCount} with ${clusterFaces.length} faces`);
+    console.log(`Created cluster ${clusterCount} with ${clusterFacesData.length} faces (best face score: ${bestScore.toFixed(1)})`);
   }
 
   // Update gallery
