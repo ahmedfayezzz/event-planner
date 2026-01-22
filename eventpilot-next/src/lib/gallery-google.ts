@@ -78,7 +78,65 @@ export async function listFolderImages(folderId: string): Promise<DriveFile[]> {
 }
 
 /**
- * Download a file from Google Drive and upload to S3
+ * Retry a function with exponential backoff
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 5,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: unknown) {
+      lastError = error;
+
+      // Check if it's a rate limit error (403 with specific reasons)
+      const isRateLimit =
+        (error as { code?: number })?.code === 403 ||
+        (error as { status?: number })?.status === 403 ||
+        (error as { response?: { status?: number } })?.response?.status === 403;
+
+      // Log detailed error information for 403 errors
+      if (isRateLimit) {
+        const errorDetails = {
+          code: (error as { code?: number })?.code,
+          status: (error as { status?: number })?.status,
+          message: (error as { message?: string })?.message,
+          errors: (error as { errors?: unknown[] })?.errors,
+          response: {
+            status: (error as { response?: { status?: number } })?.response?.status,
+            statusText: (error as { response?: { statusText?: string } })?.response?.statusText,
+            data: (error as { response?: { data?: unknown } })?.response?.data,
+          },
+        };
+        console.error("Google Drive API 403 Error:", JSON.stringify(errorDetails, null, 2));
+      }
+
+      // Don't retry on non-rate-limit errors
+      if (!isRateLimit && attempt === 0) {
+        throw error;
+      }
+
+      // Don't retry after max attempts
+      if (attempt === maxRetries) {
+        break;
+      }
+
+      // Calculate delay with exponential backoff + jitter
+      const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
+      console.log(`Rate limit hit, retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError;
+}
+
+/**
+ * Download a file from Google Drive and upload to S3 with retry logic
  */
 export async function transferToS3(
   fileId: string,
@@ -88,11 +146,13 @@ export async function transferToS3(
 ): Promise<{ s3Key: string; imageUrl: string; fileSize: number }> {
   const drive = getDriveClient();
 
-  // Download from Google Drive
-  const response = await drive.files.get(
-    { fileId, alt: "media" },
-    { responseType: "arraybuffer" }
-  );
+  // Download from Google Drive with retry on rate limits
+  const response = await retryWithBackoff(async () => {
+    return await drive.files.get(
+      { fileId, alt: "media" },
+      { responseType: "arraybuffer" }
+    );
+  });
 
   const buffer = Buffer.from(response.data as ArrayBuffer);
   const fileSize = buffer.length;

@@ -479,8 +479,9 @@ export const galleryRouter = createTRPCRouter({
             imported++;
             updateImportProgress(input.galleryId, { imported });
 
-            // Rate limit: ~2 requests/second to be safe with Google API
-            await new Promise((resolve) => setTimeout(resolve, 500));
+            // Rate limit: ~1 request/second to avoid hitting Google API limits
+            // Google Drive API has a limit of 1000 requests per 100 seconds
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           } catch (error) {
             console.error(`Failed to import ${file.name}:`, error);
             failed++;
