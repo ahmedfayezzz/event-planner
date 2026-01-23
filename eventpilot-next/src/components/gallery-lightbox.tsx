@@ -70,8 +70,8 @@ export function GalleryLightbox({
           Next: "التالي",
           Close: "إغلاق",
           Download: "تحميل",
-          Zoom_In: "تكبير",
-          Zoom_Out: "تصغير",
+          "Zoom in": "تكبير",
+          "Zoom out": "تصغير",
         }}
         // Thumbnails configuration
         thumbnails={{
