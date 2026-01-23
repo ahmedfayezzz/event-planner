@@ -3,6 +3,7 @@
 import { use, useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { OptimizedImage } from "@/components/optimized-image";
+import { GalleryLightbox } from "@/components/gallery-lightbox";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,8 +37,6 @@ import {
   Eye,
   Download,
   X,
-  ChevronLeft,
-  ChevronRight,
   FolderOpen,
 } from "lucide-react";
 
@@ -737,94 +736,26 @@ export default function GalleryDetailPage({
       )}
 
       {/* Lightbox */}
-      {lightboxIndex !== null && gallery.images[lightboxIndex] && (
-        <div
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
-          onClick={() => setLightboxIndex(null)}
-        >
-          {/* Close button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-4 right-4 text-white hover:bg-white/20 z-10"
-            onClick={() => setLightboxIndex(null)}
-          >
-            <X className="h-6 w-6" />
-          </Button>
-
-          {/* Image counter */}
-          <div className="absolute top-4 left-4 text-white text-sm bg-black/50 px-3 py-1 rounded-full">
-            {lightboxIndex + 1} / {gallery.images.length}
-          </div>
-
-          {/* Download button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-4 left-1/2 -translate-x-1/2 text-white hover:bg-white/20"
-            onClick={(e) => {
-              e.stopPropagation();
-              window.open(gallery.images[lightboxIndex]!.imageUrl, "_blank");
-            }}
-          >
-            <Download className="h-5 w-5" />
-          </Button>
-
-          {/* Previous button */}
-          {lightboxIndex < gallery.images.length - 1 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 h-12 w-12"
-              onClick={(e) => {
-                e.stopPropagation();
-                setLightboxIndex(lightboxIndex + 1);
-              }}
-            >
-              <ChevronRight className="h-8 w-8" />
-            </Button>
-          )}
-
-          {/* Next button */}
-          {lightboxIndex > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 h-12 w-12"
-              onClick={(e) => {
-                e.stopPropagation();
-                setLightboxIndex(lightboxIndex - 1);
-              }}
-            >
-              <ChevronLeft className="h-8 w-8" />
-            </Button>
-          )}
-
-          {/* Image */}
-          <div
-            className="relative max-w-[90vw] max-h-[85vh] w-full h-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <OptimizedImage
-              src={gallery.images[lightboxIndex]!.imageUrl}
-              alt={gallery.images[lightboxIndex]!.filename}
-              fill
-              sizes="90vw"
-              priority
-              quality={85}
-              showLoadingSpinner={true}
-              objectFit="contain"
-            />
-          </div>
-
-          {/* Face count badge */}
-          {gallery.images[lightboxIndex]!.faceCount > 0 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white text-sm px-3 py-1 rounded-full">
-              {gallery.images[lightboxIndex]!.faceCount} وجه مكتشف
-            </div>
-          )}
-        </div>
-      )}
+      <GalleryLightbox
+        open={lightboxIndex !== null}
+        index={lightboxIndex ?? 0}
+        images={gallery.images.map((img) => ({
+          src: img.imageUrl,
+          alt: img.filename,
+          downloadFilename: img.filename,
+        }))}
+        onClose={() => setLightboxIndex(null)}
+        onIndexChange={setLightboxIndex}
+        renderInfo={(index) => (
+          <>
+            {gallery.images[index]?.faceCount > 0 && (
+              <div className="bg-black/60 text-white text-sm px-3 py-1 rounded-full">
+                {gallery.images[index]!.faceCount} وجه مكتشف
+              </div>
+            )}
+          </>
+        )}
+      />
 
       {/* Google Drive Preview Modal */}
       <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>

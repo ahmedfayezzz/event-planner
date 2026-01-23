@@ -3,6 +3,7 @@
 import { use, useState } from "react";
 import Link from "next/link";
 import { OptimizedImage } from "@/components/optimized-image";
+import { GalleryLightbox } from "@/components/gallery-lightbox";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,9 +15,6 @@ import {
   Calendar,
   Images,
   User,
-  X,
-  ChevronRight,
-  ChevronLeft,
   ZoomIn,
   Sparkles,
 } from "lucide-react";
@@ -105,24 +103,10 @@ export default function PublicPhotosPage({
 
   const openLightbox = (index: number) => {
     setSelectedImage(index);
-    document.body.style.overflow = "hidden";
   };
 
   const closeLightbox = () => {
     setSelectedImage(null);
-    document.body.style.overflow = "";
-  };
-
-  const goToPrevious = () => {
-    if (selectedImage !== null && selectedImage > 0) {
-      setSelectedImage(selectedImage - 1);
-    }
-  };
-
-  const goToNext = () => {
-    if (selectedImage !== null && selectedImage < data.images.length - 1) {
-      setSelectedImage(selectedImage + 1);
-    }
   };
 
   return (
@@ -257,97 +241,35 @@ export default function PublicPhotosPage({
       </div>
 
       {/* Lightbox */}
-      {selectedImage !== null && (
-        <div
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
-          onClick={closeLightbox}
-        >
-          {/* Close button */}
-          <button
-            className="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-50"
-            onClick={closeLightbox}
-          >
-            <X className="h-8 w-8" />
-          </button>
-
-          {/* Navigation buttons */}
-          {selectedImage > 0 && (
-            <button
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-2 z-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                goToPrevious();
-              }}
-            >
-              <ChevronRight className="h-10 w-10" />
-            </button>
-          )}
-          {selectedImage < data.images.length - 1 && (
-            <button
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-2 z-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                goToNext();
-              }}
-            >
-              <ChevronLeft className="h-10 w-10" />
-            </button>
-          )}
-
-          {/* Image */}
-          <div
-            className="relative max-w-[90vw] max-h-[90vh] w-full h-full flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <OptimizedImage
-              src={data.images[selectedImage]!.imageUrl}
-              alt={`صورة ${selectedImage + 1}`}
-              fill
-              sizes="90vw"
-              priority
-              quality={85}
-              showLoadingSpinner={true}
-              objectFit="contain"
-            />
-          </div>
-
-          {/* Download button */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4">
-            <span className="text-white/70 text-sm">
-              {selectedImage + 1} / {data.images.length}
-            </span>
-            {/* Dev only: show match similarity in lightbox */}
-            {isDev && data.images[selectedImage]?.matchSimilarity !== null && data.images[selectedImage]?.matchSimilarity !== undefined && (
+      <GalleryLightbox
+        open={selectedImage !== null}
+        index={selectedImage ?? 0}
+        images={data.images.map((img) => ({
+          src: img.imageUrl,
+          alt: img.filename,
+          downloadFilename: img.filename,
+        }))}
+        onClose={closeLightbox}
+        onIndexChange={setSelectedImage}
+        renderInfo={(index) => (
+          <>
+            {isDev && data.images[index]?.matchSimilarity !== null && data.images[index]?.matchSimilarity !== undefined && (
               <Badge
                 variant="outline"
                 className={`text-xs font-mono ${
-                  data.images[selectedImage]!.matchSimilarity! >= 95
+                  data.images[index]!.matchSimilarity! >= 95
                     ? "bg-green-500/90 text-white border-green-600"
-                    : data.images[selectedImage]!.matchSimilarity! >= 90
+                    : data.images[index]!.matchSimilarity! >= 90
                     ? "bg-yellow-500/90 text-white border-yellow-600"
                     : "bg-red-500/90 text-white border-red-600"
                 }`}
               >
-                {data.images[selectedImage]!.matchSimilarity!.toFixed(1)}%
+                {data.images[index]!.matchSimilarity!.toFixed(1)}%
               </Badge>
             )}
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDownload(
-                  data.images[selectedImage]!.imageUrl,
-                  data.images[selectedImage]!.filename
-                );
-              }}
-            >
-              <Download className="ml-2 h-4 w-4" />
-              تحميل
-            </Button>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      />
     </>
   );
 }
