@@ -251,24 +251,6 @@ export default function PublicPhotosPage({
         }))}
         onClose={closeLightbox}
         onIndexChange={setSelectedImage}
-        renderInfo={(index) => (
-          <>
-            {isDev && data.images[index]?.matchSimilarity !== null && data.images[index]?.matchSimilarity !== undefined && (
-              <Badge
-                variant="outline"
-                className={`text-xs font-mono ${
-                  data.images[index]!.matchSimilarity! >= 95
-                    ? "bg-green-500/90 text-white border-green-600"
-                    : data.images[index]!.matchSimilarity! >= 90
-                    ? "bg-yellow-500/90 text-white border-yellow-600"
-                    : "bg-red-500/90 text-white border-red-600"
-                }`}
-              >
-                {data.images[index]!.matchSimilarity!.toFixed(1)}%
-              </Badge>
-            )}
-          </>
-        )}
       />
     </>
   );

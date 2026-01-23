@@ -746,15 +746,6 @@ export default function GalleryDetailPage({
         }))}
         onClose={() => setLightboxIndex(null)}
         onIndexChange={setLightboxIndex}
-        renderInfo={(index) => (
-          <>
-            {gallery.images[index]?.faceCount > 0 && (
-              <div className="bg-black/60 text-white text-sm px-3 py-1 rounded-full">
-                {gallery.images[index]!.faceCount} وجه مكتشف
-              </div>
-            )}
-          </>
-        )}
       />
 
       {/* Google Drive Preview Modal */}
