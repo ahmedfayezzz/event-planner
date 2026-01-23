@@ -559,97 +559,31 @@ export async function generateInvitationPdf(
     currentY -= subtitleImageData.height / 2 + spacing.afterSubtitle;
 
     // ====================================
-    // 3. DRAW SESSION TITLE - ACCENT COLOR
+    // 3. DRAW SESSION TITLE - TITLE_COLOR (dynamic from DB)
     // ====================================
     const sessionTitleMaxWidth = width * 0.75;
-
-    // ====================================
-    // TEMPORARY: Fixed two-line title (comment out to restore dynamic title)
-    // ====================================
-    // Line 1: Question (smaller font)
-    const line1FontSize = 50;
-    const line1ImageData = renderArabicTextToImage(
-      FIXED_TEXTS.sessionTitleLine1,
-      {
-        fontFamily: "AbarBold",
-        fontSize: line1FontSize,
-        color: TITLE_COLOR,
-        maxWidth: sessionTitleMaxWidth,
-      },
-    );
-    const line1Image = await pdfDoc.embedPng(line1ImageData.buffer);
-    currentY -= line1ImageData.height / 2;
-    page.drawImage(line1Image, {
-      x: (width - line1ImageData.width) / 2,
-      y: currentY - line1ImageData.height / 2,
-      width: line1ImageData.width,
-      height: line1ImageData.height,
-    });
-    currentY -= line1ImageData.height / 2 + 10; // Small gap between lines
-
-    // Line 2: Headline (larger font, auto-sized to fit)
-    const line2FontSize = calculateFitFontSize(
-      FIXED_TEXTS.sessionTitleLine2,
+    const sessionTitleFontSize = calculateFitFontSize(
+      options.sessionTitle,
       "AbarBold",
       FONT_SIZES.sessionTitle,
       35,
       sessionTitleMaxWidth,
     );
-    const line2ImageData = renderArabicTextToImage(
-      FIXED_TEXTS.sessionTitleLine2,
-      {
-        fontFamily: "AbarBold",
-        fontSize: line2FontSize,
-        color: ACCENT_COLOR,
-        maxWidth: sessionTitleMaxWidth,
-      },
-    );
-    const line2Image = await pdfDoc.embedPng(line2ImageData.buffer);
-    currentY -= line2ImageData.height / 2;
-    page.drawImage(line2Image, {
-      x: (width - line2ImageData.width) / 2,
-      y: currentY - line2ImageData.height / 2,
-      width: line2ImageData.width,
-      height: line2ImageData.height,
+    const sessionTitleImageData = renderArabicTextToImage(options.sessionTitle, {
+      fontFamily: "AbarBold",
+      fontSize: sessionTitleFontSize,
+      color: TITLE_COLOR,
+      maxWidth: sessionTitleMaxWidth,
     });
-    currentY -= line2ImageData.height / 2 + spacing.afterSessionTitle;
-    // ====================================
-    // END TEMPORARY FIXED TITLE
-    // ====================================
-
-    // ====================================
-    // DYNAMIC SESSION TITLE (from DB) - uncomment to restore
-    // ====================================
-    // const sessionTitleFontSize = calculateFitFontSize(
-    //   options.sessionTitle,
-    //   "AbarBold",
-    //   FONT_SIZES.sessionTitle,
-    //   35,
-    //   sessionTitleMaxWidth
-    // );
-    // const sessionTitleImageData = renderArabicTextToImage(
-    //   options.sessionTitle,
-    //   {
-    //     fontFamily: "AbarBold",
-    //     fontSize: sessionTitleFontSize,
-    //     color: ACCENT_COLOR,
-    //     maxWidth: sessionTitleMaxWidth,
-    //   }
-    // );
-    // const sessionTitleImage = await pdfDoc.embedPng(
-    //   sessionTitleImageData.buffer
-    // );
-    // currentY -= sessionTitleImageData.height / 2;
-    // page.drawImage(sessionTitleImage, {
-    //   x: (width - sessionTitleImageData.width) / 2,
-    //   y: currentY - sessionTitleImageData.height / 2,
-    //   width: sessionTitleImageData.width,
-    //   height: sessionTitleImageData.height,
-    // });
-    // currentY -= sessionTitleImageData.height / 2 + spacing.afterSessionTitle;
-    // ====================================
-    // END DYNAMIC SESSION TITLE
-    // ====================================
+    const sessionTitleImage = await pdfDoc.embedPng(sessionTitleImageData.buffer);
+    currentY -= sessionTitleImageData.height / 2;
+    page.drawImage(sessionTitleImage, {
+      x: (width - sessionTitleImageData.width) / 2,
+      y: currentY - sessionTitleImageData.height / 2,
+      width: sessionTitleImageData.width,
+      height: sessionTitleImageData.height,
+    });
+    currentY -= sessionTitleImageData.height / 2 + spacing.afterSessionTitle;
 
     // ====================================
     // 4. DRAW DESCRIPTION (fixed text) - only if description exists
