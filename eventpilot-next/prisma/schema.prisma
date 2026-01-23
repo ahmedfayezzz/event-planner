@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,246 +7,171 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  GUEST
-  ADMIN
-  SUPER_ADMIN
-}
-
-enum VisibilityStatus {
-  inactive
-  active
-  archived
-}
-
-enum ValetStatus {
-  expected   // Guest indicated valet needed, not arrived yet
-  parked     // Vehicle is parked
-  requested  // Retrieval requested by guest
-  fetching   // Valet is fetching the car
-  ready      // Vehicle at pickup area
-  retrieved  // Guest picked up vehicle
-}
-
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  username      String    @unique
-  email         String    @unique
-  phone         String    @unique
-  passwordHash  String?
-
-  // Social media
-  instagram     String?
-  snapchat      String?
-  twitter       String?
-
-  // Professional info
-  companyName   String?
-  position      String?
-  activityType  String?
-  gender        String?
-  goal          String?
-  aiDescription String?
-
-  // Status
-  isApproved    Boolean   @default(true)
-  isActive      Boolean   @default(true)
-  role          Role      @default(USER)
-
-  // Admin permissions (only relevant if role is ADMIN)
-  canAccessDashboard  Boolean  @default(false)
-  canAccessSessions   Boolean  @default(false)
-  canAccessUsers      Boolean  @default(false)
-  canAccessHosts      Boolean  @default(false)
-  canAccessAnalytics  Boolean  @default(false)
-  canAccessCheckin    Boolean  @default(false)
-  canAccessSettings   Boolean  @default(false)
-  canAccessSuggestions Boolean @default(false)
-  canAccessEmailCampaigns Boolean @default(false)
-  canAccessValet Boolean @default(false)
-
-  // Password reset
-  resetToken        String?
-  resetTokenExpires DateTime?
-
-  // Remember me / refresh token
-  refreshToken        String?
-  refreshTokenExpires DateTime?
-
-  // Hosting preferences
-  wantsToHost      Boolean   @default(false)
-  hostingTypes     String[]  @default([])
-
-  // Manual creation tracking
-  isManuallyCreated  Boolean   @default(false)  // true if created via manual registration
-  createdByAdminId   String?                    // Admin who created the user
-
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Profile image
-  avatarUrl     String?
-
-  // Relations
-  registrations Registration[]
-  eventCaterings EventCatering[]
-
-  // Admin action tracking relations
-  approvedRegistrations        Registration[] @relation("ApprovedRegistrations")
-  rejectedRegistrations        Registration[] @relation("RejectedRegistrations")
-  markedNotComingRegistrations Registration[] @relation("MarkedNotComing")
-  labels UserLabel[]
-  notes         UserNote[] @relation("UserNotes")
-  notesCreated  UserNote[] @relation("NotesCreated")
-  sponsors      Sponsor[]
-  sponsorNotesCreated SponsorNote[] @relation("SponsorNoteAuthor")
-  suggestions   Suggestion[]
-  emailDrafts   EmailDraft[]    @relation("DraftCreator")
-  emailTemplates EmailTemplate[] @relation("TemplateCreator")
-  emailCampaignsCreated  EmailCampaign[]          @relation("CampaignCreator")
-  emailCampaignsReceived EmailCampaignRecipient[] @relation("RecipientUser")
+  id                           String                   @id @default(cuid())
+  name                         String
+  username                     String                   @unique
+  email                        String                   @unique
+  phone                        String                   @unique
+  passwordHash                 String?
+  instagram                    String?
+  snapchat                     String?
+  twitter                      String?
+  companyName                  String?
+  position                     String?
+  activityType                 String?
+  gender                       String?
+  goal                         String?
+  aiDescription                String?
+  isApproved                   Boolean                  @default(true)
+  isActive                     Boolean                  @default(true)
+  role                         Role                     @default(USER)
+  resetToken                   String?
+  resetTokenExpires            DateTime?
+  refreshToken                 String?
+  refreshTokenExpires          DateTime?
+  createdAt                    DateTime                 @default(now())
+  updatedAt                    DateTime                 @updatedAt
+  hostingTypes                 String[]                 @default([])
+  wantsToHost                  Boolean                  @default(false)
+  avatarUrl                    String?
+  canAccessAnalytics           Boolean                  @default(false)
+  canAccessCheckin             Boolean                  @default(false)
+  canAccessDashboard           Boolean                  @default(false)
+  canAccessHosts               Boolean                  @default(false)
+  canAccessSessions            Boolean                  @default(false)
+  canAccessSettings            Boolean                  @default(false)
+  canAccessUsers               Boolean                  @default(false)
+  createdByAdminId             String?
+  isManuallyCreated            Boolean                  @default(false)
+  canAccessSuggestions         Boolean                  @default(false)
+  canAccessEmailCampaigns      Boolean                  @default(false)
+  canAccessValet               Boolean                  @default(false)
+  emailCampaignsCreated        EmailCampaign[]          @relation("CampaignCreator")
+  emailCampaignsReceived       EmailCampaignRecipient[] @relation("RecipientUser")
+  emailDrafts                  EmailDraft[]             @relation("DraftCreator")
+  emailTemplates               EmailTemplate[]          @relation("TemplateCreator")
+  eventCaterings               EventCatering[]
+  approvedRegistrations        Registration[]           @relation("ApprovedRegistrations")
+  markedNotComingRegistrations Registration[]           @relation("MarkedNotComing")
+  rejectedRegistrations        Registration[]           @relation("RejectedRegistrations")
+  registrations                Registration[]
+  sponsors                     Sponsor[]
+  sponsorNotesCreated          SponsorNote[]            @relation("SponsorNoteAuthor")
+  suggestions                  Suggestion[]
+  notesCreated                 UserNote[]               @relation("NotesCreated")
+  notes                        UserNote[]               @relation("UserNotes")
+  VoiceCallBatch               VoiceCallBatch[]
+  labels                       UserLabel[]              @relation("UserToUserLabel")
+  faceClusters                 FaceCluster[]
 }
 
 model Session {
-  id              String   @id @default(cuid())
-  sessionNumber   Int      @unique
-  title           String
-  description     String?
-  date            DateTime
-
-  // Capacity
-  maxParticipants Int      @default(50)
-  maxCompanions   Int      @default(5)
-
-  // Status
-  status          String   @default("open") // open, closed, completed
-  visibilityStatus VisibilityStatus @default(inactive) // inactive, active, archived
-
-  // Settings
-  requiresApproval      Boolean  @default(false)
-  showParticipantCount  Boolean  @default(true)
-  location              String?
-
-  // Advanced Settings
-  registrationDeadline  DateTime?
-  showCountdown         Boolean  @default(true)
-  showGuestProfile      Boolean  @default(true)
-  enableMiniView        Boolean  @default(false)
+  id                        String                 @id @default(cuid())
+  sessionNumber             Int                    @unique
+  title                     String
+  description               String?
+  date                      DateTime
+  maxParticipants           Int                    @default(50)
+  maxCompanions             Int                    @default(5)
+  status                    String                 @default("open")
+  requiresApproval          Boolean                @default(false)
+  showParticipantCount      Boolean                @default(true)
+  location                  String?
+  registrationDeadline      DateTime?
+  showCountdown             Boolean                @default(true)
+  showGuestProfile          Boolean                @default(true)
+  enableMiniView            Boolean                @default(false)
   customConfirmationMessage String?
-  embedEnabled          Boolean  @default(true)
-  slug                  String?  @unique
-  inviteOnly            Boolean  @default(false)
-  inviteMessage         String?
-  sendQrInEmail         Boolean  @default(true)
-  showSocialMediaFields Boolean  @default(true)
-  showRegistrationPurpose Boolean  @default(true)
-  showCateringInterest  Boolean  @default(true)
-  locationUrl           String?
-
-  // Banner image
-  bannerUrl             String?
-
-  // Valet configuration
-  valetEnabled         Boolean @default(false)
-  valetLotCapacity     Int     @default(0)
-  valetRetrievalNotice Int     @default(5) // minutes
-
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Relations
-  registrations     Registration[]
-  attendances       Attendance[]
-  invites           Invite[]
-  eventCaterings    EventCatering[]
-  eventSponsorships EventSponsorship[]
-  sessionGuests     SessionGuest[]
-  valetRecords      ValetRecord[]
-  valetEmployees    ValetEmployeeSession[]
+  embedEnabled              Boolean                @default(true)
+  slug                      String?                @unique
+  inviteOnly                Boolean                @default(false)
+  inviteMessage             String?
+  sendQrInEmail             Boolean                @default(true)
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
+  bannerUrl                 String?
+  locationUrl               String?
+  showCateringInterest      Boolean                @default(true)
+  showRegistrationPurpose   Boolean                @default(true)
+  showSocialMediaFields     Boolean                @default(true)
+  visibilityStatus          VisibilityStatus       @default(inactive)
+  valetEnabled              Boolean                @default(false)
+  valetLotCapacity          Int                    @default(0)
+  valetRetrievalNotice      Int                    @default(5)
+  attendances               Attendance[]
+  eventCaterings            EventCatering[]
+  eventSponsorships         EventSponsorship[]
+  invites                   Invite[]
+  registrations             Registration[]
+  sessionGuests             SessionGuest[]
+  valetEmployees            ValetEmployeeSession[]
+  valetRecords              ValetRecord[]
+  VoiceCall                 VoiceCall[]
+  VoiceCallBatch            VoiceCallBatch[]
+  photoGalleries            PhotoGallery[]
 }
 
 model Registration {
-  id          String   @id @default(cuid())
-  userId      String?
-  sessionId   String
-  registeredAt DateTime @default(now())
-  isApproved  Boolean  @default(true)
-  isRejected      Boolean  @default(false)
-  rejectionReason String?
-  approvalNotes   String?
-
-  // Guest registration fields (used when userId is NULL)
-  guestName         String?
-  guestEmail        String?
-  guestPhone        String?
-  guestInstagram    String?
-  guestSnapchat     String?
-  guestTwitter      String?
-  guestCompanyName  String?
-  guestPosition     String?
-  guestActivityType String?
-  guestGender       String?
-  guestGoal         String?
-
-  // Guest hosting preferences (DEPRECATED - use sponsor fields below)
-  guestWantsToHost    Boolean   @default(false)
-  guestHostingTypes   String[]  @default([])
-
-  // NEW: Sponsor interest fields (for both guests and members)
-  wantsToSponsor        Boolean   @default(false)
-  sponsorshipTypes      String[]  @default([])
-  sponsorshipOtherText  String?
-  sponsorType           String?   // "person" | "company"
-
-  // Manual registration tracking
-  isManual       Boolean   @default(false)  // true if created via manual registration
-  manualAddedBy  String?                    // Admin user ID who added it manually
-  manualAddedAt  DateTime?                  // When it was manually added
-
-  // Admin action tracking
-  approvedAt          DateTime?
-  approvedById        String?
-  approvedBy          User?     @relation("ApprovedRegistrations", fields: [approvedById], references: [id])
-
-  rejectedAt          DateTime?
-  rejectedById        String?
-  rejectedBy          User?     @relation("RejectedRegistrations", fields: [rejectedById], references: [id])
-
-  // "Not Coming" status
-  isNotComing         Boolean   @default(false)
-  notComingReason     String?
-  markedNotComingAt   DateTime?
-  markedNotComingById String?
-  markedNotComingBy   User?     @relation("MarkedNotComing", fields: [markedNotComingById], references: [id])
-
-  // Companion/Invited relationship (self-referential)
-  invitedByRegistrationId  String?
-  invitedByRegistration    Registration?  @relation("InvitedBy", fields: [invitedByRegistrationId], references: [id])
-  invitedRegistrations     Registration[] @relation("InvitedBy")
-
-  // Valet parking
-  needsValet Boolean @default(false)
-
-  // Relations
-  user        User?       @relation(fields: [userId], references: [id])
-  session     Session     @relation(fields: [sessionId], references: [id])
-  attendance  Attendance?
-  valetRecord ValetRecord?
+  id                      String         @id @default(cuid())
+  userId                  String?
+  sessionId               String
+  registeredAt            DateTime       @default(now())
+  isApproved              Boolean        @default(true)
+  approvalNotes           String?
+  guestName               String?
+  guestEmail              String?
+  guestPhone              String?
+  guestInstagram          String?
+  guestSnapchat           String?
+  guestTwitter            String?
+  guestCompanyName        String?
+  guestPosition           String?
+  guestActivityType       String?
+  guestGender             String?
+  guestGoal               String?
+  guestHostingTypes       String[]       @default([])
+  guestWantsToHost        Boolean        @default(false)
+  invitedByRegistrationId String?
+  isManual                Boolean        @default(false)
+  manualAddedAt           DateTime?
+  manualAddedBy           String?
+  sponsorType             String?
+  sponsorshipOtherText    String?
+  sponsorshipTypes        String[]       @default([])
+  wantsToSponsor          Boolean        @default(false)
+  isRejected              Boolean        @default(false)
+  rejectionReason         String?
+  approvedAt              DateTime?
+  approvedById            String?
+  isNotComing             Boolean        @default(false)
+  markedNotComingAt       DateTime?
+  markedNotComingById     String?
+  notComingReason         String?
+  rejectedAt              DateTime?
+  rejectedById            String?
+  needsValet              Boolean        @default(false)
+  attendance              Attendance?
+  approvedBy              User?          @relation("ApprovedRegistrations", fields: [approvedById], references: [id])
+  invitedByRegistration   Registration?  @relation("InvitedBy", fields: [invitedByRegistrationId], references: [id])
+  invitedRegistrations    Registration[] @relation("InvitedBy")
+  markedNotComingBy       User?          @relation("MarkedNotComing", fields: [markedNotComingById], references: [id])
+  rejectedBy              User?          @relation("RejectedRegistrations", fields: [rejectedById], references: [id])
+  session                 Session        @relation(fields: [sessionId], references: [id])
+  user                    User?          @relation(fields: [userId], references: [id])
+  valetRecord             ValetRecord?
+  VoiceCall               VoiceCall[]
 
   @@unique([userId, sessionId])
 }
 
 model Attendance {
-  id             String   @id @default(cuid())
-  registrationId String   @unique
+  id             String       @id @default(cuid())
   sessionId      String
-  attended       Boolean  @default(false)
+  attended       Boolean      @default(false)
   checkInTime    DateTime?
-  qrVerified     Boolean  @default(false)
-
-  // Relations
+  qrVerified     Boolean      @default(false)
+  registrationId String       @unique
   registration   Registration @relation(fields: [registrationId], references: [id])
   session        Session      @relation(fields: [sessionId], references: [id])
 
@@ -262,68 +184,54 @@ model Invite {
   email         String
   token         String    @unique
   used          Boolean   @default(false)
-  invalidated   Boolean   @default(false)
-  invalidatedAt DateTime?
   expiresAt     DateTime
   createdAt     DateTime  @default(now())
   sentAt        DateTime?
-
-  // Relations
-  session     Session  @relation(fields: [sessionId], references: [id])
+  invalidated   Boolean   @default(false)
+  invalidatedAt DateTime?
+  session       Session   @relation(fields: [sessionId], references: [id])
 
   @@index([sessionId])
 }
 
-// DEPRECATED - kept for migration, use EventSponsorship instead
 model EventCatering {
   id             String   @id @default(cuid())
   sessionId      String
   hostId         String?
-  hostingType    String   // dinner, beverage, dessert, other
+  hostingType    String
   isSelfCatering Boolean  @default(false)
   notes          String?
-
-  // Sponsor/host logo
   logoUrl        String?
-
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-
-  // Relations
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  host    User?   @relation(fields: [hostId], references: [id])
+  host           User?    @relation(fields: [hostId], references: [id])
+  session        Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
 }
 
-// NEW: Sponsor entity - can be linked to a User or standalone
 model Sponsor {
-  id                   String    @id @default(cuid())
+  id                   String              @id @default(cuid())
   name                 String
   email                String?
   phone                String?
-  type                 String    @default("person") // "person" | "company"
-  status               String    @default("new") // new, contacted, sponsored, interested_again, interested_permanent
+  type                 String              @default("person")
   logoUrl              String?
-  logoBackground       String    @default("transparent") // transparent, dark, light, primary
-  sponsorshipTypes     String[]  @default([])
+  sponsorshipTypes     String[]            @default([])
   sponsorshipOtherText String?
-  socialMediaLinks     Json?     // { "twitter": "url", "linkedin": "url", ... }
-
-  // Optional link to user (member who wants to sponsor) - multiple sponsors can link to one user
   userId               String?
-  user                 User?     @relation(fields: [userId], references: [id])
-
-  isActive             Boolean   @default(true)
-  isArchived           Boolean   @default(false)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  // Relations
+  isActive             Boolean             @default(true)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  status               String              @default("new")
+  socialMediaLinks     Json?
+  logoBackground       String              @default("transparent")
+  isArchived           Boolean             @default(false)
   eventSponsorships    EventSponsorship[]
-  notes                SponsorNote[]
-  labels               SponsorLabel[] @relation("SponsorToLabel")
+  user                 User?               @relation(fields: [userId], references: [id])
   sponsorAttachments   SponsorAttachment[]
+  notes                SponsorNote[]
+  labels               SponsorLabel[]      @relation("SponsorToLabel")
 
   @@index([userId])
   @@index([type])
@@ -331,45 +239,36 @@ model Sponsor {
   @@index([isArchived])
 }
 
-// NEW: Links sponsors to events (replaces EventCatering)
 model EventSponsorship {
-  id              String    @id @default(cuid())
+  id              String   @id @default(cuid())
   sessionId       String
   sponsorId       String?
-  sponsorshipType String    // dinner, beverage, dessert, other
-  isSelfSponsored Boolean   @default(false)
+  sponsorshipType String
+  isSelfSponsored Boolean  @default(false)
   notes           String?
-  displayOrder    Int       @default(0)  // Lower = higher priority (displayed first/right in RTL)
-
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  // Relations
-  session         Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  sponsor         Sponsor?  @relation(fields: [sponsorId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  displayOrder    Int      @default(0)
+  session         Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sponsor         Sponsor? @relation(fields: [sponsorId], references: [id])
 
   @@index([sessionId])
   @@index([sponsorId])
 }
 
-// Guest entity - event speakers/guests with reusable profiles
 model Guest {
-  id               String    @id @default(cuid())
-  title            String?   // "Dr.", "Eng.", "Prof." or custom
+  id               String         @id @default(cuid())
+  title            String?
   name             String
   jobTitle         String?
   company          String?
-  description      String?   @db.Text
+  description      String?
   imageUrl         String?
-  socialMediaLinks Json?     // { "twitter": "url", "linkedin": "url", ... }
-
-  isPublic         Boolean   @default(false)  // Admin controls public visibility
-  isActive         Boolean   @default(true)   // Soft delete
-
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  // Relations
+  socialMediaLinks Json?
+  isPublic         Boolean        @default(false)
+  isActive         Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
   sessionGuests    SessionGuest[]
 
   @@index([isActive])
@@ -377,18 +276,14 @@ model Guest {
   @@index([name])
 }
 
-// Join table for many-to-many Session <-> Guest relationship
 model SessionGuest {
   id           String   @id @default(cuid())
   sessionId    String
   guestId      String
-  displayOrder Int      @default(0)  // For ordering multiple guests
-
+  displayOrder Int      @default(0)
   createdAt    DateTime @default(now())
-
-  // Relations
-  session      Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   guest        Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  session      Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, guestId])
   @@index([sessionId])
@@ -396,77 +291,57 @@ model SessionGuest {
 }
 
 model Settings {
-  id        String   @id @default(cuid())
-  key       String   @unique // singleton key "global"
-
-  // Registration form field visibility defaults
+  id                      String   @id @default(cuid())
+  key                     String   @unique
   showSocialMediaFields   Boolean  @default(true)
   showRegistrationPurpose Boolean  @default(true)
   showCateringInterest    Boolean  @default(true)
-
-  // System settings
-  siteName        String?
-  contactEmail    String?
-  contactPhone    String?
-
-  // Social media handles (organization's social media)
-  twitterHandle   String?
-  instagramHandle String?
-  snapchatHandle  String?
-  linkedinUrl     String?
-  whatsappNumber  String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  siteName                String?
+  contactEmail            String?
+  contactPhone            String?
+  twitterHandle           String?
+  instagramHandle         String?
+  snapchatHandle          String?
+  linkedinUrl             String?
+  whatsappNumber          String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 }
 
 model UserLabel {
-  id    String @id @default(cuid())
-  name  String @unique
-  color String @default("#3b82f6") // Default blue color
-
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String   @default("#3b82f6")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relations
-  users User[]
+  users     User[]   @relation("UserToUserLabel")
 
   @@index([name])
 }
 
 model UserNote {
-  id        String   @id @default(cuid())
-  content   String
-
-  // User this note is about
-  userId    String
-  user      User     @relation("UserNotes", fields: [userId], references: [id], onDelete: Cascade)
-
-  // Admin who created the note
+  id          String   @id @default(cuid())
+  content     String
+  userId      String
   createdById String
-  createdBy   User   @relation("NotesCreated", fields: [createdById], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   User     @relation("NotesCreated", fields: [createdById], references: [id])
+  user        User     @relation("UserNotes", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([createdById])
 }
 
 model SponsorNote {
-  id        String   @id @default(cuid())
-  content   String
-
-  // Sponsor this note is about
-  sponsorId String
-  sponsor   Sponsor  @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
-
-  // Admin who created the note
+  id          String   @id @default(cuid())
+  content     String
+  sponsorId   String
   createdById String
-  createdBy   User   @relation("SponsorNoteAuthor", fields: [createdById], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   User     @relation("SponsorNoteAuthor", fields: [createdById], references: [id])
+  sponsor     Sponsor  @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
 
   @@index([sponsorId])
   @@index([createdById])
@@ -476,41 +351,31 @@ model SponsorLabel {
   id        String    @id @default(cuid())
   name      String    @unique
   color     String    @default("#6366f1")
-
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-
-  // Relations
   sponsors  Sponsor[] @relation("SponsorToLabel")
 
   @@index([name])
 }
 
-// Attachment entity - can be linked to various entities via pivot tables
 model Attachment {
-  id          String   @id @default(cuid())
+  id          String              @id @default(cuid())
   filename    String
   url         String
   contentType String
   size        Int
-  uploadedAt  DateTime @default(now())
-  createdAt   DateTime @default(now())
-
-  // Pivot relations
+  uploadedAt  DateTime            @default(now())
+  createdAt   DateTime            @default(now())
   sponsors    SponsorAttachment[]
-  // Future: users UserAttachment[]
-  // Future: sessions SessionAttachment[]
 }
 
-// Pivot table linking Attachments to Sponsors
 model SponsorAttachment {
   id           String     @id @default(cuid())
   sponsorId    String
   attachmentId String
   createdAt    DateTime   @default(now())
-
-  sponsor      Sponsor    @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
   attachment   Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  sponsor      Sponsor    @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
 
   @@unique([sponsorId, attachmentId])
   @@index([sponsorId])
@@ -518,85 +383,69 @@ model SponsorAttachment {
 }
 
 model EmailLog {
-  id           String    @id @default(cuid())
-  to           String
-  subject      String
-  type         String    // "confirmed", "pending", "companion", "welcome", "bulk", etc.
-  status       String    @default("pending") // "pending", "sent", "failed"
-  errorMessage String?
-  attempts     Int       @default(0)
-
-  // Optional references for context
+  id             String    @id @default(cuid())
+  to             String
+  subject        String
+  type           String
+  status         String    @default("pending")
+  errorMessage   String?
+  attempts       Int       @default(0)
   registrationId String?
   sessionId      String?
-
-  createdAt DateTime  @default(now())
-  sentAt    DateTime?
+  createdAt      DateTime  @default(now())
+  sentAt         DateTime?
 
   @@index([status])
   @@index([registrationId])
   @@index([createdAt])
 }
 
-// Email drafts for bulk emails (in-progress compositions)
 model EmailDraft {
   id          String   @id @default(cuid())
   name        String
   subject     String?
   content     String?
-  filters     Json?    // Saved filter state for user selection
-
+  filters     Json?
   createdById String
-  createdBy   User     @relation("DraftCreator", fields: [createdById], references: [id], onDelete: Cascade)
-
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  createdBy   User     @relation("DraftCreator", fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([createdById])
 }
 
-// Reusable email templates
-// type: "custom" for admin-created, future: "confirmation", "invitation", etc.
 model EmailTemplate {
   id          String   @id @default(cuid())
   name        String
-  type        String   @default("custom")  // "custom" | future: "confirmation", "invitation", etc.
+  type        String   @default("custom")
   subject     String
   content     String
-  isSystem    Boolean  @default(false)     // true for system templates (non-deletable)
-
+  isSystem    Boolean  @default(false)
   createdById String?
-  createdBy   User?    @relation("TemplateCreator", fields: [createdById], references: [id], onDelete: SetNull)
-
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  createdBy   User?    @relation("TemplateCreator", fields: [createdById], references: [id])
 
   @@index([type])
   @@index([createdById])
 }
 
-// Email campaign for bulk emails - groups sent emails together
 model EmailCampaign {
-  id               String   @id @default(cuid())
+  id               String                   @id @default(cuid())
   name             String?
   subject          String
-  content          String   @db.Text  // Full HTML content for history
-
-  totalRecipients  Int      @default(0)
-  sentCount        Int      @default(0)
-  failedCount      Int      @default(0)
-
-  status           String   @default("draft") // draft, sending, completed, failed
-  recipientFilters Json?    // Saved filters for reference
-  attachments      Json?    // Array of {filename, content}
-
+  content          String
+  totalRecipients  Int                      @default(0)
+  sentCount        Int                      @default(0)
+  failedCount      Int                      @default(0)
+  status           String                   @default("draft")
+  recipientFilters Json?
+  attachments      Json?
   createdById      String
-  createdBy        User     @relation("CampaignCreator", fields: [createdById], references: [id], onDelete: Cascade)
-
-  createdAt        DateTime @default(now())
+  createdAt        DateTime                 @default(now())
   sentAt           DateTime?
   completedAt      DateTime?
-
+  createdBy        User                     @relation("CampaignCreator", fields: [createdById], references: [id], onDelete: Cascade)
   recipients       EmailCampaignRecipient[]
 
   @@index([status])
@@ -604,20 +453,17 @@ model EmailCampaign {
   @@index([createdAt])
 }
 
-// Individual recipient in a campaign
 model EmailCampaignRecipient {
-  id           String   @id @default(cuid())
+  id           String        @id @default(cuid())
   campaignId   String
   userId       String?
   email        String
   name         String?
-
-  status       String   @default("pending") // pending, sent, failed
+  status       String        @default("pending")
   errorMessage String?
   sentAt       DateTime?
-
   campaign     EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  user         User?         @relation("RecipientUser", fields: [userId], references: [id], onDelete: SetNull)
+  user         User?         @relation("RecipientUser", fields: [userId], references: [id])
 
   @@index([campaignId])
   @@index([userId])
@@ -626,52 +472,42 @@ model EmailCampaignRecipient {
 
 model Suggestion {
   id        String   @id @default(cuid())
-  content   String   @db.Text
-  status    String   @default("pending") // pending, reviewed, implemented, dismissed
-
+  content   String
+  status    String   @default("pending")
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
   @@index([createdAt])
 }
 
-// Valet Service Models
-
 model ValetEmployee {
-  id           String    @id @default(cuid())
-  name         String
-  username     String    @unique
-  passwordHash String
-  phone        String?
-  isActive     Boolean   @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  valetRecords     ValetRecord[]          @relation("ParkedByEmployee")
+  id               String                 @id @default(cuid())
+  name             String
+  username         String                 @unique
+  passwordHash     String
+  phone            String?
+  isActive         Boolean                @default(true)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
   assignedSessions ValetEmployeeSession[]
+  valetRecords     ValetRecord[]          @relation("ParkedByEmployee")
 
   @@index([username])
   @@index([isActive])
 }
 
-// Join table for ValetEmployee <-> Session assignment
 model ValetEmployeeSession {
-  id         String @id @default(cuid())
+  id         String        @id @default(cuid())
   employeeId String
   sessionId  String
-
-  assignedAt DateTime @default(now())
-  assignedBy String? // Admin user ID who made the assignment
-
-  employee ValetEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  session  Session       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  assignedAt DateTime      @default(now())
+  assignedBy String?
+  employee   ValetEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  session    Session       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, sessionId])
   @@index([employeeId])
@@ -679,52 +515,317 @@ model ValetEmployeeSession {
 }
 
 model ValetRecord {
-  id             String      @id @default(cuid())
-  registrationId String      @unique
-  sessionId      String
-
-  // Denormalized guest info for quick access
-  guestName  String
-  guestPhone String?
-  isVip      Boolean @default(false)
-
-  // Vehicle details
-  vehicleMake  String?
-  vehicleModel String?
-  vehicleColor String?
-  vehiclePlate String?
-
-  // Parking info
-  ticketNumber  Int?        // Auto-assigned sequential number per session (0, 1, 2, ...)
-  parkingSlot   String?
-  trackingToken String?     @unique // Public tracking link token for guest access
-  status        ValetStatus @default(expected)
-
-  // Timestamps
-  parkedAt             DateTime?
-  parkedByEmployeeId   String?
-  retrievalRequestedAt DateTime?
-  retrievalPriority    Int       @default(0) // Higher = more priority
-  fetchingStartedAt    DateTime? // When valet started fetching the car
-  vehicleReadyAt       DateTime?
-  retrievedAt          DateTime?
-
-  // Admin action tracking
+  id                    String         @id @default(cuid())
+  registrationId        String         @unique
+  sessionId             String
+  guestName             String
+  guestPhone            String?
+  isVip                 Boolean        @default(false)
+  vehicleMake           String?
+  vehicleModel          String?
+  vehicleColor          String?
+  vehiclePlate          String?
+  parkingSlot           String?
+  status                ValetStatus    @default(expected)
+  parkedAt              DateTime?
+  parkedByEmployeeId    String?
+  retrievalRequestedAt  DateTime?
+  retrievalPriority     Int            @default(0)
+  vehicleReadyAt        DateTime?
+  retrievedAt           DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
   lastAdminActionAt     DateTime?
-  lastAdminActionBy     String?    // Admin user ID
-  lastAdminActionType   String?    // "status_override", "vip_toggle", "details_update"
+  lastAdminActionBy     String?
   lastAdminActionReason String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  registration     Registration   @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-  session          Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  parkedByEmployee ValetEmployee? @relation("ParkedByEmployee", fields: [parkedByEmployeeId], references: [id])
+  lastAdminActionType   String?
+  ticketNumber          Int?
+  trackingToken         String?        @unique
+  fetchingStartedAt     DateTime?
+  parkedByEmployee      ValetEmployee? @relation("ParkedByEmployee", fields: [parkedByEmployeeId], references: [id])
+  registration          Registration   @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  session               Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
   @@index([status])
   @@index([registrationId])
   @@index([sessionId, ticketNumber])
+}
+
+model VoiceCall {
+  id                   String          @id
+  registrationId       String
+  sessionId            String
+  batchId              String?
+  phoneNumber          String
+  recipientName        String?
+  agentsaCallId        Int?
+  status               String          @default("pending")
+  confirmationResponse String?
+  recordingUrl         String?
+  conversationHistory  Json?
+  retryCount           Int             @default(0)
+  maxRetries           Int             @default(3)
+  lastError            String?
+  createdAt            DateTime        @default(now())
+  initiatedAt          DateTime?
+  completedAt          DateTime?
+  dispatchMetadata     Json?
+  VoiceCallBatch       VoiceCallBatch? @relation(fields: [batchId], references: [id])
+  Registration         Registration    @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  Session              Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  VoiceCallLog         VoiceCallLog[]
+
+  @@index([batchId])
+  @@index([registrationId])
+  @@index([sessionId])
+  @@index([status])
+}
+
+model VoiceCallBatch {
+  id                 String      @id
+  sessionId          String
+  name               String
+  status             String      @default("pending")
+  totalCalls         Int         @default(0)
+  completedCalls     Int         @default(0)
+  confirmedCount     Int         @default(0)
+  declinedCount      Int         @default(0)
+  noResponseCount    Int         @default(0)
+  triggeredByAdminId String?
+  createdAt          DateTime    @default(now())
+  dispatchedAt       DateTime?
+  completedAt        DateTime?
+  dispatchMetadata   Json?
+  followUpCount      Int         @default(0)
+  VoiceCall          VoiceCall[]
+  Session            Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  User               User?       @relation(fields: [triggeredByAdminId], references: [id])
+
+  @@index([sessionId])
+  @@index([status])
+  @@index([triggeredByAdminId])
+}
+
+model VoiceCallLog {
+  id          String    @id
+  voiceCallId String
+  eventType   String
+  eventData   Json?
+  createdAt   DateTime  @default(now())
+  VoiceCall   VoiceCall @relation(fields: [voiceCallId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([eventType])
+  @@index([voiceCallId])
+}
+
+enum Role {
+  USER
+  ADMIN
+  GUEST
+  SUPER_ADMIN
+}
+
+enum VisibilityStatus {
+  inactive
+  active
+  archived
+}
+
+enum ValetStatus {
+  expected
+  parked
+  requested
+  ready
+  retrieved
+  fetching
+}
+
+// ============================================
+// Photo Gallery & Face Recognition Models
+// ============================================
+
+enum GalleryStatus {
+  pending      // Gallery created, awaiting uploads
+  uploading    // Images being uploaded
+  processing   // Face detection/indexing in progress
+  clustering   // Grouping faces into clusters
+  matching     // Matching faces to user profiles
+  ready        // Processing complete, gallery viewable
+  error        // Processing failed
+}
+
+enum ImageProcessingStatus {
+  pending
+  processing
+  completed
+  failed
+  skipped // No faces detected
+}
+
+enum ShareStatus {
+  pending // Link not yet shared
+  shared  // Link shared via WhatsApp/email
+  viewed  // Link has been accessed
+}
+
+// Photo gallery linked to a session
+model PhotoGallery {
+  id                      String        @id @default(cuid())
+  sessionId               String
+  title                   String?
+  description             String?
+
+  // AWS Rekognition collection ID for this gallery
+  rekognitionCollectionId String?       @unique
+
+  // Processing status
+  status                  GalleryStatus @default(pending)
+  totalImages             Int           @default(0)
+  processedImages         Int           @default(0)
+  totalFaces              Int           @default(0)
+  totalClusters           Int           @default(0)
+
+  // Error tracking
+  lastError               String?
+  processingStartedAt     DateTime?
+  processingCompletedAt   DateTime?
+
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  // Relations
+  session                 Session       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  images                  GalleryImage[]
+  faceClusters            FaceCluster[]
+
+  @@index([sessionId])
+  @@index([status])
+}
+
+// Individual image in a gallery
+model GalleryImage {
+  id              String                @id @default(cuid())
+  galleryId       String
+
+  // S3 storage
+  s3Key           String
+  s3Bucket        String
+  imageUrl        String                // CDN URL or direct S3 URL
+  thumbnailUrl    String?               // Generated thumbnail (optional)
+
+  // Image metadata
+  filename        String
+  width           Int?
+  height          Int?
+  fileSize        Int
+  contentType     String
+
+  // Processing status
+  status          ImageProcessingStatus @default(pending)
+  faceCount       Int                   @default(0)
+  errorMessage    String?
+  processedAt     DateTime?
+
+  createdAt       DateTime              @default(now())
+
+  // Relations
+  gallery         PhotoGallery          @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  faces           DetectedFace[]
+
+  @@index([galleryId])
+  @@index([status])
+}
+
+// Individual detected face in an image
+model DetectedFace {
+  id                  String        @id @default(cuid())
+  imageId             String
+
+  // Rekognition face ID (from IndexFaces)
+  rekognitionFaceId   String?
+
+  // Bounding box (normalized 0-1)
+  boundingBoxTop      Float
+  boundingBoxLeft     Float
+  boundingBoxWidth    Float
+  boundingBoxHeight   Float
+
+  // Face quality metrics
+  confidence          Float         @default(0)
+  brightness          Float?
+  sharpness           Float?
+
+  // Face pose (for selecting best thumbnail)
+  poseYaw             Float?        // Left/right rotation (-180 to 180, 0 = facing camera)
+  posePitch           Float?        // Up/down rotation (-180 to 180, 0 = level)
+  poseRoll            Float?        // Head tilt (-180 to 180, 0 = upright)
+
+  // Cropped face thumbnail for UI
+  faceThumbnailUrl    String?
+  faceThumbnailS3Key  String?
+
+  // Cluster assignment
+  clusterId           String?
+  clusterSimilarity   Float?        // Similarity % when assigned to cluster (debug)
+
+  createdAt           DateTime      @default(now())
+
+  // Relations
+  image               GalleryImage  @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  cluster             FaceCluster?  @relation(fields: [clusterId], references: [id])
+
+  @@index([imageId])
+  @@index([clusterId])
+  @@index([rekognitionFaceId])
+}
+
+// Group of faces belonging to same person
+model FaceCluster {
+  id                    String        @id @default(cuid())
+  galleryId             String
+
+  // User assignment (null if unassigned)
+  userId                String?
+
+  // Representative face thumbnail for UI display
+  representativeFaceUrl String?
+
+  // Auto-generated label if unassigned (e.g., "Person 1")
+  autoLabel             String?
+
+  // Manual name assignment (for non-users)
+  manualName            String?
+  manualPhone           String?       // For sharing via WhatsApp
+  manualEmail           String?       // For sharing via email
+
+  // Confidence of user match (0-100)
+  matchConfidence       Float?
+
+  // Flag if admin verified the assignment
+  isVerified            Boolean       @default(false)
+
+  faceCount             Int           @default(0)
+
+  // Public sharing link
+  publicToken           String        @unique @default(cuid())
+  shareStatus           ShareStatus   @default(pending)
+  sharedVia             String?       // "whatsapp" | "email" | null
+  sharedAt              DateTime?
+  viewedAt              DateTime?     // First time link was accessed
+  viewCount             Int           @default(0)
+
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  // Relations
+  gallery               PhotoGallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  user                  User?         @relation(fields: [userId], references: [id])
+  faces                 DetectedFace[]
+
+  @@index([galleryId])
+  @@index([userId])
+  @@index([publicToken])
+  @@index([shareStatus])
 }

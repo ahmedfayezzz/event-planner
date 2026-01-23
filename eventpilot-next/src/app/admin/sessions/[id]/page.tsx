@@ -49,6 +49,7 @@ import {
   Download,
   Share2,
   Link2,
+  Images,
 } from "lucide-react";
 import { getSponsorshipTypeLabel, getSponsorTypeLabel } from "@/lib/constants";
 import { ValetEmployeeAssignment } from "@/components/admin/valet-employee-assignment";
@@ -418,6 +419,12 @@ export default function SessionDetailPage({
               <Link href={`/admin/sessions/${id}/manual-registration`}>
                 <UserPlus className="ml-2 h-4 w-4" />
                 تسجيل يدوي
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href={`/admin/sessions/${id}/gallery`}>
+                <Images className="ml-2 h-4 w-4" />
+                معرض الصور
               </Link>
             </Button>
           </div>
