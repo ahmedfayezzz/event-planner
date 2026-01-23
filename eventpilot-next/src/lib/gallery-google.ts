@@ -1,21 +1,76 @@
 import { google } from "googleapis";
-import { getGalleryS3Client, GALLERY_S3_BUCKET, getGalleryImageUrl, warmCloudFrontCache, getThumbnailKey } from "./gallery-s3";
+import {
+  getGalleryS3Client,
+  GALLERY_S3_BUCKET,
+  getGalleryImageUrl,
+  warmCloudFrontCache,
+  getThumbnailKey,
+} from "./gallery-s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
+
+// Configuration
+const FORCE_SERVICE_ACCOUNT = true; // Set to false to allow API Key fallback
 
 /**
  * Check if Google Drive API is configured
  */
 export function isGoogleDriveConfigured(): boolean {
-  return !!process.env.GOOGLE_API_KEY;
+  const hasServiceAccount =
+    !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+    !!process.env.GOOGLE_PRIVATE_KEY;
+
+  if (FORCE_SERVICE_ACCOUNT) {
+    return hasServiceAccount;
+  }
+
+  return !!process.env.GOOGLE_API_KEY || hasServiceAccount;
 }
 
 /**
  * Get configured Google Drive client
+ * Supports both Service Account (Recommended) and API Key (Fallback)
  */
 function getDriveClient() {
+  const hasServiceAccount =
+    !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+    !!process.env.GOOGLE_PRIVATE_KEY;
+
+  if (FORCE_SERVICE_ACCOUNT && !hasServiceAccount) {
+    throw new Error(
+      "Google Service Account not configured. API Key usage is disabled.",
+    );
+  }
+
+  // 1. Service Account (Preferred for backend operations)
+  if (
+    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+    process.env.GOOGLE_PRIVATE_KEY
+  ) {
+    try {
+      const auth = new google.auth.JWT({
+        email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+        scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+      });
+      return google.drive({ version: "v3", auth });
+    } catch (error) {
+      console.error(
+        "Failed to initialize Google Service Account client:",
+        error,
+      );
+      if (FORCE_SERVICE_ACCOUNT) {
+        throw error;
+      }
+      // Fallback to API key if SA init fails
+    }
+  }
+
+  // 2. API Key (Fallback - subject to strict rate limits)
   if (!process.env.GOOGLE_API_KEY) {
-    throw new Error("Google API key not configured");
+    throw new Error(
+      "Google API Configuration missing. Set GOOGLE_SERVICE_ACCOUNT_EMAIL/KEY (recommended) or GOOGLE_API_KEY.",
+    );
   }
 
   return google.drive({
@@ -84,7 +139,7 @@ export async function listFolderImages(folderId: string): Promise<DriveFile[]> {
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   maxRetries: number = 10,
-  baseDelay: number = 2000
+  baseDelay: number = 500,
 ): Promise<T> {
   let lastError: unknown;
 
@@ -108,12 +163,17 @@ async function retryWithBackoff<T>(
           message: (error as { message?: string })?.message,
           errors: (error as { errors?: unknown[] })?.errors,
           response: {
-            status: (error as { response?: { status?: number } })?.response?.status,
-            statusText: (error as { response?: { statusText?: string } })?.response?.statusText,
+            status: (error as { response?: { status?: number } })?.response
+              ?.status,
+            statusText: (error as { response?: { statusText?: string } })
+              ?.response?.statusText,
             data: (error as { response?: { data?: unknown } })?.response?.data,
           },
         };
-        console.error("Google Drive API 403 Error:", JSON.stringify(errorDetails, null, 2));
+        console.error(
+          "Google Drive API 403 Error:",
+          JSON.stringify(errorDetails, null, 2),
+        );
       }
 
       // Don't retry on non-rate-limit errors
@@ -128,8 +188,10 @@ async function retryWithBackoff<T>(
 
       // Calculate delay with exponential backoff + jitter
       const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
-      console.log(`Rate limit hit, retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      console.log(
+        `Rate limit hit, retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 
@@ -143,15 +205,21 @@ export async function transferToS3(
   fileId: string,
   filename: string,
   mimeType: string,
-  galleryId: string
+  galleryId: string,
 ): Promise<{ s3Key: string; imageUrl: string; fileSize: number }> {
   const drive = getDriveClient();
 
   // Download from Google Drive with retry on rate limits
   const response = await retryWithBackoff(async () => {
     return await drive.files.get(
-      { fileId, alt: "media" },
-      { responseType: "arraybuffer" }
+      {
+        fileId,
+        alt: "media",
+        // When using API Key, quotaUser helps attribute usage to distinct requests
+        // rather than the server's single IP address. Ignored for Service Account.
+        quotaUser: `req-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      },
+      { responseType: "arraybuffer" },
     );
   });
 
@@ -172,7 +240,7 @@ export async function transferToS3(
       Body: buffer,
       ContentType: mimeType,
       CacheControl: "public, max-age=31536000, immutable",
-    })
+    }),
   );
 
   // Generate and upload thumbnail (600x600, quality 70 for faster loading)
@@ -190,7 +258,7 @@ export async function transferToS3(
         Body: thumbnailBuffer,
         ContentType: "image/jpeg",
         CacheControl: "public, max-age=31536000, immutable",
-      })
+      }),
     );
 
     // Warm CloudFront cache for thumbnail

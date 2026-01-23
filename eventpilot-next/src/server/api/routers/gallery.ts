@@ -49,7 +49,7 @@ export const galleryRouter = createTRPCRouter({
       z.object({
         sessionId: z.string(),
         title: z.string().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       // Check if session exists
@@ -176,7 +176,7 @@ export const galleryRouter = createTRPCRouter({
         galleryId: z.string(),
         limit: z.number().min(1).max(100).default(50),
         cursor: z.string().optional(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const images = await ctx.db.galleryImage.findMany({
@@ -211,7 +211,7 @@ export const galleryRouter = createTRPCRouter({
         galleryId: z.string(),
         filename: z.string(),
         contentType: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const gallery = await ctx.db.photoGallery.findUnique({
@@ -245,7 +245,7 @@ export const galleryRouter = createTRPCRouter({
         filename: z.string(),
         fileSize: z.number(),
         contentType: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const gallery = await ctx.db.photoGallery.findUnique({
@@ -306,7 +306,7 @@ export const galleryRouter = createTRPCRouter({
     .input(
       z.object({
         driveUrl: z.string(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       if (!isGoogleDriveConfigured()) {
@@ -320,7 +320,8 @@ export const galleryRouter = createTRPCRouter({
       if (!folderId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Invalid Google Drive folder URL. Please use a public folder link.",
+          message:
+            "Invalid Google Drive folder URL. Please use a public folder link.",
         });
       }
 
@@ -332,7 +333,8 @@ export const galleryRouter = createTRPCRouter({
         console.error("Failed to list Google Drive folder:", error);
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Could not access the Google Drive folder. Make sure it's publicly shared.",
+          message:
+            "Could not access the Google Drive folder. Make sure it's publicly shared.",
         });
       }
 
@@ -367,7 +369,7 @@ export const galleryRouter = createTRPCRouter({
       z.object({
         galleryId: z.string(),
         driveUrl: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       if (!isGoogleDriveConfigured()) {
@@ -392,7 +394,8 @@ export const galleryRouter = createTRPCRouter({
       if (!folderId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Invalid Google Drive folder URL. Please use a public folder link.",
+          message:
+            "Invalid Google Drive folder URL. Please use a public folder link.",
         });
       }
 
@@ -404,7 +407,8 @@ export const galleryRouter = createTRPCRouter({
         console.error("Failed to list Google Drive folder:", error);
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Could not access the Google Drive folder. Make sure it's publicly shared.",
+          message:
+            "Could not access the Google Drive folder. Make sure it's publicly shared.",
         });
       }
 
@@ -426,10 +430,14 @@ export const galleryRouter = createTRPCRouter({
         where: { galleryId: input.galleryId },
         select: { filename: true },
       });
-      const existingFilenames = new Set(existingImages.map((img) => img.filename));
+      const existingFilenames = new Set(
+        existingImages.map((img) => img.filename),
+      );
 
       // Filter out duplicates
-      const filesToImport = files.filter((file) => !existingFilenames.has(file.name));
+      const filesToImport = files.filter(
+        (file) => !existingFilenames.has(file.name),
+      );
       const skippedCount = files.length - filesToImport.length;
 
       if (skippedCount > 0) {
@@ -443,13 +451,15 @@ export const galleryRouter = createTRPCRouter({
       const importFiles = async () => {
         let imported = 0;
         let failed = 0;
-        let currentDelay = 2000; // Start with 2 seconds between files
+        let currentDelay = 50; // Start with 50ms between files (fast for Service Account)
         let consecutiveErrors = 0;
 
         for (const file of filesToImport) {
           // Check if import was cancelled
           if (isImportCancelled(input.galleryId)) {
-            console.log(`Google Drive import cancelled for gallery ${input.galleryId}`);
+            console.log(
+              `Google Drive import cancelled for gallery ${input.galleryId}`,
+            );
             break;
           }
 
@@ -458,7 +468,7 @@ export const galleryRouter = createTRPCRouter({
               file.id,
               file.name,
               file.mimeType,
-              input.galleryId
+              input.galleryId,
             );
 
             await ctx.db.galleryImage.create({
@@ -493,24 +503,32 @@ export const galleryRouter = createTRPCRouter({
             // Adaptive backoff: if we're hitting errors, slow down significantly
             if (consecutiveErrors >= 3) {
               currentDelay = Math.min(currentDelay * 2, 10000); // Double delay, max 10s
-              console.log(`Increasing delay to ${currentDelay}ms due to consecutive errors`);
+              console.log(
+                `Increasing delay to ${currentDelay}ms due to consecutive errors`,
+              );
             }
 
             // Wait longer after errors before trying next file
-            await new Promise((resolve) => setTimeout(resolve, currentDelay * 2));
+            await new Promise((resolve) =>
+              setTimeout(resolve, currentDelay * 2),
+            );
           }
         }
 
         // Complete or mark as cancelled
         if (isImportCancelled(input.galleryId)) {
-          console.log(`Google Drive import cancelled: ${imported} imported, ${failed} failed, ${skippedCount} skipped (duplicates)`);
+          console.log(
+            `Google Drive import cancelled: ${imported} imported, ${failed} failed, ${skippedCount} skipped (duplicates)`,
+          );
           // Reset gallery status
           await ctx.db.photoGallery.update({
             where: { id: input.galleryId },
             data: { status: "pending" },
           });
         } else {
-          console.log(`Google Drive import complete: ${imported} imported, ${failed} failed, ${skippedCount} skipped (duplicates)`);
+          console.log(
+            `Google Drive import complete: ${imported} imported, ${failed} failed, ${skippedCount} skipped (duplicates)`,
+          );
           // Reset gallery status to pending BEFORE marking progress complete
           // This ensures UI sees updated status when it refetches
           await ctx.db.photoGallery.update({
@@ -527,9 +545,10 @@ export const galleryRouter = createTRPCRouter({
         console.error("Google Drive import failed:", error);
       });
 
-      const message = skippedCount > 0
-        ? `بدء استيراد ${filesToImport.length} صورة (تم تخطي ${skippedCount} صورة مكررة)`
-        : `بدء استيراد ${filesToImport.length} صورة من Google Drive`;
+      const message =
+        skippedCount > 0
+          ? `بدء استيراد ${filesToImport.length} صورة (تم تخطي ${skippedCount} صورة مكررة)`
+          : `بدء استيراد ${filesToImport.length} صورة من Google Drive`;
 
       return {
         success: true,
@@ -577,7 +596,11 @@ export const galleryRouter = createTRPCRouter({
         });
       }
 
-      if (gallery.status === "processing" || gallery.status === "clustering" || gallery.status === "matching") {
+      if (
+        gallery.status === "processing" ||
+        gallery.status === "clustering" ||
+        gallery.status === "matching"
+      ) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Gallery is already being processed",
@@ -710,7 +733,7 @@ export const galleryRouter = createTRPCRouter({
       z.object({
         galleryId: z.string(),
         filter: z.enum(["all", "assigned", "unassigned"]).default("all"),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       // Build dynamic where clause
@@ -798,7 +821,7 @@ export const galleryRouter = createTRPCRouter({
       z.object({
         clusterId: z.string(),
         userId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const cluster = await ctx.db.faceCluster.findUnique({
@@ -847,7 +870,7 @@ export const galleryRouter = createTRPCRouter({
         name: z.string().min(1),
         phone: z.string().optional(),
         email: z.string().email().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const cluster = await ctx.db.faceCluster.findUnique({
@@ -883,7 +906,7 @@ export const galleryRouter = createTRPCRouter({
       z.object({
         clusterId: z.string(),
         via: z.enum(["whatsapp", "email"]),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const cluster = await ctx.db.faceCluster.findUnique({
@@ -909,7 +932,10 @@ export const galleryRouter = createTRPCRouter({
       const name = cluster.user?.name || cluster.manualName || "ضيف";
 
       // Build the public URL
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL || "http://localhost:3000";
+      const baseUrl =
+        process.env.NEXT_PUBLIC_BASE_URL ||
+        process.env.BASE_URL ||
+        "http://localhost:3000";
       const publicUrl = `${baseUrl}/photos/${cluster.publicToken}`;
 
       if (input.via === "whatsapp") {
@@ -1122,7 +1148,15 @@ export const galleryRouter = createTRPCRouter({
       }
 
       // Get unique images from the faces, with their match similarity
-      const imageMap = new Map<string, { id: string; imageUrl: string; filename: string; matchSimilarity: number | null }>();
+      const imageMap = new Map<
+        string,
+        {
+          id: string;
+          imageUrl: string;
+          filename: string;
+          matchSimilarity: number | null;
+        }
+      >();
       for (const face of cluster.faces) {
         if (face.image && !imageMap.has(face.image.id)) {
           imageMap.set(face.image.id, {
