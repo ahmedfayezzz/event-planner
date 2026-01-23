@@ -106,14 +106,17 @@ export default function GalleryDetailPage({
     {
       refetchInterval: (query) => {
         const progress = query.state.data;
-        // Refetch gallery when import completes
-        if (progress && progress.status !== "importing") {
-          void utils.gallery.getById.invalidate({ galleryId });
-        }
         return progress?.status === "importing" ? 1000 : false;
       },
     }
   );
+
+  // Refetch gallery when import completes (only once per status change)
+  useEffect(() => {
+    if (importProgress?.status === "completed" || importProgress?.status === "cancelled") {
+      void utils.gallery.getById.invalidate({ galleryId });
+    }
+  }, [importProgress?.status, galleryId, utils]);
 
   // Check if gallery is in a processing state (helper function for refetch)
   const isProcessingStatus = (status?: string) =>
