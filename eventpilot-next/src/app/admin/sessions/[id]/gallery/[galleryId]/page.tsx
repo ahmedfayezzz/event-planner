@@ -2,7 +2,7 @@
 
 import { use, useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { OptimizedImage } from "@/components/optimized-image";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -698,12 +698,14 @@ export default function GalleryDetailPage({
                   className="relative aspect-square rounded-lg overflow-hidden bg-muted group cursor-pointer"
                   onClick={() => setLightboxIndex(index)}
                 >
-                  <Image
+                  <OptimizedImage
                     src={image.imageUrl}
                     alt={image.filename}
                     fill
-                    className="object-cover"
                     sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                    quality={70}
+                    showLoadingSpinner={false}
+                    objectFit="cover"
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors" />
                   <div className="absolute top-2 right-2">
@@ -803,13 +805,15 @@ export default function GalleryDetailPage({
             className="relative max-w-[90vw] max-h-[85vh] w-full h-full"
             onClick={(e) => e.stopPropagation()}
           >
-            <Image
+            <OptimizedImage
               src={gallery.images[lightboxIndex]!.imageUrl}
               alt={gallery.images[lightboxIndex]!.filename}
               fill
-              className="object-contain"
               sizes="90vw"
               priority
+              quality={85}
+              showLoadingSpinner={true}
+              objectFit="contain"
             />
           </div>
 

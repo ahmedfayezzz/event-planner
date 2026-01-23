@@ -3,6 +3,7 @@
 import { use, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { OptimizedImage } from "@/components/optimized-image";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -535,12 +536,14 @@ function ClusterGrid({ clusters, onAssign, onShare, shareLoading }: ClusterGridP
           <Card key={cluster.id} className="overflow-hidden">
             <div className="relative aspect-square bg-muted">
               {imageUrl ? (
-                <Image
+                <OptimizedImage
                   src={imageUrl}
                   alt={displayName}
                   fill
-                  className="object-cover"
                   sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                  quality={75}
+                  showLoadingSpinner={false}
+                  objectFit="cover"
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">

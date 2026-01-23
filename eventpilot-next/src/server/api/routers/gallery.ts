@@ -443,6 +443,8 @@ export const galleryRouter = createTRPCRouter({
       const importFiles = async () => {
         let imported = 0;
         let failed = 0;
+        let currentDelay = 2000; // Start with 2 seconds between files
+        let consecutiveErrors = 0;
 
         for (const file of filesToImport) {
           // Check if import was cancelled
@@ -477,24 +479,46 @@ export const galleryRouter = createTRPCRouter({
             });
 
             imported++;
+            consecutiveErrors = 0; // Reset error counter on success
             updateImportProgress(input.galleryId, { imported });
 
-            // Rate limit: ~1 request/second to avoid hitting Google API limits
-            // Google Drive API has a limit of 1000 requests per 100 seconds
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            // Adaptive rate limiting: slow down between files
+            await new Promise((resolve) => setTimeout(resolve, currentDelay));
           } catch (error) {
             console.error(`Failed to import ${file.name}:`, error);
             failed++;
+            consecutiveErrors++;
             updateImportProgress(input.galleryId, { failed });
+
+            // Adaptive backoff: if we're hitting errors, slow down significantly
+            if (consecutiveErrors >= 3) {
+              currentDelay = Math.min(currentDelay * 2, 10000); // Double delay, max 10s
+              console.log(`Increasing delay to ${currentDelay}ms due to consecutive errors`);
+            }
+
+            // Wait longer after errors before trying next file
+            await new Promise((resolve) => setTimeout(resolve, currentDelay * 2));
           }
         }
 
         // Complete or mark as cancelled
         if (isImportCancelled(input.galleryId)) {
           console.log(`Google Drive import cancelled: ${imported} imported, ${failed} failed, ${skippedCount} skipped (duplicates)`);
+          // Reset gallery status
+          await ctx.db.photoGallery.update({
+            where: { id: input.galleryId },
+            data: { status: "pending" },
+          });
         } else {
-          completeImportProgress(input.galleryId);
           console.log(`Google Drive import complete: ${imported} imported, ${failed} failed, ${skippedCount} skipped (duplicates)`);
+          // Reset gallery status to pending BEFORE marking progress complete
+          // This ensures UI sees updated status when it refetches
+          await ctx.db.photoGallery.update({
+            where: { id: input.galleryId },
+            data: { status: "pending" },
+          });
+          // Now mark progress as complete, which triggers UI refetch
+          completeImportProgress(input.galleryId);
         }
       };
 

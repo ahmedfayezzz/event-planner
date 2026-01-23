@@ -74,12 +74,47 @@ export function generateFaceThumbnailKey(
 
 /**
  * Get the public URL for a gallery image (CDN or direct S3)
+ * @param s3Key - The S3 key of the image
+ * @param thumbnail - If true, returns the thumbnail version (if exists)
  */
-export function getGalleryImageUrl(s3Key: string): string {
+export function getGalleryImageUrl(s3Key: string, thumbnail = false): string {
+  const key = thumbnail ? getThumbnailKey(s3Key) : s3Key;
+
   if (GALLERY_CLOUDFRONT_URL) {
-    return `${GALLERY_CLOUDFRONT_URL}/${s3Key}`;
+    return `${GALLERY_CLOUDFRONT_URL}/${key}`;
   }
-  return `https://${GALLERY_S3_BUCKET}.s3.${GALLERY_REGION}.amazonaws.com/${s3Key}`;
+  return `https://${GALLERY_S3_BUCKET}.s3.${GALLERY_REGION}.amazonaws.com/${key}`;
+}
+
+/**
+ * Generate thumbnail key from original image key
+ * Converts: galleries/abc/123-image.jpg -> galleries/abc/thumbs/123-image.jpg
+ */
+export function getThumbnailKey(originalKey: string): string {
+  const parts = originalKey.split("/");
+  const filename = parts[parts.length - 1];
+  const path = parts.slice(0, -1).join("/");
+  return `${path}/thumbs/${filename}`;
+}
+
+/**
+ * Warm CloudFront cache by making a HEAD request to the CDN URL
+ * This ensures the first user request gets a cached response
+ */
+export async function warmCloudFrontCache(s3Key: string): Promise<void> {
+  if (!GALLERY_CLOUDFRONT_URL) {
+    return; // Skip if not using CloudFront
+  }
+
+  const cdnUrl = getGalleryImageUrl(s3Key);
+
+  try {
+    // Make a HEAD request to warm the cache (doesn't download the body)
+    await fetch(cdnUrl, { method: "HEAD" });
+  } catch (error) {
+    // Don't fail the upload if cache warming fails
+    console.warn(`Failed to warm CloudFront cache for ${s3Key}:`, error);
+  }
 }
 
 /**

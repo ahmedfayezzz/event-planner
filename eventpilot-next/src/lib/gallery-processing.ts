@@ -12,6 +12,7 @@ import {
   getGalleryImageUrl,
   generateFaceThumbnailKey,
   getGalleryS3Client,
+  warmCloudFrontCache,
 } from "./gallery-s3";
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
@@ -151,6 +152,10 @@ async function generateFaceThumbnail(
   await s3Client.send(putCommand);
 
   const thumbnailUrl = getGalleryImageUrl(thumbnailS3Key);
+
+  // Warm CloudFront cache so the first view is fast
+  await warmCloudFrontCache(thumbnailS3Key);
+
   return { thumbnailUrl, thumbnailS3Key };
 }
 

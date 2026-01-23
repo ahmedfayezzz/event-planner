@@ -1,8 +1,8 @@
 "use client";
 
 import { use, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { OptimizedImage } from "@/components/optimized-image";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -182,12 +182,15 @@ export default function PublicPhotosPage({
                   className="relative aspect-square rounded-lg overflow-hidden bg-muted group cursor-pointer"
                   onClick={() => openLightbox(index)}
                 >
-                  <Image
+                  <OptimizedImage
                     src={image.imageUrl}
                     alt={`صورة ${index + 1}`}
                     fill
-                    className="object-cover transition-transform group-hover:scale-105"
+                    className="transition-transform group-hover:scale-105"
                     sizes="(max-width: 768px) 50vw, 33vw"
+                    quality={70}
+                    showLoadingSpinner={false}
+                    objectFit="cover"
                   />
                   {/* Dev only: show match similarity */}
                   {isDev && image.matchSimilarity !== null && image.matchSimilarity !== undefined && (
@@ -296,13 +299,15 @@ export default function PublicPhotosPage({
             className="relative max-w-[90vw] max-h-[90vh] w-full h-full flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <Image
+            <OptimizedImage
               src={data.images[selectedImage]!.imageUrl}
               alt={`صورة ${selectedImage + 1}`}
               fill
-              className="object-contain"
               sizes="90vw"
               priority
+              quality={85}
+              showLoadingSpinner={true}
+              objectFit="contain"
             />
           </div>
 

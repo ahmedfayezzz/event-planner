@@ -1,6 +1,7 @@
 import { google } from "googleapis";
-import { getGalleryS3Client, GALLERY_S3_BUCKET, getGalleryImageUrl } from "./gallery-s3";
+import { getGalleryS3Client, GALLERY_S3_BUCKET, getGalleryImageUrl, warmCloudFrontCache, getThumbnailKey } from "./gallery-s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import sharp from "sharp";
 
 /**
  * Check if Google Drive API is configured
@@ -82,8 +83,8 @@ export async function listFolderImages(folderId: string): Promise<DriveFile[]> {
  */
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  maxRetries: number = 5,
-  baseDelay: number = 1000
+  maxRetries: number = 10,
+  baseDelay: number = 2000
 ): Promise<T> {
   let lastError: unknown;
 
@@ -162,7 +163,7 @@ export async function transferToS3(
   const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, "_");
   const s3Key = `galleries/${galleryId}/${timestamp}-${sanitizedFilename}`;
 
-  // Upload to S3
+  // Upload original to S3
   const s3Client = getGalleryS3Client();
   await s3Client.send(
     new PutObjectCommand({
@@ -174,5 +175,35 @@ export async function transferToS3(
     })
   );
 
-  return { s3Key, imageUrl: getGalleryImageUrl(s3Key), fileSize };
+  // Generate and upload thumbnail (600x600, quality 70 for faster loading)
+  try {
+    const thumbnailBuffer = await sharp(buffer)
+      .resize(600, 600, { fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 70 })
+      .toBuffer();
+
+    const thumbnailKey = getThumbnailKey(s3Key);
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: GALLERY_S3_BUCKET,
+        Key: thumbnailKey,
+        Body: thumbnailBuffer,
+        ContentType: "image/jpeg",
+        CacheControl: "public, max-age=31536000, immutable",
+      })
+    );
+
+    // Warm CloudFront cache for thumbnail
+    await warmCloudFrontCache(thumbnailKey);
+  } catch (error) {
+    console.error("Failed to generate thumbnail:", error);
+    // Continue even if thumbnail generation fails
+  }
+
+  const imageUrl = getGalleryImageUrl(s3Key);
+
+  // Warm CloudFront cache so the first view is fast
+  await warmCloudFrontCache(s3Key);
+
+  return { s3Key, imageUrl, fileSize };
 }
